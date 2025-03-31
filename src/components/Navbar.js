@@ -60,13 +60,7 @@ const Navbar = () => {
                   Admin Dashboard
                 </Button>
               )}
-              <Button
-                color="inherit"
-                component={RouterLink}
-                to="/my-bookings"
-              >
-                My Bookings
-              </Button>
+             
               <IconButton
                 size="large"
                 aria-label="account of current user"
@@ -100,20 +94,7 @@ const Navbar = () => {
             </>
           ) : (
             <>
-              <Button
-                color="inherit"
-                component={RouterLink}
-                to="/login"
-              >
-                Login
-              </Button>
-              <Button
-                color="inherit"
-                component={RouterLink}
-                to="/register"
-              >
-                Register
-              </Button>
+             
               <Button
                 color="inherit"
                 component={RouterLink}
