@@ -114,6 +114,13 @@ const Navbar = () => {
               >
                 Register
               </Button>
+              <Button
+                color="inherit"
+                component={RouterLink}
+                to="/servers"
+              >
+                servers
+              </Button>
             </>
           )}
         </Box>
