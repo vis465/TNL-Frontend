@@ -61,6 +61,8 @@ const Navbar = () => {
                 </Button>
               )}
              
+             
+             
               <IconButton
                 size="large"
                 aria-label="account of current user"
@@ -86,21 +88,33 @@ const Navbar = () => {
                 open={Boolean(anchorEl)}
                 onClose={handleClose}
               >
+                
                 <MenuItem onClick={handleClose}>
-                  {user.vtcName || user.username}
+                  {user.username}
+                </MenuItem>
+                <MenuItem onClick={()=>{navigate('/register')}}>
+                 Register new admin
                 </MenuItem>
                 <MenuItem onClick={handleLogout}>Logout</MenuItem>
+                
+                
               </Menu>
             </>
           ) : (
             <>
-             
+              <Button
+                color="inherit"
+                component={RouterLink}
+                to="/attending-events"
+              >
+                Attending Events
+              </Button>
               <Button
                 color="inherit"
                 component={RouterLink}
                 to="/servers"
               >
-                servers
+                TruckersMP server Status
               </Button>
             </>
           )}

@@ -11,6 +11,10 @@ import Register from './pages/Register';
 import AdminDashboard from './pages/AdminDashboard';
 import MyBookings from './pages/MyBookings';
 import Servers from './pages/Servers';
+import PrivateRoute from './components/PrivateRoute';
+import Others from './pages/Others';
+import AttendingEvents from "./components/AttendingEvents"
+// import { setItemWithExpiry } from './config/localStorageWithExpiry';
 
 // Import Montserrat font
 import '@fontsource/montserrat/300.css';
@@ -26,13 +30,24 @@ function App() {
       <Router>
         <Navbar />
         <Routes>
+          {/* Public routes */}
           <Route path="/" element={<Home />} />
-          <Route path="/events/:id" element={<EventDetails />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/my-bookings" element={<MyBookings />} />
           <Route path="/servers" element={<Servers />} />
+          <Route path="/events/:id" element={<EventDetails />} />
+          <Route path="/attending-events" element={<AttendingEvents />} />
+          <Route path="/External/:id" element={<Others />} />
+          {/* Protected routes */}
+          <Route element={<PrivateRoute allowedRoles={["admin"]} />}>
+            <Route path="/admin" element={<AdminDashboard />} />
+            
+          </Route>
+
+          <Route element={<PrivateRoute allowedRoles={["user", "admin"]} />}>
+            
+            <Route path="/my-bookings" element={<MyBookings />} />
+          </Route>
         </Routes>
       </Router>
     </ThemeProvider>
