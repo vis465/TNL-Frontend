@@ -46,7 +46,7 @@ const Home = () => {
         return;
       }
 
-      const filteredEvents = eventsData.filter(event => event.status !== 'cancelled');
+      const filteredEvents = eventsData.filter(event => event.status !== 'Completed');
       console.log('Filtered Events:', filteredEvents);
       console.log('Number of events:', filteredEvents.length);
       

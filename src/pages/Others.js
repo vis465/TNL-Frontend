@@ -57,7 +57,7 @@ import { useAuth } from '../contexts/AuthContext';
 import RequestSlotDialog from '../components/RequestSlotDialog';
 import BookedSlots from '../components/BookedSlots';
 
-const EventDetails = () => {
+const Others = () => {
   const { id } = useParams();
   const { user } = useAuth();
   const [event, setEvent] = useState(null);
@@ -369,31 +369,7 @@ const EventDetails = () => {
                     </Typography>
                   </Box>
                 </Stack>
-                <Button
-                  variant="contained"
-                  size="large"
-                  onClick={() => {
-                    const slotsSection = document.getElementById('slots-section');
-                    if (slotsSection) {
-                      slotsSection.scrollIntoView({ behavior: 'smooth' });
-                    }
-                  }}
-                  sx={{
-                    borderRadius: 2,
-                    textTransform: 'none',
-                    fontFamily: 'Montserrat, sans-serif',
-                    fontWeight: 600,
-                    px: 4,
-                    py: 1.5,
-                    fontSize: '1.1rem',
-                    bgcolor: 'primary.main',
-                    '&:hover': {
-                      bgcolor: 'primary.dark',
-                    },
-                  }}
-                >
-                  Book Slot
-                </Button>
+                
               </Container>
             </Box>
           </Box>
@@ -415,7 +391,7 @@ const EventDetails = () => {
                     lineHeight: 1.8,
                   }}
                 >
-                  <ReactMarkdown>{event.description}</ReactMarkdown>
+                 
                 </Typography>
 
                 <Divider sx={{ my: 4 }} />
@@ -543,134 +519,10 @@ const EventDetails = () => {
                 scrollMarginTop: '100px'
               }}
             >
-              <CardContent sx={{ p: 4 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-                  <Typography
-                    variant="h5"
-                    sx={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
-                  >
-                    Event Slots
-                  </Typography>
-                </Box>
-
-                {loading ? (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                    <CircularProgress />
-                  </Box>
-                ) : error ? (
-                  <Alert severity="error" sx={{ mb: 2 }}>
-                    {error}
-                  </Alert>
-                ) : slots.length === 0 ? (
-                  <Typography variant="body1" color="text.secondary" align="center" sx={{ py: 4 }}>
-                    No slots available for this event yet.
-                  </Typography>
-                ) : (
-                  <Grid container spacing={3}>
-                    {slots.map((slot) => (
-                      <Grid item xs={12} sm={6} md={4} key={slot._id}>
-                        <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                          <CardMedia
-                            component="img"
-                            height="200"
-                            image={slot.imageUrl}
-                            alt={`Slot ${slot.imageNumber}`}
-                            sx={{ objectFit: 'cover' }}
-                          />
-                          <CardContent sx={{ flexGrow: 1 }}>
-                            <Typography gutterBottom variant="h6" component="h2">
-                              Slot Image #{slot.imageNumber}
-                            </Typography>
-                            <Box sx={{ mb: 2 }}>
-                              <Chip
-                                label={`${slot.slots.filter(s => s.isAvailable).length} slots available`}
-                                color={slot.slots.some(s => s.isAvailable) ? 'success' : 'error'}
-                                sx={{ mr: 1 }}
-                              />
-                              <Chip
-                                label={`${slot.slots.length} total slots`}
-                                variant="outlined"
-                              />
-                            </Box>
-                            {slot.slots && slot.slots.length > 0 && (
-                              <Box sx={{ mt: 2 }}>
-                                <Typography variant="subtitle2" gutterBottom>
-                                  Slot Numbers:
-                                </Typography>
-                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                  {slot.slots.map((slotItem) => (
-                                    <Chip
-                                      key={slotItem.number}
-                                      label={`#${slotItem.number}`}
-                                      color={
-                                        slotItem.booking?.status === 'approved' ? 'success' :
-                                        slotItem.booking?.status === 'pending' ? 'warning' :
-                                        slotItem.isAvailable ? 'primary' : 'default'
-                                      }
-                                      variant={slotItem.isAvailable ? 'filled' : 'outlined'}
-                                      size="small"
-                                    />
-                                  ))}
-                                </Box>
-                              </Box>
-                            )}
-                            {slot.slots.some(s => s.booking) && (
-                              <Box sx={{ mt: 2 }}>
-                                <Typography variant="subtitle2" gutterBottom>
-                                  Bookings:
-                                </Typography>
-                                <List dense>
-                                  {slot.slots
-                                    .filter(s => s.booking)
-                                    .map((slotItem) => (
-                                      <ListItem key={slotItem.number}>
-                                        <ListItemText
-                                          primary={
-                                            <Typography variant="body2">
-                                              <strong>#{slotItem.number}:</strong> {slotItem.booking.name} ({slotItem.booking.vtcName})
-                                            </Typography>
-                                          }
-                                          secondary={
-                                            <Chip
-                                              size="small"
-                                              label={slotItem.booking.status}
-                                              color={
-                                                slotItem.booking.status === 'approved' ? 'success' :
-                                                slotItem.booking.status === 'rejected' ? 'error' :
-                                                'warning'
-                                              }
-                                              sx={{ mt: 0.5 }}
-                                            />
-                                          }
-                                        />
-                                      </ListItem>
-                                    ))}
-                                </List>
-                              </Box>
-                            )}
-                          </CardContent>
-                          <Box sx={{ p: 2, pt: 0 }}>
-                            <Button
-                              variant="contained"
-                              fullWidth
-                              disabled={!slot.slots.some(s => s.isAvailable)}
-                              onClick={() => handleRequestSlot(slot)}
-                            >
-                              Request Slot
-                            </Button>
-                          </Box>
-                        </Card>
-                      </Grid>
-                    ))}
-                  </Grid>
-                )}
-              </CardContent>
+              
             </Card>
 
-            {/* Booked Slots Overview Section */}
-            <Box id="booked-slots-section" sx={{ scrollMarginTop: '100px' }}>
-              <BookedSlots slots={slots} />
-            </Box>
+            
           </Grid>
 
           {/* Sidebar */}
@@ -685,25 +537,7 @@ const EventDetails = () => {
                   Quick Actions
                 </Typography>
                 <Stack spacing={2}>
-                  {event.voiceLink && (
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      href={event.voiceLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      fullWidth
-                      sx={{
-                        borderRadius: 2,
-                        py: 1.5,
-                        fontFamily: 'Montserrat, sans-serif',
-                        textTransform: 'none',
-                        fontWeight: 500,
-                      }}
-                    >
-                      Join Voice Chat
-                    </Button>
-                  )}
+                 
                   {event.externalLink && (
                     <Button
                       variant="outlined"
@@ -742,27 +576,7 @@ const EventDetails = () => {
                       View Route Map
                     </Button>
                   )}
-                  <Button
-                    variant="outlined"
-                    color="primary"
-                    onClick={() => {
-                      const bookedSlotsSection = document.getElementById('booked-slots-section');
-                      if (bookedSlotsSection) {
-                        bookedSlotsSection.scrollIntoView({ behavior: 'smooth' });
-                      }
-                    }}
-                    fullWidth
-                    sx={{
-                      borderRadius: 2,
-                      py: 1.5,
-                      bgcolor: 'red',
-                      fontFamily: 'Montserrat, sans-serif',
-                      textTransform: 'none',
-                      fontWeight: 500,
-                    }}
-                  >
-                    View Booked Slots
-                  </Button>
+                  
                 </Stack>
 
                 {event.attendances && (
@@ -924,7 +738,6 @@ const EventDetails = () => {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Book Slot {selectedSlot?.slotNumber}</DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2 }}>
             <TextField
@@ -1007,4 +820,4 @@ const EventDetails = () => {
   );
 };
 
-export default EventDetails; 
+export default Others; 

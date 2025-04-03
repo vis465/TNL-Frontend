@@ -1,12 +1,19 @@
-import React from 'react';
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import React from "react";
+import { Navigate, Outlet } from "react-router-dom";
+import { getUserRole } from "../localStorageWithExpiry";
 
-const PrivateRoute = ({ children }) => {
-  // const { isAuthenticated } = useAuth();
+const PrivateRoute = ({ allowedRoles, children }) => {
+  const userRole = getUserRole();
 
-  // return isAuthenticated ? children : <Navigate to="/login" />;
-  return children;
+  if (!userRole) {
+    return <Navigate to="/login" />;
+  }
+
+  if (!allowedRoles.includes(userRole)) {
+    return <Navigate to="*" />;
+  }
+
+  return children ? children : <Outlet />;
 };
 
 export default PrivateRoute; 

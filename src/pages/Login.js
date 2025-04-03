@@ -100,14 +100,7 @@ const Login = () => {
               Login
             </Button>
           </form>
-          <Box sx={{ mt: 2, textAlign: 'center' }}>
-            <Typography variant="body2">
-              Don't have an account?{' '}
-              <Link to="/register">
-                Register here
-              </Link>
-            </Typography>
-          </Box>
+          
         </Paper>
       </Box>
     </Container>
