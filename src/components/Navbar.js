@@ -16,6 +16,7 @@ import {
   Avatar,
   Tooltip,
   Fade,
+  
 } from '@mui/material';
 import { 
   AccountCircle, 
@@ -25,7 +26,8 @@ import {
   Logout, 
   PersonAdd,
   Speed,
-  Notifications
+  Notifications,
+  FireTruckOutlined
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { styled, keyframes } from '@mui/material/styles';
@@ -57,22 +59,22 @@ const float = keyframes`
 
 const glow = keyframes`
   0% {
-    text-shadow: 0 0 5px rgba(0, 123, 255, 0.5), 0 0 10px rgba(0, 123, 255, 0.3);
+    text-shadow: 0 0 5px rgba(255, 255, 0, 0.5), 0 0 10px rgba(255, 255, 0, 0.3);
   }
   50% {
-    text-shadow: 0 0 10px rgba(0, 123, 255, 0.8), 0 0 20px rgba(0, 123, 255, 0.5);
+    text-shadow: 0 0 10px rgba(255, 255, 0, 0.5), 0 0 10px rgba(255, 255, 0, 0.3);
   }
   100% {
-    text-shadow: 0 0 5px rgba(0, 123, 255, 0.5), 0 0 10px rgba(0, 123, 255, 0.3);
+    text-shadow: 0 0 5px rgba(255, 255, 0, 0.5), 0 0 10px rgba(255, 255, 0, 0.3);
   }
 `;
 
 // Styled components
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
-  background: 'rgba(18, 18, 18, 0.8)',
+  background: 'rgba(255, 255, 0, 0.8)',
   backdropFilter: 'blur(10px)',
-  boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
-  borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+  boxShadow: '0 4px 30px rgba(255, 255, 0, 0.1)',
+  borderBottom: '1px solid rgba(255, 255, 0, 0.1)',
   position: 'sticky',
   top: 0,
   zIndex: theme.zIndex.drawer + 1,
@@ -83,10 +85,10 @@ const LogoText = styled(Typography)(({ theme }) => ({
   fontWeight: 700,
   letterSpacing: '0.05em',
   animation: `${glow} 3s infinite`,
-  background: 'linear-gradient(45deg, #00b4d8, #0077b6)',
+  background: 'linear-gradient(45deg,rgb(255, 255, 0), #0077b6)',
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
-  textShadow: '0 0 10px rgba(0, 180, 216, 0.5)',
+  textShadow: '0 0 10px rgb(255, 255, 0)',
 }));
 
 const NavButton = styled(Button)(({ theme }) => ({
@@ -103,14 +105,15 @@ const NavButton = styled(Button)(({ theme }) => ({
     left: 0,
     width: '100%',
     height: '100%',
-    background: 'linear-gradient(45deg, #00b4d8, #0077b6)',
+    // background: 'linear-gradient(45deg, #00b4d8, #0077b6)',
+    background:'rgb(255,255,0)',
     opacity: 0,
     transition: 'opacity 0.3s ease',
     zIndex: -1,
   },
   '&:hover': {
     transform: 'translateY(-2px)',
-    boxShadow: '0 4px 15px rgba(0, 180, 216, 0.4)',
+    boxShadow: '0 4px 15px rgb(255, 255, 0, 0.4)',
     '&:before': {
       opacity: 0.1,
     },
@@ -172,7 +175,7 @@ const Navbar = () => {
       <Container maxWidth="xl">
         <Toolbar disableGutters>
           <AnimatedIcon sx={{ mr: 2 }}>
-            <DirectionsCar sx={{ fontSize: 28, color: '#00b4d8' }} />
+            <FireTruckOutlined sx={{ fontSize: 28, color: 'rgb(255,255,0)' }} />
           </AnimatedIcon>
           
           <LogoText
@@ -187,7 +190,7 @@ const Navbar = () => {
               alignItems: 'center',
             }}
           >
-            VTC Convoy Booking
+            TNL Convoy Booking
           </LogoText>
           
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -262,18 +265,16 @@ const Navbar = () => {
                   PaperProps={{
                     sx: {
                       mt: 1.5,
-                      background: 'rgba(18, 18, 18, 0.9)',
+                      background: 'rgba(215, 253, 1, 0.9)',
                       backdropFilter: 'blur(10px)',
                       border: '1px solid rgba(255, 255, 255, 0.1)',
                       borderRadius: '12px',
-                      boxShadow: '0 4px 30px rgba(0, 0, 0, 0.2)',
+                      boxShadow: '0 4px 30px rgb(255, 255, 0, 0.2)',
                       '& .MuiMenuItem-root': {
                         borderRadius: '8px',
                         mx: 1,
                         my: 0.5,
-                        '&:hover': {
-                          background: 'rgba(0, 180, 216, 0.1)',
-                        },
+                        
                       },
                     },
                   }}
@@ -297,7 +298,7 @@ const Navbar = () => {
             ) : (
               <>
                 <NavButton
-                  color="inherit"
+                  style={{color:'yellow'}}
                   component={RouterLink}
                   to="/attending-events"
                   startIcon={<Event />}
@@ -306,7 +307,7 @@ const Navbar = () => {
                 </NavButton>
                 
                 <NavButton
-                  color="inherit"
+                  style={{color:'yellow'}}
                   component={RouterLink}
                   to="/servers"
                   startIcon={<Speed />}

@@ -10,15 +10,18 @@ import {
   Link,
   Chip,
   Stack,
-  CardMedia
+  CardMedia,
+   useTheme
 } from '@mui/material';
 import axiosInstance from '../utils/axios';
 import { format } from 'date-fns';
+
 
 const AttendingEvents = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const theme = useTheme();
 
   const fetchEvents = async () => {
     try {
@@ -72,7 +75,10 @@ const AttendingEvents = () => {
         ) : (
           events.map((event) => (
             <Grid item xs={12} md={6} lg={4} key={event.id}>
-              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' ,'&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: theme.shadows[8],
+        },}}>
                 {event.banner && (
                   <CardMedia
                     component="img"
@@ -114,16 +120,16 @@ const AttendingEvents = () => {
                     
                     <Box sx={{ mt: 2 }}>
                       <Chip 
-                        label={event.game === 'ets2' ? 'ETS2' : 'ATS'} 
+                        label={event.game === 'ETS2' ? 'ETS2' : 'ATS'} 
                         size="small" 
                         color="primary"
                         sx={{ mr: 1 }}
                       />
-                      <Chip 
+                      {/* <Chip 
                         label={event.status} 
                         size="small"
                         color={event.status === 'active' ? 'success' : 'default'}
-                      />
+                      /> */}
                     </Box>
                     
                     {event.url && (
