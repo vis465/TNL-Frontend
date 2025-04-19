@@ -309,6 +309,7 @@ const Servers = () => {
         sx={{
           fontFamily: 'Montserrat, sans-serif',
           fontWeight: 700,
+          color:'white',
           mb: 4,
         }}
       >
