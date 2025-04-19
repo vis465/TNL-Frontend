@@ -197,7 +197,7 @@ const Navbar = () => {
                 {user.role === 'admin' && (
                   <Tooltip title="Admin Dashboard" arrow TransitionComponent={Fade}>
                     <NavButton
-                      color="inherit"
+                      color="primary"
                       component={RouterLink}
                       to="/admin"
                       startIcon={<Dashboard />}

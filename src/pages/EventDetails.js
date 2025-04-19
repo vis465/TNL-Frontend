@@ -723,6 +723,27 @@ const EventDetails = () => {
                       Visit Event Website
                     </Button>
                   )}
+                   <Button
+                    variant="outlined"
+                    color="primary"
+                    onClick={() => {
+                      const bookedSlotsSection = document.getElementById('slots-section');
+                      if (bookedSlotsSection) {
+                        bookedSlotsSection.scrollIntoView({ behavior: 'smooth' });
+                      }
+                    }}
+                    fullWidth
+                    sx={{
+                      borderRadius: 2,
+                      py: 1.5,
+                      bgcolor: 'red',
+                      fontFamily: 'Montserrat, sans-serif',
+                      textTransform: 'none',
+                      fontWeight: 500,
+                    }}
+                  >
+                    Click here to book slots
+                  </Button>
                   {event.map && (
                     <Button
                       variant="outlined"
@@ -742,6 +763,7 @@ const EventDetails = () => {
                       View Route Map
                     </Button>
                   )}
+                 
                   <Button
                     variant="outlined"
                     color="primary"
@@ -755,7 +777,7 @@ const EventDetails = () => {
                     sx={{
                       borderRadius: 2,
                       py: 1.5,
-                      bgcolor: 'red',
+                      bgcolor: 'blue',
                       fontFamily: 'Montserrat, sans-serif',
                       textTransform: 'none',
                       fontWeight: 500,
