@@ -194,8 +194,8 @@ const AdminDashboard = () => {
                       </TableCell>
                       <TableCell>
                         <Chip 
-                          label={event.status} 
-                          color={event.status === 'upcoming' ? 'primary' : 'default'} 
+                          label={event.status==="cancelled"?"Completed":event.status} 
+                          color={event.status === 'upcoming' ? 'primary' : 'secondary'} 
                           size="small"
                         />
                       </TableCell>
@@ -210,7 +210,8 @@ const AdminDashboard = () => {
                             Manage Slots
                           </Button>
                           <Button
-                            variant="outlined"
+                            variant="secondary"
+                            border='red'
                             size="small"
                             href={`/events/${event.truckersmpId}`}
                             target="_blank"

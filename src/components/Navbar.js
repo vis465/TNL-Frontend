@@ -35,13 +35,13 @@ import { styled, keyframes } from '@mui/material/styles';
 // Animation keyframes
 const pulse = keyframes`
   0% {
-    box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.4);
+    box-shadow: 0 0 0 0 rgb(255, 255, 0, 0.4);
   }
   70% {
-    box-shadow: 0 0 0 10px rgba(0, 123, 255, 0);
+    box-shadow: 0 0 0 10px rgb(255, 255, 0, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(0, 123, 255, 0);
+    box-shadow: 0 0 0 0 rgb(255, 255, 0, 0);
   }
 `;
 
@@ -81,11 +81,11 @@ const StyledAppBar = styled(AppBar)(({ theme }) => ({
 }));
 
 const LogoText = styled(Typography)(({ theme }) => ({
-  fontFamily: "'Orbitron', sans-serif",
+  
   fontWeight: 700,
   letterSpacing: '0.05em',
   animation: `${glow} 3s infinite`,
-  background: 'linear-gradient(45deg,rgb(255, 255, 0), #0077b6)',
+  background: 'rgb(255, 255, 0)',
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
   textShadow: '0 0 10px rgb(255, 255, 0)',
@@ -167,9 +167,7 @@ const Navbar = () => {
       position="fixed" 
       elevation={scrolled ? 4 : 0}
       sx={{
-        background: scrolled 
-          ? 'rgba(18, 18, 18, 0.9)' 
-          : 'rgba(18, 18, 18, 0.7)',
+        background: 'black',
       }}
     >
       <Container maxWidth="xl">
@@ -209,17 +207,7 @@ const Navbar = () => {
                   </Tooltip>
                 )}
                 
-                <Tooltip title="Notifications" arrow TransitionComponent={Fade}>
-                  <IconButton
-                    size="large"
-                    color="inherit"
-                    sx={{ mx: 1 }}
-                  >
-                    <Badge badgeContent={3} color="error">
-                      <Notifications />
-                    </Badge>
-                  </IconButton>
-                </Tooltip>
+               
                 
                 <Tooltip title="Account" arrow TransitionComponent={Fade}>
                   <IconButton

@@ -269,7 +269,7 @@ const Home = () => {
       case 'ongoing':
         return 'warning';
       case 'completed':
-        return 'default';
+        return 'secondary';
       case 'cancelled':
         return 'error';
       default:
@@ -379,8 +379,7 @@ const Home = () => {
             <StyledButton
               variant="contained"
               color="primary"
-              component={RouterLink}
-              to={`/events/${event.truckersmpId}`}
+              href={`/events/${event.truckersmpId}`}
               fullWidth
             >
               View Details
@@ -389,11 +388,11 @@ const Home = () => {
               <StyledButton
                 variant="outlined"
                 color="secondary"
-                href={event.externalLink}
+                href={`https://www.TruckersMP.com/events/${event.truckersmpId}`}
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                External
+                TruckersMP
               </StyledButton>
             )}
           </Stack>
