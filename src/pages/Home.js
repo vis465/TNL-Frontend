@@ -15,6 +15,7 @@ import {
   Tabs,
   Tab,
   Stack,
+  useTheme,
 } from '@mui/material';
 import { format, isPast, isFuture, isWithinInterval } from 'date-fns';
 import axiosInstance from '../utils/axios';
@@ -24,6 +25,8 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState(0);
+    const theme = useTheme();
+
 
   useEffect(() => {
     fetchEvents();
@@ -121,7 +124,11 @@ const Home = () => {
 
   const renderEventCard = (event) => (
     <Grid item xs={12} sm={6} md={4} key={event._id || event.truckersmpId}>
-      <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column',transition: 'transform 0.2s',
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: theme.shadows[8],
+        }, }}>
         {event.banner && (
           <CardMedia
             component="img"
@@ -134,9 +141,7 @@ const Home = () => {
           <Typography gutterBottom variant="h5" component="h2">
             {event.title}
           </Typography>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            {event.description ? event.description.substring(0, 150) + '...' : 'No description available'}
-          </Typography>
+          
           <Box sx={{ mb: 2 }}>
             <Typography variant="body2">
               <strong>Route:</strong> {event.route || 'Not specified'}
