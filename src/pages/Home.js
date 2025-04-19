@@ -15,15 +15,218 @@ import {
   Tabs,
   Tab,
   Stack,
+  useTheme,
+  Paper,
+  alpha,
 } from '@mui/material';
 import { format, isPast, isFuture, isWithinInterval } from 'date-fns';
 import axiosInstance from '../utils/axios';
+import { styled, keyframes } from '@mui/material/styles';
+
+// Animation keyframes
+const fadeIn = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
+
+const subtleFloat = keyframes`
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+`;
+
+// Styled components
+const PageContainer = styled(Box)(({ theme }) => ({
+  minHeight: '100vh',
+  background: '#121212',
+  position: 'relative',
+  overflow: 'hidden',
+  paddingTop: '80px', // Space for fixed navbar
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'linear-gradient(to bottom, rgba(18, 18, 18, 0.9), rgba(18, 18, 18, 0.95))',
+    zIndex: 0,
+  },
+}));
+
+const SubtleCircle = styled(Box)(({ theme }) => ({
+  position: 'absolute',
+  borderRadius: '50%',
+  background: 'rgba(255, 255, 255, 0.03)',
+  zIndex: 0,
+  '&:nth-of-type(1)': {
+    width: '300px',
+    height: '300px',
+    top: '10%',
+    left: '5%',
+    animation: `${subtleFloat} 20s ease-in-out infinite`,
+  },
+  '&:nth-of-type(2)': {
+    width: '200px',
+    height: '200px',
+    top: '60%',
+    right: '5%',
+    animation: `${subtleFloat} 25s ease-in-out infinite 2s`,
+  },
+}));
+
+const PageTitle = styled(Typography)(({ theme }) => ({
+  fontFamily: "'Montserrat', sans-serif",
+  fontWeight: 600,
+  letterSpacing: '0.02em',
+  color: '#ffffff',
+  marginBottom: theme.spacing(4),
+  position: 'relative',
+  '&::after': {
+    content: '""',
+    position: 'absolute',
+    bottom: '-10px',
+    left: 0,
+    width: '40px',
+    height: '2px',
+    background: '#ffffff',
+  },
+}));
+
+const StyledTabs = styled(Tabs)(({ theme }) => ({
+  borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+  marginBottom: theme.spacing(4),
+  '& .MuiTabs-indicator': {
+    backgroundColor: '#ffffff',
+    height: '2px',
+  },
+  '& .MuiTab-root': {
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontWeight: 500,
+    transition: 'all 0.3s ease',
+    fontFamily: "'Montserrat', sans-serif",
+    '&.Mui-selected': {
+      color: '#ffffff',
+    },
+    '&:hover': {
+      color: '#ffffff',
+    },
+  },
+}));
+
+const StyledCard = styled(Card)(({ theme }) => ({
+  height: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  background: '#1e1e1e',
+  borderRadius: '8px',
+  border: '1px solid rgba(255, 255, 255, 0.05)',
+  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)',
+  transition: 'all 0.3s ease',
+  animation: `${fadeIn} 0.5s ease-out`,
+  '&:hover': {
+    transform: 'translateY(-5px)',
+    boxShadow: '0 8px 25px rgba(0, 0, 0, 0.3)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+  },
+}));
+
+const StyledCardMedia = styled(CardMedia)(({ theme }) => ({
+  height: 180,
+  borderTopLeftRadius: '8px',
+  borderTopRightRadius: '8px',
+  position: 'relative',
+  overflow: 'hidden',
+  '&::after': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.7) 100%)',
+  },
+}));
+
+const StyledCardContent = styled(CardContent)(({ theme }) => ({
+  flexGrow: 1,
+  padding: theme.spacing(3),
+  '& .MuiTypography-h5': {
+    fontFamily: "'Montserrat', sans-serif",
+    fontWeight: 600,
+    marginBottom: theme.spacing(2),
+    color: '#ffffff',
+  },
+  '& .MuiTypography-body2': {
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginBottom: theme.spacing(1),
+    fontFamily: "'Montserrat', sans-serif",
+  },
+}));
+
+const StyledChip = styled(Chip)(({ theme }) => ({
+  borderRadius: '4px',
+  fontWeight: 500,
+  fontFamily: "'Montserrat', sans-serif",
+  '&.MuiChip-colorSuccess': {
+    background: 'rgba(76, 175, 80, 0.1)',
+    color: '#4caf50',
+    border: '1px solid rgba(76, 175, 80, 0.2)',
+  },
+  '&.MuiChip-colorWarning': {
+    background: 'rgba(255, 152, 0, 0.1)',
+    color: '#ff9800',
+    border: '1px solid rgba(255, 152, 0, 0.2)',
+  },
+  '&.MuiChip-colorError': {
+    background: 'rgba(244, 67, 54, 0.1)',
+    color: '#f44336',
+    border: '1px solid rgba(244, 67, 54, 0.2)',
+  },
+  '&.MuiChip-colorInfo': {
+    background: 'rgba(33, 150, 243, 0.1)',
+    color: '#2196f3',
+    border: '1px solid rgba(33, 150, 243, 0.2)',
+  },
+}));
+
+const StyledButton = styled(Button)(({ theme }) => ({
+  borderRadius: '4px',
+  padding: '8px 16px',
+  fontWeight: 500,
+  textTransform: 'none',
+  transition: 'all 0.3s ease',
+  fontFamily: "'Montserrat', sans-serif",
+  '&:hover': {
+    transform: 'translateY(-2px)',
+  },
+}));
+
+const ContentContainer = styled(Container)(({ theme }) => ({
+  position: 'relative',
+  zIndex: 1,
+  paddingTop: theme.spacing(4),
+  paddingBottom: theme.spacing(8),
+}));
 
 const Home = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState(0);
+  const theme = useTheme();
 
   useEffect(() => {
     fetchEvents();
@@ -121,22 +324,19 @@ const Home = () => {
 
   const renderEventCard = (event) => (
     <Grid item xs={12} sm={6} md={4} key={event._id || event.truckersmpId}>
-      <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <StyledCard>
         {event.banner && (
-          <CardMedia
+          <StyledCardMedia
             component="img"
-            height="140"
             image={event.banner}
             alt={event.title}
           />
         )}
-        <CardContent sx={{ flexGrow: 1 }}>
+        <StyledCardContent>
           <Typography gutterBottom variant="h5" component="h2">
             {event.title}
           </Typography>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            {event.description ? event.description.substring(0, 150) + '...' : 'No description available'}
-          </Typography>
+          
           <Box sx={{ mb: 2 }}>
             <Typography variant="body2">
               <strong>Route:</strong> {event.route || 'Not specified'}
@@ -160,23 +360,23 @@ const Home = () => {
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-            <Chip
+            <StyledChip
               label={event.status || 'Unknown'}
               color={getStatusColor(event.status)}
               size="small"
             />
             {event.attendances && (
-              <Chip
+              <StyledChip
                 label={`${event.attendances.confirmed} attending`}
                 color="info"
                 size="small"
               />
             )}
           </Box>
-        </CardContent>
+        </StyledCardContent>
         <CardActions sx={{ p: 2, pt: 0 }}>
           <Stack direction="row" spacing={1} width="100%">
-            <Button
+            <StyledButton
               variant="contained"
               color="primary"
               component={RouterLink}
@@ -184,9 +384,9 @@ const Home = () => {
               fullWidth
             >
               View Details
-            </Button>
+            </StyledButton>
             {event.externalLink && (
-              <Button
+              <StyledButton
                 variant="outlined"
                 color="secondary"
                 href={event.externalLink}
@@ -194,34 +394,49 @@ const Home = () => {
                 rel="noopener noreferrer"
               >
                 External
-              </Button>
+              </StyledButton>
             )}
           </Stack>
         </CardActions>
-      </Card>
+      </StyledCard>
     </Grid>
   );
 
   if (loading) {
     return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="80vh"
-      >
-        <CircularProgress />
-      </Box>
+      <PageContainer>
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          minHeight="80vh"
+          position="relative"
+          zIndex={1}
+        >
+          <CircularProgress 
+            size={60} 
+            thickness={4} 
+            sx={{ 
+              color: '#ffffff',
+              '& .MuiCircularProgress-circle': {
+                strokeLinecap: 'round',
+              }
+            }} 
+          />
+        </Box>
+      </PageContainer>
     );
   }
 
   if (error) {
     return (
-      <Container>
-        <Typography color="error" align="center" sx={{ mt: 4 }}>
-          {error}
-        </Typography>
-      </Container>
+      <PageContainer>
+        <ContentContainer>
+          <Typography color="error" align="center" sx={{ mt: 4 }}>
+            {error}
+          </Typography>
+        </ContentContainer>
+      </PageContainer>
     );
   }
 
@@ -229,34 +444,49 @@ const Home = () => {
   console.log('Final categorized events:', { upcoming, live, past });
 
   return (
-    <Container sx={{ mt: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom sx={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
-        Convoys
-      </Typography>
+    <PageContainer>
+      <SubtleCircle />
+      <SubtleCircle />
       
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={activeTab} onChange={handleTabChange} >
-          <Tab label={`Upcoming (${upcoming.length})`} style={{color:'red'}}/>
-         
-        </Tabs>
-      </Box>
+      <ContentContainer>
+        <PageTitle variant="h3" component="h1" gutterBottom>
+          Convoys
+        </PageTitle>
+        
+        <StyledTabs value={activeTab} onChange={handleTabChange}>
+          <Tab label={`Upcoming (${upcoming.length})`} />
+          <Tab label={`Live (${live.length})`} />
+          <Tab label={`Past (${past.length})`} />
+        </StyledTabs>
 
-      <Grid container spacing={3}>
-        {activeTab === 0 && upcoming.length > 0 ? (
-          upcoming.map(renderEventCard)
-        ) : activeTab === 1 && live.length > 0 ? (
-          live.map(renderEventCard)
-        ) : activeTab === 2 && past.length > 0 ? (
-          past.map(renderEventCard)
-        ) : (
-          <Grid item xs={12}>
-            <Typography align="center" color="text.secondary">
-              No events found in this category
-            </Typography>
-          </Grid>
-        )}
-      </Grid>
-    </Container>
+        <Grid container spacing={3}>
+          {activeTab === 0 && upcoming.length > 0 ? (
+            upcoming.map(renderEventCard)
+          ) : activeTab === 1 && live.length > 0 ? (
+            live.map(renderEventCard)
+          ) : activeTab === 2 && past.length > 0 ? (
+            past.map(renderEventCard)
+          ) : (
+            <Grid item xs={12}>
+              <Paper 
+                sx={{ 
+                  p: 4, 
+                  textAlign: 'center',
+                  background: '#1e1e1e',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(255, 255, 255, 0.05)',
+                  color: 'rgba(255, 255, 255, 0.7)',
+                }}
+              >
+                <Typography variant="h6" fontFamily="'Montserrat', sans-serif">
+                  No events found in this category
+                </Typography>
+              </Paper>
+            </Grid>
+          )}
+        </Grid>
+      </ContentContainer>
+    </PageContainer>
   );
 };
 

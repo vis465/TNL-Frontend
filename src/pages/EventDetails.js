@@ -276,7 +276,7 @@ const EventDetails = () => {
   }
 
   return (
-    <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 4 }}>
+    <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
       {/* Hero Section */}
       <Box sx={{ position: 'relative', mb: 6 }}>
         {event.banner && (
@@ -415,7 +415,7 @@ const EventDetails = () => {
                     lineHeight: 1.8,
                   }}
                 >
-                  <ReactMarkdown>{event.description}</ReactMarkdown>
+                  {/* <ReactMarkdown>{event.description}</ReactMarkdown> */}
                 </Typography>
 
                 <Divider sx={{ my: 4 }} />

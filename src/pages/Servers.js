@@ -25,7 +25,7 @@ import {
   Info as InfoIcon,
 } from '@mui/icons-material';
 import axiosInstance from '../utils/axios';
-
+import bgimag from"../img/ets2_20250205_215451_00.png"
 const ServerCard = ({ server }) => {
   const theme = useTheme();
   const playerPercentage = (server.players / server.maxplayers) * 100;
@@ -281,6 +281,7 @@ const Servers = () => {
         display="flex"
         justifyContent="center"
         alignItems="center"
+        
         minHeight="80vh"
       >
         <CircularProgress />
@@ -299,7 +300,8 @@ const Servers = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <div style={{background: `url(${bgimag})` }}>
+    <Container maxWidth="lg" sx={{ py: 4 }} >
       <Typography
         variant="h4"
         component="h1"
@@ -321,6 +323,7 @@ const Servers = () => {
         ))}
       </Grid>
     </Container>
+    </div>
   );
 };
 
