@@ -25,8 +25,10 @@ import {
   Stack,
   Snackbar,
   IconButton,
+  DialogContentText,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { format } from 'date-fns';
 import axiosInstance from '../utils/axios';
 import ManageSlotsDialog from '../components/ManageSlotsDialog';
@@ -41,6 +43,8 @@ const AdminDashboard = () => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [eventSlots, setEventSlots] = useState([]);
   const [actionLoading, setActionLoading] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [bookingToDelete, setBookingToDelete] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -58,7 +62,10 @@ const AdminDashboard = () => {
       ]);
 
       setEvents(eventsResponse.data.response || []);
-      setBookings(slotsResponse.data.bookings || []);
+      
+      // Process bookings to include event details
+      const processedBookings = slotsResponse.data.bookings || [];
+      setBookings(processedBookings);
       
       console.log('Events:', eventsResponse.data);
       console.log('Bookings:', slotsResponse.data);
@@ -110,6 +117,32 @@ const AdminDashboard = () => {
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const handleDeleteBooking = async () => {
+    if (!bookingToDelete) return;
+    
+    try {
+      setActionLoading(bookingToDelete.slotNumber);
+      console.log('Deleting booking:', bookingToDelete);
+      
+      await axiosInstance.delete(`/slots/${bookingToDelete.slotId}/bookings/${bookingToDelete.slotNumber}`);
+      
+      console.log('Booking deleted successfully');
+      await fetchData(); // Refresh the bookings data
+      setDeleteDialogOpen(false);
+      setBookingToDelete(null);
+    } catch (error) {
+      console.error('Error deleting booking:', error);
+      setError(`Failed to delete booking: ${error.message}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const openDeleteDialog = (booking) => {
+    setBookingToDelete(booking);
+    setDeleteDialogOpen(true);
   };
 
   const handleRefresh = async () => {
@@ -263,7 +296,21 @@ const AdminDashboard = () => {
                           'inherit'
                       }}
                     >
-                      <TableCell>{booking.eventTitle}</TableCell>
+                      <TableCell>
+                        <Typography variant="subtitle1" fontWeight="medium">
+                          {booking.eventTitle || 'Unknown Event'}
+                        </Typography>
+                        {booking.eventId && (
+                          <Link 
+                            href={`/events/${booking.eventId}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            sx={{ fontSize: '0.8rem' }}
+                          >
+                            View Event
+                          </Link>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {booking.imageUrl && (
                           <Box
@@ -333,6 +380,18 @@ const AdminDashboard = () => {
                             </Button>
                           </Stack>
                         )}
+                        {booking.status === 'approved' && (
+                          <Button
+                            variant="outlined"
+                            color="error"
+                            size="small"
+                            startIcon={<DeleteIcon />}
+                            disabled={actionLoading === booking.slotNumber}
+                            onClick={() => openDeleteDialog(booking)}
+                          >
+                            {actionLoading === booking.slotNumber ? 'Processing...' : 'Delete'}
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
@@ -351,6 +410,31 @@ const AdminDashboard = () => {
         slots={eventSlots}
         onSlotsUpdated={fetchData}
       />
+
+      {/* Delete Booking Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+      >
+        <DialogTitle>Delete Approved Booking</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this approved booking for slot #{bookingToDelete?.slotNumber}? 
+            This action cannot be undone and will make the slot available again.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={handleDeleteBooking} 
+            color="error" 
+            variant="contained"
+            disabled={actionLoading === bookingToDelete?.slotNumber}
+          >
+            {actionLoading === bookingToDelete?.slotNumber ? 'Processing...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
