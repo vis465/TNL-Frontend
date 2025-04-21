@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   AppBar,
@@ -16,7 +16,6 @@ import {
   Avatar,
   Tooltip,
   Fade,
-  
 } from '@mui/material';
 import { 
   AccountCircle, 
@@ -27,10 +26,13 @@ import {
   PersonAdd,
   Speed,
   Notifications,
-  FireTruckOutlined
+  FireTruckOutlined,
+  Brightness4,
+  Brightness7
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { styled, keyframes } from '@mui/material/styles';
+import { ThemeContext } from '../App';
 
 // Animation keyframes
 const pulse = keyframes`
@@ -81,7 +83,6 @@ const StyledAppBar = styled(AppBar)(({ theme }) => ({
 }));
 
 const LogoText = styled(Typography)(({ theme }) => ({
-  
   fontWeight: 700,
   letterSpacing: '0.05em',
   animation: `${glow} 3s infinite`,
@@ -133,6 +134,7 @@ const Navbar = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [scrolled, setScrolled] = useState(false);
   const theme = useTheme();
+  const { isDarkMode, toggleTheme } = useContext(ThemeContext);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -305,6 +307,14 @@ const Navbar = () => {
               </>
             )}
           </Box>
+          <Box sx={{ flexGrow: 1 }} />
+          <IconButton 
+            onClick={toggleTheme} 
+            color="inherit"
+            aria-label="toggle theme"
+          >
+            {isDarkMode ? <Brightness7 /> : <Brightness4 />}
+          </IconButton>
         </Toolbar>
       </Container>
     </StyledAppBar>

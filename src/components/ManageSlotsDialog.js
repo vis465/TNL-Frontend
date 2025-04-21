@@ -12,23 +12,32 @@ import {
   IconButton,
   Alert,
   CircularProgress,
+  Tooltip,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import axiosInstance from '../utils/axios';
 
 const ManageSlotsDialog = ({ open, onClose, event, slots: existingSlots, onSlotsUpdated }) => {
   const [slots, setSlots] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [menuAnchorEl, setMenuAnchorEl] = useState(null);
+  const [selectedSlot, setSelectedSlot] = useState(null);
 
   // Initialize slots when dialog opens or existingSlots change
   useEffect(() => {
     if (open && existingSlots) {
       const formattedSlots = existingSlots.map(slot => ({
+        _id: slot._id,
         imageUrl: slot.imageUrl,
         slotNumbers: slot.slots.map(s => s.number),
-        numberOfSlots: slot.slots.length
+        numberOfSlots: slot.slots.length,
+        slots: slot.slots
       }));
       setSlots(formattedSlots);
       
@@ -138,6 +147,76 @@ const ManageSlotsDialog = ({ open, onClose, event, slots: existingSlots, onSlots
     }
   };
 
+  const handleDeleteSlot = async (slotId) => {
+    try {
+      setDeleteLoading(true);
+      setError('');
+      
+      console.log('Deleting slot with ID:', slotId);
+      
+      if (!slotId) {
+        setError('Invalid slot ID');
+        return;
+      }
+      
+      await axiosInstance.delete(`/slots/${event.truckersmpId}/slot/${slotId}`);
+      
+      // Remove the slot from the local state
+      setSlots(slots.filter(slot => slot._id !== slotId));
+      
+    } catch (error) {
+      console.error('Error deleting slot:', error);
+      setError(error.response?.data?.message || 'Error deleting slot');
+    } finally {
+      setDeleteLoading(false);
+      setMenuAnchorEl(null);
+    }
+  };
+
+  const handleDeleteApprovedBooking = async (slotId, slotNumber) => {
+    try {
+      setDeleteLoading(true);
+      setError('');
+      
+      await axiosInstance.delete(`/slots/${slotId}/bookings/${slotNumber}`);
+      
+      // Update the local state to reflect the change
+      const updatedSlots = slots.map(slot => {
+        if (slot._id === slotId) {
+          return {
+            ...slot,
+            slots: slot.slots.map(s => {
+              if (s.number === slotNumber) {
+                return { ...s, booking: null, isAvailable: true };
+              }
+              return s;
+            })
+          };
+        }
+        return slot;
+      });
+      
+      setSlots(updatedSlots);
+      onSlotsUpdated();
+    } catch (error) {
+      console.error('Error deleting approved booking:', error);
+      setError(error.response?.data?.message || 'Error deleting approved booking');
+    } finally {
+      setDeleteLoading(false);
+      setMenuAnchorEl(null);
+    }
+  };
+
+  const handleMenuOpen = (event, slot) => {
+    setMenuAnchorEl(event.currentTarget);
+    setSelectedSlot(slot);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
+    setSelectedSlot(null);
+  };
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
@@ -219,10 +298,15 @@ const ManageSlotsDialog = ({ open, onClose, event, slots: existingSlots, onSlots
                   <Typography variant="body2" color="textSecondary">
                     Total Slots: {slot.numberOfSlots}
                   </Typography>
+                  {slot.slots?.some(s => s.booking?.status === 'approved') && (
+                    <Typography variant="body2" color="error">
+                      Has approved bookings
+                    </Typography>
+                  )}
                 </Grid>
                 <Grid item xs={1}>
-                  <IconButton onClick={() => handleRemoveSlot(index)} color="error">
-                    <DeleteIcon />
+                  <IconButton onClick={(e) => handleMenuOpen(e, slot)}>
+                    <MoreVertIcon />
                   </IconButton>
                 </Grid>
               </Grid>
@@ -240,6 +324,30 @@ const ManageSlotsDialog = ({ open, onClose, event, slots: existingSlots, onSlots
           {loading ? <CircularProgress size={24} /> : 'Save Slots'}
         </Button>
       </DialogActions>
+
+      <Menu
+        anchorEl={menuAnchorEl}
+        open={Boolean(menuAnchorEl)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem 
+          onClick={() => handleDeleteSlot(selectedSlot?._id)}
+          disabled={deleteLoading || !selectedSlot?._id || selectedSlot?.slots?.some(s => s.booking?.status === 'approved')}
+        >
+          <DeleteIcon sx={{ mr: 1 }} /> Delete Slot Image
+        </MenuItem>
+        {selectedSlot?.slots?.map(slot => 
+          slot.booking?.status === 'approved' && (
+            <MenuItem 
+              key={slot.number}
+              onClick={() => handleDeleteApprovedBooking(selectedSlot._id, slot.number)}
+              disabled={deleteLoading || !selectedSlot._id}
+            >
+              <DeleteIcon sx={{ mr: 1 }} /> Delete Approved Booking for Slot #{slot.number}
+            </MenuItem>
+          )
+        )}
+      </Menu>
     </Dialog>
   );
 };

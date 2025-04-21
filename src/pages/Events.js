@@ -53,6 +53,7 @@ const Events = () => {
   const getStatusLabel = (event) => {
     const now = new Date();
     const startDate = new Date(event.startDate);
+    // {format(new Date(event.startDate).getTime() + (5.5 * 60 * 60 * 1000), 'PPp')} IST
     const endDate = new Date(event.endDate);
 
     if (now < startDate) return 'Upcoming';

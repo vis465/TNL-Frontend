@@ -19,8 +19,13 @@ export const AuthProvider = ({ children }) => {
       
       if (token && storedUser) {
         try {
-          // Try to validate the token with the backend
+          // Set the stored user data immediately to prevent flashing
+          setUser(JSON.parse(storedUser));
+          setIsAuthenticated(true);
+          
+          // Then validate the token with the backend
           const response = await axiosInstance.get('/auth/profile');
+          // Update with fresh user data from the server
           setUser(response.data);
           setIsAuthenticated(true);
         } catch (error) {
