@@ -29,10 +29,11 @@ import {
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import DeleteIcon from '@mui/icons-material/Delete';
+import DownloadIcon from '@mui/icons-material/Download';
 import { format } from 'date-fns';
 import axiosInstance from '../utils/axios';
 import ManageSlotsDialog from '../components/ManageSlotsDialog';
-
+import AnalyticsDashboard from './AnalyticsDashboard';
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [events, setEvents] = useState([]);
@@ -149,6 +150,25 @@ const AdminDashboard = () => {
     await fetchData();
   };
 
+  const handleExportEventSlots = async (eventId) => {
+    try {
+      const response = await axiosInstance.get(`/analytics/export-event-slots/${eventId}`, {
+        responseType: 'blob',
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `event_${eventId}_slot_bookings.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error('Error exporting event slots:', error);
+      setError('Failed to export event slots. Please try again later.');
+    }
+  };
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
@@ -188,6 +208,7 @@ const AdminDashboard = () => {
           >
             <Tab label="Events Management" />
             <Tab label="Booking Requests" />
+            <Tab label="Analytics" />
           </Tabs>
         </Paper>
       </Box>
@@ -223,7 +244,7 @@ const AdminDashboard = () => {
                     <TableRow key={event.truckersmpId}>
                       <TableCell>{event.title}</TableCell>
                       <TableCell>
-                        {format(new Date(event.startDate), 'PPp')}
+                        {format(new Date(event.startDate).getTime() + (5.5 * 60 * 60 * 1000), 'PPp')} IST
                       </TableCell>
                       <TableCell>
                         <Chip 
@@ -243,13 +264,22 @@ const AdminDashboard = () => {
                             Manage Slots
                           </Button>
                           <Button
-                            variant="secondary"
-                            border='red'
+                            variant="outlined"
+                            color="primary"
                             size="small"
                             href={`/events/${event.truckersmpId}`}
                             target="_blank"
                           >
                             View Event
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            color="secondary"
+                            size="small"
+                            startIcon={<DownloadIcon />}
+                            onClick={() => handleExportEventSlots(event.truckersmpId)}
+                          >
+                            Export Slots
                           </Button>
                         </Stack>
                       </TableCell>
@@ -399,6 +429,13 @@ const AdminDashboard = () => {
               </TableBody>
             </Table>
           </TableContainer>
+        </Paper>
+      )}
+
+      {/* Analytics Tab */}
+      {activeTab === 2 && (
+        <Paper sx={{ borderRadius: 2, overflow: 'hidden', p: 3 }}>
+          <AnalyticsDashboard />
         </Paper>
       )}
 

@@ -353,7 +353,7 @@ const EventDetails = () => {
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <CalendarTodayIcon />
                     <Typography variant="body1">
-                      {format(new Date(event.startDate), 'PPp')}
+                    {format(new Date(event.startDate).getTime() + (5.5 * 60 * 60 * 1000), 'PPp')} IST
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -435,7 +435,7 @@ const EventDetails = () => {
                       <ListItem>
                         <ListItemText
                           primary="Start Time"
-                          secondary={format(new Date(event.startDate), 'PPp')}
+                          secondary={format(new Date(event.startDate).getTime() + (5.5 * 60 * 60 * 1000), 'PPp')}
                           primaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
                           secondaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
                         />
@@ -445,7 +445,7 @@ const EventDetails = () => {
                         <ListItem>
                           <ListItemText
                             primary="End Time"
-                            secondary={format(new Date(event.endDate), 'PPp')}
+                            secondary={format(new Date(event.endDate).getTime() + (6.5 * 60 * 60 * 1000), 'PPp')}
                             primaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
                             secondaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
                           />
