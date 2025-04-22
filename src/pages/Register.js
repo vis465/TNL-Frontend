@@ -53,7 +53,7 @@ const Register = () => {
     <Container maxWidth="sm">
       <Paper elevation={3} sx={{ p: 4, mt: 8 }}>
         <Typography variant="h4" component="h1" gutterBottom align="center">
-          Register New Admin
+          Register New Event Teammate
         </Typography>
 
         {error && (

@@ -56,7 +56,7 @@ const ServerCard = ({ server }) => {
         sx={{
           p: 2,
           bgcolor: server.game === 'ETS2' ? 'primary.main' : 'secondary.light',
-          color: 'white',
+          color: '#000000',
         }}
       >
         <Typography
@@ -66,7 +66,7 @@ const ServerCard = ({ server }) => {
             fontWeight: 600,
             display: 'flex',
             alignItems: 'center',
-            color:'primary.dark',
+            color: '#000000',
             gap: 1,
           }}
         >
@@ -76,7 +76,7 @@ const ServerCard = ({ server }) => {
             size="small"
             sx={{
               bgcolor: 'rgba(255,255,255,0.2)',
-              color: 'red',
+              color: '#000000',
               fontFamily: 'Montserrat, sans-serif',
             }}
           />
@@ -109,8 +109,12 @@ const ServerCard = ({ server }) => {
           <Box>
             <Typography
               variant="subtitle2"
-              color="text.secondary"
-              sx={{ fontFamily: 'Montserrat, sans-serif', mb: 1 }}
+              sx={{ 
+                fontFamily: 'Montserrat, sans-serif', 
+                mb: 1,
+                color: '#000000',
+                fontWeight: 500
+              }}
             >
               Players
             </Typography>
@@ -136,7 +140,11 @@ const ServerCard = ({ server }) => {
               </Box>
               <Typography
                 variant="body2"
-                sx={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}
+                sx={{ 
+                  fontFamily: 'Montserrat, sans-serif', 
+                  fontWeight: 500,
+                  color: '#000000'
+                }}
               >
                 {server.players}/{server.maxplayers}
               </Typography>
@@ -149,10 +157,13 @@ const ServerCard = ({ server }) => {
           <Grid container spacing={2}>
             <Grid item xs={6}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <SpeedIcon color="action" fontSize="small" />
+                <SpeedIcon sx={{ color: '#000000' }} fontSize="small" />
                 <Typography
                   variant="body2"
-                  sx={{ fontFamily: 'Montserrat, sans-serif' }}
+                  sx={{ 
+                    fontFamily: 'Montserrat, sans-serif',
+                    color: '#000000'
+                  }}
                 >
                   {server.speedlimiter ? 'Speed Limited' : 'No Speed Limit'}
                 </Typography>
@@ -160,10 +171,13 @@ const ServerCard = ({ server }) => {
             </Grid>
             <Grid item xs={6}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <WarningIcon color="action" fontSize="small" />
+                <WarningIcon sx={{ color: '#000000' }} fontSize="small" />
                 <Typography
                   variant="body2"
-                  sx={{ fontFamily: 'Montserrat, sans-serif' }}
+                  sx={{ 
+                    fontFamily: 'Montserrat, sans-serif',
+                    color: '#000000'
+                  }}
                 >
                   {server.collisions ? 'Collisions On' : 'Collisions Off'}
                 </Typography>
@@ -171,10 +185,13 @@ const ServerCard = ({ server }) => {
             </Grid>
             <Grid item xs={6}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <PeopleIcon color="action" fontSize="small" />
+                <PeopleIcon sx={{ color: '#000000' }} fontSize="small" />
                 <Typography
                   variant="body2"
-                  sx={{ fontFamily: 'Montserrat, sans-serif' }}
+                  sx={{ 
+                    fontFamily: 'Montserrat, sans-serif',
+                    color: '#000000'
+                  }}
                 >
                   {server.carsforplayers ? 'Player Cars' : 'No Player Cars'}
                 </Typography>
@@ -182,10 +199,13 @@ const ServerCard = ({ server }) => {
             </Grid>
             <Grid item xs={6}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <QueueIcon color="action" fontSize="small" />
+                <QueueIcon sx={{ color: '#000000' }} fontSize="small" />
                 <Typography
                   variant="body2"
-                  sx={{ fontFamily: 'Montserrat, sans-serif' }}
+                  sx={{ 
+                    fontFamily: 'Montserrat, sans-serif',
+                    color: '#000000'
+                  }}
                 >
                   Queue: {server.queue}
                 </Typography>
@@ -201,7 +221,11 @@ const ServerCard = ({ server }) => {
                 label="ProMods"
                 size="small"
                 variant="outlined"
-                sx={{ fontFamily: 'Montserrat, sans-serif' }}
+                sx={{ 
+                  fontFamily: 'Montserrat, sans-serif',
+                  color: '#000000',
+                  borderColor: '#000000'
+                }}
               />
             )}
             {server.afkenabled && (
@@ -210,7 +234,11 @@ const ServerCard = ({ server }) => {
                 label="AFK Enabled"
                 size="small"
                 variant="outlined"
-                sx={{ fontFamily: 'Montserrat, sans-serif' }}
+                sx={{ 
+                  fontFamily: 'Montserrat, sans-serif',
+                  color: '#000000',
+                  borderColor: '#000000'
+                }}
               />
             )}
           </Box>
@@ -229,8 +257,10 @@ const ServerCard = ({ server }) => {
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography
             variant="caption"
-            color="text.secondary"
-            sx={{ fontFamily: 'Montserrat, sans-serif' }}
+            sx={{ 
+              fontFamily: 'Montserrat, sans-serif',
+              color: '#000000'
+            }}
           >
             {server.ip}:{server.port}
           </Typography>
@@ -241,7 +271,7 @@ const ServerCard = ({ server }) => {
                 navigator.clipboard.writeText(`${server.ip}:${server.port}`);
               }}
             >
-              <InfoIcon fontSize="small" />
+              <InfoIcon sx={{ color: '#000000' }} fontSize="small" />
             </IconButton>
           </Tooltip>
         </Box>

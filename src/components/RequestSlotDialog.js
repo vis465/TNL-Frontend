@@ -20,7 +20,6 @@ import axiosInstance from '../utils/axios';
 
 const RequestSlotDialog = ({ open, onClose, slot, onRequestSubmitted }) => {
   const [formData, setFormData] = useState({
-    name: '',
     discordUsername: '',
     vtc: '',
     truck: '',
@@ -39,7 +38,6 @@ const RequestSlotDialog = ({ open, onClose, slot, onRequestSubmitted }) => {
   useEffect(() => {
     if (open) {
       setFormData({
-        name: '',
         discordUsername: '',
         vtc: '',
         truck: '',
@@ -59,10 +57,6 @@ const RequestSlotDialog = ({ open, onClose, slot, onRequestSubmitted }) => {
   const availableSlots = slot?.slots?.filter(s => s.isAvailable) || [];
 
   const validateForm = () => {
-    if (!formData.name.trim()) {
-      setError('Your name is required');
-      return false;
-    }
     if (!formData.vtcName.trim()) {
       setError('VTC name is required');
       return false;
@@ -97,14 +91,12 @@ const RequestSlotDialog = ({ open, onClose, slot, onRequestSubmitted }) => {
       console.log('Submitting request for slot:', {
         slotId: slot._id,
         slotNumber: formData.slotNumber,
-        name: formData.name,
         vtcName: formData.vtcName,
         players:formData.playercount,
         discordUsername:formData.discordUsername
       });
 
       const response = await axiosInstance.post(`/slots/${slot._id}/request`, {
-        name: formData.name,
         vtcName: formData.vtcName,
         vtcRole: formData.vtcRole || '',
         vtcLink: formData.vtcLink || '',
@@ -190,15 +182,7 @@ const RequestSlotDialog = ({ open, onClose, slot, onRequestSubmitted }) => {
             </Select>
           </FormControl>
 
-          {/* Contact Information */}
           <Stack spacing={2}>
-            <TextField
-              label="Full Name"
-              fullWidth
-              required
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            />
             <TextField
               label="Discord Username"
               fullWidth

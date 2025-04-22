@@ -138,11 +138,19 @@ const AdminDashboard = () => {
       setActionLoading(slotNumber);
       console.log('Updating booking status:', { slotId, slotNumber, status });
       console.log(`/slots/${slotId}/bookings/${slotNumber}`);
-      // const response = await axiosInstance.patch(`/slots/${slotId}/bookings/${slotNumber}`, {
-      //   status
-      // });
+      
+      // Find the booking to get the discordUsername
+      const booking = bookings.find(b => b.slotId === slotId && b.slotNumber === slotNumber);
+      if (!booking) {
+        throw new Error('Booking not found');
+      }
 
-      // console.log('Status update response:', response.data);
+      const response = await axiosInstance.patch(`/slots/${slotId}/bookings/${slotNumber}`, {
+        status,
+        discordUsername: booking.discordUsername // Include the discordUsername in the update
+      });
+
+      console.log('Status update response:', response.data);
       await fetchData(); // Refresh the bookings data
     } catch (error) {
       console.error('Error updating status:', error);
@@ -458,7 +466,7 @@ const AdminDashboard = () => {
                       </TableCell>
                       {!isMobile && (
                         <>
-                          <TableCell>
+                      <TableCell>
                             {format(new Date(event.startDate).getTime() + (5.5 * 60 * 60 * 1000), 'PPp')} IST
                       </TableCell>
                       <TableCell>
@@ -495,7 +503,7 @@ const AdminDashboard = () => {
                                 onClick={() => handleExportEventSlots(event.truckersmpId)}
                               >
                                 Export Slots
-                              </Button>
+                          </Button>
                         </Stack>
                       </TableCell>
                         </>
@@ -637,15 +645,15 @@ const AdminDashboard = () => {
                                 </TableHead>
                                 <TableBody>
                                   {eventBookings.map((booking) => (
-                                    <TableRow 
-                                      key={booking._id}
-                                      sx={{
-                                        bgcolor: 
-                                          booking.status === 'approved' ? 'success.lighter' :
-                                          booking.status === 'rejected' ? 'error.lighter' :
-                                          'inherit'
-                                      }}
-                                    >
+                    <TableRow 
+                      key={booking._id}
+                      sx={{
+                        bgcolor: 
+                          booking.status === 'approved' ? 'success.lighter' :
+                          booking.status === 'rejected' ? 'error.lighter' :
+                          'inherit'
+                      }}
+                    >
                                       <TableCell sx={mobileTableCell}>
                                         <Typography variant="subtitle1" fontWeight="medium">
                                           {booking.eventTitle || 'Unknown Event'}
@@ -748,81 +756,81 @@ const AdminDashboard = () => {
                                       </TableCell>
                                       {!isMobile && (
                                         <>
-                                        <TableCell>
-                                          {booking.imageUrl && (
-                                            <Box
-                                              component="img"
-                                              src={booking.imageUrl}
-                                              alt="Slot"
-                                              sx={{
-                                                width: 100,
-                                                height: 60,
-                                                objectFit: 'cover',
-                                                borderRadius: 1,
-                                                boxShadow: 1
-                                              }}
-                                            />
-                                          )}
-                                        </TableCell>
-                                        <TableCell>
-                                          <Typography variant="body1" fontWeight="medium">
-                                            #{booking.slotNumber}
-                                          </Typography>
-                                        </TableCell>
-                                        <TableCell>{booking.name}</TableCell>
-                                        <TableCell>
-                                          <Stack spacing={1}>
-                                            <Typography><strong>VTC:</strong> {booking.vtcName}</Typography>
-                                            {booking.vtcRole && (
-                                              <Typography><strong>Role:</strong> {booking.vtcRole}</Typography>
-                                            )}
-                                            {booking.vtcLink && (
-                                              <Link href={booking.vtcLink} target="_blank" rel="noopener noreferrer">
-                                                View VTC Profile
-                                              </Link>
-                                            )}
-                                          </Stack>
-                                        </TableCell>
-                                        <TableCell>
-                                          <Chip 
-                                            label={booking.status}
-                                            color={
-                                              booking.status === 'approved' ? 'success' :
-                                              booking.status === 'rejected' ? 'error' :
-                                              'warning'
-                                            }
-                                            size="small"
-                                          />
-                                        </TableCell>
-                                        <TableCell>
-                                          {booking.status === 'pending' && (
-                                            <Stack direction="row" spacing={1}>
-                                              <Button
-                                                variant="contained"
-                                                color="success"
-                                                size="small"
-                                                disabled={actionLoading === booking.slotNumber}
+                      <TableCell>
+                        {booking.imageUrl && (
+                          <Box
+                            component="img"
+                            src={booking.imageUrl}
+                            alt="Slot"
+                            sx={{
+                              width: 100,
+                              height: 60,
+                              objectFit: 'cover',
+                              borderRadius: 1,
+                              boxShadow: 1
+                            }}
+                          />
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body1" fontWeight="medium">
+                          #{booking.slotNumber}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>{booking.name}</TableCell>
+                      <TableCell>
+                        <Stack spacing={1}>
+                          <Typography><strong>VTC:</strong> {booking.vtcName}</Typography>
+                          {booking.vtcRole && (
+                            <Typography><strong>Role:</strong> {booking.vtcRole}</Typography>
+                          )}
+                          {booking.vtcLink && (
+                            <Link href={booking.vtcLink} target="_blank" rel="noopener noreferrer">
+                              View VTC Profile
+                            </Link>
+                          )}
+                        </Stack>
+                      </TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={booking.status}
+                          color={
+                            booking.status === 'approved' ? 'success' :
+                            booking.status === 'rejected' ? 'error' :
+                            'warning'
+                          }
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {booking.status === 'pending' && (
+                          <Stack direction="row" spacing={1}>
+                            <Button
+                              variant="contained"
+                              color="success"
+                              size="small"
+                              disabled={actionLoading === booking.slotNumber}
                                                 onClick={(e) => {
                                                   e.stopPropagation();
                                                   handleStatusUpdate(booking.slotId, booking.slotNumber, 'approved');
                                                 }}
-                                              >
-                                                {actionLoading === booking.slotNumber ? 'Processing...' : 'Approve'}
-                                              </Button>
-                                              <Button
-                                                variant="contained"
-                                                color="error"
-                                                size="small"
-                                                disabled={actionLoading === booking.slotNumber}
+                            >
+                              {actionLoading === booking.slotNumber ? 'Processing...' : 'Approve'}
+                            </Button>
+                            <Button
+                              variant="contained"
+                              color="error"
+                              size="small"
+                              disabled={actionLoading === booking.slotNumber}
                                                 onClick={(e) => {
                                                   e.stopPropagation();
                                                   handleStatusUpdate(booking.slotId, booking.slotNumber, 'rejected');
                                                 }}
-                                              >
-                                                {actionLoading === booking.slotNumber ? 'Processing...' : 'Reject'}
-                                              </Button>
-                                            </Stack>
-                                          )}
+                            >
+                              {actionLoading === booking.slotNumber ? 'Processing...' : 'Reject'}
+                            </Button>
+                          </Stack>
+                        )}
                                           {booking.status === 'approved' && (
                                             <Button
                                               variant="outlined"
@@ -847,8 +855,8 @@ const AdminDashboard = () => {
                               </Table>
                             </TableContainer>
                           </Collapse>
-                        </TableCell>
-                      </TableRow>
+                      </TableCell>
+                    </TableRow>
                     </React.Fragment>
                   ))
                 )}
