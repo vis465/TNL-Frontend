@@ -14,12 +14,18 @@ import {
   Select,
   MenuItem,
   CircularProgress,
+  Stack,
 } from '@mui/material';
 import axiosInstance from '../utils/axios';
 
 const RequestSlotDialog = ({ open, onClose, slot, onRequestSubmitted }) => {
   const [formData, setFormData] = useState({
     name: '',
+    discordUsername: '',
+    vtc: '',
+    truck: '',
+    trailer: '',
+    notes: '',
     vtcName: '',
     vtcRole: '',
     vtcLink: '',
@@ -34,6 +40,11 @@ const RequestSlotDialog = ({ open, onClose, slot, onRequestSubmitted }) => {
     if (open) {
       setFormData({
         name: '',
+        discordUsername: '',
+        vtc: '',
+        truck: '',
+        trailer: '',
+        notes: '',
         vtcName: '',
         vtcRole: '',
         vtcLink: '',
@@ -60,12 +71,17 @@ const RequestSlotDialog = ({ open, onClose, slot, onRequestSubmitted }) => {
       setError('Please select a slot number');
       return false;
     }
+    if (!formData.discordUsername.trim()) {
+      setError('Discord username is required');
+      return false;
+    }
     if (formData.vtcLink && !formData.vtcLink.includes('truckersmp.com/vtc/')) {
       setError('Please provide a valid TruckersMP VTC profile link');
       return false;
     }
-    if(!formData.playercount ||formData.playercount <0 ){
-      setError("Give valid number of players")
+    if(!formData.playercount || formData.playercount < 0) {
+      setError("Give valid number of players");
+      return false;
     }
     return true;
   };
@@ -83,7 +99,8 @@ const RequestSlotDialog = ({ open, onClose, slot, onRequestSubmitted }) => {
         slotNumber: formData.slotNumber,
         name: formData.name,
         vtcName: formData.vtcName,
-        players:formData.playercount
+        players:formData.playercount,
+        discordUsername:formData.discordUsername
       });
 
       const response = await axiosInstance.post(`/slots/${slot._id}/request`, {
@@ -92,7 +109,8 @@ const RequestSlotDialog = ({ open, onClose, slot, onRequestSubmitted }) => {
         vtcRole: formData.vtcRole || '',
         vtcLink: formData.vtcLink || '',
         slotNumber: parseInt(formData.slotNumber),
-        playercount:formData.playercount
+        playercount: formData.playercount,
+        discordUsername: formData.discordUsername
       });
 
       console.log('Slot request response:', response.data);
@@ -150,7 +168,7 @@ const RequestSlotDialog = ({ open, onClose, slot, onRequestSubmitted }) => {
           )}
 
           {/* Slot Number Selection */}
-          <FormControl fullWidth margin="normal" required>
+          <FormControl fullWidth sx={{ mb: 2 }}>
             <InputLabel id="slot-number-label">Select Slot Number</InputLabel>
             <Select
               labelId="slot-number-label"
@@ -173,64 +191,68 @@ const RequestSlotDialog = ({ open, onClose, slot, onRequestSubmitted }) => {
           </FormControl>
 
           {/* Contact Information */}
-          <TextField
-            fullWidth
-            required
-            label="Your Name"
-            name="name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            margin="normal"
-            disabled={loading}
-            error={error && !formData.name}
-          />
-
-          <TextField
-            fullWidth
-            required
-            label="VTC Name"
-            name="vtcName"
-            value={formData.vtcName}
-            onChange={(e) => setFormData({ ...formData, vtcName: e.target.value })}
-            margin="normal"
-            disabled={loading}
-            error={error && !formData.vtcName}
-          />
-
-          <TextField
-            fullWidth
-            label="VTC Role"
-            name="vtcRole"
-            value={formData.vtcRole}
-            onChange={(e) => setFormData({ ...formData, vtcRole: e.target.value })}
-            margin="normal"
-            disabled={loading}
-            placeholder="e.g., Driver, Manager, Owner"
-          />
-
-          <TextField
-            fullWidth
-            label="VTC Link"
-            name="vtcLink"
-            value={formData.vtcLink}
-            onChange={(e) => setFormData({ ...formData, vtcLink: e.target.value })}
-            margin="normal"
-            disabled={loading}
-            placeholder="https://truckersmp.com/vtc/12345"
-            error={error && formData.vtcLink && !formData.vtcLink.includes('truckersmp.com/vtc/')}
-            helperText={formData.vtcLink && !formData.vtcLink.includes('truckersmp.com/vtc/') ? 
-              'Please enter a valid TruckersMP VTC  link' : ''}
-          />
-          <TextField
-            fullWidth
-            label="Estimated Number of players"
-            name="playercount"
-            value={formData.playercount}
-            onChange={(e) => setFormData({ ...formData, playercount: e.target.value })}
-            margin="normal"
-            disabled={loading}
-            error={error && formData.playercount && !formData.playercount}
-          />
+          <Stack spacing={2}>
+            <TextField
+              label="Full Name"
+              fullWidth
+              required
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            />
+            <TextField
+              label="Discord Username"
+              fullWidth
+              required
+              helperText="Please enter your Discord username (e.g., username#1234)"
+              value={formData.discordUsername}
+              onChange={(e) => setFormData({ ...formData, discordUsername: e.target.value })}
+            />
+            <TextField
+              label="VTC Name"
+              fullWidth
+              required
+              value={formData.vtcName}
+              onChange={(e) => setFormData({ ...formData, vtcName: e.target.value })}
+              disabled={loading}
+              error={error && !formData.vtcName}
+            />
+            <TextField
+              fullWidth
+              label="VTC Role"
+              name="vtcRole"
+              value={formData.vtcRole}
+              onChange={(e) => setFormData({ ...formData, vtcRole: e.target.value })}
+              margin="normal"
+              disabled={loading}
+              placeholder="e.g., Driver, Manager, Owner"
+            />
+            <TextField
+              fullWidth
+              label="VTC Link"
+              name="vtcLink"
+              value={formData.vtcLink}
+              onChange={(e) => setFormData({ ...formData, vtcLink: e.target.value })}
+              margin="normal"
+              disabled={loading}
+              placeholder="https://truckersmp.com/vtc/12345"
+              error={error && formData.vtcLink && !formData.vtcLink.includes('truckersmp.com/vtc/')}
+              helperText={formData.vtcLink && !formData.vtcLink.includes('truckersmp.com/vtc/') ? 
+                'Please enter a valid TruckersMP VTC link' : ''}
+            />
+            <TextField
+              fullWidth
+              label="Estimated Number of Players"
+              name="playercount"
+              type="number"
+              value={formData.playercount}
+              onChange={(e) => setFormData({ ...formData, playercount: e.target.value })}
+              margin="normal"
+              disabled={loading}
+              error={error && (!formData.playercount || formData.playercount < 0)}
+              helperText={error && (!formData.playercount || formData.playercount < 0) ? 
+                'Please enter a valid number of players' : ''}
+            />
+          </Stack>
         </Box>
       </DialogContent>
 

@@ -139,7 +139,7 @@ const AnalyticsDashboard = () => {
 
       <Grid container spacing={3}>
         {/* Event Attendance */}
-        <Grid item xs={12} md={6}>
+        {/* <Grid item xs={12} md={6}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
               Event Attendance (TruckersMP)
@@ -152,7 +152,7 @@ const AnalyticsDashboard = () => {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="attendance" fill="#8884d8" name="Confirmed Attendees" />
+                  <Bar dataKey="attendance" fill="#8884d8" name="Confirmed Attendees" color='black'/>
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -163,7 +163,7 @@ const AnalyticsDashboard = () => {
               </Box>
             )}
           </Paper>
-        </Grid>
+        </Grid> */}
 
         {/* Booking Patterns */}
         <Grid item xs={12} md={6}>

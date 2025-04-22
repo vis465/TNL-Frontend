@@ -2,6 +2,7 @@ import React, { createContext, useState, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import Box from '@mui/material/Box';
 import theme from './theme';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
@@ -15,6 +16,8 @@ import PrivateRoute from './components/PrivateRoute';
 import Others from './pages/Others';
 import AttendingEvents from "./components/AttendingEvents"
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
+import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
+import Footer from './components/Footer';
 // import { setItemWithExpiry } from './config/localStorageWithExpiry';
 
 // Import Montserrat font
@@ -30,7 +33,7 @@ export const ThemeContext = createContext({
 });
 
 function App() {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
@@ -42,24 +45,129 @@ function App() {
         palette: {
           mode: isDarkMode ? 'dark' : 'light',
           primary: {
-            main: '#1976d2',
+            main: isDarkMode ? '#90caf9' : '#1976d2',
+            light: isDarkMode ? '#e3f2fd' : '#63a4ff',
+            dark: isDarkMode ? '#42a5f5' : '#004ba0',
+            contrastText: '#ffffff',
           },
           secondary: {
-            main: '#dc004e',
+            main: isDarkMode ? '#f48fb1' : '#d81b60',
+            light: isDarkMode ? '#fce4ec' : '#ff5c8d',
+            dark: isDarkMode ? '#c2185b' : '#880e4f',
+            contrastText: '#ffffff',
           },
           background: {
-            default: isDarkMode ? '#121212' : '#f5f5f5',
-            paper: isDarkMode ? '#1e1e1e' : '#ffffff',
+            default: isDarkMode ? '#121212' : '#fafafa',
+            paper: isDarkMode ? '#1f1f1f' : '#ffffff',
+          },
+          text: {
+            primary: isDarkMode ? '#ffffff' : '#212121',
+            secondary: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+          },
+          action: {
+            active: isDarkMode ? '#ffffff' : 'rgba(0, 0, 0, 0.54)',
+            hover: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
+            selected: isDarkMode ? 'rgba(255, 255, 255, 0.16)' : 'rgba(0, 0, 0, 0.08)',
+            disabled: isDarkMode ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.26)',
+            disabledBackground: isDarkMode ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
           },
         },
         typography: {
-          fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+          fontFamily: '"Montserrat", "Roboto", "Helvetica", "Arial", sans-serif',
+          h1: {
+            fontWeight: 700,
+            color: isDarkMode ? '#ffffff' : '#212121',
+          },
+          h2: {
+            fontWeight: 600,
+            color: isDarkMode ? '#ffffff' : '#212121',
+          },
+          h3: {
+            fontWeight: 600,
+            color: isDarkMode ? '#ffffff' : '#212121',
+          },
+          h4: {
+            fontWeight: 600,
+            color: isDarkMode ? '#ffffff' : '#212121',
+          },
+          h5: {
+            fontWeight: 500,
+            color: isDarkMode ? '#ffffff' : '#212121',
+          },
+          h6: {
+            fontWeight: 500,
+            color: isDarkMode ? '#ffffff' : '#212121',
+          },
+          body1: {
+            color: isDarkMode ? 'rgba(255, 255, 255, 0.87)' : 'rgba(0, 0, 0, 0.87)',
+          },
+          body2: {
+            color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+          },
         },
         components: {
           MuiButton: {
             styleOverrides: {
               root: {
                 textTransform: 'none',
+                fontWeight: 500,
+              },
+              contained: {
+                color: '#ffffff',
+              },
+              outlined: {
+                borderColor: isDarkMode
+                  ? 'rgba(255, 255, 255, 0.3)'
+                  : 'rgba(0, 0, 0, 0.23)',
+                color: isDarkMode ? '#ffffff' : 'inherit',
+              },
+              text: {
+                color: isDarkMode ? '#ffffff' : 'inherit',
+              },
+            },
+          },
+          MuiChip: {
+            styleOverrides: {
+              root: {
+                fontWeight: 500,
+              },
+            },
+          },
+          MuiCard: {
+            styleOverrides: {
+              root: {
+                backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
+                color: isDarkMode ? '#ffffff' : 'inherit',
+              },
+            },
+          },
+          MuiPaper: {
+            styleOverrides: {
+              root: {
+                backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
+                color: isDarkMode ? '#ffffff' : 'inherit',
+              },
+            },
+          },
+          MuiDialog: {
+            styleOverrides: {
+              paper: {
+                backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
+                color: isDarkMode ? '#ffffff' : 'inherit',
+              },
+            },
+          },
+          MuiTableCell: {
+            styleOverrides: {
+              root: {
+                color: isDarkMode ? '#ffffff' : 'inherit',
+                borderBottom: isDarkMode 
+                  ? '1px solid rgba(255, 255, 255, 0.12)' 
+                  : '1px solid rgba(0, 0, 0, 0.12)',
+              },
+              head: {
+                fontWeight: 600,
+                color: isDarkMode ? '#ffffff' : 'inherit',
               },
             },
           },
@@ -73,26 +181,37 @@ function App() {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <Router>
-          <Navbar />
-          <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/servers" element={<Servers />} />
-            <Route path="/events/:id" element={<EventDetails />} />
-            <Route path="/attending-events" element={<AttendingEvents />} />
-            <Route path="/External/:id" element={<Others />} />
-            {/* Protected routes */}
-            <Route element={<PrivateRoute allowedRoles={["admin"]} />}>
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/admin/analytics" element={<AnalyticsDashboard />} />
-            </Route>
+          <MuiThemeProvider theme={theme}>
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: 'column',
+              minHeight: '100vh'
+            }}>
+              <Navbar />
+              <Box component="main" sx={{ flexGrow: 1 }}>
+                <Routes>
+                  {/* Public routes */}
+                  <Route path="/" element={<Home />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/servers" element={<Servers />} />
+                  <Route path="/events/:id" element={<EventDetails />} />
+                  <Route path="/attending-events" element={<AttendingEvents />} />
+                  <Route path="/External/:id" element={<Others />} />
+                  {/* Protected routes */}
+                  <Route element={<PrivateRoute allowedRoles={["admin","eventteam"]} />}>
+                    <Route path="/admin" element={<AdminDashboard />} />
+                    <Route path="/admin/analytics" element={<AnalyticsDashboard />} />
+                  </Route>
 
-            <Route element={<PrivateRoute allowedRoles={["user", "admin"]} />}>
-              <Route path="/my-bookings" element={<MyBookings />} />
-            </Route>
-          </Routes>
+                  <Route element={<PrivateRoute allowedRoles={["user", "admin"]} />}>
+                    <Route path="/my-bookings" element={<MyBookings />} />
+                  </Route>
+                </Routes>
+              </Box>
+              <Footer />
+            </Box>
+          </MuiThemeProvider>
         </Router>
       </ThemeProvider>
     </ThemeContext.Provider>

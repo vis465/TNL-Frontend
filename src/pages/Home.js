@@ -19,7 +19,7 @@ import {
   Paper,
   alpha,
 } from '@mui/material';
-import { format, isPast, isFuture, isWithinInterval } from 'date-fns';
+import { format, isPast, isFuture, isWithinInterval, addHours } from 'date-fns';
 import axiosInstance from '../utils/axios';
 import { styled, keyframes } from '@mui/material/styles';
 
@@ -50,7 +50,7 @@ const subtleFloat = keyframes`
 // Styled components
 const PageContainer = styled(Box)(({ theme }) => ({
   minHeight: '100vh',
-  background: '#121212',
+  background: theme.palette.mode === 'dark' ? '#121212' : '#f5f5f5',
   position: 'relative',
   overflow: 'hidden',
   paddingTop: '80px', // Space for fixed navbar
@@ -61,7 +61,9 @@ const PageContainer = styled(Box)(({ theme }) => ({
     left: 0,
     right: 0,
     bottom: 0,
-    background: 'linear-gradient(to bottom, rgba(18, 18, 18, 0.9), rgba(18, 18, 18, 0.95))',
+    background: theme.palette.mode === 'dark' 
+      ? 'linear-gradient(to bottom, rgba(18, 18, 18, 0.9), rgba(18, 18, 18, 0.95))' 
+      : 'linear-gradient(to bottom, rgba(245, 245, 245, 0.9), rgba(245, 245, 245, 0.95))',
     zIndex: 0,
   },
 }));
@@ -69,7 +71,9 @@ const PageContainer = styled(Box)(({ theme }) => ({
 const SubtleCircle = styled(Box)(({ theme }) => ({
   position: 'absolute',
   borderRadius: '50%',
-  background: 'rgba(255, 255, 255, 0.03)',
+  background: theme.palette.mode === 'dark' 
+    ? 'rgba(255, 255, 255, 0.03)' 
+    : 'rgba(0, 0, 0, 0.03)',
   zIndex: 0,
   '&:nth-of-type(1)': {
     width: '300px',
@@ -91,7 +95,7 @@ const PageTitle = styled(Typography)(({ theme }) => ({
   fontFamily: "'Montserrat', sans-serif",
   fontWeight: 600,
   letterSpacing: '0.02em',
-  color: '#ffffff',
+  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
   marginBottom: theme.spacing(4),
   position: 'relative',
   '&::after': {
@@ -101,27 +105,31 @@ const PageTitle = styled(Typography)(({ theme }) => ({
     left: 0,
     width: '40px',
     height: '2px',
-    background: '#ffffff',
+    background: theme.palette.primary.main,
   },
 }));
 
 const StyledTabs = styled(Tabs)(({ theme }) => ({
-  borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+  borderBottom: `1px solid ${theme.palette.mode === 'dark' 
+    ? 'rgba(255, 255, 255, 0.1)' 
+    : 'rgba(0, 0, 0, 0.1)'}`,
   marginBottom: theme.spacing(4),
   '& .MuiTabs-indicator': {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.palette.primary.main,
     height: '2px',
   },
   '& .MuiTab-root': {
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: theme.palette.mode === 'dark' 
+      ? 'rgba(255, 255, 255, 0.7)' 
+      : 'rgba(0, 0, 0, 0.6)',
     fontWeight: 500,
     transition: 'all 0.3s ease',
     fontFamily: "'Montserrat', sans-serif",
     '&.Mui-selected': {
-      color: '#ffffff',
+      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
     },
     '&:hover': {
-      color: '#ffffff',
+      color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
     },
   },
 }));
@@ -130,16 +138,24 @@ const StyledCard = styled(Card)(({ theme }) => ({
   height: '100%',
   display: 'flex',
   flexDirection: 'column',
-  background: '#1e1e1e',
+  background: theme.palette.background.paper,
   borderRadius: '8px',
-  border: '1px solid rgba(255, 255, 255, 0.05)',
-  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)',
+  border: `1px solid ${theme.palette.mode === 'dark' 
+    ? 'rgba(255, 255, 255, 0.05)' 
+    : 'rgba(0, 0, 0, 0.05)'}`,
+  boxShadow: theme.palette.mode === 'dark'
+    ? '0 4px 20px rgba(0, 0, 0, 0.3)'
+    : '0 4px 20px rgba(0, 0, 0, 0.1)',
   transition: 'all 0.3s ease',
   animation: `${fadeIn} 0.5s ease-out`,
   '&:hover': {
     transform: 'translateY(-5px)',
-    boxShadow: '0 8px 25px rgba(0, 0, 0, 0.3)',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
+    boxShadow: theme.palette.mode === 'dark'
+      ? '0 8px 25px rgba(0, 0, 0, 0.4)'
+      : '0 8px 25px rgba(0, 0, 0, 0.15)',
+    border: `1px solid ${theme.palette.mode === 'dark' 
+      ? 'rgba(255, 255, 255, 0.1)' 
+      : 'rgba(0, 0, 0, 0.1)'}`,
   },
 }));
 
@@ -167,10 +183,12 @@ const StyledCardContent = styled(CardContent)(({ theme }) => ({
     fontFamily: "'Montserrat', sans-serif",
     fontWeight: 600,
     marginBottom: theme.spacing(2),
-    color: '#ffffff',
+    color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
   },
   '& .MuiTypography-body2': {
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: theme.palette.mode === 'dark' 
+      ? 'rgba(255, 255, 255, 0.7)' 
+      : 'rgba(0, 0, 0, 0.6)',
     marginBottom: theme.spacing(1),
     fontFamily: "'Montserrat', sans-serif",
   },
@@ -181,24 +199,48 @@ const StyledChip = styled(Chip)(({ theme }) => ({
   fontWeight: 500,
   fontFamily: "'Montserrat', sans-serif",
   '&.MuiChip-colorSuccess': {
-    background: 'rgba(76, 175, 80, 0.1)',
-    color: '#4caf50',
-    border: '1px solid rgba(76, 175, 80, 0.2)',
+    background: theme.palette.mode === 'dark' 
+      ? 'rgba(76, 175, 80, 0.2)' 
+      : 'rgba(76, 175, 80, 0.1)',
+    color: theme.palette.mode === 'dark' 
+      ? '#81c784' 
+      : '#2e7d32',
+    border: `1px solid ${theme.palette.mode === 'dark' 
+      ? 'rgba(76, 175, 80, 0.3)' 
+      : 'rgba(76, 175, 80, 0.2)'}`,
   },
   '&.MuiChip-colorWarning': {
-    background: 'rgba(255, 152, 0, 0.1)',
-    color: '#ff9800',
-    border: '1px solid rgba(255, 152, 0, 0.2)',
+    background: theme.palette.mode === 'dark' 
+      ? 'rgba(255, 152, 0, 0.2)' 
+      : 'rgba(255, 152, 0, 0.1)',
+    color: theme.palette.mode === 'dark' 
+      ? '#ffb74d' 
+      : '#ed6c02',
+    border: `1px solid ${theme.palette.mode === 'dark' 
+      ? 'rgba(255, 152, 0, 0.3)' 
+      : 'rgba(255, 152, 0, 0.2)'}`,
   },
   '&.MuiChip-colorError': {
-    background: 'rgba(244, 67, 54, 0.1)',
-    color: '#f44336',
-    border: '1px solid rgba(244, 67, 54, 0.2)',
+    background: theme.palette.mode === 'dark' 
+      ? 'rgba(244, 67, 54, 0.2)' 
+      : 'rgba(244, 67, 54, 0.1)',
+    color: theme.palette.mode === 'dark' 
+      ? '#e57373' 
+      : '#d32f2f',
+    border: `1px solid ${theme.palette.mode === 'dark' 
+      ? 'rgba(244, 67, 54, 0.3)' 
+      : 'rgba(244, 67, 54, 0.2)'}`,
   },
   '&.MuiChip-colorInfo': {
-    background: 'rgba(33, 150, 243, 0.1)',
-    color: '#2196f3',
-    border: '1px solid rgba(33, 150, 243, 0.2)',
+    background: theme.palette.mode === 'dark' 
+      ? 'rgba(33, 150, 243, 0.2)' 
+      : 'rgba(33, 150, 243, 0.1)',
+    color: theme.palette.mode === 'dark' 
+      ? '#64b5f6' 
+      : '#0288d1',
+    border: `1px solid ${theme.palette.mode === 'dark' 
+      ? 'rgba(33, 150, 243, 0.3)' 
+      : 'rgba(33, 150, 243, 0.2)'}`,
   },
 }));
 
@@ -209,8 +251,12 @@ const StyledButton = styled(Button)(({ theme }) => ({
   textTransform: 'none',
   transition: 'all 0.3s ease',
   fontFamily: "'Montserrat', sans-serif",
+  color: theme.palette.mode === 'dark' ? '#ffffff' : theme.palette.primary.main,
   '&:hover': {
     transform: 'translateY(-2px)',
+    backgroundColor: theme.palette.mode === 'dark' 
+      ? 'rgba(255, 255, 255, 0.05)' 
+      : 'rgba(0, 0, 0, 0.05)',
   },
 }));
 
@@ -220,6 +266,16 @@ const ContentContainer = styled(Container)(({ theme }) => ({
   paddingTop: theme.spacing(4),
   paddingBottom: theme.spacing(8),
 }));
+
+const formatDateTime = (date) => {
+  const utcDate = new Date(date);
+  const istDate = addHours(utcDate, 5.5); // Convert to IST (UTC+5:30)
+  
+  return {
+    utc: format(utcDate, "yyyy-MM-dd HH:mm:ss 'UTC'"),
+    ist: format(istDate, "yyyy-MM-dd HH:mm:ss 'IST'")
+  };
+};
 
 const Home = () => {
   const [events, setEvents] = useState([]);
@@ -346,7 +402,12 @@ const Home = () => {
             </Typography>
             <Typography variant="body2">
               <strong>Start:</strong>{' '}
-              {format(new Date(event.startDate), 'PPp')}
+              <Box component="span" sx={{ display: 'block' }}>
+                {formatDateTime(event.startDate).utc}
+              </Box>
+              <Box component="span" sx={{ display: 'block', color: 'text.secondary' }}>
+                {formatDateTime(event.startDate).ist}
+              </Box>
             </Typography>
             
             <Typography variant="body2">
@@ -416,7 +477,7 @@ const Home = () => {
             size={60} 
             thickness={4} 
             sx={{ 
-              color: '#ffffff',
+              color: theme.palette.mode === 'dark' ? '#ffffff' : theme.palette.primary.main,
               '& .MuiCircularProgress-circle': {
                 strokeLinecap: 'round',
               }
@@ -431,7 +492,7 @@ const Home = () => {
     return (
       <PageContainer>
         <ContentContainer>
-          <Typography color="error" align="center" sx={{ mt: 4 }}>
+          <Typography color="error" align="center" sx={{ mt: 4, color: theme.palette.mode === 'dark' ? '#ff8a80' : undefined }}>
             {error}
           </Typography>
         </ContentContainer>
@@ -471,13 +532,15 @@ const Home = () => {
                 sx={{ 
                   p: 4, 
                   textAlign: 'center',
-                  background: '#1e1e1e',
+                  background: theme.palette.mode === 'dark' ? '#1e1e1e' : '#f5f5f5',
                   borderRadius: '8px',
-                  border: '1px solid rgba(255, 255, 255, 0.05)',
-                  color: 'rgba(255, 255, 255, 0.7)',
+                  border: `1px solid ${theme.palette.mode === 'dark' 
+                    ? 'rgba(255, 255, 255, 0.05)' 
+                    : 'rgba(0, 0, 0, 0.05)'}`,
+                  color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
                 }}
               >
-                <Typography variant="h6" fontFamily="'Montserrat', sans-serif">
+                <Typography variant="h6" fontFamily="'Montserrat', sans-serif" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
                   No events found in this category
                 </Typography>
               </Paper>
