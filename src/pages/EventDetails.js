@@ -50,7 +50,7 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import GroupsIcon from '@mui/icons-material/Groups';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AddIcon from '@mui/icons-material/Add';
-import { format } from 'date-fns';
+import { format, addHours } from 'date-fns';
 import axiosInstance from '../utils/axios';
 import ReactMarkdown from 'react-markdown';
 import { useAuth } from '../contexts/AuthContext';
@@ -242,6 +242,10 @@ const EventDetails = () => {
     refreshBookedSlots();
   };
 
+  const formatDateTime = (date) => {
+    return format(new Date(date), "yyyy-MM-dd HH:mm:ss 'UTC'");
+  };
+
   if (loading) {
     return (
       <Box
@@ -351,9 +355,9 @@ const EventDetails = () => {
                 </Stack>
                 <Stack direction="row" spacing={3} alignItems="center" sx={{ mb: 3 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <CalendarTodayIcon />
+                    <AccessTimeIcon color="primary" />
                     <Typography variant="body1">
-                    {format(new Date(event.startDate).getTime() + (5.5 * 60 * 60 * 1000), 'PPp')} IST
+                      {formatDateTime(event.startDate)}
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -387,8 +391,14 @@ const EventDetails = () => {
                     py: 1.5,
                     fontSize: '1.1rem',
                     bgcolor: 'primary.main',
+                    color: 'white',
                     '&:hover': {
                       bgcolor: 'primary.dark',
+                      color: 'white',
+                    },
+                    '&:disabled': {
+                      bgcolor: 'action.disabledBackground',
+                      color: 'action.disabled',
                     },
                   }}
                 >
@@ -435,18 +445,17 @@ const EventDetails = () => {
                       <ListItem>
                         <ListItemText
                           primary="Start Time"
-                          secondary={format(new Date(event.startDate).getTime() + (5.5 * 60 * 60 * 1000), 'PPp')}
                           primaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
+                          secondary={formatDateTime(event.startDate)}
                           secondaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
                         />
-                       
                       </ListItem>
                       {event.endDate && (
                         <ListItem>
                           <ListItemText
                             primary="End Time"
-                            secondary={format(new Date(event.endDate).getTime() + (6.5 * 60 * 60 * 1000), 'PPp')}
                             primaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
+                            secondary={formatDateTime(new Date(new Date(event.endDate).getTime() + 60 * 60 * 1000))}
                             secondaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
                           />
                         </ListItem>
@@ -467,8 +476,8 @@ const EventDetails = () => {
                     <List>
                       <ListItem>
                         <ListItemText
-                          primary="Meeting Point"
-                          secondary={event.meetingPoint}
+                          primary="Meeting Time"
+                          secondary={formatDateTime(event.meetingPoint)}
                           primaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
                           secondaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
                         />
@@ -627,7 +636,7 @@ const EventDetails = () => {
                                         <ListItemText
                                           primary={
                                             <Typography variant="body2">
-                                              <strong>#{slotItem.number}:</strong> {slotItem.booking.name} ({slotItem.booking.vtcName})
+                                              <strong>#{slotItem.number}:</strong> {slotItem.booking.vtcName} 
                                             </Typography>
                                           }
                                           secondary={
@@ -655,6 +664,18 @@ const EventDetails = () => {
                               fullWidth
                               disabled={!slot.slots.some(s => s.isAvailable)}
                               onClick={() => handleRequestSlot(slot)}
+                              sx={{
+                                bgcolor: 'primary.main',
+                                color: 'white',
+                                '&:hover': {
+                                  bgcolor: 'primary.dark',
+                                  color: 'white',
+                                },
+                                '&:disabled': {
+                                  bgcolor: 'action.disabledBackground',
+                                  color: 'action.disabled',
+                                },
+                              }}
                             >
                               Request Slot
                             </Button>
@@ -736,7 +757,8 @@ const EventDetails = () => {
                     sx={{
                       borderRadius: 2,
                       py: 1.5,
-                      bgcolor: 'red',
+                      bgcolor: 'primary.main',
+                      color: 'white',
                       fontFamily: 'Montserrat, sans-serif',
                       textTransform: 'none',
                       fontWeight: 500,
@@ -758,6 +780,13 @@ const EventDetails = () => {
                         fontFamily: 'Montserrat, sans-serif',
                         textTransform: 'none',
                         fontWeight: 500,
+                        borderColor: 'info.main',
+                        color: 'info.main',
+                        '&:hover': {
+                          borderColor: 'info.dark',
+                          bgcolor: 'info.light',
+                          color: 'info.dark',
+                        },
                       }}
                     >
                       View Route Map
@@ -777,10 +806,16 @@ const EventDetails = () => {
                     sx={{
                       borderRadius: 2,
                       py: 1.5,
-                      bgcolor: 'blue',
                       fontFamily: 'Montserrat, sans-serif',
                       textTransform: 'none',
                       fontWeight: 500,
+                      borderColor: 'primary.main',
+                      color: 'primary.main',
+                      '&:hover': {
+                        borderColor: 'primary.dark',
+                        bgcolor: 'primary.light',
+                        color: 'primary.dark',
+                      },
                     }}
                   >
                     View Booked Slots
@@ -899,7 +934,16 @@ const EventDetails = () => {
                 variant="outlined"
                 component="span"
                 fullWidth
-                sx={{ mb: 2 }}
+                sx={{
+                  mb: 2,
+                  borderColor: 'primary.main',
+                  color: 'primary.main',
+                  '&:hover': {
+                    borderColor: 'primary.dark',
+                    bgcolor: 'primary.light',
+                    color: 'primary.dark',
+                  },
+                }}
               >
                 Select Images
               </Button>
@@ -928,11 +972,23 @@ const EventDetails = () => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenSlotDialog(false)}>Cancel</Button>
+          <Button onClick={() => setOpenSlotDialog(false)} sx={{ color: 'text.primary' }}>Cancel</Button>
           <Button
             onClick={handleAddSlots}
             variant="contained"
             disabled={slotImages.length === 0}
+            sx={{
+              bgcolor: 'primary.main',
+              color: 'white',
+              '&:hover': {
+                bgcolor: 'primary.dark',
+                color: 'white',
+              },
+              '&:disabled': {
+                bgcolor: 'action.disabledBackground',
+                color: 'action.disabled',
+              },
+            }}
           >
             Add Slots
           </Button>
@@ -994,7 +1050,7 @@ const EventDetails = () => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenBookingDialog(false)}>Cancel</Button>
+          <Button onClick={() => setOpenBookingDialog(false)} sx={{ color: 'text.primary' }}>Cancel</Button>
           <Button
             onClick={handleBookingSubmit}
             variant="contained"
@@ -1004,6 +1060,18 @@ const EventDetails = () => {
               !bookingForm.contactPerson.email ||
               !bookingForm.contactPerson.discord
             }
+            sx={{
+              bgcolor: 'primary.main',
+              color: 'white',
+              '&:hover': {
+                bgcolor: 'primary.dark',
+                color: 'white',
+              },
+              '&:disabled': {
+                bgcolor: 'action.disabledBackground',
+                color: 'action.disabled',
+              },
+            }}
           >
             Submit Booking
           </Button>

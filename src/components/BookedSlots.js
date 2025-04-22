@@ -17,7 +17,7 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
 const BookedSlots = ({ slots }) => {
   // Filter slots that have approved bookings
-  const slotsWithApprovedBookings = slots.filter(slot => 
+  const slotsWithApprovedBookings = slots.filter(slot =>
     slot.slots.some(s => s.booking?.status === 'approved')
   );
 
@@ -45,8 +45,8 @@ const BookedSlots = ({ slots }) => {
                     <Box sx={{ position: 'relative', width: { xs: '100%', sm: 200 }, height: { xs: 200, sm: '100%' } }}>
                       <CardMedia
                         component="img"
-                        sx={{ 
-                          width: '100%', 
+                        sx={{
+                          width: '100%',
                           height: '100%',
                           objectFit: 'cover',
                           cursor: 'pointer'
@@ -107,10 +107,8 @@ const BookedSlots = ({ slots }) => {
                                   />
                                 </Box>
                                 <Typography variant="body2" color="text.secondary">
-                                  <strong>{slotItem.booking.name}</strong>
                                   <br />
                                   VTC: {slotItem.booking.vtcName}
-                                  {slotItem.booking.vtcRole && ` - ${slotItem.booking.vtcRole}`}
                                 </Typography>
                                 {slotItem.booking.vtcLink && (
                                   <Link

@@ -73,10 +73,16 @@ const glow = keyframes`
 
 // Styled components
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
-  background: 'rgba(255, 255, 0, 0.8)',
+  background: theme.palette.mode === 'dark' 
+    ? 'rgba(30, 30, 30, 0.9)' 
+    : 'rgba(255, 255, 255, 0.9)',
   backdropFilter: 'blur(10px)',
-  boxShadow: '0 4px 30px rgba(255, 255, 0, 0.1)',
-  borderBottom: '1px solid rgba(255, 255, 0, 0.1)',
+  boxShadow: theme.palette.mode === 'dark'
+    ? '0 4px 30px rgba(0, 0, 0, 0.3)'
+    : '0 4px 30px rgba(0, 0, 0, 0.1)',
+  borderBottom: `1px solid ${theme.palette.mode === 'dark' 
+    ? 'rgba(255, 255, 255, 0.1)' 
+    : 'rgba(0, 0, 0, 0.1)'}`,
   position: 'sticky',
   top: 0,
   zIndex: theme.zIndex.drawer + 1,
@@ -85,11 +91,10 @@ const StyledAppBar = styled(AppBar)(({ theme }) => ({
 const LogoText = styled(Typography)(({ theme }) => ({
   fontWeight: 700,
   letterSpacing: '0.05em',
-  animation: `${glow} 3s infinite`,
-  background: 'rgb(255, 255, 0)',
-  WebkitBackgroundClip: 'text',
-  WebkitTextFillColor: 'transparent',
-  textShadow: '0 0 10px rgb(255, 255, 0)',
+  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+  textShadow: theme.palette.mode === 'dark' 
+    ? '0 0 10px rgba(255, 255, 255, 0.3)' 
+    : '0 0 10px rgba(0, 0, 0, 0.1)',
 }));
 
 const NavButton = styled(Button)(({ theme }) => ({
@@ -99,6 +104,7 @@ const NavButton = styled(Button)(({ theme }) => ({
   transition: 'all 0.3s ease',
   position: 'relative',
   overflow: 'hidden',
+  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
   '&:before': {
     content: '""',
     position: 'absolute',
@@ -106,15 +112,18 @@ const NavButton = styled(Button)(({ theme }) => ({
     left: 0,
     width: '100%',
     height: '100%',
-    // background: 'linear-gradient(45deg, #00b4d8, #0077b6)',
-    background:'rgb(255,255,0)',
+    background: theme.palette.mode === 'dark' 
+      ? 'rgba(255, 255, 255, 0.1)' 
+      : 'rgba(0, 0, 0, 0.1)',
     opacity: 0,
     transition: 'opacity 0.3s ease',
     zIndex: -1,
   },
   '&:hover': {
     transform: 'translateY(-2px)',
-    boxShadow: '0 4px 15px rgb(255, 255, 0, 0.4)',
+    boxShadow: theme.palette.mode === 'dark'
+      ? '0 4px 15px rgba(255, 255, 255, 0.1)'
+      : '0 4px 15px rgba(0, 0, 0, 0.1)',
     '&:before': {
       opacity: 0.1,
     },
@@ -169,7 +178,7 @@ const Navbar = () => {
       position="fixed" 
       elevation={scrolled ? 4 : 0}
       sx={{
-        background: 'black',
+        background: theme.palette.mode === 'dark' ? 'rgba(30, 30, 30, 0.9)' : 'rgba(255, 255, 255, 0.9)',
       }}
     >
       <Container maxWidth="xl">
@@ -185,7 +194,7 @@ const Navbar = () => {
             sx={{
               flexGrow: 1,
               textDecoration: 'none',
-              color: 'inherit',
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
               display: 'flex',
               alignItems: 'center',
             }}
@@ -196,7 +205,7 @@ const Navbar = () => {
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             {isAuthenticated ? (
               <>
-                {user.role === 'admin' && (
+                {(user.role === 'admin' || user.role === 'eventteam') && (
                   <Tooltip title="Admin Dashboard" arrow TransitionComponent={Fade}>
                     <NavButton
                       color="primary"
@@ -204,7 +213,7 @@ const Navbar = () => {
                       to="/admin"
                       startIcon={<Dashboard />}
                     >
-                      Admin
+                      Dashboard
                     </NavButton>
                   </Tooltip>
                 )}
@@ -255,40 +264,47 @@ const Navbar = () => {
                   PaperProps={{
                     sx: {
                       mt: 1.5,
-                      background: 'rgba(215, 253, 1, 0.9)',
+                      background: theme.palette.mode === 'dark' 
+                        ? 'rgba(30, 30, 30, 0.9)' 
+                        : 'rgba(255, 255, 255, 0.9)',
                       backdropFilter: 'blur(10px)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      border: `1px solid ${theme.palette.mode === 'dark' 
+                        ? 'rgba(255, 255, 255, 0.1)' 
+                        : 'rgba(0, 0, 0, 0.1)'}`,
                       borderRadius: '12px',
-                      boxShadow: '0 4px 30px rgb(255, 255, 0, 0.2)',
+                      boxShadow: theme.palette.mode === 'dark'
+                        ? '0 4px 30px rgba(0, 0, 0, 0.3)'
+                        : '0 4px 30px rgba(0, 0, 0, 0.1)',
                       '& .MuiMenuItem-root': {
                         borderRadius: '8px',
                         mx: 1,
                         my: 0.5,
-                        
+                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
                       },
                     },
                   }}
                 >
                   <MenuItem onClick={handleClose} sx={{ display: 'flex', alignItems: 'center' }}>
-                    <AccountCircle sx={{ mr: 2, color: '#00b4d8' }} />
-                    <Typography variant="body1">{user.username}</Typography>
+                    <AccountCircle sx={{ mr: 2, color: theme.palette.primary.main }} />
+                    <Typography variant="body1" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>{user.username}</Typography>
                   </MenuItem>
                   
-                  <MenuItem onClick={() => { navigate('/register'); handleClose(); }} sx={{ display: 'flex', alignItems: 'center' }}>
-                    <PersonAdd sx={{ mr: 2, color: '#00b4d8' }} />
-                    <Typography variant="body1">Register new admin</Typography>
-                  </MenuItem>
+                  {user.role === 'admin' && (
+                    <MenuItem onClick={() => { navigate('/register'); handleClose(); }} sx={{ display: 'flex', alignItems: 'center' }}>
+                      <PersonAdd sx={{ mr: 2, color: theme.palette.primary.main }} />
+                      <Typography variant="body1" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Register new admin</Typography>
+                    </MenuItem>
+                  )}
                   
                   <MenuItem onClick={handleLogout} sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Logout sx={{ mr: 2, color: '#00b4d8' }} />
-                    <Typography variant="body1">Logout</Typography>
+                    <Logout sx={{ mr: 2, color: theme.palette.primary.main }} />
+                    <Typography variant="body1" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Logout</Typography>
                   </MenuItem>
                 </Menu>
               </>
             ) : (
               <>
                 <NavButton
-                  style={{color:'yellow'}}
                   component={RouterLink}
                   to="/attending-events"
                   startIcon={<Event />}
@@ -297,7 +313,6 @@ const Navbar = () => {
                 </NavButton>
                 
                 <NavButton
-                  style={{color:'yellow'}}
                   component={RouterLink}
                   to="/servers"
                   startIcon={<Speed />}
@@ -307,14 +322,8 @@ const Navbar = () => {
               </>
             )}
           </Box>
-          <Box sx={{ flexGrow: 1 }} />
-          <IconButton 
-            onClick={toggleTheme} 
-            color="inherit"
-            aria-label="toggle theme"
-          >
-            {isDarkMode ? <Brightness7 /> : <Brightness4 />}
-          </IconButton>
+          
+          
         </Toolbar>
       </Container>
     </StyledAppBar>
