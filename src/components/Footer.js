@@ -1,102 +1,150 @@
 import React from 'react';
-import { Box, Container, Grid, Typography, IconButton, useTheme } from '@mui/material';
+import {
+  Box,
+  Container,
+  Grid,
+  Typography,
+  IconButton,
+  useTheme,
+  useMediaQuery
+} from '@mui/material';
 import { styled } from '@mui/material/styles';
-import FacebookIcon from '@mui/icons-material/Facebook';
-import TwitterIcon from '@mui/icons-material/Twitter';
 import InstagramIcon from '@mui/icons-material/Instagram';
+import YouTubeIcon from '@mui/icons-material/YouTube';
 import DiscordIcon from '@mui/icons-material/Chat';
-import YouTube from '@mui/icons-material/YouTube';
 
 const StyledFooter = styled('footer')(({ theme }) => ({
-  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)',
-  backdropFilter: 'blur(10px)',
-  borderTop: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
-  padding: theme.spacing(6, 0),
-  marginTop: 'auto',
+  marginTop: '80vh',
+  width: '100%',
+  minHeight: '100vh',
+  display: 'flex',
+  flexWrap: 'wrap',
+  justifyContent: 'space-evenly',
+  alignItems: 'flex-end',
+  padding: '5rem 2vw',
   position: 'relative',
-  overflow: 'hidden',
+  backgroundColor: 'transparent',
+  zIndex: 500,
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    inset: 0,
+    background: `linear-gradient(
+      rgba(0, 0, 0, 0) 5%,
+      rgba(0, 0, 0, 0.3) 20%,
+      rgba(0, 0, 0, 0.6) 30%,
+      rgba(0, 0, 0, 0.8) 40%,
+      rgba(0, 0, 0, 1) 50%,
+      rgb(0, 0, 0)
+    )`,
+    zIndex: -7,
+  },
 }));
-
-const BrandText = styled(Typography)(({ theme }) => ({
+const ScrollCard = styled(Box)(({ theme }) => ({
   position: 'absolute',
-  bottom: theme.spacing(2),
-  right: theme.spacing(4),
-  fontSize: '8rem',
-  fontWeight: 700,
-  opacity: 0.03,
-  transform: 'rotate(-15deg)',
-  userSelect: 'none',
+  top: '-5rem',
+  left: '50%',
+  transform: 'translateX(-50%)',
+  background: 'rgba(255, 255, 255, 0.05)',
+  padding: theme.spacing(2, 4),
+  borderRadius: '12px',
+  color: 'white',
+  backdropFilter: 'blur(20px)',
+  boxShadow: '0 0 30px rgba(0,0,0,0.2)',
+  fontWeight: 600,
+  fontSize: '1.1rem',
+}));
+
+const Backdrop = styled(Box)(({ theme }) => ({
+  zIndex: -5,
+  position: 'absolute',
+  inset: 0,
+  backdropFilter: 'blur(40px)',
+  WebkitBackdropFilter: 'blur(40px)',
+  maskImage: `linear-gradient(
+    rgba(0, 0, 0, 0),
+    rgba(0, 0, 0, 0.5) 10%,
+    rgba(0, 0, 0, 0.8) 20%,
+    rgba(0, 0, 0, 1) 30%,
+    rgb(0, 0, 0)
+  )`,
+  WebkitMaskImage: `linear-gradient(
+    rgba(0, 0, 0, 0),
+    rgba(0, 0, 0, 0.5) 10%,
+    rgba(0, 0, 0, 0.8) 20%,
+    rgba(0, 0, 0, 1) 30%,
+    rgb(0, 0, 0)
+  )`,
+}));
+
+const Column = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  justifyContent: 'flex-start',
+  padding: theme.spacing(3, 5),
+  width: '28%',
   [theme.breakpoints.down('sm')]: {
-    fontSize: '4rem',
-    right: theme.spacing(2),
+    width: '100%',
+    padding: theme.spacing(3),
   },
 }));
 
-const FooterLink = styled(Typography)(({ theme }) => ({
-  color: theme.palette.text.secondary,
-  cursor: 'pointer',
-  transition: 'color 0.3s ease',
-  '&:hover': {
-    color: theme.palette.primary.main,
-  },
-}));
-
-const SocialIcon = styled(IconButton)(({ theme }) => ({
-  color: theme.palette.text.secondary,
-  transition: 'all 0.3s ease',
-  '&:hover': {
-    color: theme.palette.primary.main,
-    transform: 'translateY(-3px)',
-  },
-}));
+const SocialContainer = styled(Box)({
+  display: 'flex',
+  flexDirection: 'row',
+  gap: '1rem',
+  marginTop: '1rem',
+});
 
 const Footer = () => {
   const theme = useTheme();
+  const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
 
   return (
     <StyledFooter>
-      <Container maxWidth="lg">
-        <Grid container spacing={4}>
-          <Grid item xs={12} sm={4}>
-            <Typography variant="h6" color="text.primary" gutterBottom>
-              About TNL
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              TNL Booking System is your premier platform for managing and participating in TruckersMP events. 
-              Experience seamless slot booking and event management.
-            </Typography>
-          </Grid>
-          
-          
-          
-          <Grid item xs={12} sm={4}>
-            <Typography variant="h6" color="text.primary" gutterBottom>
-              Connect With Us
-            </Typography>
-            <Box display="flex" gap={2}>
-              <SocialIcon>
-                <YouTube />
-              </SocialIcon>
-             
-              <SocialIcon>
-                <InstagramIcon />
-              </SocialIcon>
-              <SocialIcon>
-                <DiscordIcon />
-              </SocialIcon>
-            </Box>
-          </Grid>
-        </Grid>
-        
-        <Box mt={4} pt={2} borderTop="1px solid" borderColor="divider">
-          <Typography variant="body2" color="text.secondary" align="center">
-            © {new Date().getFullYear()} TNL Booking System. All rights reserved.
-          </Typography>
-        </Box>
-      </Container>
-      <BrandText>TNL</BrandText>
+      <Column>
+        <Typography variant="h5" fontWeight={500} gutterBottom>
+          TNL Booking
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Made with <span style={{ color: '#BA6573' }}>❤</span> by TNL Team
+        </Typography>
+        <SocialContainer>
+          <IconButton component="a" href="https://www.youtube.com/channel/UCKkTkfbfe9R05ac34rRVWww" target="_blank" className="link">
+            <YouTubeIcon />
+          </IconButton>
+          <IconButton component="a" href="https://www.instagram.com/tamilnadu_logistics" target="_blank" className="link">
+            <InstagramIcon />
+          </IconButton>
+          <IconButton component="a" href="https://discord.gg/psPdZtSacg" target="_blank" className="link">
+            <DiscordIcon />
+          </IconButton>
+        </SocialContainer>
+        <Typography mt={2} variant="caption" color="#818181">
+          © {new Date().getFullYear()} All Rights Reserved
+        </Typography>
+      </Column>
+
+      <Column sx={{ backgroundColor: '#121212', borderRadius: '1rem' }}>
+        <Typography component="a" href="https://www.tamilnadulogistics.in/Driver" style={{ color: 'inherit', textDecoration: 'none' }}>
+          Apply as a Rider
+        </Typography>
+        <Typography component="a" href="https://www.truckersmp.com/vtc/70030" style={{ color: 'inherit', textDecoration: 'none' }}>
+          Visit Truckers MP
+        </Typography>
+        <Typography component="a" href="https://www.tamilnadulogistics.in/terms" style={{ color: 'inherit', textDecoration: 'none' }}>
+          Privacy Policy
+        </Typography>
+        <Typography component="a" href="https://www.tamilnadulogistics.in/terms" style={{ color: 'inherit', textDecoration: 'none' }}>
+          Terms of Service
+        </Typography>
+      </Column>
+
+      <Backdrop />
+      
     </StyledFooter>
   );
 };
 
-export default Footer; 
+export default Footer;
