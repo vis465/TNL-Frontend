@@ -70,7 +70,7 @@ const ManageSlotsDialog = ({ open, onClose, event, slots: existingSlots, onSlots
     const numberOfSlots = parseInt(newSlot.numberOfSlots);
     const startingSlotNumber = parseInt(newSlot.startingSlotNumber);
 
-    if (isNaN(numberOfSlots) || numberOfSlots < 1) {
+    if (isNaN(numberOfSlots)) {
       setError('Please provide a valid number of slots');
       return;
     }
