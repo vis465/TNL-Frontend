@@ -14,9 +14,9 @@ import YouTubeIcon from '@mui/icons-material/YouTube';
 import DiscordIcon from '@mui/icons-material/Chat';
 
 const StyledFooter = styled('footer')(({ theme }) => ({
-  marginTop: '80vh',
+  // marginTop: '0.3vh',
   width: '100%',
-  minHeight: '100vh',
+  minHeight: '10vh',
   display: 'flex',
   flexWrap: 'wrap',
   justifyContent: 'space-evenly',
@@ -39,20 +39,6 @@ const StyledFooter = styled('footer')(({ theme }) => ({
     )`,
     zIndex: -7,
   },
-}));
-const ScrollCard = styled(Box)(({ theme }) => ({
-  position: 'absolute',
-  top: '-5rem',
-  left: '50%',
-  transform: 'translateX(-50%)',
-  background: 'rgba(255, 255, 255, 0.05)',
-  padding: theme.spacing(2, 4),
-  borderRadius: '12px',
-  color: 'white',
-  backdropFilter: 'blur(20px)',
-  boxShadow: '0 0 30px rgba(0,0,0,0.2)',
-  fontWeight: 600,
-  fontSize: '1.1rem',
 }));
 
 const Backdrop = styled(Box)(({ theme }) => ({
