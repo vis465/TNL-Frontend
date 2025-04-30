@@ -268,15 +268,14 @@ const ContentContainer = styled(Container)(({ theme }) => ({
 }));
 
 const formatDateTime = (date) => {
-  const utcDate = new Date(date);
-  const istDate = addHours(utcDate, 5.5); // Convert to IST (UTC+5:30)
-  
+  const utcDate = new Date(date);                      // Parse the UTC datetime
+  const istDate = new Date(utcDate.getTime() + 5.5 * 60 * 60 * 1000); // Convert to IST (UTC+5:30)
+
   return {
     utc: format(utcDate, "yyyy-MM-dd HH:mm:ss 'UTC'"),
     ist: format(istDate, "yyyy-MM-dd HH:mm:ss 'IST'")
   };
 };
-
 const Home = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);

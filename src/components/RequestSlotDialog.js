@@ -16,6 +16,8 @@ import {
   CircularProgress,
   Stack,
 } from '@mui/material';
+import Snackbar from '@mui/material/Snackbar';
+
 import axiosInstance from '../utils/axios';
 
 const RequestSlotDialog = ({ open, onClose, slot, onRequestSubmitted }) => {
@@ -33,6 +35,7 @@ const RequestSlotDialog = ({ open, onClose, slot, onRequestSubmitted }) => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   // Reset form when dialog opens
   useEffect(() => {
@@ -110,7 +113,10 @@ const RequestSlotDialog = ({ open, onClose, slot, onRequestSubmitted }) => {
       if (onRequestSubmitted) {
         onRequestSubmitted();
       }
-      onClose(true);
+      setSnackbarOpen(true); 
+      window.alert("come back again after some time to see status of your slot booking!") // Show snackbar
+
+
     } catch (error) {
       console.error('Error requesting slot:', error);
       setError(error.response?.data?.message || 'Failed to submit slot request');
@@ -119,16 +125,28 @@ const RequestSlotDialog = ({ open, onClose, slot, onRequestSubmitted }) => {
     }
   };
 
-  return (
-    <Dialog 
-      open={open} 
-      onClose={() => !loading && onClose(false)} 
-      maxWidth="sm" 
-      fullWidth
-      PaperProps={{
-        sx: { borderRadius: 2 }
-      }}
-    >
+return (
+  <>
+  <Snackbar
+    open={snackbarOpen}
+    autoHideDuration={6000}
+    onClose={() => setSnackbarOpen(false)}
+    anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+  >
+    <Alert onClose={() => setSnackbarOpen(false)} severity="info" sx={{ width: '100%' }}>
+      Your request has been submitted. Please check back later for status updates.
+    </Alert>
+  </Snackbar>
+
+  <Dialog 
+    open={open} 
+    onClose={() => !loading && onClose(false)} 
+    maxWidth="sm" 
+    fullWidth
+    PaperProps={{
+      sx: { borderRadius: 2 }
+    }}
+  >
       <DialogTitle>
         <Typography variant="h6" component="div">
           Request Slot for Image {slot?.imageNumber}
@@ -262,6 +280,7 @@ const RequestSlotDialog = ({ open, onClose, slot, onRequestSubmitted }) => {
         </Button>
       </DialogActions>
     </Dialog>
+    </>
   );
 };
 
