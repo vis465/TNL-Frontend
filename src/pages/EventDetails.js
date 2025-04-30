@@ -56,7 +56,8 @@ import ReactMarkdown from 'react-markdown';
 import { useAuth } from '../contexts/AuthContext';
 import RequestSlotDialog from '../components/RequestSlotDialog';
 import BookedSlots from '../components/BookedSlots';
-
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
 const EventDetails = () => {
   const { id } = useParams();
   const { user } = useAuth();
@@ -241,10 +242,25 @@ const EventDetails = () => {
   const handleRequestSubmitted = () => {
     refreshBookedSlots();
   };
+  
+  dayjs.extend(utc);
 
-  const formatDateTime = (date) => {
-    return format(new Date(date), "yyyy-MM-dd HH:mm:ss");
-  };
+// Format: "25 Apr 2025, 15:00 UTC"
+function formatUTCDateTime(dateString) {
+  const date = new Date(dateString);
+
+  const day = date.getUTCDate().toString().padStart(2, '0');
+  const month = date.toLocaleString('en-US', {
+    month: 'short',
+    timeZone: 'UTC',
+  });
+  const year = date.getUTCFullYear();
+  const hours = date.getUTCHours().toString().padStart(2, '0');
+  const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+
+  return `${day} ${month} ${year}, ${hours}:${minutes} UTC`;
+}
+
 
   if (loading) {
     return (
@@ -278,7 +294,7 @@ const EventDetails = () => {
       </Container>
     );
   }
-
+ 
   return (
     <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
       {/* Hero Section */}
@@ -357,7 +373,7 @@ const EventDetails = () => {
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <AccessTimeIcon color="primary" />
                     <Typography variant="body1">
-                      {formatDateTime(event.startDate)}
+                      {(event.startDate)}
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -414,18 +430,18 @@ const EventDetails = () => {
         <Grid container spacing={4}>
           {/* Main Content */}
           <Grid item xs={12} md={8}>
-            <Card sx={{ borderRadius: 2, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
-              <CardContent sx={{ p: 4 }}>
-                <Typography
-                  variant="body1"
-                  paragraph
-                  sx={{
-                    fontFamily: 'Montserrat, sans-serif',
-                    fontSize: '1.1rem',
-                    lineHeight: 1.8,
-                  }}
-                >
-                  {/* <ReactMarkdown>{event.description}</ReactMarkdown> */}
+          <Card sx={{ borderRadius: 2, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+          <CardContent sx={{ p: 4 }}>
+          <Typography
+      variant="body1"
+      sx={{
+        fontFamily: 'Montserrat, sans-serif',
+        fontSize: '1.1rem',
+        lineHeight: 1.8,
+        whiteSpace: 'pre-wrap', // for respecting line breaks
+      }}
+    >
+                  {/* <ReactMarkdown>{event.trimmedDescription}</ReactMarkdown> */}
                 </Typography>
 
                 <Divider sx={{ my: 4 }} />
@@ -443,38 +459,23 @@ const EventDetails = () => {
                     </Box>
                     <List>
                     <ListItem>
-                        <ListItemText
-                          primary="Meetup Time (UTC)"
-                          primaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
-                          secondary={formatDateTime(new Date(new Date(event.meetingPoint).getTime() ))+" UTC"}
-                          secondaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
-                          
-                        />
-                        <ListItemText
-                          primary="Meetup Time (IST)"
-                          primaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
-                          secondary={formatDateTime(new Date(new Date(event.meetingPoint).getTime()  + 5.5 * 60 * 60 * 1000 ))+" IST"}
-                          secondaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
-                          
-                        />
-                      </ListItem>
-                      {event.endDate && (
-                        <ListItem>
-                        <ListItemText
-                          primary="departure Time (UTC)"
-                          primaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
-                          secondary={formatDateTime(new Date(new Date(event.endDate).getTime()))+" UTC"}
-                          secondaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
-                          
-                        />
-                        <ListItemText
-                          primary="departure Time (IST)"
-                          primaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
-                          secondary={formatDateTime(new Date(new Date(event.endDate).getTime() + 5.5 * 60 * 60 * 1000 ))+" IST"}
-                          secondaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
-                          
-                        />
-                      </ListItem>
+  <ListItemText
+    primary="Meetup Time (UTC)"
+    secondary={formatUTCDateTime(event.meetingPoint)}
+    primaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
+    secondaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
+  />
+</ListItem>
+
+{event.endDate && (
+  <ListItem>
+    <ListItemText
+      primary="Departure Time (UTC)"
+      secondary={formatUTCDateTime(event.endDate)}
+      primaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
+      secondaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
+    />
+  </ListItem>
                         
                       )}
                     </List>
