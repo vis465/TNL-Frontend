@@ -19,7 +19,8 @@ import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import Footer from './components/Footer';
 // import { setItemWithExpiry } from './config/localStorageWithExpiry';
-
+import { Analytics } from "@vercel/analytics/react"
+import { SpeedInsights } from "@vercel/speed-insights/react"
 // Import Montserrat font
 import '@fontsource/montserrat/300.css';
 import '@fontsource/montserrat/400.css';
@@ -213,6 +214,8 @@ function App() {
             </Box>
           </MuiThemeProvider>
         </Router>
+        <SpeedInsights />
+        <Analytics />
       </ThemeProvider>
     </ThemeContext.Provider>
   );
