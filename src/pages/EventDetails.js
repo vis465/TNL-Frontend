@@ -370,12 +370,7 @@ function formatUTCDateTime(dateString) {
                   )}
                 </Stack>
                 <Stack direction="row" spacing={3} alignItems="center" sx={{ mb: 3 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <AccessTimeIcon color="primary" />
-                    <Typography variant="body1">
-                      {(event.startDate)}
-                    </Typography>
-                  </Box>
+                  
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <LocationOnIcon />
                     <Typography variant="body1">
@@ -447,7 +442,7 @@ function formatUTCDateTime(dateString) {
                 <Divider sx={{ my: 4 }} />
 
                 <Grid container spacing={4}>
-                  <Grid item xs={12} sm={6}>
+                  {/* <Grid item xs={12} sm={6}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                       <AccessTimeIcon color="primary" />
                       <Typography
@@ -479,7 +474,7 @@ function formatUTCDateTime(dateString) {
                         
                       )}
                     </List>
-                  </Grid>
+                  </Grid> */}
 
                   <Grid item xs={12} sm={6}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
