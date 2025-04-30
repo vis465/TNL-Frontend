@@ -444,16 +444,16 @@ const EventDetails = () => {
                     <List>
                     <ListItem>
                         <ListItemText
-                          primary="Start Time (UTC)"
+                          primary="Meetup Time (UTC)"
                           primaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
-                          secondary={formatDateTime(new Date(new Date(event.meetingPoint).getTime() + 60 * 60 * 1000))+" UTC"}
+                          secondary={formatDateTime(new Date(new Date(event.meetingPoint).getTime() ))+" UTC"}
                           secondaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
                           
                         />
                         <ListItemText
-                          primary="Start Time (IST)"
+                          primary="Meetup Time (IST)"
                           primaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
-                          secondary={formatDateTime(new Date(new Date(event.meetingPoint).getTime() + 60 * 60 * 1000 + 5.5 * 60 * 60 * 1000 ))+" IST"}
+                          secondary={formatDateTime(new Date(new Date(event.meetingPoint).getTime()  + 5.5 * 60 * 60 * 1000 ))+" IST"}
                           secondaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
                           
                         />
@@ -461,16 +461,16 @@ const EventDetails = () => {
                       {event.endDate && (
                         <ListItem>
                         <ListItemText
-                          primary="Start Time (UTC)"
+                          primary="departure Time (UTC)"
                           primaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
-                          secondary={formatDateTime(new Date(new Date(event.endDate).getTime() + 60 * 60 * 1000))+" UTC"}
+                          secondary={formatDateTime(new Date(new Date(event.endDate).getTime()))+" UTC"}
                           secondaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
                           
                         />
                         <ListItemText
-                          primary="Start Time (IST)"
+                          primary="departure Time (IST)"
                           primaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
-                          secondary={formatDateTime(new Date(new Date(event.endDate).getTime() + 60 * 60 * 1000 + 5.5 * 60 * 60 * 1000 ))+" IST"}
+                          secondary={formatDateTime(new Date(new Date(event.endDate).getTime() + 5.5 * 60 * 60 * 1000 ))+" IST"}
                           secondaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
                           
                         />
@@ -491,14 +491,6 @@ const EventDetails = () => {
                       </Typography>
                     </Box>
                     <List>
-                      <ListItem>
-                        <ListItemText
-                          primary="Meeting Time"
-                          secondary={formatDateTime(event.meetingPoint)}
-                          primaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
-                          secondaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
-                        />
-                      </ListItem>
                       <ListItem>
                         <ListItemText
                           primary="Departure"
