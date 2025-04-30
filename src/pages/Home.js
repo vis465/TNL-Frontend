@@ -399,25 +399,10 @@ const Home = () => {
             <Typography variant="body2">
               <strong>Server:</strong> {event.server || 'Not specified'}
             </Typography>
-            <Typography variant="body2">
-              <strong>Start:</strong>{' '}
-              <Box component="span" sx={{ display: 'block' }}>
-                {formatDateTime(event.startDate).utc}
-              </Box>
-              <Box component="span" sx={{ display: 'block', color: 'text.secondary' }}>
-                {formatDateTime(event.startDate).ist}
-              </Box>
-            </Typography>
             
-            <Typography variant="body2">
-              <strong>Meeting Point:</strong> {event.meetingPoint || 'Not specified'}
-            </Typography>
-            <Typography variant="body2">
-              <strong>Departure:</strong> {event.departurePoint || 'Not specified'}
-            </Typography>
-            <Typography variant="body2">
-              <strong>Arrival:</strong> {event.arrivalPoint || 'Not specified'}
-            </Typography>
+            
+            
+            
           </Box>
           <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
             <StyledChip
