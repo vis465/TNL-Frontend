@@ -62,10 +62,7 @@ const ManageSlotsDialog = ({ open, onClose, event, slots: existingSlots, onSlots
   });
 
   const handleAddSlot = () => {
-    if (!newSlot.imageUrl.includes('imgur.com')) {
-      setError('Please provide a valid Imgur URL');
-      return;
-    }
+
 
     const numberOfSlots = parseInt(newSlot.numberOfSlots);
     const startingSlotNumber = parseInt(newSlot.startingSlotNumber);
