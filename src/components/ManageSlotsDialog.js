@@ -62,7 +62,7 @@ const ManageSlotsDialog = ({ open, onClose, event, slots: existingSlots, onSlots
   });
 
   const handleAddSlot = () => {
-    
+
 
     const numberOfSlots = parseInt(newSlot.numberOfSlots);
     const startingSlotNumber = parseInt(newSlot.startingSlotNumber);
