@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import Marquee from "react-fast-marquee";
 import {
   Container,
   Typography,
@@ -566,7 +567,11 @@ function formatUTCDateTime(dateString) {
                     Event Slots
                   </Typography>
                 </Box>
-
+                <Marquee
+      pauseOnHover="true"
+      speed={100}>
+  Come back after sometime to check your slot's booking staus!
+</Marquee>
                 {loading ? (
                   <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                     <CircularProgress />

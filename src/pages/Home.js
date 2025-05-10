@@ -21,6 +21,8 @@ import {
 } from '@mui/material';
 import { format, isPast, isFuture, isWithinInterval, addHours } from 'date-fns';
 import axiosInstance from '../utils/axios';
+import Marquee from "react-fast-marquee";
+
 import { styled, keyframes } from '@mui/material/styles';
 
 // Animation keyframes
@@ -489,10 +491,15 @@ const Home = () => {
 
   return (
     <PageContainer>
+      <Marquee
+      pauseOnHover="true">
+  To know about slot booking informations, please visit the specific event's page by clicking view details
+</Marquee>
       <SubtleCircle />
       <SubtleCircle />
       
       <ContentContainer>
+       
         <PageTitle variant="h3" component="h1" gutterBottom>
           Convoys
         </PageTitle>
