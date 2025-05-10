@@ -233,11 +233,10 @@ const ManageSlotsDialog = ({ open, onClose, event, slots: existingSlots, onSlots
             <Grid item xs={12}>
               <TextField
                 fullWidth
-                label="Image URL (Imgur)"
+                label="Image URL"
                 value={newSlot.imageUrl}
                 onChange={(e) => setNewSlot({ ...newSlot, imageUrl: e.target.value })}
-                placeholder="https://imgur.com/..."
-                helperText="Only Imgur URLs are accepted"
+                placeholder="URL"
               />
             </Grid>
             <Grid item xs={6}>
