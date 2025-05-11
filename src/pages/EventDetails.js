@@ -570,7 +570,7 @@ function formatUTCDateTime(dateString) {
                 <Marquee
       pauseOnHover="true"
       speed={100}>
-  Come back after sometime to check your slot's booking staus!
+  Come back after sometime to check your slot's booking status!
 </Marquee>
                 {loading ? (
                   <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>

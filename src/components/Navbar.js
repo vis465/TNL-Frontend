@@ -33,7 +33,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { styled, keyframes } from '@mui/material/styles';
 import { ThemeContext } from '../App';
-
+import logo from '../img/tnllogo.jpg';
 // Animation keyframes
 const pulse = keyframes`
   0% {
@@ -184,7 +184,7 @@ const Navbar = () => {
       <Container maxWidth="xl">
         <Toolbar disableGutters>
           <AnimatedIcon sx={{ mr: 2 }}>
-            <FireTruckOutlined sx={{ fontSize: 28, color: 'rgb(255,255,0)' }} />
+            <img src={logo} alt="logo" style={{ width: '28px', height: '28px' }} />
           </AnimatedIcon>
           
           <LogoText
@@ -290,10 +290,10 @@ const Navbar = () => {
                   </MenuItem>
                   
                   {user.role === 'admin' && (
-                    <MenuItem onClick={() => { navigate('/register'); handleClose(); }} sx={{ display: 'flex', alignItems: 'center' }}>
+                  <MenuItem onClick={() => { navigate('/register'); handleClose(); }} sx={{ display: 'flex', alignItems: 'center' }}>
                       <PersonAdd sx={{ mr: 2, color: theme.palette.primary.main }} />
                       <Typography variant="body1" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Register new admin</Typography>
-                    </MenuItem>
+                  </MenuItem>
                   )}
                   
                   <MenuItem onClick={handleLogout} sx={{ display: 'flex', alignItems: 'center' }}>

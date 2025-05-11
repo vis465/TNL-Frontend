@@ -17,6 +17,7 @@ import Others from './pages/Others';
 import AttendingEvents from "./components/AttendingEvents"
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
+import NotFoundPage from './components/404';
 import Footer from './components/Footer';
 // import { setItemWithExpiry } from './config/localStorageWithExpiry';
 import { Analytics } from "@vercel/analytics/react"
@@ -204,7 +205,7 @@ function App() {
                     <Route path="/admin" element={<AdminDashboard />} />
                     <Route path="/admin/analytics" element={<AnalyticsDashboard />} />
                   </Route>
-
+                  <Route path="*" element={<NotFoundPage />} />
                   <Route element={<PrivateRoute allowedRoles={["user", "admin"]} />}>
                     <Route path="/my-bookings" element={<MyBookings />} />
                   </Route>
