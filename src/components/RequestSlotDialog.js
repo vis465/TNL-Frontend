@@ -69,18 +69,18 @@ const RequestSlotDialog = ({ open, onClose, slot, onRequestSubmitted }) => {
       setError("Please select a slot number");
       return false;
     }
-    if (!formData.discordUsername.trim()) {
-      setError("Discord username is required");
-      return false;
-    }
-    if (formData.vtcLink && !formData.vtcLink.includes("truckersmp.com/vtc/")) {
-      setError("Please provide a valid TruckersMP VTC profile link");
-      return false;
-    }
-    if (!formData.playercount || formData.playercount < 0) {
-      setError("Give valid number of players");
-      return false;
-    }
+    // if (!formData.discordUsername.trim()) {
+    //   setError("Discord username is required");
+    //   return false;
+    // }
+    // if (formData.vtcLink && !formData.vtcLink.includes("truckersmp.com/vtc/")) {
+    //   setError("Please provide a valid TruckersMP VTC profile link");
+    //   return false;
+    // }
+    // if (!formData.playercount || formData.playercount < 0) {
+    //   setError("Give valid number of players");
+    //   return false;
+    // }
     return true;
   };
 
@@ -152,7 +152,8 @@ const RequestSlotDialog = ({ open, onClose, slot, onRequestSubmitted }) => {
 
             {showSuccess && (
               <Alert severity="success" sx={{ mb: 2 }}>
-                Slot requested successfully!
+                Slot requested successfully! Please come back later to check
+                the status of your request.
               </Alert>
             )}
             {/* Slot Image Preview */}
