@@ -798,9 +798,7 @@ const EventDetails = () => {
             </Card>
 
             {/* Booked Slots Overview Section */}
-            <Box id="booked-slots-section" sx={{ scrollMarginTop: "100px" }}>
-              <BookedSlots slots={slots} />
-            </Box>
+            
           </Grid>
 
           {/* Sidebar */}
