@@ -136,8 +136,7 @@ const AdminDashboard = () => {
 
     try {
       setActionLoading(slotNumber);
-      console.log('Updating booking status:', { slotId, slotNumber, status });
-      console.log(`/slots/${slotId}/bookings/${slotNumber}`);
+      console.log('Updating booking status:', { slotId, slotNumber, status, user: localStorage.getItem('user') });
       
       // Find the booking to get the discordUsername
       const booking = bookings.find(b => b.slotId === slotId && b.slotNumber === slotNumber);
@@ -151,6 +150,9 @@ const AdminDashboard = () => {
       });
 
       console.log('Status update response:', response.data);
+      if (response.data.approvedBy) {
+        console.log('Booking approved by:', response.data.approvedBy);
+      }
       await fetchData(); // Refresh the bookings data
     } catch (error) {
       console.error('Error updating status:', error);
