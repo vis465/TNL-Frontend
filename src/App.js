@@ -18,6 +18,7 @@ import AttendingEvents from "./components/AttendingEvents"
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import NotFoundPage from './components/404';
+import Calendercomponent from './components/Calender';
 import Footer from './components/Footer';
 // import { setItemWithExpiry } from './config/localStorageWithExpiry';
 import { Analytics } from "@vercel/analytics/react"
@@ -194,6 +195,7 @@ function App() {
                 <Routes>
                   {/* Public routes */}
                   <Route path="/" element={<Home />} />
+                  <Route path="/calender" element={<Calendercomponent />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
                   <Route path="/servers" element={<Servers />} />

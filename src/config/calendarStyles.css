@@ -1,0 +1,35 @@
+/* calendarStyles.css */
+.rbc-calendar {
+  background-color: #121212; /* dark background */
+  color: #ffffff; /* text color */
+  border: none;
+}
+
+.rbc-toolbar {
+  background-color: #1e1e1e;
+  color: #fff;
+  border: none;
+}
+
+.rbc-event {
+  background-color: #1976d2; /* MUI Primary Blue */
+  color: #fff;
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+.rbc-today {
+  background-color: #2a2a2a;
+}
+
+.rbc-time-header, .rbc-time-content {
+  border-color: #444;
+}
+
+.rbc-off-range-bg {
+  background: #181818;
+}
+
+.rbc-slot-selection {
+  background: rgba(255, 255, 255, 0.1);
+}

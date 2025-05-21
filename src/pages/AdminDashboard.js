@@ -46,6 +46,7 @@ import { format } from 'date-fns';
 import axiosInstance from '../utils/axios';
 import ManageSlotsDialog from '../components/ManageSlotsDialog';
 import AnalyticsDashboard from './AnalyticsDashboard';
+import AdminInvites from '../components/AdminInvites';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -280,7 +281,7 @@ const AdminDashboard = () => {
       }}
     >
       <List sx={{ width: 250 }}>
-        {['Events Management', 'Booking Requests'].map((text, index) => (
+        {['Events Management', 'Booking Requests', 'VTC Invites'].map((text, index) => (
           <ListItem 
             button 
             key={text}
@@ -296,9 +297,9 @@ const AdminDashboard = () => {
         {user?.role === 'admin' && (
           <ListItem 
             button 
-            selected={activeTab === 2}
+            selected={activeTab === 3}
             onClick={() => {
-              setActiveTab(2);
+              setActiveTab(3);
               setDrawerOpen(false);
             }}
           >
@@ -384,6 +385,7 @@ const AdminDashboard = () => {
           >
             <Tab label="Events Management" />
             <Tab label="Booking Requests" />
+            <Tab label="VTC Invites" />
             {user?.role === 'admin' && <Tab label="Analytics" />}
           </Tabs>
         </Paper>
@@ -868,8 +870,15 @@ const AdminDashboard = () => {
         </Paper>
       )}
 
+      {/* VTC Invites Tab */}
+      {activeTab === 2 && (
+        <Paper sx={{ borderRadius: 2, overflow: 'auto' }}>
+          <AdminInvites />
+        </Paper>
+      )}
+
       {/* Analytics Tab */}
-      {activeTab === 2 && user?.role === 'admin' && (
+      {activeTab === 3 && user?.role === 'admin' && (
         <Paper sx={{ 
           borderRadius: 2, 
           overflow: 'hidden', 
