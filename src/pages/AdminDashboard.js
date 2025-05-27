@@ -47,6 +47,7 @@ import axiosInstance from '../utils/axios';
 import ManageSlotsDialog from '../components/ManageSlotsDialog';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import AdminInvites from '../components/AdminInvites';
+import MembersInfoDashboard from './fetchMembersInfo';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -295,16 +296,28 @@ const AdminDashboard = () => {
           </ListItem>
         ))}
         {user?.role === 'admin' && (
-          <ListItem 
-            button 
-            selected={activeTab === 3}
-            onClick={() => {
-              setActiveTab(3);
-              setDrawerOpen(false);
-            }}
-          >
-            <ListItemText primary="Analytics" />
-          </ListItem>
+          <React.Fragment>
+            <ListItem 
+              button 
+              selected={activeTab === 3}
+              onClick={() => {
+                setActiveTab(3);
+                setDrawerOpen(false);
+              }}
+            >
+              <ListItemText primary="Analytics" />
+            </ListItem>
+            <ListItem
+              button
+              selected={activeTab === 4}
+              onClick={() => {
+                setActiveTab(4);
+                setDrawerOpen(false);
+              }}
+            >
+              <ListItemText primary="Members Info" />
+            </ListItem>
+          </React.Fragment>
         )}
       </List>
     </SwipeableDrawer>
@@ -387,6 +400,7 @@ const AdminDashboard = () => {
             <Tab label="Booking Requests" />
             <Tab label="VTC Invites" />
             {user?.role === 'admin' && <Tab label="Analytics" />}
+            {user?.role === 'admin' && <Tab label="Members Info" />}
           </Tabs>
         </Paper>
       </Box>
@@ -885,6 +899,15 @@ const AdminDashboard = () => {
           p: { xs: 1, sm: 2, md: 3 }
         }}>
           <AnalyticsDashboard />
+        </Paper>
+      )}
+      {activeTab === 4 && user?.role === 'admin' && (
+        <Paper sx={{ 
+          borderRadius: 2, 
+          overflow: 'hidden', 
+          p: { xs: 1, sm: 2, md: 3 }
+        }}>
+          <MembersInfoDashboard />
         </Paper>
       )}
 
