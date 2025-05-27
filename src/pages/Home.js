@@ -380,6 +380,7 @@ const Home = () => {
   };
 
   const renderEventCard = (event) => (
+   
     <Grid item xs={12} sm={6} md={4} key={event._id || event.truckersmpId}>
       <StyledCard>
         {event.banner && (
@@ -431,11 +432,11 @@ const Home = () => {
             >
               View Details
             </StyledButton>
-            {event.externalLink && (
+            {event.truckersmpId && (
               <StyledButton
                 variant="outlined"
                 color="secondary"
-                href={`https://www.TruckersMP.com/events/${event.truckersmpId}`}
+                href={`https://www.truckersmp.com/events/${event.truckersmpId}`}
                 target="_blank"
                 rel="noopener noreferrer"
               >
