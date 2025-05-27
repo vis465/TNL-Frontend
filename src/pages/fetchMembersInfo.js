@@ -54,6 +54,7 @@ import {
 } from '@mui/icons-material';
 import axios from 'axios';
 import { format } from 'date-fns';
+import axiosInstance from '../utils/axios';
 
 function MembersInfoDashboard() {
   const theme = useTheme();
@@ -79,7 +80,7 @@ function MembersInfoDashboard() {
       setError(null);
       
       console.log('Fetching members info from backend...');
-      const response = await axios.get('http://localhost:5000/api/membersinfo/baninfo');
+      const response = await axiosInstance.get('/membersinfo/baninfo');
       const data = response.data.data;
       
       console.log('Received data from backend:', {
@@ -158,8 +159,8 @@ function MembersInfoDashboard() {
     console.log("invokign player for",member);
     try {
       const [playerResponse, bansResponse] = await Promise.all([
-        axios.get(`http://localhost:5000/api/membersinfo/player/${member.id}`),
-        axios.get(`http://localhost:5000/api/membersinfo/bans/${member.id}`)
+        axiosInstance.get(`/membersinfo/player/${member.id}`),
+        axiosInstance.get(`/membersinfo/bans/${member.id}`)
       ]);
       
       setMemberDetails(playerResponse.data);
