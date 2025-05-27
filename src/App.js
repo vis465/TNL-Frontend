@@ -23,6 +23,7 @@ import Footer from './components/Footer';
 // import { setItemWithExpiry } from './config/localStorageWithExpiry';
 import { Analytics } from "@vercel/analytics/react"
 import { SpeedInsights } from "@vercel/speed-insights/react"
+
 // Import Montserrat font
 import '@fontsource/montserrat/300.css';
 import '@fontsource/montserrat/400.css';
@@ -205,11 +206,12 @@ function App() {
                   {/* Protected routes */}
                   <Route element={<PrivateRoute allowedRoles={["admin","eventteam"]} />}>
                     <Route path="/admin" element={<AdminDashboard />} />
-                    <Route path="/admin/analytics" element={<AnalyticsDashboard />} />
+                    
                   </Route>
                   <Route path="*" element={<NotFoundPage />} />
                   <Route element={<PrivateRoute allowedRoles={["user", "admin"]} />}>
                     <Route path="/my-bookings" element={<MyBookings />} />
+
                   </Route>
                 </Routes>
               </Box>
