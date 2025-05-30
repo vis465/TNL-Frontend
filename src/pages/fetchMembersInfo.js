@@ -245,7 +245,7 @@ function MembersInfoDashboard() {
                     Staff Members
                   </Typography>
                   <Typography variant="h5" component="div">
-                    {members.filter(m => m.role.toLowerCase() !='rider' && m.role.toLowerCase() !='passanger').length}
+                    {members.filter(m => m.role.toLowerCase() !='rider' && m.role.toLowerCase() !='passanger' || m.role.toLowerCase()!=='trainee').length}
                   </Typography>
                 </Box>
               </Stack>
