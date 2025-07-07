@@ -670,7 +670,7 @@ const EventDetails = () => {
                           />
                           </a>
                           <CardContent sx={{ flexGrow: 1 }}>
-                            <Typography variant="p" margin={7}>Click on the image to view </Typography>
+                            <Typography variant="p">Click on the image to view </Typography>
                             <Box sx={{ mb: 2 ,mt:3}}>
                               <Chip
                                 label={`${

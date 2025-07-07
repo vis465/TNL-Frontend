@@ -18,18 +18,29 @@ import AttendingEvents from "./components/AttendingEvents"
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import NotFoundPage from './components/404';
-import Calendercomponent from './components/Calender';
 import Footer from './components/Footer';
 // import { setItemWithExpiry } from './config/localStorageWithExpiry';
 import { Analytics } from "@vercel/analytics/react"
 import { SpeedInsights } from "@vercel/speed-insights/react"
-
 // Import Montserrat font
 import '@fontsource/montserrat/300.css';
 import '@fontsource/montserrat/400.css';
 import '@fontsource/montserrat/500.css';
 import '@fontsource/montserrat/600.css';
 import '@fontsource/montserrat/700.css';
+import '@fontsource/noto-sans-tamil/400.css';
+import '@fontsource/noto-sans-tamil/500.css';
+import '@fontsource/noto-sans-tamil/600.css';
+import '@fontsource/noto-sans-tamil/700.css';
+// New page imports
+import Landing from './pages/Landing';
+import ContactUs from './pages/ContactUs';
+import Application from './pages/Application';
+import Partners from './pages/Partners';
+import Team from './pages/Team';
+import TermsAndConditions from './pages/TermsAndConditions';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import Events from './pages/Events';
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -195,24 +206,29 @@ function App() {
               <Box component="main" sx={{ flexGrow: 1 }}>
                 <Routes>
                   {/* Public routes */}
+                  
                   <Route path="/" element={<Home />} />
-                  <Route path="/calender" element={<Calendercomponent />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
                   <Route path="/servers" element={<Servers />} />
                   <Route path="/events/:id" element={<EventDetails />} />
                   <Route path="/attending-events" element={<AttendingEvents />} />
                   <Route path="/External/:id" element={<Others />} />
+                  {/* New public routes */}
+                  <Route path="/contact" element={<ContactUs />} />
+                  <Route path="/apply" element={<Application />} />
+                  <Route path="/partners" element={<Partners />} />
+                  <Route path="/team" element={<Team />} />
+                  <Route path="/terms" element={<TermsAndConditions />} />
+                  <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                  <Route path="/events" element={<Events />} />
                   {/* Protected routes */}
                   <Route element={<PrivateRoute allowedRoles={["admin","eventteam"]} />}>
                     <Route path="/admin" element={<AdminDashboard />} />
-                    
+                    <Route path="/landing" element={<Landing />} />
+                    <Route path="/admin/analytics" element={<AnalyticsDashboard />} />
                   </Route>
                   <Route path="*" element={<NotFoundPage />} />
-                  <Route element={<PrivateRoute allowedRoles={["user", "admin"]} />}>
-                    <Route path="/my-bookings" element={<MyBookings />} />
-
-                  </Route>
                 </Routes>
               </Box>
               <Footer />
