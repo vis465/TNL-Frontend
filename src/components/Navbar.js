@@ -21,14 +21,17 @@ import {
   AccountCircle, 
   Dashboard, 
   DirectionsCar, 
-  Event, 
+   
   Logout, 
   PersonAdd,
   Speed,
   Notifications,
   FireTruckOutlined,
   Brightness4,
-  Brightness7
+  Brightness7,
+  EventIcon,
+  Event,
+  AdminPanelSettings,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { styled, keyframes } from '@mui/material/styles';
@@ -173,6 +176,8 @@ const Navbar = () => {
     navigate('/login');
   };
 
+  const isAdmin = user?.role === 'admin' || user?.role === 'eventteam';
+
   return (
     <StyledAppBar 
       position="fixed" 
@@ -199,131 +204,181 @@ const Navbar = () => {
               alignItems: 'center',
             }}
           >
-            TNL Convoy Booking
+            Tamilnadu Logistics
           </LogoText>
-          
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            {isAuthenticated ? (
-              <>
-                {(user.role === 'admin' || user.role === 'eventteam') && (
-                  <Tooltip title="Admin Dashboard" arrow TransitionComponent={Fade}>
-                    <NavButton
-                      color="primary"
-                      component={RouterLink}
-                      to="/admin"
-                      startIcon={<Dashboard />}
-                    >
-                      Dashboard
-                    </NavButton>
-                  </Tooltip>
-                )}
-                
-               
-                
-                <Tooltip title="Account" arrow TransitionComponent={Fade}>
-                  <IconButton
-                    size="large"
-                    aria-label="account of current user"
-                    aria-controls="menu-appbar"
-                    aria-haspopup="true"
-                    onClick={handleMenu}
-                    color="inherit"
-                    sx={{ 
-                      ml: 1,
-                      '&:hover': {
-                        animation: `${pulse} 1.5s infinite`,
-                      }
-                    }}
-                  >
-                    <Avatar 
-                      alt={user.username} 
-                      src="/static/images/avatar/1.jpg"
-                      sx={{ 
-                        width: 32, 
-                        height: 32,
-                        border: '2px solid #00b4d8',
-                      }}
-                    />
-                  </IconButton>
-                </Tooltip>
-                
-                <Menu
-                  id="menu-appbar"
-                  anchorEl={anchorEl}
-                  anchorOrigin={{
-                    vertical: 'bottom',
-                    horizontal: 'right',
-                  }}
-                  keepMounted
-                  transformOrigin={{
-                    vertical: 'top',
-                    horizontal: 'right',
-                  }}
-                  open={Boolean(anchorEl)}
-                  onClose={handleClose}
-                  PaperProps={{
-                    sx: {
-                      mt: 1.5,
-                      background: theme.palette.mode === 'dark' 
-                        ? 'rgba(30, 30, 30, 0.9)' 
-                        : 'rgba(255, 255, 255, 0.9)',
-                      backdropFilter: 'blur(10px)',
-                      border: `1px solid ${theme.palette.mode === 'dark' 
-                        ? 'rgba(255, 255, 255, 0.1)' 
-                        : 'rgba(0, 0, 0, 0.1)'}`,
-                      borderRadius: '12px',
-                      boxShadow: theme.palette.mode === 'dark'
-                        ? '0 4px 30px rgba(0, 0, 0, 0.3)'
-                        : '0 4px 30px rgba(0, 0, 0, 0.1)',
-                      '& .MuiMenuItem-root': {
-                        borderRadius: '8px',
-                        mx: 1,
-                        my: 0.5,
-                        color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
-                      },
-                    },
-                  }}
+
+          {!isAdmin ? (
+            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
+              <NavButton
+                component={RouterLink}
+                to="/"
+                startIcon={<DirectionsCar />}
+              >
+                Home
+              </NavButton>
+              
+              <NavButton
+                component={RouterLink}
+                to="/team"
+                startIcon={<PersonAdd />}
+              >
+                Our Team
+              </NavButton>
+              <NavButton
+                component={RouterLink}
+                to="/events"
+                startIcon={<Event />}
+              >
+                Events
+              </NavButton>
+              <NavButton
+                component={RouterLink}
+                to="/attending-events"
+                startIcon={<Event />}
+              >
+                Attending Events
+              </NavButton>
+              <NavButton
+                component={RouterLink}
+                to="/servers"
+                startIcon={<FireTruckOutlined />}
+              >
+                Server Status
+              </NavButton>
+              <NavButton
+                component={RouterLink}
+                to="/apply"
+                startIcon={<Dashboard />}
+              >
+                Apply
+              </NavButton>
+              <NavButton
+                component={RouterLink}
+                to="/contact"
+                startIcon={<Event />}
+              >
+                Contact
+              </NavButton>
+            </Box>
+          ) : (
+            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
+              <NavButton
+                component={RouterLink}
+                to="/admin"
+                startIcon={<AdminPanelSettings />}
+                sx={{
+                  color: theme.palette.secondary.main,
+                  '&:hover': {
+                    backgroundColor: alpha(theme.palette.secondary.main, 0.1),
+                  },
+                }}
+              >
+                Dashboard
+              </NavButton>
+            </Box>
+          )}
+
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
+            <Tooltip title={isDarkMode ? "Light Mode" : "Dark Mode"}>
+              <IconButton
+                onClick={toggleTheme}
+                color="inherit"
+                sx={{ ml: 1 }}
+              >
+                {isDarkMode ? <Brightness7 /> : <Brightness4 />}
+              </IconButton>
+            </Tooltip>
+            {isAuthenticated && (
+              <Tooltip title="Account">
+                <IconButton
+                  onClick={handleMenu}
+                  sx={{ ml: 1 }}
+                  size="large"
+                  aria-label="account of current user"
+                  aria-controls="menu-appbar"
+                  aria-haspopup="true"
+                  color="inherit"
                 >
-                  <MenuItem onClick={handleClose} sx={{ display: 'flex', alignItems: 'center' }}>
-                    <AccountCircle sx={{ mr: 2, color: theme.palette.primary.main }} />
-                    <Typography variant="body1" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>{user.username}</Typography>
-                  </MenuItem>
-                  
-                  {user.role === 'admin' && (
-                  <MenuItem onClick={() => { navigate('/register'); handleClose(); }} sx={{ display: 'flex', alignItems: 'center' }}>
-                      <PersonAdd sx={{ mr: 2, color: theme.palette.primary.main }} />
-                      <Typography variant="body1" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Register new admin</Typography>
-                  </MenuItem>
-                  )}
-                  
-                  <MenuItem onClick={handleLogout} sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Logout sx={{ mr: 2, color: theme.palette.primary.main }} />
-                    <Typography variant="body1" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Logout</Typography>
-                  </MenuItem>
-                </Menu>
-              </>
-            ) : (
-              <>
-                <NavButton
-                  component={RouterLink}
-                  to="/attending-events"
-                  startIcon={<Event />}
-                >
-                  Attending Events
-                </NavButton>
-                
-                <NavButton
-                  component={RouterLink}
-                  to="/servers"
-                  startIcon={<Speed />}
-                >
-                  Server Status
-                </NavButton>
-              </>
+                  <Avatar sx={{ width: 32, height: 32 }}>
+                    {user?.name?.[0]?.toUpperCase() || <AccountCircle />}
+                  </Avatar>
+                </IconButton>
+              </Tooltip>
             )}
           </Box>
-          
-          
+
+          {/* Mobile menu */}
+          <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
+            <IconButton
+              size="large"
+              aria-label="menu"
+              aria-controls="menu-appbar"
+              aria-haspopup="true"
+              onClick={handleMenu}
+              color="inherit"
+            >
+              <AccountCircle />
+            </IconButton>
+            <Menu
+              id="menu-appbar"
+              anchorEl={anchorEl}
+              anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'right',
+              }}
+              keepMounted
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+              open={Boolean(anchorEl)}
+              onClose={handleClose}
+              TransitionComponent={Fade}
+            >
+              {!isAdmin ? (
+                <>
+                  <MenuItem component={RouterLink} to="/" onClick={handleClose}>
+                    Home
+                  </MenuItem>
+                  <MenuItem component={RouterLink} to="/team" onClick={handleClose}>
+                    Our Team
+                  </MenuItem>
+                  <MenuItem component={RouterLink} to="/events" onClick={handleClose}>
+                    Events
+                  </MenuItem>
+                  <MenuItem component={RouterLink} to="/attending-events" onClick={handleClose}>
+                    Attending Events
+                  </MenuItem>
+                  <MenuItem component={RouterLink} to="/servers" onClick={handleClose}>
+                    Server Status
+                  </MenuItem>
+                  <MenuItem component={RouterLink} to="/apply" onClick={handleClose}>
+                    Apply
+                  </MenuItem>
+                  <MenuItem component={RouterLink} to="/contact" onClick={handleClose}>
+                    Contact
+                  </MenuItem>
+                </>
+              ) : (
+                <MenuItem 
+                  component={RouterLink} 
+                  to="/admin" 
+                  onClick={handleClose}
+                  sx={{ color: 'secondary.main' }}
+                >
+                  Dashboard
+                </MenuItem>
+              )}
+              <MenuItem onClick={() => { toggleTheme(); handleClose(); }}>
+                {isDarkMode ? "Light Mode" : "Dark Mode"}
+              </MenuItem>
+              {isAuthenticated && (
+                <MenuItem onClick={handleLogout}>
+                  Logout
+                </MenuItem>
+              )}
+            </Menu>
+          </Box>
         </Toolbar>
       </Container>
     </StyledAppBar>

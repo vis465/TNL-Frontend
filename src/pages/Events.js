@@ -6,79 +6,101 @@ import {
   Card,
   CardContent,
   CardMedia,
+  CardActionArea,
   Button,
   Box,
+  Chip,
   CircularProgress,
   Alert,
-  Chip,
-  Divider,
-  Link,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
 import axios from 'axios';
+import EventIcon from '@mui/icons-material/Event';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import PeopleIcon from '@mui/icons-material/People';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+
+const EventCard = styled(Card)(({ theme }) => ({
+  height: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+  '&:hover': {
+    transform: 'translateY(-8px)',
+    boxShadow: theme.shadows[8],
+  },
+}));
+
+const EventImage = styled(CardMedia)(({ theme }) => ({
+  height: 200,
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+}));
+
+const EventInfo = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: theme.spacing(1),
+  marginBottom: theme.spacing(1),
+}));
 
 const Events = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
   useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(`${API_BASE_URL}/events`);
+        setEvents(response.data);
+      } catch (error) {
+        console.error('Error fetching events:', error);
+        setError('Failed to load events');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchEvents();
   }, []);
 
-  const fetchEvents = async () => {
-    try {
-      const response = await axios.get('http://localhost:5000/api/events');
-      setEvents(response.data.response || []);
-    } catch (error) {
-      setError('Error fetching events. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
+  const formatDate = (dateString) => {
+    const options = { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    };
+    return new Date(dateString).toLocaleDateString('en-US', options);
   };
 
-  const getStatusColor = (event) => {
-    const now = new Date();
-    const startDate = new Date(event.startDate);
-    const endDate = new Date(event.endDate);
-
-    if (now < startDate) return 'success'; // upcoming
-    if (now >= startDate && now <= endDate) return 'primary'; // ongoing
-    if (now > endDate) return 'default'; // completed
-    return 'default';
-  };
-
-  const getStatusLabel = (event) => {
-    const now = new Date();
-    const startDate = new Date(event.startDate);
-    // {format(new Date(event.startDate).getTime() + (5.5 * 60 * 60 * 1000), 'PPp')} IST
-    const endDate = new Date(event.endDate);
-
-    if (now < startDate) return 'Upcoming';
-    if (now >= startDate && now <= endDate) return 'Ongoing';
-    if (now > endDate) return 'Completed';
-    return 'Completed';
+  const handleEventClick = (eventId) => {
+    navigate(`/events/${eventId}`);
   };
 
   if (loading) {
     return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="80vh"
-      >
-        <CircularProgress />
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <CircularProgress size={60} />
       </Box>
     );
   }
 
   if (error) {
     return (
-      <Container>
-        <Alert severity="error" sx={{ mt: 4 }}>
+      <Container maxWidth="lg" sx={{ py: 8 }}>
+        <Alert severity="error" sx={{ mb: 4 }}>
           {error}
         </Alert>
       </Container>
@@ -86,78 +108,88 @@ const Events = () => {
   }
 
   return (
-    <Container sx={{ mt: 4 }}>
-      <Typography variant="h4" gutterBottom>
+    <Container maxWidth="lg" sx={{ py: 8 }}>
+      <Typography variant="h2" component="h1" align="center" gutterBottom>
         Events
       </Typography>
+      <Typography variant="h6" align="center" color="text.secondary" paragraph>
+        Join us in our upcoming events and be part of our trucking community
+      </Typography>
 
-      <Grid container spacing={3}>
+      <Grid container spacing={4} sx={{ mt: 4 }}>
         {events.map((event) => (
-          <Grid item xs={12} sm={6} md={4} key={event.truckersmpId}>
-            <Card>
-              <CardMedia
-                component="img"
-                height="140"
-                image={event.banner || 'https://via.placeholder.com/300x140'}
-                alt={event.title}
-              />
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  {event.title}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" paragraph>
-                  {event.description.substring(0, 150)}...
-                </Typography>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2">
-                    <strong>Route:</strong> {event.route}
+          <Grid item xs={12} sm={6} md={4} key={event._id}>
+            <EventCard>
+              <CardActionArea onClick={() => handleEventClick(event._id)}>
+                <EventImage
+                  image={event.image || '/default-event-image.jpg'}
+                  alt={event.title}
+                />
+                <CardContent>
+                  <Typography variant="h5" component="h2" gutterBottom>
+                    {event.title}
                   </Typography>
-                  <Typography variant="body2">
-                    <strong>Server:</strong> {event.server}
-                  </Typography>
-                  <Typography variant="body2">
-                    <strong>Meetup:</strong>{' '}
-                    {format(new Date(event.startDate), 'PPp')}
-                  </Typography>
-                  <Typography variant="body2">
-                    <strong>Start:</strong>{' '}
-                    {format(new Date(event.startDate), 'PPp')}
-                  </Typography>
-                  <Typography variant="body2">
-                    <strong>Attendees:</strong> {event.attendances?.confirmed || 0}
-                  </Typography>
-                </Box>
-                <Divider sx={{ my: 1 }} />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
-                  <Chip
-                    label={getStatusLabel(event)}
-                    color={getStatusColor(event)}
-                    size="small"
-                  />
-                  <Box>
-                    {event.voiceLink && (
-                      <Link
-                        href={event.voiceLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        sx={{ mr: 1 }}
-                      >
-                        <Button variant="outlined" color="secondary" size="small">
-                          Discord
-                        </Button>
-                      </Link>
-                    )}
-                    <Button
-                      variant="contained"
+                  
+                  <EventInfo>
+                    <CalendarMonthIcon color="primary" />
+                    <Typography variant="body2" color="text.secondary">
+                      {formatDate(event.date)}
+                    </Typography>
+                  </EventInfo>
+
+                  <EventInfo>
+                    <LocationOnIcon color="primary" />
+                    <Typography variant="body2" color="text.secondary">
+                      {event.location}
+                    </Typography>
+                  </EventInfo>
+
+                  <EventInfo>
+                    <AccessTimeIcon color="primary" />
+                    <Typography variant="body2" color="text.secondary">
+                      {event.duration} hours
+                    </Typography>
+                  </EventInfo>
+
+                  <EventInfo>
+                    <PeopleIcon color="primary" />
+                    <Typography variant="body2" color="text.secondary">
+                      {event.attendees?.length || 0} attendees
+                    </Typography>
+                  </EventInfo>
+
+                  <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    <Chip
+                      icon={<LocalShippingIcon />}
+                      label={event.game}
+                      size="small"
                       color="primary"
-                      onClick={() => navigate(`/events/${event.truckersmpId}`)}
-                    >
-                      View Details
-                    </Button>
+                      variant="outlined"
+                    />
+                    {event.type && (
+                      <Chip
+                        label={event.type}
+                        size="small"
+                        color="secondary"
+                        variant="outlined"
+                      />
+                    )}
                   </Box>
-                </Box>
-              </CardContent>
-            </Card>
+
+                  <Button
+                    variant="contained"
+                    fullWidth
+                    sx={{ mt: 2 }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEventClick(event._id);
+                    }}
+                  >
+                    View Details
+                  </Button>
+                </CardContent>
+              </CardActionArea>
+            </EventCard>
           </Grid>
         ))}
       </Grid>

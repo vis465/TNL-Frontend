@@ -119,11 +119,11 @@ const Footer = () => {
         <Typography component="a" href="https://www.truckersmp.com/vtc/70030" style={{ color: 'inherit', textDecoration: 'none' }}>
           Visit Truckers MP
         </Typography>
-        <Typography component="a" href="https://www.tamilnadulogistics.in/terms" style={{ color: 'inherit', textDecoration: 'none' }}>
-          Privacy Policy
+        <Typography component="a" href="https://www.tamilnadulogistics.in/terms-of-service" style={{ color: 'inherit', textDecoration: 'none' }}>
+          Terms of service
         </Typography>
-        <Typography component="a" href="https://www.tamilnadulogistics.in/terms" style={{ color: 'inherit', textDecoration: 'none' }}>
-          Terms of Service
+        <Typography component="a" href="https://www.tamilnadulogistics.in/privacy-policy" style={{ color: 'inherit', textDecoration: 'none' }}>
+          privacy policy
         </Typography>
       </Column>
 
