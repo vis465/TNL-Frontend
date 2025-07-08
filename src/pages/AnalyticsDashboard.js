@@ -782,6 +782,7 @@ const RecentBookings = () => {
       }
     };
     fetchRecentBookings();
+    // console.log("RecentBookings",RecentBookings)
   }, []);
 
   if (loading) {
@@ -808,6 +809,7 @@ const RecentBookings = () => {
               <th style={{ padding: 8, borderBottom: '1px solid #ccc' }}>Status</th>
               <th style={{ padding: 8, borderBottom: '1px solid #ccc' }}>Date</th>
               <th style={{ padding: 8, borderBottom: '1px solid #ccc' }}>Discord Username</th>
+              <th style={{ padding: 8, borderBottom: '1px solid #ccc' }}>Approved By</th>
             </tr>
           </thead>
           <tbody>
@@ -819,6 +821,7 @@ const RecentBookings = () => {
                 <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{b.status}</td>
                 <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{new Date(b.createdAt).toLocaleString()}</td>
                 <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{b.discordUsername}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{b.approvedBy}</td>
               </tr>
             ))}
           </tbody>
