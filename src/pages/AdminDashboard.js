@@ -16,6 +16,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  TextField,
   CircularProgress,
   Alert,
   Chip,
@@ -28,6 +29,7 @@ import {
   Link,
   Stack,
   Snackbar,
+  IconButton,
   DialogContentText,
   useMediaQuery,
   useTheme,
@@ -149,6 +151,7 @@ const AdminDashboard = () => {
   };
 
   const handleManageSlots = async (event) => {
+    console.log('handleManageSlots called', event)
     setSelectedEvent(event);
     try {
       const response = await axiosInstance.get(
