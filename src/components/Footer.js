@@ -97,10 +97,10 @@ const Footer = () => {
           Made with <span style={{ color: '#BA6573' }}>❤</span> by TNL Team
         </Typography>
         <SocialContainer>
-          <IconButton component="a" href="https://www.youtube.com/channel/UCKkTkfbfe9R05ac34rRVWww" target="_blank" className="link">
+          <IconButton component="a" href="https://www.youtube.com/channel/UCKkTkfbfe9R05ac34rRVWww" target="blank" className="link">
             <YouTubeIcon />
           </IconButton>
-          <IconButton component="a" href="https://www.instagram.com/tamilnadu_logistics" target="_blank" className="link">
+          <IconButton component="a" href="https://www.instagram.com/tamilnadu_logistics" target="blank" className="link">
             <InstagramIcon />
           </IconButton>
           <IconButton component="a" href="https://discord.gg/psPdZtSacg" target="_blank" className="link">
