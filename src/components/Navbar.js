@@ -211,12 +211,28 @@ const Navbar = () => {
             <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
               <NavButton
                 component={RouterLink}
+                to="/servers"
+                startIcon={<FireTruckOutlined />}
+              >
+                TMP Server Status
+              </NavButton>
+              <NavButton
+                component={RouterLink}
+                to="/contact"
+                startIcon={<Event />}
+              >
+                Contact
+              </NavButton>
+            </Box>
+          ) : (
+            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
+              <NavButton
+                component={RouterLink}
                 to="/"
                 startIcon={<DirectionsCar />}
               >
                 Home
               </NavButton>
-              
               <NavButton
                 component={RouterLink}
                 to="/team"
@@ -258,22 +274,6 @@ const Navbar = () => {
                 startIcon={<Event />}
               >
                 Contact
-              </NavButton>
-            </Box>
-          ) : (
-            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
-              <NavButton
-                component={RouterLink}
-                to="/admin"
-                startIcon={<AdminPanelSettings />}
-                sx={{
-                  color: theme.palette.secondary.main,
-                  '&:hover': {
-                    backgroundColor: alpha(theme.palette.secondary.main, 0.1),
-                  },
-                }}
-              >
-                Dashboard
               </NavButton>
             </Box>
           )}
@@ -335,7 +335,7 @@ const Navbar = () => {
               onClose={handleClose}
               TransitionComponent={Fade}
             >
-              {!isAdmin ? (
+              {isAdmin ? (
                 <>
                   <MenuItem component={RouterLink} to="/" onClick={handleClose}>
                     Home
@@ -359,15 +359,14 @@ const Navbar = () => {
                     Contact
                   </MenuItem>
                 </>
-              ) : (
-                <MenuItem 
-                  component={RouterLink} 
-                  to="/admin" 
-                  onClick={handleClose}
-                  sx={{ color: 'secondary.main' }}
-                >
-                  Dashboard
+              ) : (<>
+                <MenuItem component={RouterLink} to="/servers" onClick={handleClose}>
+                  Server Status
                 </MenuItem>
+                <MenuItem component={RouterLink} to="/contact" onClick={handleClose}>
+                    Contact
+                  </MenuItem>
+                </>
               )}
               <MenuItem onClick={() => { toggleTheme(); handleClose(); }}>
                 {isDarkMode ? "Light Mode" : "Dark Mode"}
