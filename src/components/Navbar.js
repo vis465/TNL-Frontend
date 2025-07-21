@@ -226,7 +226,7 @@ const Navbar = () => {
             </Box>
           ) : (
             <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
-              <NavButton
+              {/* <NavButton
                 component={RouterLink}
                 to="/"
                 startIcon={<DirectionsCar />}
@@ -274,7 +274,14 @@ const Navbar = () => {
                 startIcon={<Event />}
               >
                 Contact
-              </NavButton>
+              </NavButton> */}
+              <NavButton
+                component={RouterLink}
+                to="/admin"
+                startIcon={<Dashboard />}
+              >
+                Dashboard
+              </NavButton> 
             </Box>
           )}
 
@@ -335,39 +342,83 @@ const Navbar = () => {
               onClose={handleClose}
               TransitionComponent={Fade}
             >
-              {isAdmin ? (
-                <>
-                  <MenuItem component={RouterLink} to="/" onClick={handleClose}>
-                    Home
-                  </MenuItem>
-                  <MenuItem component={RouterLink} to="/team" onClick={handleClose}>
-                    Our Team
-                  </MenuItem>
-                  <MenuItem component={RouterLink} to="/events" onClick={handleClose}>
-                    Events
-                  </MenuItem>
-                  <MenuItem component={RouterLink} to="/attending-events" onClick={handleClose}>
-                    Attending Events
-                  </MenuItem>
-                  <MenuItem component={RouterLink} to="/servers" onClick={handleClose}>
-                    Server Status
-                  </MenuItem>
-                  <MenuItem component={RouterLink} to="/apply" onClick={handleClose}>
-                    Apply
-                  </MenuItem>
-                  <MenuItem component={RouterLink} to="/contact" onClick={handleClose}>
-                    Contact
-                  </MenuItem>
-                </>
-              ) : (<>
-                <MenuItem component={RouterLink} to="/servers" onClick={handleClose}>
-                  Server Status
-                </MenuItem>
-                <MenuItem component={RouterLink} to="/contact" onClick={handleClose}>
-                    Contact
-                  </MenuItem>
-                </>
-              )}
+              {!isAdmin ? (
+            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
+              <NavButton
+                component={RouterLink}
+                to="/servers"
+                startIcon={<FireTruckOutlined />}
+              >
+                TMP Server Status
+              </NavButton>
+              <NavButton
+                component={RouterLink}
+                to="/contact"
+                startIcon={<Event />}
+              >
+                Contact
+              </NavButton>
+            </Box>
+          ) : (
+            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
+              {/* <NavButton
+                component={RouterLink}
+                to="/"
+                startIcon={<DirectionsCar />}
+              >
+                Home
+              </NavButton>
+              <NavButton
+                component={RouterLink}
+                to="/team"
+                startIcon={<PersonAdd />}
+              >
+                Our Team
+              </NavButton>
+              <NavButton
+                component={RouterLink}
+                to="/events"
+                startIcon={<Event />}
+              >
+                Events
+              </NavButton>
+              <NavButton
+                component={RouterLink}
+                to="/attending-events"
+                startIcon={<Event />}
+              >
+                Attending Events
+              </NavButton>
+              <NavButton
+                component={RouterLink}
+                to="/servers"
+                startIcon={<FireTruckOutlined />}
+              >
+                Server Status
+              </NavButton>
+              <NavButton
+                component={RouterLink}
+                to="/apply"
+                startIcon={<Dashboard />}
+              >
+                Apply
+              </NavButton>
+              <NavButton
+                component={RouterLink}
+                to="/contact"
+                startIcon={<Event />}
+              >
+                Contact
+              </NavButton> */}
+              <NavButton
+                component={RouterLink}
+                to="/admin"
+                startIcon={<Dashboard />}
+              >
+                Dashboard
+              </NavButton> 
+            </Box>
+          )}
               <MenuItem onClick={() => { toggleTheme(); handleClose(); }}>
                 {isDarkMode ? "Light Mode" : "Dark Mode"}
               </MenuItem>
