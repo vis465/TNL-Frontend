@@ -239,7 +239,7 @@ const Others = () => {
   };
 
   const handleRequestSubmitted = () => {
-    refreshBookedSlots();
+    window.location.reload();
   };
 
   if (loading) {
