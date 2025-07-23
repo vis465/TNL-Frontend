@@ -93,14 +93,9 @@ const EventDetails = () => {
           axiosInstance.get(`/events/${id}`),
           axiosInstance.get(`/slots/event/${id}`),
         ]);
-
-        
-
         if (!eventResponse.data) {
           throw new Error("Event not found");
         }
-
-        // Process slots to ensure bookings are properly structured
         const processedSlots = Array.isArray(slotsResponse.data.slots)
           ? slotsResponse.data.slots.map((slot) => ({
               ...slot,
@@ -111,6 +106,7 @@ const EventDetails = () => {
           : [];
 
         setEvent(eventResponse.data);
+console.log(eventResponse.data)
         setSlots(processedSlots);
       } catch (error) {
         console.error("Error details:", error);
@@ -138,7 +134,24 @@ const EventDetails = () => {
     setSlotImages(files);
     setSlotDescriptions(new Array(files.length).fill(""));
   };
-
+  const markdownStyles = {
+    paragraph: {
+      color: "#333",
+      fontSize: "5px",
+    },
+    heading: {
+      marginTop: "1.5em",
+      marginBottom: "0.5em",
+    },
+    image: {
+      maxWidth: "100%",
+      margin: "1em 0",
+      borderRadius: "8px",
+    },
+    link: {
+      textDecoration: "underline",
+    },
+  };
   const handleDescriptionChange = (index, value) => {
     const newDescriptions = [...slotDescriptions];
     newDescriptions[index] = value;
@@ -255,22 +268,6 @@ const EventDetails = () => {
 
   dayjs.extend(utc);
 
-  // Format: "25 Apr 2025, 15:00 UTC"
-  function formatUTCDateTime(dateString) {
-    const date = new Date(dateString);
-
-    const day = date.getUTCDate().toString().padStart(2, "0");
-    const month = date.toLocaleString("en-US", {
-      month: "short",
-      timeZone: "UTC",
-    });
-    const year = date.getUTCFullYear();
-    const hours = date.getUTCHours().toString().padStart(2, "0");
-    const minutes = date.getUTCMinutes().toString().padStart(2, "0");
-
-    return `${day} ${month} ${year}, ${hours}:${minutes} UTC`;
-  }
-
   if (loading) {
     return (
       <Box
@@ -349,7 +346,7 @@ const EventDetails = () => {
                     fontFamily: "Montserrat, sans-serif",
                     fontWeight: 700,
                     mb: 2,
-                    color:"yellow",
+                    color: "yellow",
                     fontSize: { xs: "2rem", md: "3.5rem" },
                   }}
                 >
@@ -363,12 +360,11 @@ const EventDetails = () => {
                 >
                   <Chip
                     label={event.status}
-                    
                     size="large"
                     sx={{
                       bgcolor: "rgb(250, 0, 0)",
                       fontSize: "1rem",
-                      color:"white",
+                      color: "white",
                       height: "32px",
                     }}
                   />
@@ -381,7 +377,7 @@ const EventDetails = () => {
                         bgcolor: "rgb(0, 255, 85)",
                         fontSize: "1rem",
                         height: "32px",
-                        color:'black'
+                        color: "black",
                       }}
                     />
                   )}
@@ -439,7 +435,7 @@ const EventDetails = () => {
         )}
       </Box>
 
-      <Container maxWidth="xxl">
+      <Container maxWidth="xxxl">
         <Grid container spacing={4}>
           {/* Main Content */}
           <Grid item xs={12} md={8}>
@@ -447,54 +443,60 @@ const EventDetails = () => {
               sx={{ borderRadius: 2, boxShadow: "0 4px 20px rgba(0,0,0,0.05)" }}
             >
               <CardContent sx={{ p: 4 }}>
-                <Typography
-                  variant="body1"
-                  sx={{
-                    fontFamily: "Montserrat, sans-serif",
-                    fontSize: "1.1rem",
-                    lineHeight: 1.8,
-                    whiteSpace: "pre-wrap", // for respecting line breaks
-                  }}
-                >
-                  {/* <ReactMarkdown>{event.trimmedDescription}</ReactMarkdown> */}
-                </Typography>
-
                 <Divider sx={{ my: 4 }} />
 
                 <Grid container spacing={4}>
-                  {/* <Grid item xs={12} sm={6}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <Grid item xs={12} sm={6}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        mb: 2,
+                      }}
+                    >
                       <AccessTimeIcon color="primary" />
                       <Typography
                         variant="h6"
-                        sx={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
+                        sx={{
+                          fontFamily: "Montserrat, sans-serif",
+                          fontWeight: 600,
+                        }}
                       >
                         Event Schedule
                       </Typography>
                     </Box>
                     <List>
-                    <ListItem>
-  <ListItemText
-    primary="Meetup Time (UTC)"
-    secondary={formatUTCDateTime(event.meetingPoint)}
-    primaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
-    secondaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
-  />
-</ListItem>
+                      <ListItem>
+                        {event.endtime&&
+                        <ListItemText
+                          primary="Meetup Time (UTC)"
+                          secondary={event.startDate ? format(new Date(event.startDate), "dd-MMM-yyyy HH:mm") : 'Not specified'}
+                          primaryTypographyProps={{
+                            fontFamily: "Montserrat, sans-serif",
+                          }}
+                          secondaryTypographyProps={{
+                            fontFamily: "Montserrat, sans-serif",
+                          }}
+                        />}
+                      </ListItem>
 
-{event.endDate && (
-  <ListItem>
-    <ListItemText
-      primary="Departure Time (UTC)"
-      secondary={formatUTCDateTime(event.endDate)}
-      primaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
-      secondaryTypographyProps={{ fontFamily: 'Montserrat, sans-serif' }}
-    />
-  </ListItem>
-                        
+                      {event.endtime && (
+                        <ListItem>
+                          <ListItemText
+                            primary="Departure Time (UTC)"
+                            secondary={event.endtime ? format(new Date(event.endtime), "dd-MMM-yyyy HH:mm") : 'Not specified'}
+                            primaryTypographyProps={{
+                              fontFamily: "Montserrat, sans-serif",
+                            }}
+                            secondaryTypographyProps={{
+                              fontFamily: "Montserrat, sans-serif",
+                            }}
+                          />
+                        </ListItem>
                       )}
                     </List>
-                  </Grid> */}
+                  </Grid>
 
                   <Grid item xs={12} sm={6}>
                     <Box
@@ -544,7 +546,78 @@ const EventDetails = () => {
                     </List>
                   </Grid>
                 </Grid>
-
+               {event.description && <Accordion
+                  sx={{
+                    mt: 4,
+                    borderRadius: 2,
+                    boxShadow: "none",
+                    "&:before": { display: "none" },
+                  }}
+                >
+                  <AccordionSummary
+                    expandIcon={<ExpandMoreIcon />}
+                    sx={{
+                      borderRadius: 2,
+                      bgcolor: "rgba(0,0,0,0.02)",
+                      "&:hover": { bgcolor: "rgba(0,0,0,0.04)" },
+                    }}
+                  >
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontFamily: "Montserrat, sans-serif",
+                        fontWeight: 600,
+                      }}
+                    >
+                      Event Description
+                    </Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Typography
+                      sx={{
+                        fontFamily: "Montserrat, sans-serif",
+                        fontSize: "1rem",
+                        lineHeight: 1.8,
+                      }}
+                    >
+                      <ReactMarkdown
+                        components={{
+                          h1: ({ node, ...props }) => (
+                            <h1 style={markdownStyles.heading} {...props} />
+                          ),
+                          h2: ({ node, ...props }) => (
+                            <h2 style={markdownStyles.heading} {...props} />
+                          ),
+                          h3: ({ node, ...props }) => (
+                            <h3 style={markdownStyles.heading} {...props} />
+                          ),
+                          p: ({ node, ...props }) => (
+                            <p style={markdownStyles.paragraph} {...props} />
+                          ),
+                          img: ({ node, ...props }) => (
+                            <img
+                              style={markdownStyles.image}
+                              alt={props.alt}
+                              src={props.src}
+                            />
+                          ),
+                          a: ({ node, ...props }) => (
+                            <a
+                              style={markdownStyles.link}
+                              href={props.href}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              {props.children}
+                            </a>
+                          ),
+                        }}
+                      >
+                        {event.description}
+                      </ReactMarkdown>
+                    </Typography>
+                  </AccordionDetails>
+                </Accordion>}
                 {event.rule && (
                   <Accordion
                     sx={{
@@ -626,7 +699,7 @@ const EventDetails = () => {
                     {freeslots} free slots available
                   </Typography>
                 </Box>
-                
+
                 <Marquee pauseOnHover="true" speed={100}>
                   Come back after sometime to check your slot's booking status!
                 </Marquee>
@@ -661,17 +734,19 @@ const EventDetails = () => {
                           }}
                         >
                           <a href={slot.imageUrl} target="blank">
-                          <CardMedia
-                            component="img"
-                            // height="300"
-                            image={slot.imageUrl}
-                            alt={`Slot ${slot.imageNumber}`}
-                            sx={{ objectFit: "cover" }}
-                          />
+                            <CardMedia
+                              component="img"
+                              // height="300"
+                              image={slot.imageUrl}
+                              alt={`Slot ${slot.imageNumber}`}
+                              sx={{ objectFit: "cover" }}
+                            />
                           </a>
                           <CardContent sx={{ flexGrow: 1 }}>
-                            <Typography variant="p">Click on the image to view </Typography>
-                            <Box sx={{ mb: 2 ,mt:3}}>
+                            <Typography variant="p">
+                              Click on the image to view{" "}
+                            </Typography>
+                            <Box sx={{ mb: 2, mt: 3 }}>
                               <Chip
                                 label={`${
                                   slot.slots.filter((s) => s.isAvailable).length
@@ -798,7 +873,6 @@ const EventDetails = () => {
             </Card>
 
             {/* Booked Slots Overview Section */}
-            
           </Grid>
 
           {/* Sidebar */}
@@ -904,38 +978,6 @@ const EventDetails = () => {
                       View Route Map
                     </Button>
                   )}
-
-                  <Button
-                    variant="outlined"
-                    color="primary"
-                    onClick={() => {
-                      const bookedSlotsSection = document.getElementById(
-                        "booked-slots-section"
-                      );
-                      if (bookedSlotsSection) {
-                        bookedSlotsSection.scrollIntoView({
-                          behavior: "smooth",
-                        });
-                      }
-                    }}
-                    fullWidth
-                    sx={{
-                      borderRadius: 2,
-                      py: 1.5,
-                      fontFamily: "Montserrat, sans-serif",
-                      textTransform: "none",
-                      fontWeight: 500,
-                      borderColor: "primary.main",
-                      color: "primary.main",
-                      "&:hover": {
-                        borderColor: "primary.dark",
-                        bgcolor: "primary.light",
-                        color: "primary.dark",
-                      },
-                    }}
-                  >
-                    View Booked Slots
-                  </Button>
                 </Stack>
 
                 {event.attendances && (
