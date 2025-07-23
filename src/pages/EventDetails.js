@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
+
 import Marquee from "react-fast-marquee";
 import {
   Container,
@@ -471,7 +472,7 @@ console.log(eventResponse.data)
                        
                         <ListItemText
                           primary="Meetup Time (UTC)"
-                          secondary={event.meetingPoint}
+                            secondary={event.startDate ? format(new Date(event.startDate), "dd-MMM-yyyy HH:mm") : 'Not specified'}
                           primaryTypographyProps={{
                             fontFamily: "Montserrat, sans-serif",
                           }}
