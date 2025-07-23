@@ -468,17 +468,17 @@ console.log(eventResponse.data)
                     </Box>
                     <List>
                       <ListItem>
-                        {event.endtime&&
+                       
                         <ListItemText
                           primary="Meetup Time (UTC)"
-                          secondary={event.startDate ? format(new Date(event.startDate), "dd-MMM-yyyy HH:mm") : 'Not specified'}
+                          secondary={event.meetingPoint}
                           primaryTypographyProps={{
                             fontFamily: "Montserrat, sans-serif",
                           }}
                           secondaryTypographyProps={{
                             fontFamily: "Montserrat, sans-serif",
                           }}
-                        />}
+                        />
                       </ListItem>
 
                       {event.endtime && (
