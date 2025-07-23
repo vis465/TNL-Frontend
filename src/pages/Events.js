@@ -67,6 +67,7 @@ const Events = () => {
         setError('Failed to load events');
       } finally {
         setLoading(false);
+        console.log(events)
       }
     };
 

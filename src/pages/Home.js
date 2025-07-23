@@ -291,14 +291,11 @@ const Home = () => {
 
   const fetchEvents = async () => {
     try {
-      console.log('Fetching events...');
-      const response = await axiosInstance.get('/events');
-      console.log('Raw API Response:', response);
-      console.log('Response Data:', response.data);
       
-      // Check if response.data has a response property
+      const response = await axiosInstance.get('/events');
       const eventsData = response.data.response || response.data;
-      console.log('Events Data:', eventsData);
+      console.log(eventsData)
+      
       
       if (!Array.isArray(eventsData)) {
         console.error('Events data is not an array:', eventsData);
@@ -307,8 +304,6 @@ const Home = () => {
       }
 
       const filteredEvents = eventsData.filter(event => event.status !== 'Completed');
-      console.log('Filtered Events:', filteredEvents);
-      console.log('Number of events:', filteredEvents.length);
       
       setEvents(filteredEvents);
     } catch (error) {
@@ -336,16 +331,16 @@ const Home = () => {
 
   const categorizeEvents = () => {
     const now = new Date();
-    console.log('Categorizing events:', events);
+    
   
     const categorized = {
       upcoming: events.filter(event => {
         try {
           const startDate = new Date(event.startDate);
-          console.log('Checking upcoming event:', event.title, startDate);
+          // console.log('Checking upcoming event:', event.title, startDate);
           return startDate > now; // Future start date
         } catch (error) {
-          console.error('Error processing upcoming event:', event.title, error);
+          // console.error('Error processing upcoming event:', event.title, error);
           return false;
         }
       }),
@@ -362,7 +357,7 @@ const Home = () => {
       past: events.filter(event => {
         try {
           const startDate = new Date(event.startDate);
-          console.log('Checking past event:', event.title, startDate);
+          // console.log('Checking past event:', event.title, startDate);
           return startDate < now; // Past start date
         } catch (error) {
           console.error('Error processing past event:', event.title, error);
@@ -371,7 +366,7 @@ const Home = () => {
       })
     };
   
-    console.log('Categorized events:', categorized);
+    // console.log('Categorized events:', categorized);
     return categorized;
   };
 
@@ -400,6 +395,12 @@ const Home = () => {
             </Typography>
             <Typography variant="body2">
               <strong>Server:</strong> {event.server || 'Not specified'}
+            </Typography>
+            <Typography variant="body2">
+              <strong>Meetup Time:</strong> {event.startDate ? format(new Date(event.startDate), "dd-MMM-yyyy HH:mm") : 'Not specified'} UTC
+            </Typography>
+            <Typography variant="body2">
+              <strong>Departure Time:</strong> {event.endtime ? format(new Date(event.endtime), "dd-MMM-yyyy HH:mm") : 'Not specified'} UTC
             </Typography>
             
             
@@ -487,7 +488,7 @@ const Home = () => {
   }
 
   const { upcoming, live, past } = categorizeEvents();
-  console.log('Final categorized events:', { upcoming, live, past });
+  // console.log('Final categorized events:', { upcoming, live, past });
 
   return (
     <PageContainer>
