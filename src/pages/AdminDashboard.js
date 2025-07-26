@@ -119,7 +119,12 @@ const AdminDashboard = () => {
     console.log('handleManageSlots called', event)
     setSelectedEvent(event);
     try {
-      const response = await axiosInstance.get(`/slots/event/${event.truckersmpId}`);
+      // Use the admin endpoint if the user is admin or eventteam
+      let url = `/slots/event/${event.truckersmpId}`;
+      if (user && (user.role === 'admin' || user.role === 'eventteam')) {
+        url = `/slots/admin/event/${event.truckersmpId}`;
+      }
+      const response = await axiosInstance.get(url);
       setEventSlots(response.data.slots || []);
       setManageSlotsOpen(true);
     } catch (error) {
