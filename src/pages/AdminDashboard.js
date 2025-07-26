@@ -154,12 +154,7 @@ const AdminDashboard = () => {
     console.log('handleManageSlots called', event)
     setSelectedEvent(event);
     try {
-      const response = await axiosInstance.get(
-        `/slots/event/${event.truckersmpId}`
-      );
-      const response = await axiosInstance.get(
-        `/slots/event/${event.truckersmpId}`
-      );
+      const response = await axiosInstance.get(`/slots/event/${event.truckersmpId}`);
       setEventSlots(response.data.slots || []);
       setManageSlotsOpen(true);
     } catch (error) {
