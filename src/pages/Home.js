@@ -22,7 +22,7 @@ import {
 import { format, isPast, isFuture, isWithinInterval, addHours } from 'date-fns';
 import axiosInstance from '../utils/axios';
 import Marquee from "react-fast-marquee";
-
+import placeholderimage from "../img/placeholder.jpg"
 import { styled, keyframes } from '@mui/material/styles';
 
 // Animation keyframes
@@ -377,13 +377,21 @@ const Home = () => {
   const renderEventCard = (event) => (
     <Grid item xs={12} sm={6} md={4} key={event._id || event.truckersmpId}>
       <StyledCard>
-        {event.banner && (
+        {event.banner.length>1 && (
           <StyledCardMedia
             component="img"
-            image={event.banner}
+            image={event.banner }
             alt={event.title}
           />
         )}
+        {event.banner.length<1 && (
+          <StyledCardMedia
+            component="img"
+            image={placeholderimage}
+            alt={event.title}
+          />
+        )}
+        
         <StyledCardContent>
           <Typography gutterBottom variant="h5" component="h2">
             {event.title}
