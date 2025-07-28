@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-
+import placeholderimage from "../img/placeholder.jpg";
 import Marquee from "react-fast-marquee";
 import {
   Container,
@@ -107,7 +107,7 @@ const EventDetails = () => {
           : [];
 
         setEvent(eventResponse.data);
-console.log(eventResponse.data)
+        console.log(eventResponse.data);
         setSlots(processedSlots);
       } catch (error) {
         console.error("Error details:", error);
@@ -306,7 +306,7 @@ console.log(eventResponse.data)
     <Box sx={{ bgcolor: "background.default", minHeight: "100vh" }}>
       {/* Hero Section */}
       <Box sx={{ position: "relative", mb: 6 }}>
-        {event.banner && (
+        {event.banner > 1 && (
           <Box
             sx={{
               position: "relative",
@@ -320,6 +320,136 @@ console.log(eventResponse.data)
             <CardMedia
               component="img"
               image={event.banner}
+              alt={event.title}
+              sx={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                objectPosition: "center",
+              }}
+            />
+            <Box
+              sx={{
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                p: 6,
+                background: "linear-gradient(transparent, rgba(0,0,0,0.8))",
+                color: "white",
+              }}
+            >
+              <Container maxWidth="lg">
+                <Typography
+                  variant="h2"
+                  component="h1"
+                  sx={{
+                    fontFamily: "Montserrat, sans-serif",
+                    fontWeight: 700,
+                    mb: 2,
+                    color: "yellow",
+                    fontSize: { xs: "2rem", md: "3.5rem" },
+                  }}
+                >
+                  {event.title}
+                </Typography>
+                <Stack
+                  direction="row"
+                  spacing={2}
+                  alignItems="center"
+                  sx={{ mb: 2 }}
+                >
+                  <Chip
+                    label={event.status}
+                    size="large"
+                    sx={{
+                      bgcolor: "rgb(250, 0, 0)",
+                      fontSize: "1rem",
+                      color: "white",
+                      height: "32px",
+                    }}
+                  />
+                  {event.attendances && (
+                    <Chip
+                      icon={<GroupsIcon />}
+                      label={`${event.attendances.confirmed} attending`}
+                      size="large"
+                      sx={{
+                        bgcolor: "rgb(0, 255, 85)",
+                        fontSize: "1rem",
+                        height: "32px",
+                        color: "black",
+                      }}
+                    />
+                  )}
+                </Stack>
+                <Stack
+                  direction="row"
+                  spacing={3}
+                  alignItems="center"
+                  sx={{ mb: 3 }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <LocationOnIcon />
+                    <Typography variant="body1">{event.route}</Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <StorageIcon />
+                    <Typography variant="body1">{event.server}</Typography>
+                  </Box>
+                </Stack>
+                <Button
+                  variant="contained"
+                  size="large"
+                  onClick={() => {
+                    const slotsSection =
+                      document.getElementById("slots-section");
+                    if (slotsSection) {
+                      slotsSection.scrollIntoView({ behavior: "smooth" });
+                    }
+                  }}
+                  sx={{
+                    borderRadius: 2,
+                    textTransform: "none",
+                    fontFamily: "Montserrat, sans-serif",
+                    fontWeight: 600,
+                    px: 4,
+                    py: 1.5,
+                    fontSize: "1.1rem",
+                    bgcolor: "primary.main",
+                    color: "white",
+                    "&:hover": {
+                      bgcolor: "primary.dark",
+                      color: "white",
+                    },
+                    "&:disabled": {
+                      bgcolor: "action.disabledBackground",
+                      color: "action.disabled",
+                    },
+                  }}
+                >
+                  Book Slot
+                </Button>
+              </Container>
+            </Box>
+          </Box>
+        )}
+      </Box>
+      <Box sx={{ position: "relative", mb: 6 }}>
+        {event.banner < 1 && (
+          <Box
+            sx={{
+              position: "relative",
+              width: "100%",
+              height: { xs: "300px", md: "500px" },
+              overflow: "hidden",
+              borderRadius: 0,
+              boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+            }}
+          >
+            <CardMedia
+              component="img"
+              image={placeholderimage}
               alt={event.title}
               sx={{
                 width: "100%",
@@ -469,10 +599,16 @@ console.log(eventResponse.data)
                     </Box>
                     <List>
                       <ListItem>
-                       
                         <ListItemText
                           primary="Meetup Time (UTC)"
-                            secondary={event.startDate ? format(new Date(event.startDate), "dd-MMM-yyyy HH:mm") : 'Not specified'}
+                          secondary={
+                            event.startDate
+                              ? format(
+                                  new Date(event.startDate),
+                                  "dd-MMM-yyyy HH:mm"
+                                )
+                              : "Not specified"
+                          }
                           primaryTypographyProps={{
                             fontFamily: "Montserrat, sans-serif",
                           }}
@@ -486,7 +622,14 @@ console.log(eventResponse.data)
                         <ListItem>
                           <ListItemText
                             primary="Departure Time (UTC)"
-                            secondary={event.endtime ? format(new Date(event.endtime), "dd-MMM-yyyy HH:mm") : 'Not specified'}
+                            secondary={
+                              event.endtime
+                                ? format(
+                                    new Date(event.endtime),
+                                    "dd-MMM-yyyy HH:mm"
+                                  )
+                                : "Not specified"
+                            }
                             primaryTypographyProps={{
                               fontFamily: "Montserrat, sans-serif",
                             }}
@@ -547,78 +690,80 @@ console.log(eventResponse.data)
                     </List>
                   </Grid>
                 </Grid>
-               {event.description && <Accordion
-                  sx={{
-                    mt: 4,
-                    borderRadius: 2,
-                    boxShadow: "none",
-                    "&:before": { display: "none" },
-                  }}
-                >
-                  <AccordionSummary
-                    expandIcon={<ExpandMoreIcon />}
+                {event.description && (
+                  <Accordion
                     sx={{
+                      mt: 4,
                       borderRadius: 2,
-                      bgcolor: "rgba(0,0,0,0.02)",
-                      "&:hover": { bgcolor: "rgba(0,0,0,0.04)" },
+                      boxShadow: "none",
+                      "&:before": { display: "none" },
                     }}
                   >
-                    <Typography
-                      variant="h6"
+                    <AccordionSummary
+                      expandIcon={<ExpandMoreIcon />}
                       sx={{
-                        fontFamily: "Montserrat, sans-serif",
-                        fontWeight: 600,
+                        borderRadius: 2,
+                        bgcolor: "rgba(0,0,0,0.02)",
+                        "&:hover": { bgcolor: "rgba(0,0,0,0.04)" },
                       }}
                     >
-                      Event Description
-                    </Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Typography
-                      sx={{
-                        fontFamily: "Montserrat, sans-serif",
-                        fontSize: "1rem",
-                        lineHeight: 1.8,
-                      }}
-                    >
-                      <ReactMarkdown
-                        components={{
-                          h1: ({ node, ...props }) => (
-                            <h1 style={markdownStyles.heading} {...props} />
-                          ),
-                          h2: ({ node, ...props }) => (
-                            <h2 style={markdownStyles.heading} {...props} />
-                          ),
-                          h3: ({ node, ...props }) => (
-                            <h3 style={markdownStyles.heading} {...props} />
-                          ),
-                          p: ({ node, ...props }) => (
-                            <p style={markdownStyles.paragraph} {...props} />
-                          ),
-                          img: ({ node, ...props }) => (
-                            <img
-                              style={markdownStyles.image}
-                              alt={props.alt}
-                              src={props.src}
-                            />
-                          ),
-                          a: ({ node, ...props }) => (
-                            <a
-                              style={markdownStyles.link}
-                              href={props.href}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              {props.children}
-                            </a>
-                          ),
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          fontFamily: "Montserrat, sans-serif",
+                          fontWeight: 600,
                         }}
                       >
-                        {event.description}
-                      </ReactMarkdown>
-                    </Typography>
-                  </AccordionDetails>
-                </Accordion>}
+                        Event Description
+                      </Typography>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      <Typography
+                        sx={{
+                          fontFamily: "Montserrat, sans-serif",
+                          fontSize: "1rem",
+                          lineHeight: 1.8,
+                        }}
+                      >
+                        <ReactMarkdown
+                          components={{
+                            h1: ({ node, ...props }) => (
+                              <h1 style={markdownStyles.heading} {...props} />
+                            ),
+                            h2: ({ node, ...props }) => (
+                              <h2 style={markdownStyles.heading} {...props} />
+                            ),
+                            h3: ({ node, ...props }) => (
+                              <h3 style={markdownStyles.heading} {...props} />
+                            ),
+                            p: ({ node, ...props }) => (
+                              <p style={markdownStyles.paragraph} {...props} />
+                            ),
+                            img: ({ node, ...props }) => (
+                              <img
+                                style={markdownStyles.image}
+                                alt={props.alt}
+                                src={props.src}
+                              />
+                            ),
+                            a: ({ node, ...props }) => (
+                              <a
+                                style={markdownStyles.link}
+                                href={props.href}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                {props.children}
+                              </a>
+                            ),
+                          }}
+                        >
+                          {event.description}
+                        </ReactMarkdown>
+                      </Typography>
+                    </AccordionDetails>
+                  </Accordion>
+                )}
                 {event.rule && (
                   <Accordion
                     sx={{

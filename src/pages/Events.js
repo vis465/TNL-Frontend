@@ -24,7 +24,7 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import PeopleIcon from '@mui/icons-material/People';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
-
+import placeholderimage from "../img/placeholder.jpg"
 const EventCard = styled(Card)(({ theme }) => ({
   height: '100%',
   display: 'flex',
