@@ -383,42 +383,7 @@ const avgAttendance = totalEvents > 0 ? Math.round(totalAttendance / totalEvents
             </Grid>
 
             {/* Event Attendance */}
-            <Grid item xs={12}>
-              <Paper sx={{ p: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                  Event Attendance Overview
-                </Typography>
-                <Box sx={{ height: 400 }}>
-                  {stats.eventAttendance.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart 
-                        data={stats.eventAttendance}
-                        margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis 
-                          dataKey="name" 
-                          angle={-45} 
-                          textAnchor="end"
-                          height={70}
-                          interval={0}
-                        />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Bar dataKey="attendance" name="Confirmed Attendees" fill="#2196F3" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <Box display="flex" justifyContent="center" alignItems="center" height="100%">
-                      <Typography variant="body1" color="text.secondary">
-                        No event attendance data available
-                      </Typography>
-                    </Box>
-                  )}
-                </Box>
-              </Paper>
-            </Grid>
+           
           </Grid>
         </>
       )}
@@ -427,47 +392,7 @@ const avgAttendance = totalEvents > 0 ? Math.round(totalAttendance / totalEvents
       {activeTab === 1 && (
         <Grid container spacing={3}>
           {/* Event Attendance Bar Chart - Detailed */}
-          <Grid item xs={12} lg={8}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Event Attendance (Detailed)
-              </Typography>
-              <Box sx={{ height: 500 }}>
-                {stats.eventAttendance.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart 
-                      data={stats.eventAttendance}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis 
-                        dataKey="name" 
-                        angle={-45} 
-                        textAnchor="end"
-                        height={100}
-                        interval={0}
-                      />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Bar 
-                        dataKey="attendance" 
-                        name="Confirmed Attendees" 
-                        fill="#2196F3" 
-                        radius={[4, 4, 0, 0]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <Box display="flex" justifyContent="center" alignItems="center" height="100%">
-                    <Typography variant="body1" color="text.secondary">
-                      No event attendance data available
-                    </Typography>
-                  </Box>
-                )}
-              </Box>
-            </Paper>
-          </Grid>
+          
 
           {/* Event Slot Utilization */}
           <Grid item xs={12} lg={4}>
