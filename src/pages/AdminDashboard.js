@@ -65,9 +65,37 @@ const AdminDashboard = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [expandedEvents, setExpandedEvents] = useState({});
   const [user, setUser] = useState(null);
+  const [eventFilter, setEventFilter] = useState('future'); // 'future' or 'past'
   
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  // Filter events based on current filter
+  const filteredEvents = events.filter(event => {
+    const eventDate = new Date(event.startDate);
+    const now = new Date();
+    
+    if (eventFilter === 'future') {
+      return eventDate >= now;
+    } else {
+      return eventDate < now;
+    }
+  });
+
+  // Filter bookings based on event filter
+  const filteredBookings = bookings.filter(booking => {
+    const event = events.find(e => e.truckersmpId === booking.eventId);
+    if (!event) return false;
+    
+    const eventDate = new Date(event.startDate);
+    const now = new Date();
+    
+    if (eventFilter === 'future') {
+      return eventDate >= now;
+    } else {
+      return eventDate < now;
+    }
+  });
 
   useEffect(() => {
     // Fetch user from localStorage
@@ -359,15 +387,39 @@ const AdminDashboard = () => {
           Admin Dashboard
         </Typography>
         </Box>
-        <IconButton 
-          onClick={handleRefresh} 
-          disabled={loading}
-          color="primary"
-          size={isMobile ? "medium" : "large"}
-          sx={{ color: 'red' }}
-        >
-          <RefreshIcon />
-        </IconButton>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {/* Event Filter */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>
+              Events:
+            </Typography>
+            <Button
+              variant={eventFilter === 'future' ? 'contained' : 'outlined'}
+              size="small"
+              onClick={() => setEventFilter('future')}
+              sx={{ minWidth: 'auto', px: 2 }}
+            >
+              Future
+            </Button>
+            <Button
+              variant={eventFilter === 'past' ? 'contained' : 'outlined'}
+              size="small"
+              onClick={() => setEventFilter('past')}
+              sx={{ minWidth: 'auto', px: 2 }}
+            >
+              Past
+            </Button>
+          </Box>
+          <IconButton 
+            onClick={handleRefresh} 
+            disabled={loading}
+            color="primary"
+            size={isMobile ? "medium" : "large"}
+            sx={{ color: 'red' }}
+          >
+            <RefreshIcon />
+          </IconButton>
+        </Box>
       </Box>
 
       {!isMobile ? (
@@ -418,14 +470,14 @@ const AdminDashboard = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {events.length === 0 ? (
+                {filteredEvents.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={isMobile ? 1 : 4}>
                       <Alert severity="info">No events found.</Alert>
                     </TableCell>
                   </TableRow>
                 ) : (
-                  events.map((event) => (
+                  filteredEvents.map((event) => (
                     <TableRow key={event.truckersmpId}>
                       <TableCell sx={mobileTableCell}>
                         <Typography variant="subtitle1">{event.title}</Typography>
@@ -531,20 +583,21 @@ const AdminDashboard = () => {
               <TableHead>
                 <TableRow>
                   <TableCell>Event</TableCell>
-                  {!isMobile && (
+                  {/* {!isMobile && (
                     <>
                   <TableCell>Image</TableCell>
                   <TableCell>Slot Number</TableCell>
+                  <TableCell>Expected Riders</TableCell>
                   <TableCell>Requester</TableCell>
                   <TableCell>VTC Details</TableCell>
                   <TableCell>Status</TableCell>
                   <TableCell>Actions</TableCell>
                     </>
-                  )}
+                  )} */}
                 </TableRow>
               </TableHead>
               <TableBody>
-                {bookings.length === 0 ? (
+                {filteredBookings.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={isMobile ? 1 : 7}>
                       <Alert severity="info">No booking requests found.</Alert>
@@ -553,7 +606,7 @@ const AdminDashboard = () => {
                 ) : (
                   // Group bookings by event title
                   Object.entries(
-                    bookings.reduce((acc, booking) => {
+                    filteredBookings.reduce((acc, booking) => {
                       const eventTitle = booking.eventTitle || 'Unknown Event';
                       if (!acc[eventTitle]) {
                         acc[eventTitle] = [];
@@ -641,6 +694,7 @@ const AdminDashboard = () => {
                                       <>
                                       <TableCell>Image</TableCell>
                                       <TableCell>Slot Number</TableCell>
+                                      <TableCell>Expected Riders</TableCell>
                                       <TableCell>Requester</TableCell>
                                       <TableCell>VTC Details</TableCell>
                                       <TableCell>Status</TableCell>
@@ -692,6 +746,9 @@ const AdminDashboard = () => {
                                             )}
                                             <Typography variant="body1" fontWeight="medium">
                                               Slot #{booking.slotNumber}
+                                            </Typography>
+                                            <Typography variant="body1" fontWeight="medium">
+                                            <span className='font-extrabold'>Players expected </span>{booking.playercount}
                                             </Typography>
                                             <Typography>{booking.name}</Typography>
                                             <Stack spacing={1}>
@@ -782,6 +839,13 @@ const AdminDashboard = () => {
                         <Typography variant="body1" fontWeight="medium">
                           #{booking.slotNumber}
                         </Typography>
+                        
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body1" fontWeight="medium">
+                          {booking.playercount}
+                        </Typography>
+                        
                       </TableCell>
                       <TableCell>{booking.name}</TableCell>
                       <TableCell>
