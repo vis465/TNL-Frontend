@@ -28,6 +28,13 @@ const ManageSlotsDialog = ({ open, onClose, event, slots: existingSlots, onSlots
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
+  const [newSlot, setNewSlot] = useState({
+    imageUrl: '',
+    startingSlotNumber: 1,
+    numberOfSlots: 1,
+    customMinPlayers: event?.minnumber || 1, // Add custom min players field
+    slotName: event?.slotname || '' // Add custom slot name field
+  });
 
   // Initialize slots when dialog opens or existingSlots change
   useEffect(() => {
@@ -37,7 +44,9 @@ const ManageSlotsDialog = ({ open, onClose, event, slots: existingSlots, onSlots
         imageUrl: slot.imageUrl,
         slotNumbers: slot.slots.map(s => s.number),
         numberOfSlots: slot.slots.length,
-        slots: slot.slots
+        slots: slot.slots,
+        customMinPlayers: slot.slots[0]?.minnumber || event?.minnumber || 1, // Get custom min from first slot
+        slotName: slot.slots[0]?.name || event?.slotname || '' // Get slot name from first slot
       }));
       setSlots(formattedSlots);
       
@@ -50,23 +59,20 @@ const ManageSlotsDialog = ({ open, onClose, event, slots: existingSlots, onSlots
       setNewSlot({
         imageUrl: '',
         startingSlotNumber: maxSlotNumber + 1,
-        numberOfSlots: 1
+        numberOfSlots: 1,
+        customMinPlayers: event?.minnumber || 1,
+        slotName: event?.slotname || ''
       });
     }
-  }, [open, existingSlots]);
-
-  const [newSlot, setNewSlot] = useState({
-    imageUrl: '',
-    startingSlotNumber: 1,
-    numberOfSlots: 1
-  });
+  }, [open, existingSlots, event]);
 
   const handleAddSlot = () => {
-
-
     const numberOfSlots = parseInt(newSlot.numberOfSlots);
     const startingSlotNumber = parseInt(newSlot.startingSlotNumber);
+    const customMinPlayers = parseInt(newSlot.customMinPlayers);
+    const slotName = newSlot.slotName.trim();
 
+    // Validation checks
     if (isNaN(numberOfSlots)) {
       setError('Please provide a valid number of slots');
       return;
@@ -74,6 +80,27 @@ const ManageSlotsDialog = ({ open, onClose, event, slots: existingSlots, onSlots
 
     if (isNaN(startingSlotNumber)) {
       setError('Please provide a valid starting slot number');
+      return;
+    }
+
+    if (isNaN(customMinPlayers)) {
+      setError('Please provide a valid minimum number of players');
+      return;
+    }
+
+    if (customMinPlayers < 1) {
+      setError('Minimum players must be at least 1');
+      return;
+    }
+
+    if (!slotName) {
+      setError('Please provide a slot name');
+      return;
+    }
+
+    // Optional: Add validation to ensure custom min doesn't go below event minimum
+    if (customMinPlayers < (event?.minnumber || 1)) {
+      setError(`Minimum players cannot be less than event minimum (${event?.minnumber || 1})`);
       return;
     }
 
@@ -97,15 +124,20 @@ const ManageSlotsDialog = ({ open, onClose, event, slots: existingSlots, onSlots
     setSlots([...slots, {
       imageUrl: newSlot.imageUrl,
       slotNumbers,
-      numberOfSlots
+      numberOfSlots,
+      customMinPlayers,
+      slotName
     }]);
 
     // Reset form and update next starting slot number
     setNewSlot({
       imageUrl: '',
       startingSlotNumber: startingSlotNumber + numberOfSlots,
-      numberOfSlots: 1
+      numberOfSlots: 1,
+      customMinPlayers: event?.minnumber || 1,
+      slotName: event?.slotname || ''
     });
+
     setError('');
   };
 
@@ -123,6 +155,8 @@ const ManageSlotsDialog = ({ open, onClose, event, slots: existingSlots, onSlots
         imageUrl: slot.imageUrl,
         slots: slot.slotNumbers.map(number => ({
           number,
+          name: slot.slotName || event.slotname, // Use custom slot name
+          minnumber: slot.customMinPlayers || event.minnumber, // Use custom min players
           isAvailable: true
         }))
       }));
@@ -239,6 +273,16 @@ const ManageSlotsDialog = ({ open, onClose, event, slots: existingSlots, onSlots
                 placeholder="URL"
               />
             </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label={`Slot Name (Default: ${event?.slotname || 'N/A'})`}
+                value={newSlot.slotName}
+                onChange={(e) => setNewSlot({ ...newSlot, slotName: e.target.value })}
+                placeholder={`Enter custom slot name or leave blank to use default: ${event?.slotname || 'N/A'}`}
+                helperText="Custom name for all slots in this image"
+              />
+            </Grid>
             <Grid item xs={6}>
               <TextField
                 fullWidth
@@ -260,6 +304,20 @@ const ManageSlotsDialog = ({ open, onClose, event, slots: existingSlots, onSlots
                 helperText="How many sequential slots to create"
               />
             </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                type="number"
+                label={`Minimum Players per Slot (Event min: ${event?.minnumber || 1})`}
+                value={newSlot.customMinPlayers}
+                onChange={(e) =>
+                  setNewSlot({ ...newSlot, customMinPlayers: e.target.value })
+                }
+                inputProps={{ min: event?.minnumber || 1 }}
+                helperText={`Set custom minimum players for these slots. Cannot be less than event minimum (${event?.minnumber || 1})`}
+              />
+            </Grid>
+
             <Grid item xs={12}>
               <Button
                 variant="contained"
@@ -292,7 +350,13 @@ const ManageSlotsDialog = ({ open, onClose, event, slots: existingSlots, onSlots
                     Slot Numbers: {slot.slotNumbers.join(', ')}
                   </Typography>
                   <Typography variant="body2" color="textSecondary">
+                    Slot Name: {slot.slotName || event?.slotname || 'N/A'}
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary">
                     Total Slots: {slot.numberOfSlots}
+                  </Typography>
+                  <Typography variant="body2" color="primary">
+                    Min Players per Slot: {slot.customMinPlayers || event?.minnumber || 1}
                   </Typography>
                   {slot.slots?.some(s => s.booking?.status === 'approved') && (
                     <Typography variant="body2" color="error">
@@ -348,4 +412,4 @@ const ManageSlotsDialog = ({ open, onClose, event, slots: existingSlots, onSlots
   );
 };
 
-export default ManageSlotsDialog; 
+export default ManageSlotsDialog;
