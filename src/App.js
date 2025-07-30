@@ -222,10 +222,11 @@ function App() {
                   <Route path="/terms" element={<TermsAndConditions />} />
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   <Route path="/events" element={<Events />} />
+                  <Route path="/landing" element={<Landing />} />
                   {/* Protected routes */}
                   <Route element={<PrivateRoute allowedRoles={["admin","eventteam"]} />}>
                     <Route path="/admin" element={<AdminDashboard />} />
-                    <Route path="/landing" element={<Landing />} />
+                    
                     <Route path="/admin/analytics" element={<AnalyticsDashboard />} />
                   </Route>
                   <Route path="*" element={<NotFoundPage />} />
