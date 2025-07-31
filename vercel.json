@@ -1,6 +1,16 @@
 {
   "rewrites": [
     {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "tamilnadulogistics.in"
+        }
+      ],
+      "destination": "/landing"
+    },
+    {
       "source": "/(.*)",
       "has": [
         {
