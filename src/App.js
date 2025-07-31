@@ -222,7 +222,7 @@ function App() {
                   <Route path="/team" element={<Team />} />
                   <Route path="/terms" element={<TermsOfService />} />
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-                  <Route path="/events" element={<Events />} />
+                  <Route path="/events" element={<Home />} />
                   {/* Protected routes */}
                   <Route element={<PrivateRoute allowedRoles={["admin","eventteam"]} />}>
                     <Route path="/admin" element={<AdminDashboard />} />

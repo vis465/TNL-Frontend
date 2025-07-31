@@ -294,7 +294,7 @@ const Home = () => {
       
       const response = await axiosInstance.get('/events');
       const eventsData = response.data.response || response.data;
-      console.log(eventsData)
+      console.log("eventsData",eventsData)
       
       
       if (!Array.isArray(eventsData)) {
