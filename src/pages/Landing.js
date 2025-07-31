@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { motion, useScroll, useTransform, useAnimation, AnimatePresence } from 'framer-motion';
 import placeholderimg from "../img/placeholder.jpg"
 import axiosInstance from '../utils/axios';
+import bgimg from "../img/image.png"
 import {
   Box,
   Container,
@@ -56,6 +57,7 @@ import {
   Schedule as ScheduleIcon,
   DirectionsCar as DirectionsCarIcon,
 } from '@mui/icons-material';
+import FullScreenVideoPlayer from '../components/FullScreenVideoPlayer';
 
 // Enhanced styled components
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -814,9 +816,9 @@ console.log(datatorender)
   
   // Stats
   const stats = [
-    { value: 120, title: "Active Drivers", icon: UsersIcon },
-    { value: 500, title: "Completed Jobs", icon: TruckIcon },
-    { value: 30, title: "Events Held", icon: CalendarIcon },
+    { value: 100, title: "Active Drivers", icon: UsersIcon },
+    { value: 12000, title: "Completed Jobs", icon: TruckIcon },
+    { value: 100, title: "Events Held", icon: CalendarIcon },
     { value: 15, title: "Partner Companies", icon: AwardIcon }
   ];
   
@@ -847,99 +849,7 @@ console.log(datatorender)
   return (
     <Box sx={{ minHeight: '100vh', overflowX: 'hidden', bgcolor: 'background.default' }}>
       {/* Enhanced Navigation */}
-      <Box
-        component="nav"
-        sx={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 1000,
-          transition: 'all 0.3s ease',
-          backdropFilter: isScrolled ? 'blur(10px)' : 'none',
-          bgcolor: isScrolled ? alpha(theme.palette.background.paper, 0.8) : 'transparent',
-          boxShadow: isScrolled ? theme.shadows[4] : 'none',
-          py: isScrolled ? 1 : 2,
-        }}
-      >
-        <Container maxWidth="xl">
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            position: 'relative',
-          }}>
-            <Typography
-              component={motion.div}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
-              variant="h5"
-              sx={{ 
-                fontWeight: 'bold',
-                background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}
-            >
-              TAMILNADU LOGISTICS
-            </Typography>
-            
-            <Box sx={{ 
-              display: { xs: 'none', md: 'flex' }, 
-              gap: 2,
-              '& .MuiButton-root': {
-                position: 'relative',
-                '&::after': {
-                  content: '""',
-                  position: 'absolute',
-                  bottom: 0,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: 0,
-                  height: 2,
-                  bgcolor: 'primary.main',
-                  transition: 'width 0.3s ease',
-                },
-                '&:hover::after': {
-                  width: '80%',
-                },
-              },
-            }}>
-              {['About', 'Rules', 'Requirements', 'Events', 'Partners'].map((item) => (
-                <Button
-                  key={item}
-                  onClick={() => scrollToSection(eval(`${item.toLowerCase()}Ref`))}
-                  sx={{ 
-                    color: 'text.primary',
-                    fontWeight: 500,
-                    '&:hover': { 
-                      color: 'primary.main',
-                      bgcolor: 'transparent',
-                    },
-                  }}
-                >
-                  {item}
-                </Button>
-              ))}
-            </Box>
-            
-            <StyledButton 
-              variant="contained" 
-              color="primary"
-              endIcon={<ArrowForwardIcon />}
-              sx={{
-                bgcolor: 'primary.main',
-                '&:hover': {
-                  bgcolor: 'primary.dark',
-                },
-              }}
-            >
-              Join Us
-            </StyledButton>
-          </Box>
-        </Container>
-      </Box>
+    
 
       {/* Enhanced Hero Section */}
       <Box
@@ -949,30 +859,7 @@ console.log(datatorender)
           display: 'flex',
           alignItems: 'center',
           overflow: 'hidden',
-          bgcolor: '#0a1929',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundImage: 'url("/api/placeholder/1920/1080")',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            opacity: 0.3,
-            zIndex: 0,
-          },
-          '&::after': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'radial-gradient(ellipse at center, rgba(25, 118, 210, 0.1) 0%, rgba(10, 25, 41, 0.8) 70%)',
-            zIndex: 1,
-          },
+          bg:bgimg
         }}
       >
         {/* Animated background elements */}
@@ -1273,7 +1160,7 @@ console.log(datatorender)
       </Box>
 
       {/* Stats Section */}
-      <Box sx={{ py: 8, bgcolor: 'primary.main', color: 'white' }}>
+      <Box sx={{ py: 8, color: 'white' }}>
         <Container maxWidth="lg">
           <Grid container spacing={4}>
             {stats.map((stat, index) => (
@@ -1301,7 +1188,7 @@ console.log(datatorender)
       </Box>
 
       {/* Features Section */}
-      <Box sx={{ py: 12, bgcolor: 'background.paper' }}>
+      <Box sx={{ py: 12 }}>
         <Container maxWidth="lg">
           <SectionTitle variant="h3" component="h2" align="center">
             Why Choose Us
@@ -1330,7 +1217,7 @@ console.log(datatorender)
           </Grid>
         </Container>
       </Box>
-
+<FullScreenVideoPlayer />
       {/* Rules Section */}
       <Box ref={rulesRef} sx={{ py: 12, bgcolor: 'background.default' }}>
         <Container maxWidth="lg">
@@ -1604,7 +1491,7 @@ console.log(datatorender)
                   {/* Additional info */}
                   <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                     {[
-                      { number: '500+', label: 'Active Members' },
+                      { number: '100+', label: 'Active Members' },
                       { number: '24/7', label: 'Support Available' },
                       { number: '5★', label: 'Community Rating' },
                     ].map((stat, index) => (

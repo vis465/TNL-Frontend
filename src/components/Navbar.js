@@ -207,83 +207,41 @@ const Navbar = () => {
             Tamilnadu Logistics
           </LogoText>
 
-          {!isAdmin ? (
-            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
-              <NavButton
-                component={RouterLink}
-                to="/servers"
-                startIcon={<FireTruckOutlined />}
-              >
-                TMP Server Status
-              </NavButton>
-              <NavButton
-                component={RouterLink}
-                to="/contact"
-                startIcon={<Event />}
-              >
-                Contact
-              </NavButton>
-            </Box>
-          ) : (
-            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
-              {/* <NavButton
-                component={RouterLink}
-                to="/"
-                startIcon={<DirectionsCar />}
-              >
-                Home
-              </NavButton>
-              <NavButton
-                component={RouterLink}
-                to="/team"
-                startIcon={<PersonAdd />}
-              >
-                Our Team
-              </NavButton>
-              <NavButton
-                component={RouterLink}
-                to="/events"
-                startIcon={<Event />}
-              >
-                Events
-              </NavButton>
-              <NavButton
-                component={RouterLink}
-                to="/attending-events"
-                startIcon={<Event />}
-              >
-                Attending Events
-              </NavButton>
-              <NavButton
-                component={RouterLink}
-                to="/servers"
-                startIcon={<FireTruckOutlined />}
-              >
-                Server Status
-              </NavButton>
-              <NavButton
-                component={RouterLink}
-                to="/apply"
-                startIcon={<Dashboard />}
-              >
-                Apply
-              </NavButton>
-              <NavButton
-                component={RouterLink}
-                to="/contact"
-                startIcon={<Event />}
-              >
-                Contact
-              </NavButton> */}
-              <NavButton
-                component={RouterLink}
-                to="/admin"
-                startIcon={<Dashboard />}
-              >
-                Dashboard
-              </NavButton> 
-            </Box>
-          )}
+          {isAdmin ? (
+  <>
+    <MenuItem component={RouterLink} to="/admin" onClick={handleClose}>
+      <Dashboard sx={{ mr: 1 }} /> Dashboard
+    </MenuItem>
+    <MenuItem onClick={() => { handleLogout(); handleClose(); }}>
+      Logout
+    </MenuItem>
+  </>
+) : (
+  <>
+   
+    <MenuItem component={RouterLink} to="/team" onClick={handleClose}>
+      <PersonAdd sx={{ mr: 1 }} /> Our Team
+    </MenuItem>
+    <MenuItem component={RouterLink} to="/events" onClick={handleClose}>
+      <Event sx={{ mr: 1 }} /> Events
+    </MenuItem>
+    <MenuItem component={RouterLink} to="/apply" onClick={handleClose}>
+      <Dashboard sx={{ mr: 1 }} /> Apply
+    </MenuItem>
+    <MenuItem component={RouterLink} to="/servers" onClick={handleClose}>
+      <FireTruckOutlined sx={{ mr: 1 }} /> Server Status
+    </MenuItem>
+    <MenuItem component={RouterLink} to="/contact" onClick={handleClose}>
+      <Event sx={{ mr: 1 }} /> Contact
+    </MenuItem>
+    {isAuthenticated && (
+      <MenuItem onClick={() => { handleLogout(); handleClose(); }}>
+        Logout
+      </MenuItem>
+    )}
+  </>
+)}
+
 
           <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
             <Tooltip title={isDarkMode ? "Light Mode" : "Dark Mode"}>
@@ -342,7 +300,7 @@ const Navbar = () => {
               onClose={handleClose}
               TransitionComponent={Fade}
             >
-              {!isAdmin ? (
+              {isAdmin ? (
             <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
               <NavButton
                 component={RouterLink}
@@ -361,13 +319,7 @@ const Navbar = () => {
             </Box>
           ) : (
             <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
-              {/* <NavButton
-                component={RouterLink}
-                to="/"
-                startIcon={<DirectionsCar />}
-              >
-                Home
-              </NavButton>
+             
               <NavButton
                 component={RouterLink}
                 to="/team"
@@ -382,13 +334,7 @@ const Navbar = () => {
               >
                 Events
               </NavButton>
-              <NavButton
-                component={RouterLink}
-                to="/attending-events"
-                startIcon={<Event />}
-              >
-                Attending Events
-              </NavButton>
+             
               <NavButton
                 component={RouterLink}
                 to="/servers"
@@ -409,7 +355,7 @@ const Navbar = () => {
                 startIcon={<Event />}
               >
                 Contact
-              </NavButton> */}
+              </NavButton>
               <NavButton
                 component={RouterLink}
                 to="/admin"

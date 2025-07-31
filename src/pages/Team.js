@@ -218,7 +218,7 @@ const Team = () => {
               <Grid item xs={12} sm={6} md={4} key={member.id}>
                 <TeamMemberCard 
                   elevation={3}
-                  onClick={() => handleMemberClick(member)}
+                  
                   sx={{ cursor: 'pointer' }}
                 >
                   <CardContent>

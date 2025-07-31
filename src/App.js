@@ -35,10 +35,10 @@ import '@fontsource/noto-sans-tamil/700.css';
 // New page imports
 import Landing from './pages/Landing';
 import ContactUs from './pages/ContactUs';
-import Application from './pages/Application';
+import JoinUsPage from './pages/Application';
 import Partners from './pages/Partners';
 import Team from './pages/Team';
-import TermsAndConditions from './pages/TermsAndConditions';
+import TermsOfService from './pages/TermsAndConditions';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import Events from './pages/Events';
 
@@ -216,10 +216,10 @@ function App() {
                   <Route path="/External/:id" element={<Others />} />
                   {/* New public routes */}
                   <Route path="/contact" element={<ContactUs />} />
-                  <Route path="/apply" element={<Application />} />
+                  <Route path="/apply" element={<JoinUsPage />} />
                   <Route path="/partners" element={<Partners />} />
                   <Route path="/team" element={<Team />} />
-                  <Route path="/terms" element={<TermsAndConditions />} />
+                  <Route path="/terms" element={<TermsOfService />} />
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   <Route path="/events" element={<Events />} />
                   <Route path="/landing" element={<Landing />} />

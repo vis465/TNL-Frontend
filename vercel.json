@@ -1,0 +1,24 @@
+{
+  "routes": [
+    {
+      "src": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "tamilnadulogistics.in"
+        }
+      ],
+      "dest": "/landing/$1"
+    },
+    {
+      "src": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "events.tamilnadulogistics.in"
+        }
+      ],
+      "dest": "/$1"
+    }
+  ]
+}
