@@ -3,6 +3,7 @@ import { motion, useScroll, useTransform, useAnimation, AnimatePresence } from '
 import placeholderimg from "../img/placeholder.jpg"
 import axiosInstance from '../utils/axios';
 import bgimg from "../img/image.png"
+import logo from "../img/tnllogo.jpg"
 import {
   Box,
   Container,
@@ -334,7 +335,7 @@ const truckersmpId=event.truckersmpId
           position: 'absolute',
           top: 16,
           right: 16,
-          bgcolor: 'primary.main',
+          bgcolor: 'yellow',
           color: 'white',
           px: 2,
           py: 0.5,
@@ -387,8 +388,8 @@ const truckersmpId=event.truckersmpId
         rel="noopener noreferrer"
         sx={{
           alignSelf: 'start',
-          borderColor: 'primary.main',
-          color: 'primary.main',
+          borderColor: 'yellow',
+          color: 'yellow',
           px: 4,
           py: 1.5,
           fontSize: '1.05rem',
@@ -466,7 +467,7 @@ const RulesCard = ({ title, items, icon: IconComponent }) => {
         className="feature-icon" 
         sx={{ 
           fontSize: 50, 
-          color: 'primary.main', 
+          color: 'yellow', 
           mb: 2,
           transition: 'all 0.3s ease' 
         }} 
@@ -825,22 +826,22 @@ console.log(datatorender)
   // Enhanced features data
   const features = [
     {
-      icon: <SpeedIcon className="feature-icon" sx={{ fontSize: 40, color: 'primary.main', transition: 'all 0.3s ease' }} />,
+      icon: <SpeedIcon className="feature-icon" sx={{ fontSize: 40, color: 'yellow', transition: 'all 0.3s ease' }} />,
       title: "Fast & Reliable",
       description: "Quick delivery times with real-time tracking and updates."
     },
     {
-      icon: <SecurityIcon className="feature-icon" sx={{ fontSize: 40, color: 'primary.main', transition: 'all 0.3s ease' }} />,
+      icon: <SecurityIcon className="feature-icon" sx={{ fontSize: 40, color: 'yellow', transition: 'all 0.3s ease' }} />,
       title: "Secure Transport",
       description: "Your cargo is protected with our advanced security measures."
     },
     {
-      icon: <SupportIcon className="feature-icon" sx={{ fontSize: 40, color: 'primary.main', transition: 'all 0.3s ease' }} />,
+      icon: <SupportIcon className="feature-icon" sx={{ fontSize: 40, color: 'yellow', transition: 'all 0.3s ease' }} />,
       title: "24/7 Support",
       description: "Round-the-clock customer support for all your needs."
     },
     {
-      icon: <TruckIcon className="feature-icon" sx={{ fontSize: 40, color: 'primary.main', transition: 'all 0.3s ease' }} />,
+      icon: <TruckIcon className="feature-icon" sx={{ fontSize: 40, color: 'yellow', transition: 'all 0.3s ease' }} />,
       title: "Modern Fleet",
       description: "State-of-the-art vehicles for efficient transportation."
     }
@@ -881,7 +882,7 @@ console.log(datatorender)
                 position: 'absolute',
                 width: { xs: 4, md: 6 },
                 height: { xs: 4, md: 6 },
-                bgcolor: 'primary.main',
+                bgcolor: 'yellow',
                 borderRadius: '50%',
                 left: `${15 + i * 15}%`,
                 top: `${20 + (i % 2) * 40}%`,
@@ -902,7 +903,7 @@ console.log(datatorender)
                   transition={{ duration: 0.8 }}
                   variant="overline"
                   sx={{ 
-                    color: 'primary.main',
+                    color: 'yellow',
                     fontSize: '1rem',
                     fontWeight: 600,
                     letterSpacing: 2,
@@ -929,7 +930,7 @@ console.log(datatorender)
                   }}
                 >
                   TAMILNADU
-                  <Box component="span" sx={{ display: 'block', color: 'primary.main' }}>
+                  <Box component="span" sx={{ display: 'block', color: 'yellow' }}>
                     LOGISTICS
                   </Box>
                 </Typography>
@@ -970,8 +971,8 @@ console.log(datatorender)
                     size="large"
                     onClick={() => scrollToSection(aboutRef)}
                     sx={{ 
-                      bgcolor: 'primary.main',
-                      color: 'white',
+                      bgcolor: 'yellow',
+                      color: 'black',
                       px: 4,
                       py: 1.5,
                       fontSize: '1.1rem',
@@ -985,24 +986,26 @@ console.log(datatorender)
                   >
                     Explore More
                   </StyledButton>
+                  <a href='/apply'>
                   <StyledButton
                     variant="outlined"
                     size="large"
                     sx={{ 
-                      borderColor: 'primary.main',
-                      color: 'primary.main',
+                      borderColor: 'yellow',
+                      color: 'yellow',
                       px: 4,
                       py: 1.5,
                       fontSize: '1.1rem',
                       '&:hover': { 
-                        borderColor: 'primary.main',
+                        borderColor: 'yellow',
                         bgcolor: alpha(theme.palette.primary.main, 0.1),
                         transform: 'translateY(-3px)',
                       },
                     }}
                   >
-                    Watch Demo
+                    Want to Join Us?
                   </StyledButton>
+                  </a>
                 </Box>
 
                 {/* Key Features */}
@@ -1019,7 +1022,7 @@ console.log(datatorender)
                     { icon: <SecurityIcon />, text: 'Trusted Platform' },
                   ].map((feature, index) => (
                     <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Box sx={{ color: 'primary.main', fontSize: 20 }}>{feature.icon}</Box>
+                      <Box sx={{ color: 'yellow', fontSize: 20 }}>{feature.icon}</Box>
                       <Typography variant="body2" sx={{ color: 'grey.400', fontWeight: 500 }}>
                         {feature.text}
                       </Typography>
@@ -1047,32 +1050,14 @@ console.log(datatorender)
                     height: { xs: 200, md: 280 },
                     mx: 'auto',
                     position: 'relative',
-                    background: 'radial-gradient(ellipse, rgba(25, 118, 210, 0.2) 0%, transparent 70%)',
+                    // background: 'radial-gradient(ellipse, rgba(25, 118, 210, 0.2) 0%, transparent 70%)',
                     borderRadius: '50%',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    '&::before': {
-                      content: '""',
-                      position: 'absolute',
-                      top: '50%',
-                      left: '50%',
-                      transform: 'translate(-50%, -50%)',
-                      width: '80%',
-                      height: '80%',
-                      border: '2px solid',
-                      borderColor: 'primary.main',
-                      borderRadius: '50%',
-                      opacity: 0.3,
-                      animation: 'pulse 3s ease-in-out infinite',
-                    },
-                    '@keyframes pulse': {
-                      '0%, 100%': { transform: 'translate(-50%, -50%) scale(1)', opacity: 0.3 },
-                      '50%': { transform: 'translate(-50%, -50%) scale(1.1)', opacity: 0.1 },
-                    },
+                   
                   }}
                 >
-                  <TruckIcon sx={{ fontSize: { xs: 80, md: 120 }, color: 'primary.main' }} />
+                 <img src={logo} />
                 </Box>
               </Box>
             </Grid>
@@ -1090,7 +1075,7 @@ console.log(datatorender)
             left: '50%', 
             transform: 'translateX(-50%)',
             zIndex: 2,
-            color: 'primary.main',
+            color: 'yellow',
             cursor: 'pointer',
           }}
           onClick={() => scrollToSection(aboutRef)}
@@ -1116,7 +1101,7 @@ console.log(datatorender)
             <WelcomeSection>
               <Box sx={{ position: 'relative', zIndex: 1 }}>
                 <Box sx={{ textAlign: 'center', mb: 4 }}>
-                  <SentimentSatisfiedIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
+                  <SentimentSatisfiedIcon sx={{ fontSize: 60, color: 'yellow', mb: 2 }} />
                   <Typography variant="h3" sx={{ mb: 3, fontWeight: 'bold' }}>
                     Welcome to TAMILNADU LOGISTICS
                   </Typography>
@@ -1124,7 +1109,7 @@ console.log(datatorender)
                 
                 <Grid container spacing={4} alignItems="center">
                   <Grid item xs={12} md={6}>
-                    <Typography variant="h5" sx={{ mb: 3, color: 'primary.main', fontWeight: 'bold' }}>
+                    <Typography variant="h5" sx={{ mb: 3, color: 'yellow', fontWeight: 'bold' }}>
                       English
                     </Typography>
                     <Typography variant="body1" sx={{ mb: 2, lineHeight: 1.8 }}>
@@ -1281,7 +1266,7 @@ console.log(datatorender)
           
           {/* Our Events */}
           <Box sx={{ mb: 8 }}>
-            <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold', color: 'primary.main' }}>
+            <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold', color: 'yellow' }}>
               Our Events
             </Typography>
             <Grid container spacing={4}>
@@ -1302,7 +1287,7 @@ console.log(datatorender)
 
           {/* External Events */}
           <Box>
-            <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold', color: 'secondary.main' }}>
+            <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold', color: 'yellow' }}>
              Upcoming events we attend
             </Typography>
             <Grid container spacing={4}>
@@ -1334,7 +1319,7 @@ console.log(datatorender)
         }}
       >
         <Container maxWidth="lg">
-          <SectionTitle variant="h3" component="h2" align="center">
+          <SectionTitle variant="h3" component="h2" align="center" color={'yellow'}>
             Our Partners
           </SectionTitle>
           <Grid container spacing={4}>
@@ -1391,7 +1376,7 @@ console.log(datatorender)
                   <Typography 
                     variant="overline" 
                     sx={{ 
-                      color: 'primary.main', 
+                      color: 'yellow', 
                       fontSize: '1rem', 
                       fontWeight: 600,
                       letterSpacing: 2,
@@ -1412,7 +1397,7 @@ console.log(datatorender)
                     }}
                   >
                     Ready to Join Our
-                    <Box component="span" sx={{ color: 'primary.main', display: 'block' }}>
+                    <Box component="span" sx={{ color: 'yellow', display: 'block' }}>
                       Elite Team?
                     </Box>
                   </Typography>
@@ -1444,8 +1429,8 @@ console.log(datatorender)
                         variant="contained"
                         size="large"
                         sx={{ 
-                          bgcolor: 'primary.main',
-                          color: 'white',
+                          bgcolor: 'yellow',
+                          color: 'black',
                           px: 4,
                           py: 2,
                           fontSize: '1.1rem',
@@ -1469,14 +1454,14 @@ console.log(datatorender)
                         variant="outlined"
                         size="large"
                         sx={{ 
-                          borderColor: 'primary.main',
-                          color: 'primary.main',
+                          borderColor: 'yellow',
+                          color: 'yellow',
                           px: 4,
                           py: 2,
                           fontSize: '1.1rem',
                           minWidth: 180,
                           '&:hover': { 
-                            borderColor: 'primary.main',
+                            borderColor: 'yellow',
                             bgcolor: alpha(theme.palette.primary.main, 0.1),
                             boxShadow: '0 8px 30px rgba(25, 118, 210, 0.2)',
                           },
@@ -1496,7 +1481,7 @@ console.log(datatorender)
                       { number: '5★', label: 'Community Rating' },
                     ].map((stat, index) => (
                       <Box key={index} sx={{ textAlign: 'left' }}>
-                        <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                        <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'yellow' }}>
                           {stat.number}
                         </Typography>
                         <Typography variant="caption" sx={{ color: 'grey.400' }}>

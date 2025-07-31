@@ -94,7 +94,7 @@ const Footer = () => {
           Tamilnadu Logistics
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Made with <span style={{ color: '#BA6573' }}>❤</span> by TNL Team
+          Made with <span style={{ color: 'yellow' }}>❤</span> by TNL Team
         </Typography>
         <SocialContainer>
           <IconButton component="a" href="https://www.youtube.com/channel/UCKkTkfbfe9R05ac34rRVWww" target="blank" className="link">
