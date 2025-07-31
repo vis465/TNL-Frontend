@@ -4,6 +4,9 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
 import theme from './theme';
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import EventDetails from './pages/EventDetails';
@@ -41,6 +44,7 @@ import Team from './pages/Team';
 import TermsOfService from './pages/TermsAndConditions';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import Events from './pages/Events';
+import RedirectBasedOnHost from './components/RedirectBasedOnHost';
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -49,6 +53,7 @@ export const ThemeContext = createContext({
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(true);
+
 
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
@@ -202,6 +207,7 @@ function App() {
               flexDirection: 'column',
               minHeight: '100vh'
             }}>
+              <RedirectBasedOnHost />
               <Navbar />
               <Box component="main" sx={{ flexGrow: 1 }}>
                 <Routes>
