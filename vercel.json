@@ -1,24 +1,24 @@
 {
-  "routes": [
+  "rewrites": [
     {
-      "src": "/(.*)",
+      "source": "/(.*)",
       "has": [
         {
           "type": "host",
           "value": "tamilnadulogistics.in"
         }
       ],
-      "dest": "/landing/$1"
+      "destination": "/landing/$1"
     },
     {
-      "src": "/(.*)",
+      "source": "/(.*)",
       "has": [
         {
           "type": "host",
           "value": "events.tamilnadulogistics.in"
         }
       ],
-      "dest": "/$1"
+      "destination": "/$1"
     }
   ]
 }
