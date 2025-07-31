@@ -3,30 +3,21 @@
     {
       "source": "/",
       "has": [
-        {
-          "type": "host",
-          "value": "tamilnadulogistics.in"
-        }
+        { "type": "host", "value": "tamilnadulogistics.in" }
       ],
       "destination": "/landing"
     },
     {
       "source": "/(.*)",
       "has": [
-        {
-          "type": "host",
-          "value": "tamilnadulogistics.in"
-        }
+        { "type": "host", "value": "tamilnadulogistics.in" }
       ],
       "destination": "/landing/$1"
     },
     {
       "source": "/(.*)",
       "has": [
-        {
-          "type": "host",
-          "value": "events.tamilnadulogistics.in"
-        }
+        { "type": "host", "value": "events.tamilnadulogistics.in" }
       ],
       "destination": "/$1"
     }
