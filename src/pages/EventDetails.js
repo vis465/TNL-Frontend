@@ -110,6 +110,7 @@ const EventDetails = () => {
 
         setEvent(eventResponse.data);
         console.log(slotsResponse.data);
+        console.log(eventResponse.data)
         setSlots(processedSlots);
       } catch (error) {
         console.error("Error details:", error);
@@ -312,7 +313,7 @@ const EventDetails = () => {
     <Box sx={{ bgcolor: "background.default", minHeight: "100vh" }}>
       {/* Hero Section */}
       <Box sx={{ position: "relative", mb: 6 }}>
-        {event.banner > 1 && (
+        {event.banner.length > 1 && (
           <Box
             sx={{
               position: "relative",
@@ -346,7 +347,7 @@ const EventDetails = () => {
               }}
             >
               <Container maxWidth="lg">
-                <Typography
+                {/* <Typography
                   variant="h2"
                   component="h1"
                   sx={{
@@ -358,7 +359,7 @@ const EventDetails = () => {
                   }}
                 >
                   {event.title}
-                </Typography>
+                </Typography> */}
                 <Stack
                   direction="row"
                   spacing={2}
@@ -442,7 +443,7 @@ const EventDetails = () => {
         )}
       </Box>
       <Box sx={{ position: "relative", mb: 6 }}>
-        {event.banner < 1 && (
+        {event.banner.length < 1 && (
           <Box
             sx={{
               position: "relative",

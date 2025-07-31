@@ -207,7 +207,8 @@ function App() {
                 <Routes>
                   {/* Public routes */}
                   
-                  <Route path="/" element={<Home />} />
+                  
+                  <Route path="/" element={<Landing />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
                   <Route path="/servers" element={<Servers />} />
@@ -222,7 +223,6 @@ function App() {
                   <Route path="/terms" element={<TermsOfService />} />
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   <Route path="/events" element={<Events />} />
-                  <Route path="/landing" element={<Landing />} />
                   {/* Protected routes */}
                   <Route element={<PrivateRoute allowedRoles={["admin","eventteam"]} />}>
                     <Route path="/admin" element={<AdminDashboard />} />
