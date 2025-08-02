@@ -45,6 +45,7 @@ import TermsOfService from './pages/TermsAndConditions';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import Events from './pages/Events';
 import RedirectBasedOnHost from './components/RedirectBasedOnHost';
+import PlayerProfile from './pages/playerprofile';
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -214,6 +215,7 @@ function App() {
                   {/* Public routes */}
                   
                   
+                  <Route path="/player" element={<PlayerProfile playerId={5304347} />} />
                   <Route path="/" element={<Landing />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />

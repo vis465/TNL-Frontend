@@ -254,16 +254,7 @@ const Navbar = () => {
             ))}
             
             {/* Theme Toggle */}
-            <Tooltip title={isDarkMode ? "Light Mode" : "Dark Mode"}>
-              <IconButton
-                onClick={toggleTheme}
-                color="inherit"
-                sx={{ ml: 1 }}
-              >
-                {isDarkMode ? <Brightness7 /> : <Brightness4 />}
-              </IconButton>
-            </Tooltip>
-
+          
             {/* User Menu for Desktop */}
             {isAuthenticated && (
               <Tooltip title="Account">
@@ -359,10 +350,7 @@ const Navbar = () => {
             ))}
             
             {/* Theme Toggle */}
-            <MenuItem onClick={() => { toggleTheme(); handleMobileClose(); }}>
-              {isDarkMode ? <Brightness7 sx={{ mr: 1 }} /> : <Brightness4 sx={{ mr: 1 }} />}
-              {isDarkMode ? "Light Mode" : "Dark Mode"}
-            </MenuItem>
+          
             
             {/* Authentication */}
             {isAuthenticated ? (
