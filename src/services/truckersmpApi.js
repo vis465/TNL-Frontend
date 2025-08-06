@@ -36,6 +36,17 @@ const truckersmpApi = {
     }
   },
 
+  // Get individual player details using official TruckersMP API
+  getPlayerDetails: async (playerId) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/player/${playerId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching player details:', error);
+      throw error;
+    }
+  },
+
   // Get VTC roles
   getVtcRoles: async (vtcId) => {
     try {

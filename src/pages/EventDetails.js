@@ -109,7 +109,7 @@ const EventDetails = () => {
           : [];
 
         setEvent(eventResponse.data);
-        console.log(slotsResponse.data);
+        console.log("slotsResponse",slotsResponse.data);
         console.log(eventResponse.data)
         setSlots(processedSlots);
       } catch (error) {
@@ -1481,8 +1481,7 @@ const EventDetails = () => {
           </Button>
         </DialogActions>
       </Dialog>
-
-      <RequestSlotDialog
+{requestSlotOpen&&<RequestSlotDialog
         open={requestSlotOpen}
         onClose={(success) => {
           setRequestSlotOpen(false);
@@ -1496,7 +1495,8 @@ const EventDetails = () => {
           // Refresh slots data after successful submission
           window.location.reload();
         }}
-      />
+      />}
+      
     </Box>
   );
 };
