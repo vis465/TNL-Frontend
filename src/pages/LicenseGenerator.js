@@ -11,19 +11,25 @@ import {
   Card,
   CardContent,
   Grid,
-  Divider
+  Divider,
+  Chip,
+  Avatar,
+  Autocomplete
 } from '@mui/material';
 import { Download, Refresh, Person, LocalShipping, VerifiedUser } from '@mui/icons-material';
-import image from '../img/image.png';
+
 import html2canvas from 'html2canvas';
-import API_CONFIG from '../config/api';
+
 import tnlLogo from '../img/tnllogo.jpg';
 import axiosInstance from '../utils/axios';
 
+
 const LicenseGenerator = () => {
-  const [truckersmpId, setTruckersmpId] = useState('');
+  const [selectedMemberId, setSelectedMemberId] = useState('');
+  const [teamMembers, setTeamMembers] = useState([]);
   const [memberData, setMemberData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [loadingTeam, setLoadingTeam] = useState(false);
   const [error, setError] = useState('');
   const [licenseNumber, setLicenseNumber] = useState('');
   const licenseRef = useRef(null);
@@ -33,6 +39,11 @@ const LicenseGenerator = () => {
     const randomNum = Math.floor(Math.random() * 10000000).toString().padStart(7, '0');
     return `TNL ${randomNum.slice(0, 4)}-${randomNum.slice(4)}`;
   };
+
+  // Fetch team members for admin selection
+  useEffect(() => {
+    fetchTeamMembers();
+  }, []);
 
   useEffect(() => {
     if (memberData) {
@@ -45,9 +56,39 @@ const LicenseGenerator = () => {
     }
   }, [memberData]);
 
+  const fetchTeamMembers = async () => {
+    try {
+      setLoadingTeam(true);
+      console.log('Fetching team members...');
+      const response = await axiosInstance.get('/vtc/70030');
+      console.log('Team response:', response.data);
+      
+      if (response.data && response.data.members) {
+        console.log('Found members in response.data.members:', response.data.members.length);
+        setTeamMembers(response.data.members);
+      } else if (response.data && response.data.response && response.data.response.members) {
+        console.log('Found members in response.data.response.members:', response.data.response.members.length);
+        setTeamMembers(response.data.response.members);
+      } else if (response.data && response.data.departments) {
+        // If the data is organized by departments, flatten it
+        const allMembers = Object.values(response.data.departments).flat();
+        console.log('Found members in departments:', allMembers.length);
+        setTeamMembers(allMembers);
+      } else {
+        console.log('No members found in response structure:', Object.keys(response.data || {}));
+        setTeamMembers([]);
+      }
+    } catch (error) {
+      console.error('Error fetching team members:', error);
+      setError('Failed to fetch team members');
+    } finally {
+      setLoadingTeam(false);
+    }
+  };
+
   const fetchMemberData = async () => {
-    if (!truckersmpId.trim()) {
-      setError('Please enter a TruckersMP ID');
+    if (!selectedMemberId) {
+      setError('Please select a team member');
       return;
     }
 
@@ -56,9 +97,12 @@ const LicenseGenerator = () => {
     setMemberData(null);
 
     try {
+      console.log('Sending memberId:', selectedMemberId);
       const response = await axiosInstance.post('/vtc/license', {
-        memberId: truckersmpId
+        memberId: selectedMemberId
       });
+
+      console.log('License response:', response.data);
 
       if (response.data.error) {
         throw new Error(response.data.error || 'Member not found');
@@ -66,6 +110,7 @@ const LicenseGenerator = () => {
 
       setMemberData(response.data.response);
     } catch (err) {
+      console.error('Error in fetchMemberData:', err);
       if (err.response?.data?.error) {
         setError(err.response.data.error);
       } else if (err.response?.status === 404) {
@@ -102,12 +147,14 @@ const LicenseGenerator = () => {
   };
 
   const resetForm = () => {
-    setTruckersmpId('');
+    setSelectedMemberId('');
     setMemberData(null);
     setError('');
     setLicenseNumber('');
   };
 
+  // Check if user is admin
+  
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Typography variant="h3" component="h1" gutterBottom align="center" sx={{ mb: 4 }}>
@@ -121,29 +168,92 @@ const LicenseGenerator = () => {
             <Typography variant="h5" gutterBottom>
               Generate Your License
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Enter your TruckersMP ID to generate your official TNL license
-            </Typography>
+                         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+               Select a team member to generate their official TNL license
+             </Typography>
 
-            <TextField
-              fullWidth
-              label="TruckersMP ID"
-              value={truckersmpId}
-              onChange={(e) => setTruckersmpId(e.target.value)}
-              placeholder="Enter your TruckersMP ID"
-              sx={{ mb: 2 }}
-            />
+             {loadingTeam ? (
+               <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+                 <CircularProgress size={24} />
+                 <Typography variant="body2" sx={{ ml: 1 }}>
+                   Loading team members...
+                 </Typography>
+               </Box>
+             ) : teamMembers.length === 0 ? (
+               <Box sx={{ textAlign: 'center', mb: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
+                 <Typography variant="body2" color="text.secondary">
+                   No team members found. Please check the console for debugging information.
+                 </Typography>
+                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                   Team members loaded: {teamMembers.length}
+                 </Typography>
+               </Box>
+             ) : (
+               <Autocomplete
+                 fullWidth
+                 options={teamMembers}
+                 getOptionLabel={(option) => `${option.username} (${option.primaryRole || 'Member'})`}
+                 value={teamMembers.find(member => member.id === selectedMemberId) || null}
+                 onChange={(event, newValue) => {
+                   setSelectedMemberId(newValue ? newValue.id : '');
+                 }}
+                 renderInput={(params) => (
+                   <TextField
+                     {...params}
+                     label="Search Team Member"
+                     placeholder="Type to search..."
+                     variant="outlined"
+                   />
+                 )}
+                 renderOption={(props, option) => (
+                   <Box component="li" {...props}>
+                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                       <Avatar sx={{ width: 24, height: 24, fontSize: '0.75rem' }}>
+                         {option.username.charAt(0).toUpperCase()}
+                       </Avatar>
+                       <Box sx={{ flex: 1 }}>
+                         <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                           {option.username}
+                         </Typography>
+                         <Typography variant="caption" color="text.secondary">
+                           {option.primaryRole || 'Member'}
+                         </Typography>
+                       </Box>
+                                                <Chip 
+                           label={option.primaryRole || 'Member'} 
+                           size="small" 
+                           sx={{ 
+                             backgroundColor: 'rgba(255, 215, 0, 0.1)', 
+                             color: '#ffd700',
+                             fontSize: '0.7rem'
+                           }} 
+                         />
+                     </Box>
+                   </Box>
+                 )}
+                 filterOptions={(options, { inputValue }) => {
+                   const searchTerm = inputValue.toLowerCase();
+                   return options.filter(option => 
+                     option.username.toLowerCase().includes(searchTerm) ||
+                     (option.primaryRole && option.primaryRole.toLowerCase().includes(searchTerm))
+                   );
+                 }}
+                 noOptionsText="No team members found"
+                 loading={loadingTeam}
+                 sx={{ mb: 2 }}
+               />
+             )}
 
-            <Button
-              fullWidth
-              variant="contained"
-              onClick={fetchMemberData}
-              disabled={loading || !truckersmpId.trim()}
-              startIcon={loading ? <CircularProgress size={20} /> : <Person />}
-              sx={{ mb: 2 }}
-            >
-              {loading ? 'Fetching...' : 'Fetch Member Data'}
-            </Button>
+                         <Button
+               fullWidth
+               variant="contained"
+               onClick={fetchMemberData}
+               disabled={loading || !selectedMemberId}
+               startIcon={loading ? <CircularProgress size={20} /> : <Person />}
+               sx={{ mb: 2 }}
+             >
+               {loading ? 'Generating...' : 'Generate License'}
+             </Button>
 
             {error && (
               <Alert severity="error" sx={{ mb: 2 }}>
@@ -151,23 +261,26 @@ const LicenseGenerator = () => {
               </Alert>
             )}
 
-            {memberData && (
-              <Box>
-                <Divider sx={{ my: 2 }} />
-                <Typography variant="h6" gutterBottom>
-                  Member Information
-                </Typography>
-                <Typography variant="body2">
-                  <strong>Username:</strong> {memberData.username}
-                </Typography>
-                <Typography variant="body2">
-                  <strong>Role:</strong> {memberData.role || (memberData.roles && memberData.roles[0] ? memberData.roles[0].name : 'Member')}
-                </Typography>
-                <Typography variant="body2">
-                  <strong>Join Date:</strong> {new Date(memberData.joinDate).toLocaleDateString()}
-                </Typography>
-              </Box>
-            )}
+                         {memberData && (
+               <Box>
+                 <Divider sx={{ my: 2 }} />
+                 <Typography variant="h6" gutterBottom>
+                   License Information
+                 </Typography>
+                 <Typography variant="body2">
+                   <strong>Username:</strong> {memberData.username}
+                 </Typography>
+                 <Typography variant="body2">
+                   <strong>Role:</strong> {memberData.role || (memberData.roles && memberData.roles[0] ? memberData.roles[0].name : 'Member')}
+                 </Typography>
+                 <Typography variant="body2">
+                   <strong>License Number:</strong> {licenseNumber || 'Generating...'}
+                 </Typography>
+                 <Typography variant="body2">
+                   <strong>Generated:</strong> {new Date().toLocaleDateString()}
+                 </Typography>
+               </Box>
+             )}
           </Paper>
         </Grid>
 
