@@ -46,6 +46,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import Events from './pages/Events';
 import RedirectBasedOnHost from './components/RedirectBasedOnHost';
 import PlayerProfile from './pages/playerprofile';
+import LicenseGenerator from './pages/LicenseGenerator';
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -231,6 +232,7 @@ function App() {
                   <Route path="/terms" element={<TermsOfService />} />
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   <Route path="/events" element={<Home />} />
+                  <Route path="/license" element={<LicenseGenerator />} />
                   {/* Protected routes */}
                   <Route element={<PrivateRoute allowedRoles={["admin","eventteam"]} />}>
                     <Route path="/admin" element={<AdminDashboard />} />

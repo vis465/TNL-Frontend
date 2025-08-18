@@ -193,6 +193,7 @@ const Navbar = () => {
     if (isAdmin) {
       return [
         { label: 'Dashboard', path: '/admin', icon: <Dashboard /> },
+        { label: 'License', path: '/license', icon: <DirectionsCar /> },
         { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
         { label: 'Contact', path: '/contact', icon: <Event /> },
       ];
@@ -201,6 +202,7 @@ const Navbar = () => {
         { label: 'Our Team', path: '/team', icon: <PersonAdd /> },
         { label: 'Events', path: '/events', icon: <Event /> },
         { label: 'Apply', path: '/apply', icon: <Dashboard /> },
+        { label: 'License', path: '/license', icon: <DirectionsCar /> },
         { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
         { label: 'Contact', path: '/contact', icon: <Event /> },
       ];
