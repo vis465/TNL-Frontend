@@ -34,10 +34,10 @@ const LicenseGenerator = () => {
   const [licenseNumber, setLicenseNumber] = useState('');
   const licenseRef = useRef(null);
 
-  // Generate random license number
-  const generateLicenseNumber = () => {
-    const randomNum = Math.floor(Math.random() * 10000000).toString().padStart(7, '0');
-    return `TNL ${randomNum.slice(0, 4)}-${randomNum.slice(4)}`;
+  // Generate license number with TruckersMP ID
+  const generateLicenseNumber = (truckersmpId) => {
+    const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    return `TNL ${randomNum}-${truckersmpId}`;
   };
 
   // Fetch team members for admin selection
@@ -51,10 +51,10 @@ const LicenseGenerator = () => {
       if (memberData.licenseNumber) {
         setLicenseNumber(memberData.licenseNumber);
       } else {
-        setLicenseNumber(generateLicenseNumber());
+        setLicenseNumber(generateLicenseNumber(memberData.user_id || selectedMemberId));
       }
     }
-  }, [memberData]);
+  }, [memberData, selectedMemberId]);
 
   const fetchTeamMembers = async () => {
     try {
@@ -108,7 +108,24 @@ const LicenseGenerator = () => {
         throw new Error(response.data.error || 'Member not found');
       }
 
-      setMemberData(response.data.response);
+      // Fetch player avatar from TruckersMP API
+      try {
+        const playerResponse = await axiosInstance.get(`/vtc/player/${response.data.response.user_id}`);
+        console.log('Player response:', playerResponse.data);
+        
+        if (playerResponse.data && playerResponse.data.avatar) {
+          setMemberData({
+            ...response.data.response,
+            avatar: playerResponse.data.avatar,
+            playerName: playerResponse.data.name
+          });
+        } else {
+          setMemberData(response.data.response);
+        }
+      } catch (avatarError) {
+        console.log('Could not fetch avatar, using fallback:', avatarError.message);
+        setMemberData(response.data.response);
+      }
     } catch (err) {
       console.error('Error in fetchMemberData:', err);
       if (err.response?.data?.error) {
@@ -267,9 +284,12 @@ const LicenseGenerator = () => {
                  <Typography variant="h6" gutterBottom>
                    License Information
                  </Typography>
-                 <Typography variant="body2">
-                   <strong>Username:</strong> {memberData.username}
-                 </Typography>
+                                    <Typography variant="body2">
+                     <strong>Username:</strong> {memberData.username}
+                   </Typography>
+                   <Typography variant="body2">
+                     <strong>Player Name:</strong> {memberData.playerName || 'N/A'}
+                   </Typography>
                  <Typography variant="body2">
                    <strong>Role:</strong> {memberData.role || (memberData.roles && memberData.roles[0] ? memberData.roles[0].name : 'Member')}
                  </Typography>
@@ -304,7 +324,7 @@ const LicenseGenerator = () => {
 
             {!memberData ? (
               <Card sx={{
-                height: 450,
+                height: 280,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -314,321 +334,273 @@ const LicenseGenerator = () => {
                 <CardContent sx={{ textAlign: 'center' }}>
                   <LocalShipping sx={{ fontSize: 80, color: '#666', mb: 2 }} />
                   <Typography variant="h6" color="text.secondary">
-                    Enter your TruckersMP ID to preview your license
+                    Select a team member to preview their license
                   </Typography>
                 </CardContent>
               </Card>
             ) : (
               <Box>
-                {/* License Card */}
+                {/* License Card - ID Card Style */}
                 <Box
                   ref={licenseRef}
                   sx={{
                     width: '100%',
-                    height: '100%',
-                    background: '#0a0a0a',
-                    borderRadius: 2,
+                    height: 280,
+                    background: `linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.6) 100%)`,
+                    borderRadius: 3,
                     position: 'relative',
                     overflow: 'hidden',
                     display: 'flex',
-                    flexDirection: 'column',
-                    border: '1px solid rgba(255, 215, 0, 0.2)',
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.4)'
+                    flexDirection: 'row',
+                    border: '2px solid #ffd700',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.6)'
                   }}
                 >
-                  {/* Background Pattern */}
+                  {/* Background TNL Logo */}
                   <Box
                     sx={{
                       position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      background: `
-                          linear-gradient(45deg, transparent 40%, rgba(255, 215, 0, 0.03) 50%, transparent 60%)
-                        `,
+                      top: '50%',
+                      right: '-20%',
+                      transform: 'translateY(-50%)',
+                      width: '60%',
+                      height: '60%',
+                      opacity: 0.1,
                       zIndex: 1
                     }}
-                  />
+                  >
+                    <img
+                      src={tnlLogo}
+                      alt="TNL Background"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain'
+                      }}
+                    />
+                  </Box>
 
-                  {/* Header Section */}
+                  {/* Left Section - Photo Area */}
                   <Box sx={{
-                    background: '#1a1a1a',
-                    p: 3,
+                    flex: '0 0 120px',
+                    p: 2,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     position: 'relative',
-                    zIndex: 2,
-                    borderBottom: '1px solid rgba(255, 215, 0, 0.2)'
+                    zIndex: 2
                   }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      {/* TNL Logo & Brand */}
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Box
-                          sx={{
-                            width: 45,
-                            height: 45,
-                            borderRadius: '50%',
-                            overflow: 'hidden',
-                            border: '2px solid #ffd700'
-                          }}
-                        >
-                          <img
-                            src={tnlLogo}
-                            alt="TNL Logo"
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'cover'
-                            }}
-                          />
-                        </Box>
-                        <Box>
-                          <Typography variant="h6" sx={{ color: '#ffd700', fontWeight: 600, lineHeight: 1.1 }}>
-                            TAMILNADU LOGISTICS
-                          </Typography>
-                          <Typography variant="caption" sx={{ color: '#999', lineHeight: 1.1 }}>
-                            Professional Transport Solutions
-                          </Typography>
-                        </Box>
-                      </Box>
+                                         {/* Photo Area */}
+                     <Box sx={{
+                       width: 100,
+                       height: 120,
+                       background: 'linear-gradient(135deg, #1a1a1a, #2a2a2a)',
+                       borderRadius: 2,
+                       border: '2px solid #ffd700',
+                       display: 'flex',
+                       alignItems: 'center',
+                       justifyContent: 'center',
+                       mb: 2,
+                       overflow: 'hidden',
+                       position: 'relative'
+                     }}>
+                       {memberData.avatar ? (
+                         <img
+                           src={memberData.avatar}
+                           alt={`${memberData.username} avatar`}
+                           style={{
+                             width: '100%',
+                             height: '100%',
+                             objectFit: 'fit',
+                             borderRadius: '2px'
+                           }}
+                           onError={(e) => {
+                             // Fallback to initial if image fails to load
+                             e.target.style.display = 'none';
+                             e.target.nextSibling.style.display = 'flex';
+                           }}
+                         />
+                       ) : null}
+                       <Box sx={{
+                         width: '100%',
+                         height: '100%',
+                         borderRadius: '50%',
+                         background: 'linear-gradient(135deg, #ffd700, #ffed4e)',
+                         display: memberData.avatar ? 'none' : 'flex',
+                         alignItems: 'center',
+                         justifyContent: 'center',
+                         border: '2px solid #fff',
+                         position: 'absolute'
+                       }}>
+                         <Typography variant="h4" sx={{
+                           color: '#000',
+                           fontWeight: 'bold',
+                           fontSize: '1.5rem'
+                         }}>
+                           {memberData.username.charAt(0).toUpperCase()}
+                         </Typography>
+                       </Box>
+                     </Box>
 
-                      {/* License ID Badge */}
-                      <Box sx={{ textAlign: 'center' }}>
-                        <Box
-                          sx={{
-                            background: 'rgba(255, 215, 0, 0.1)',
-                            color: '#ffd700',
-                            px: 2,
-                            py: 1,
-                            borderRadius: 1,
-                            fontSize: '11px',
-                            fontWeight: '600',
-                            textAlign: 'center',
-                            minWidth: 75,
-                            border: '1px solid rgba(255, 215, 0, 0.3)'
-                          }}
-                        >
-                          {licenseNumber || 'TNL LICENSE'}
-                        </Box>
-                        <Typography variant="caption" sx={{ color: '#999', display: 'block', mt: 0.5, fontSize: '10px' }}>
-                          🇮🇳 INDIA
-                        </Typography>
-                      </Box>
+                    {/* Verification Badge */}
+                    <Box sx={{
+                      background: 'linear-gradient(135deg, #4caf50, #45a049)',
+                      color: '#fff',
+                      px: 2,
+                      py: 0.5,
+                      borderRadius: 1.5,
+                      fontWeight: '600',
+                      fontSize: '10px',
+                      border: '1px solid #fff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.5
+                    }}>
+                      <Box sx={{
+                        width: 4,
+                        height: 4,
+                        borderRadius: '50%',
+                        background: '#fff'
+                      }} />
+                      VERIFIED
                     </Box>
                   </Box>
 
-                  {/* Main Content */}
+                  {/* Center Section - Personal Details */}
                   <Box sx={{
-                    display: 'flex',
                     flex: 1,
-                    p: 3,
-                    zIndex: 2,
+                    p: 2,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
                     position: 'relative',
-                    gap: 3
+                    zIndex: 2
                   }}>
-                    {/* Left Panel - Minimalist Design */}
-                    <Box sx={{
-                      flex: 1,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                      {/* Abstract Geometric Design */}
-                      <Box
-                        sx={{
-                          width: '100%',
-                          height: 180,
-                          position: 'relative',
-                          mb: 3,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}
-                      >
-                        {/* Main Circle */}
-                        <Box
-                          sx={{
-                            width: 120,
-                            height: 120,
-                            borderRadius: '50%',
-                            background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.05))',
-                            border: '2px solid rgba(255, 215, 0, 0.3)',
-                            position: 'relative',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}
-                        >
-                          {/* Inner Elements */}
-                          <Box
-                            sx={{
-                              width: 80,
-                              height: 80,
-                              borderRadius: '50%',
-                              background: 'rgba(255, 215, 0, 0.05)',
-                              border: '1px solid rgba(255, 215, 0, 0.2)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}
-                          >
-                            <Typography variant="h4" sx={{
-                              color: '#ffd700',
-                              fontWeight: 300,
-                              fontSize: '2.5rem'
-                            }}>
-                              TNL
-                            </Typography>
-                          </Box>
-                        </Box>
-
-                        {/* Decorative Lines */}
-                        <Box
-                          sx={{
-                            position: 'absolute',
-                            top: '50%',
-                            left: '50%',
-                            transform: 'translate(-50%, -50%)',
-                            width: 140,
-                            height: 140,
-                            border: '1px solid rgba(255, 215, 0, 0.1)',
-                            borderRadius: '50%'
-                          }}
-                        />
-                        <Box
-                          sx={{
-                            position: 'absolute',
-                            top: '50%',
-                            left: '50%',
-                            transform: 'translate(-50%, -50%)',
-                            width: 160,
-                            height: 160,
-                            border: '1px solid rgba(255, 215, 0, 0.05)',
-                            borderRadius: '50%'
-                          }}
-                        />
-                      </Box>
-
-                      {/* Verification Badge */}
-                      <Box
-                        sx={{
-                          background: 'rgba(76, 175, 80, 0.1)',
-                          color: '#4caf50',
-                          px: 3,
-                          py: 1,
-                          borderRadius: 2,
-                          fontWeight: '500',
-                          fontSize: '12px',
-                          border: '1px solid rgba(76, 175, 80, 0.3)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 0.5
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            width: 6,
-                            height: 6,
-                            borderRadius: '50%',
-                            background: '#4caf50'
-                          }}
-                        />
-                        VERIFIED
-                      </Box>
-                    </Box>
-
-                    {/* Right Panel - Personal Details */}
-                    <Box sx={{
-                      flex: 1,
-                      color: 'white',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'center',
-                      gap: 3
-                    }}>
-                      {/* Member Name */}
-                      <Box sx={{ textAlign: 'center' }}>
-                        <Typography variant="h2" sx={{
-                          mb: 1,
-                          fontWeight: 300,
-                          color: '#ffd700',
-                          fontSize: '2.5rem'
-                        }}>
-                          {memberData.username}
-                        </Typography>
-                        <Typography variant="body1" sx={{
-                          color: '#ccc',
-                          fontSize: '0.9rem'
-                        }}>
-                          Member
-                        </Typography>
-                      </Box>
-
-                      {/* Role */}
-                      <Box sx={{
-                        background: 'rgba(255, 215, 0, 0.05)',
-                        p: 2,
-                        borderRadius: 2,
-                        textAlign: 'center',
-                        border: '1px solid rgba(255, 215, 0, 0.1)'
+                    {/* Header */}
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="h4" sx={{
+                        color: '#ffd700',
+                        fontWeight: 'bold',
+                        fontSize: '1.8rem',
+                        mb: 0.5
                       }}>
-                        <Typography variant="h6" sx={{
-                          color: '#ffd700',
-                          fontWeight: '400',
-                          fontSize: '1rem'
-                        }}>
-                          {memberData.role || (memberData.roles && memberData.roles[0] ? memberData.roles[0].name : 'Member')}
-                        </Typography>
-                      </Box>
+                        TAMILNADU LOGISTICS
+                      </Typography>
+                      <Typography variant="body2" sx={{
+                        color: '#ccc',
+                        fontSize: '0.8rem'
+                      }}>
+                       ரௌத்திரம் பழகு
 
-                      {/* License Number */}
-                      <Box sx={{ textAlign: 'center' }}>
-                        <Typography variant="body2" sx={{
-                          color: '#999',
-                          mb: 1,
-                          fontSize: '0.8rem',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px'
-                        }}>
-                          License Number
-                        </Typography>
-                        <Typography variant="h5" sx={{
-                          color: '#ffd700',
-                          fontWeight: '500',
-                          fontSize: '1.2rem',
-                          letterSpacing: '1px'
-                        }}>
-                          {licenseNumber || 'Generating...'}
-                        </Typography>
-                      </Box>
-
-                      {/* Member Since */}
-                      <Box sx={{ textAlign: 'center' }}>
-                        <Typography variant="caption" sx={{
-                          color: '#666',
-                          fontSize: '0.75rem'
-                        }}>
-                          Member since {memberData ? new Date(memberData.joinDate).toLocaleDateString() : 'N/A'}
-                        </Typography>
-                      </Box>
+                      </Typography>
                     </Box>
+
+                                         {/* Member Name */}
+                     <Typography variant="h3" sx={{
+                       color: '#fff',
+                       fontWeight: '600',
+                       fontSize: '2rem',
+                       mb: 1
+                     }}>
+                       {memberData.playerName || memberData.username}
+                     </Typography>
+
+                    {/* Role */}
+                    <Box sx={{
+                      background: 'rgba(255, 215, 0, 0.1)',
+                      p: 1.5,
+                      borderRadius: 1.5,
+                      border: '1px solid rgba(255, 215, 0, 0.3)',
+                      mb: 2,
+                      display: 'inline-block'
+                    }}>
+                      <Typography variant="body1" sx={{
+                        color: '#ffd700',
+                        fontWeight: '500',
+                        fontSize: '0.9rem'
+                      }}>
+                        {memberData.role || (memberData.roles && memberData.roles[0] ? memberData.roles[0].name : 'Member')}
+                      </Typography>
+                    </Box>
+
+                    {/* Member Since */}
+                    <Typography variant="body2" sx={{
+                      color: '#999',
+                      fontSize: '0.8rem'
+                    }}>
+                      Member since {memberData ? new Date(memberData.joinDate).toLocaleDateString() : 'N/A'}
+                    </Typography>
+                  </Box>
+
+                  {/* Right Section - License Details */}
+                  <Box sx={{
+                    flex: '0 0 140px',
+                    p: 2,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    position: 'relative',
+                    zIndex: 2
+                  }}>
+                    {/* License Number */}
+                    <Box sx={{ textAlign: 'center', mb: 2 }}>
+                      <Typography variant="caption" sx={{
+                        color: '#999',
+                        fontSize: '0.7rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        display: 'block',
+                        mb: 0.5
+                      }}>
+                        License Number
+                      </Typography>
+                      <Typography variant="h5" sx={{
+                        color: '#ffd700',
+                        fontWeight: 'bold',
+                        fontSize: '1rem',
+                        letterSpacing: '0.5px'
+                      }}>
+                        {licenseNumber || 'Generating...'}
+                      </Typography>
+                    </Box>
+
+                    {/* TNL Administration */}
+                    <Box sx={{
+                      background: 'rgba(255, 215, 0, 0.1)',
+                      p: 1.5,
+                      borderRadius: 1.5,
+                      border: '1px solid rgba(255, 215, 0, 0.3)',
+                      textAlign: 'center'
+                    }}>
+                      <Typography variant="caption" sx={{
+                        color: '#ffd700',
+                        fontWeight: 'bold',
+                        fontSize: '0.7rem',
+                        display: 'block'
+                      }}>
+                        TNL ADMINISTRATION
+                      </Typography>
+                    </Box>
+
+                    {/* India Flag */}
+                    
                   </Box>
 
                   {/* Bottom Disclaimer */}
                   <Box sx={{
-                    p: 2,
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    p: 1,
                     textAlign: 'center',
-                    zIndex: 2,
-                    position: 'relative',
-                    borderTop: '1px solid rgba(255, 215, 0, 0.1)'
+                    background: 'rgba(0,0,0,0.8)',
+                    borderTop: '1px solid rgba(255, 215, 0, 0.2)',
+                    zIndex: 2
                   }}>
-                    <Typography variant="caption" sx={{
-                      color: '#666',
-                      fontSize: '8px',
-                      fontStyle: 'italic'
-                    }}>
-                      Entertainment purposes only
-                    </Typography>
+                    
                   </Box>
                 </Box>
 
