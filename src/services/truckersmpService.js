@@ -11,7 +11,7 @@ export const getVTCAttendingEvents = async () => {
     });
     
     // The API returns data in a specific structure, let's log it to see what we get
-    console.log('TruckersMP API Response:', response.data);
+    
     
     // Return the events array from the response
     return response.data.response || [];

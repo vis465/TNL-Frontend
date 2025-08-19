@@ -35,9 +35,11 @@ import {
   Collapse,
   Tooltip,
 } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DownloadIcon from '@mui/icons-material/Download';
+
 import MenuIcon from '@mui/icons-material/Menu';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -45,6 +47,7 @@ import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import { format } from 'date-fns';
 import axiosInstance from '../utils/axios';
 import ManageSlotsDialog from '../components/ManageSlotsDialog';
+import ManageSpecialEventsDialog from '../components/ManageSpecialEventsDialog';
 import AnalyticsDashboard from './AnalyticsDashboard';
 
 const AdminDashboard = () => {
@@ -54,6 +57,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [manageSlotsOpen, setManageSlotsOpen] = useState(false);
+  const [manageSpecialEventsOpen, setManageSpecialEventsOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [eventSlots, setEventSlots] = useState([]);
   const [actionLoading, setActionLoading] = useState(null);
@@ -137,6 +141,12 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSpecialEventsUpdated = () => {
+    // This function will be called when special events are updated
+    // The ManageSpecialEventsDialog will handle its own refresh
+    console.log('Special events updated, refreshing data...');
   };
 
   const handleTabChange = (event, newValue) => {
@@ -440,6 +450,7 @@ const AdminDashboard = () => {
           >
             <Tab label="Events Management" />
             <Tab label="Booking Requests" />
+            <Tab label="Special Events" />
             {user?.role === 'admin' && <Tab label="Analytics" />}
           </Tabs>
         </Paper>
@@ -936,8 +947,56 @@ const AdminDashboard = () => {
         </Paper>
       )}
 
+      {/* Special Events Tab */}
+      {activeTab === 2 && (
+        <Paper sx={{ 
+          borderRadius: 2, 
+          overflow: 'hidden', 
+          p: { xs: 1, sm: 2, md: 3 }
+        }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Typography variant="h5">
+              Special Events Management
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button
+                variant="outlined"
+                startIcon={<RefreshIcon />}
+                onClick={() => {
+                  console.log('Refreshing special events...');
+                  // Force refresh by closing and reopening the dialog
+                  setManageSpecialEventsOpen(false);
+                  setTimeout(() => setManageSpecialEventsOpen(true), 100);
+                }}
+                title="Refresh Special Events"
+              >
+                Refresh
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setManageSpecialEventsOpen(true)}
+              >
+                Manage Special Events
+              </Button>
+            </Box>
+          </Box>
+          
+          <Typography variant="body1" color="text.secondary" paragraph>
+            Create and manage special events with route-based slot management. VTCs can request slots instead of booking them directly.
+          </Typography>
+          
+          <Alert severity="info" sx={{ mb: 2 }}>
+            <Typography variant="body2">
+              <strong>Special Events:</strong> These events use a different slot management system where VTCs submit requests 
+              for slots instead of booking them directly. Administrators review and approve/reject these requests.
+            </Typography>
+          </Alert>
+        </Paper>
+      )}
+
       {/* Analytics Tab */}
-      {activeTab === 2 && user?.role === 'admin' && (
+      {activeTab === 3 && user?.role === 'admin' && (
         <Paper sx={{ 
           borderRadius: 2, 
           overflow: 'hidden', 
@@ -954,6 +1013,13 @@ const AdminDashboard = () => {
         event={selectedEvent}
         slots={eventSlots}
         onSlotsUpdated={fetchData}
+      />
+
+      {/* Manage Special Events Dialog */}
+      <ManageSpecialEventsDialog
+        open={manageSpecialEventsOpen}
+        onClose={() => setManageSpecialEventsOpen(false)}
+        onEventUpdated={fetchData}
       />
 
       {/* Delete Booking Confirmation Dialog */}

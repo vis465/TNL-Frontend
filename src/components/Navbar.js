@@ -26,12 +26,13 @@ import {
   FireTruckOutlined,
   Brightness4,
   Brightness7,
-  EventIcon,
+  
   Event,
   AdminPanelSettings,
   MenuIcon,
   Menu as MenuMui,
 } from '@mui/icons-material';
+import EventIcon from '@mui/icons-material/Event';
 import { useAuth } from '../contexts/AuthContext';
 import { styled, keyframes } from '@mui/material/styles';
 import { ThemeContext } from '../App';
@@ -201,6 +202,7 @@ const Navbar = () => {
       return [
         { label: 'Our Team', path: '/team', icon: <PersonAdd /> },
         { label: 'Events', path: '/events', icon: <Event /> },
+        { label: 'Special Events', path: '/special-events', icon: <EventIcon /> },
         { label: 'Apply', path: '/apply', icon: <Dashboard /> },
         { label: 'License', path: '/license', icon: <DirectionsCar /> },
         { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },

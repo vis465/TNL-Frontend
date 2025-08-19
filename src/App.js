@@ -47,6 +47,8 @@ import Events from './pages/Events';
 import RedirectBasedOnHost from './components/RedirectBasedOnHost';
 import PlayerProfile from './pages/playerprofile';
 import LicenseGenerator from './pages/LicenseGenerator';
+import SpecialEvent from './pages/SpecialEvent';
+
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -222,6 +224,7 @@ function App() {
                   <Route path="/register" element={<Register />} />
                   <Route path="/servers" element={<Servers />} />
                   <Route path="/events/:id" element={<EventDetails />} />
+                  <Route path="/special-events/:id" element={<SpecialEvent />} />
                   <Route path="/attending-events" element={<AttendingEvents />} />
                   <Route path="/External/:id" element={<Others />} />
                   {/* New public routes */}
@@ -232,6 +235,7 @@ function App() {
                   <Route path="/terms" element={<TermsOfService />} />
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   <Route path="/events" element={<Home />} />
+                  
                   {/* Protected routes */}
                   <Route element={<PrivateRoute allowedRoles={["admin","eventteam"]} />}>
                     <Route path="/admin" element={<AdminDashboard />} />
