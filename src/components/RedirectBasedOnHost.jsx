@@ -19,6 +19,9 @@ export default function RedirectBasedOnHost() {
     ) {
       navigate("/");
     }
+    else if(path==="/events/30401"){
+      navigate("/special-events/30401")
+    }
   }, [navigate]);
 
   return null;

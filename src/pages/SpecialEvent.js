@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Markdown from 'react-markdown'
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 
 import { useParams } from "react-router-dom";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
@@ -80,7 +81,7 @@ import ReactMarkdown from "react-markdown";
 import { useAuth } from "../contexts/AuthContext";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-
+import { keyframes } from "@emotion/react";
 dayjs.extend(utc);
 
 const SpecialEvent = () => {
@@ -103,6 +104,7 @@ const SpecialEvent = () => {
     trailer: "",
     notes: "",
   });
+
   const [requestLoading, setRequestLoading] = useState(false);
   const [requestSuccess, setRequestSuccess] = useState(false);
   const [expandedSlots, setExpandedSlots] = useState({});
@@ -188,7 +190,7 @@ const SpecialEvent = () => {
   };
 
   const handleSubmitRequest = async () => {
-    // Users can only submit general requests, admins will allocate to routes
+    
     try {
       setRequestLoading(true);
       setError("");
@@ -338,35 +340,124 @@ const SpecialEvent = () => {
   }
 
   if (error || !event) {
-    return (
-      <Container maxWidth="lg" sx={{ mt: 4 }}>
-        <Alert
-          severity="error"
-          sx={{
-            mb: 2,
-            borderLeft: "4px solid #f44336",
-            backgroundColor:
-              theme.palette.mode === "dark"
-                ? "rgba(244, 67, 54, 0.1)"
-                : "rgba(244, 67, 54, 0.05)",
-          }}
-        >
-          {error || "Event not found"}
-        </Alert>
-        <Button
-          variant="contained"
-          onClick={() => window.history.back()}
-          sx={{
-            background: "linear-gradient(45deg, #FFD700 0%, #FFC107 100%)",
-            color: "#1A1A1A",
-            fontWeight: 600,
-          }}
-        >
-          🔙 Go Back
-        </Button>
-      </Container>
+   return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: theme.palette.mode === 'dark' ? '#0f0f0f' : '#fafafa',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        padding: '20px'
+      }}>
+        <div style={{
+          maxWidth: '480px',
+          width: '100%',
+          textAlign: 'center',
+          background: theme.palette.mode === 'dark' ? '#1a1a1a' : '#ffffff',
+          borderRadius: '8px',
+          padding: '48px 32px',
+          boxShadow: theme.palette.mode === 'dark' 
+            ? '0 1px 3px rgba(255, 255, 255, 0.05)' 
+            : '0 1px 3px rgba(0, 0, 0, 0.1)',
+          border: theme.palette.mode === 'dark' 
+            ? '1px solid #2a2a2a' 
+            : '1px solid #e5e7eb',
+          animation: 'fadeIn 0.4s ease-out'
+        }}>
+          
+          {/* Status Icon */}
+          <div style={{
+            width: '48px',
+            height: '48px',
+            borderRadius: '50%',
+            backgroundColor: theme.palette.mode === 'dark' ? '#2563eb' : '#3b82f6',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 24px',
+            animation: 'pulse 2s ease-in-out infinite'
+          }}>
+            <div style={{
+              width: '16px',
+              height: '16px',
+              borderRadius: '50%',
+              backgroundColor: 'white'
+            }} />
+          </div>
+          
+          {/* Main Message */}
+          <h1 style={{
+            fontSize: '24px',
+            fontWeight: '600',
+            color: theme.palette.mode === 'dark' ? '#ffffff' : '#111827',
+            marginBottom: '8px',
+            lineHeight: '1.3'
+          }}>
+            Event Details Coming Soon
+          </h1>
+          
+          {/* Subtitle */}
+          <p style={{
+            fontSize: '16px',
+            color: theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280',
+            marginBottom: '32px',
+            lineHeight: '1.5',
+            fontWeight: '400'
+          }}>
+            We're working on something special for this event. Check back soon for all the exciting details.
+          </p>
+          
+          {/* Loading Bar */}
+     
+          
+          {/* Back Button */}
+          <button
+            onClick={() => window.history.go(-2)}
+            style={{
+              backgroundColor: 'transparent',
+              color: theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280',
+              fontWeight: '500',
+              fontSize: '14px',
+              border: `1px solid ${theme.palette.mode === 'dark' ? '#374151' : '#d1d5db'}`,
+              borderRadius: '6px',
+              padding: '10px 16px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.borderColor = theme.palette.mode === 'dark' ? '#4b5563' : '#9ca3af';
+              e.target.style.color = theme.palette.mode === 'dark' ? '#d1d5db' : '#374151';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.borderColor = theme.palette.mode === 'dark' ? '#374151' : '#d1d5db';
+              e.target.style.color = theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280';
+            }}
+          >
+            <span>←</span>
+            Go Back
+          </button>
+        </div>
+        
+        {/* CSS Animations */}
+        <style jsx>{`
+        @keyframes drive {
+          0% {
+            transform: translateX(-10%);
+          }
+          100% {
+            transform: translateX(110%);
+          }
+        }
+      `}</style>
+
+      </div>
     );
   }
+
 
   const currentRoute = event.routes[selectedRoute];
   const currentRouteSlots = routeSlots[currentRoute?.name] || [];
