@@ -325,7 +325,7 @@ const Home = () => {
       
       
       // Ensure we have an array of events
-      const eventsData =  response.data.events
+      const eventsData =  response.data
       console.log('Processed special events data:', eventsData);
       setSpecialEvents(eventsData);
     } catch (specialError) {
@@ -535,7 +535,7 @@ const Home = () => {
         </PageTitle>
         
         {/* Special Events Section */}
-        {specialEvents && specialEvents.length > 0 && (
+        {specialEvents?.length > 0 && (
   <>
     <Box sx={{ mb: 4 }}>
       <Typography variant="h4" component="h2" gutterBottom sx={{ 

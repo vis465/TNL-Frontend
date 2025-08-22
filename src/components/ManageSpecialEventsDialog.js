@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -67,6 +67,67 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
   const [uploadLoading, setUploadLoading] = useState(false);
   const [fetchingTmpEvent, setFetchingTmpEvent] = useState(false);
   const [eventSlots, setEventSlots] = useState({});
+  const [loadingSlots, setLoadingSlots] = useState({});
+  
+  // Use ref to preserve eventSlots state across re-renders
+  const eventSlotsRef = useRef({});
+  
+  // Load eventSlots from localStorage on component mount
+  useEffect(() => {
+    try {
+      const savedSlots = localStorage.getItem('eventSlots');
+      if (savedSlots) {
+        const parsedSlots = JSON.parse(savedSlots);
+        console.log('Loading eventSlots from localStorage:', parsedSlots);
+        setEventSlots(parsedSlots);
+        eventSlotsRef.current = parsedSlots;
+      }
+    } catch (error) {
+      console.error('Error loading eventSlots from localStorage:', error);
+    }
+  }, []);
+
+  // Save eventSlots to localStorage whenever they change
+  const saveEventSlotsToStorage = (slots) => {
+    try {
+      localStorage.setItem('eventSlots', JSON.stringify(slots));
+      console.log('Saved eventSlots to localStorage:', slots);
+    } catch (error) {
+      console.error('Error saving eventSlots to localStorage:', error);
+    }
+  };
+
+  // Refresh eventSlots from localStorage
+  const refreshEventSlotsFromStorage = () => {
+    try {
+      const savedSlots = localStorage.getItem('eventSlots');
+      if (savedSlots) {
+        const parsedSlots = JSON.parse(savedSlots);
+        console.log('Refreshing eventSlots from localStorage:', parsedSlots);
+        setEventSlots(parsedSlots);
+        eventSlotsRef.current = parsedSlots;
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error refreshing eventSlots from localStorage:', error);
+      return false;
+    }
+  };
+
+  // Force refresh all slots for all events from backend
+  const forceRefreshAllSlots = async () => {
+    try {
+      console.log('Force refreshing all slots from backend...');
+      const promises = events.map(event => fetchEventSlots(event.truckersmpId));
+      await Promise.all(promises);
+      console.log('All slots refreshed from backend');
+      alert('All slots refreshed from backend');
+    } catch (error) {
+      console.error('Error refreshing all slots:', error);
+      alert('Error refreshing slots: ' + error.message);
+    }
+  };
   
   // Form states
   const [eventForm, setEventForm] = useState({
@@ -120,6 +181,44 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
     }
   }, [open]);
 
+  useEffect(() => {
+    console.log('eventSlots state changed:', eventSlots);
+  }, [eventSlots]);
+
+  useEffect(() => {
+    if (selectedEvent) {
+      console.log('Selected event changed:', selectedEvent);
+      console.log('Current eventSlots for this event:', eventSlots[selectedEvent.truckersmpId]);
+    }
+  }, [selectedEvent, eventSlots]);
+
+  // Protect eventSlots from being reset - restore from ref if needed
+  useEffect(() => {
+    if (Object.keys(eventSlots).length === 0 && Object.keys(eventSlotsRef.current).length > 0) {
+      console.log('eventSlots was reset to empty, restoring from ref:', eventSlotsRef.current);
+      setEventSlots(eventSlotsRef.current);
+    }
+  }, [eventSlots]);
+
+  // Auto-restore slots from localStorage if state is empty
+  useEffect(() => {
+    if (Object.keys(eventSlots).length === 0) {
+      console.log('eventSlots is empty, checking localStorage...');
+      const restored = refreshEventSlotsFromStorage();
+      if (restored) {
+        console.log('Auto-restored slots from localStorage');
+      }
+    }
+  }, [eventSlots]);
+
+  // Sync ref with state changes
+  useEffect(() => {
+    if (Object.keys(eventSlots).length > 0) {
+      eventSlotsRef.current = eventSlots;
+      console.log('Synced ref with eventSlots state:', eventSlots);
+    }
+  }, [eventSlots]);
+
   const fetchEvents = async () => {
     try {
       setLoading(true);
@@ -129,6 +228,10 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
       // Handle both response.data.events and response.data directly
       const eventsData = response.data.events || response.data || [];
       setEvents(Array.isArray(eventsData) ? eventsData : []);
+      
+      // CRITICAL: Never clear eventSlots - preserve all existing slot data
+      console.log('Events loaded, preserving ALL existing slots data. Current eventSlots:', eventSlots);
+      console.log('eventSlots state preserved - no reset performed');
     } catch (error) {
       console.error('Error fetching special events:', error);
       setError('Failed to fetch special events');
@@ -139,17 +242,99 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
 
   const fetchEventSlots = async (eventId) => {
     try {
+      setLoadingSlots(prev => ({ ...prev, [eventId]: true }));
       console.log('Fetching slots for event:', eventId);
       const response = await axiosInstance.get(`/special-events/${eventId}`);
       console.log('Event slots response:', response.data);
+      console.log('Response structure:', {
+        hasEvent: !!response.data.event,
+        hasRouteSlots: !!response.data.routeSlots,
+        routeSlotsType: typeof response.data.routeSlots,
+        routeSlotsKeys: response.data.routeSlots ? Object.keys(response.data.routeSlots) : 'none'
+      });
+      
       if (response.data.routeSlots && typeof response.data.routeSlots === 'object') {
-        setEventSlots(response.data.routeSlots);
+        console.log('Setting route slots:', response.data.routeSlots);
+        
+        // Debug: Check if requests exist in the slots
+        Object.keys(response.data.routeSlots).forEach(routeName => {
+          const routeSlots = response.data.routeSlots[routeName];
+          console.log(`Route ${routeName}: ${routeSlots.length} slots`);
+          routeSlots.forEach((slot, idx) => {
+            console.log(`  Slot ${idx + 1}: ${slot.slotName || slot.slotNumber}`);
+            console.log(`    Requests: ${slot.requests ? slot.requests.length : 0}`);
+            if (slot.requests && slot.requests.length > 0) {
+              slot.requests.forEach((req, reqIdx) => {
+                console.log(`      Request ${reqIdx + 1}: ${req.vtcName} - ${req.status}`);
+              });
+            }
+          });
+        });
+        
+        // Update eventSlots for this specific event without overwriting others
+        setEventSlots(prev => {
+          const newState = {
+            ...prev,
+            [eventId]: {
+              ...response.data.routeSlots,
+              routeRequests: response.data.routeRequests || {}
+            }
+          };
+          console.log('Updated eventSlots state:', newState);
+          console.log('Route requests included:', response.data.routeRequests);
+          // Also update the ref to preserve state across re-renders
+          eventSlotsRef.current = newState;
+          // Save to localStorage
+          saveEventSlotsToStorage(newState);
+          return newState;
+        });
       } else {
-        setEventSlots({});
+        console.log('No route slots found, setting empty object for this event');
+        setEventSlots(prev => {
+          const newState = {
+            ...prev,
+            [eventId]: {}
+          };
+          // Also update the ref
+          eventSlotsRef.current = newState;
+          // Save to localStorage
+          saveEventSlotsToStorage(newState);
+          return newState;
+        });
       }
     } catch (error) {
       console.error('Error fetching event slots:', error);
-      setEventSlots({});
+      setEventSlots(prev => {
+        const newState = {
+          ...prev,
+          [eventId]: {}
+        };
+        // Also update the ref
+        eventSlotsRef.current = newState;
+        // Save to localStorage
+        saveEventSlotsToStorage(newState);
+        return newState;
+      });
+    } finally {
+      setLoadingSlots(prev => ({ ...prev, [eventId]: false }));
+    }
+  };
+
+  const getEventSlotCount = (eventId) => {
+    console.log('Getting slot count for event:', eventId, 'Current eventSlots:', eventSlots);
+    
+    // Use ref as fallback if state is empty
+    const slotsData = eventSlots[eventId] || eventSlotsRef.current[eventId];
+    
+    if (!slotsData) return 0;
+    const count = Object.values(slotsData).flat().length;
+    console.log('Slot count for event', eventId, ':', count);
+    return count;
+  };
+
+  const ensureEventSlotsLoaded = async (eventId) => {
+    if (!eventSlots[eventId]) {
+      await fetchEventSlots(eventId);
     }
   };
 
@@ -183,6 +368,7 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
   };
 
   const handleEditEvent = (event) => {
+    console.log('Editing event:', event);
     setSelectedEvent(event);
     setEditMode(true);
     setEventForm({
@@ -204,13 +390,18 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
       url: event.url,
       maxVtcPerSlot: event.maxVtcPerSlot || 1,
       approvalRequired: event.approvalRequired !== false,
-      routes: Array.isArray(event.routes) ? event.routes : []
+      routes: Array.isArray(event.routes) ? event.routes.map(route => ({
+        ...route,
+        slotImages: route.slotImages || [],
+        slotCount: route.slotCount || 0
+      })) : []
     });
     setError('');
     setSuccess('');
     setActiveTab(0);
     
     // Fetch slots for this event
+    console.log('Fetching slots for event:', event.truckersmpId);
     fetchEventSlots(event.truckersmpId);
   };
 
@@ -237,8 +428,9 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
       
       setEditMode(false);
       setSelectedEvent(null);
-      console.log('Refreshing events list...');
-      await fetchEvents();
+      console.log('Event saved, preserving existing slots data...');
+      // Don't call fetchEvents() here as it clears eventSlots
+      // The events list should already be up to date
       if (onEventUpdated) onEventUpdated();
       setSuccessWithTimeout('Event saved successfully!');
     } catch (error) {
@@ -260,7 +452,19 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
       setSuccess('');
       
       await axiosInstance.delete(`/special-events/${event.truckersmpId}`);
-      fetchEvents();
+      
+      // Remove the deleted event from the events list and clear its slots
+      setEvents(prev => prev.filter(e => e.truckersmpId !== event.truckersmpId));
+      setEventSlots(prev => {
+        const newState = { ...prev };
+        delete newState[event.truckersmpId];
+        // Also update the ref
+        eventSlotsRef.current = newState;
+        // Save to localStorage
+        saveEventSlotsToStorage(newState);
+        return newState;
+      });
+      
       if (onEventUpdated) onEventUpdated();
       setSuccessWithTimeout('Event deleted successfully!');
     } catch (error) {
@@ -276,7 +480,11 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
     
     setEventForm(prev => ({
       ...prev,
-      routes: [...prev.routes, { ...routeForm }]
+      routes: [...prev.routes, { 
+        ...routeForm, 
+        slotImages: [], // Initialize empty slotImages array
+        slotCount: 0 // Initialize slotCount
+      }]
     }));
     
     setRouteForm({
@@ -344,6 +552,21 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
       return;
     }
 
+    // Validate slots before upload
+    const invalidSlots = slotsForm.slots.filter(slot => !slot.slotName || !slot.slotNumber);
+    if (invalidSlots.length > 0) {
+      setError('All slots must have a name and slot number');
+      return;
+    }
+
+    // Check for duplicate slot numbers
+    const slotNumbers = slotsForm.slots.map(slot => slot.slotNumber);
+    const uniqueSlotNumbers = new Set(slotNumbers);
+    if (slotNumbers.length !== uniqueSlotNumbers.size) {
+      setError('Slot numbers must be unique');
+      return;
+    }
+
     try {
       setUploadLoading(true);
       setError('');
@@ -355,10 +578,12 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
         slots: slotsForm.slots
       });
       
-      await axiosInstance.post(
+      const response = await axiosInstance.post(
         `/special-events/${selectedEvent.truckersmpId}/routes/${slotsForm.routeName}/slots`,
         { slots: slotsForm.slots }
       );
+      
+      console.log('Slots upload response:', response.data);
       
       // Clear the form after successful upload
       setSlotsForm({
@@ -378,19 +603,41 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
       });
       
       // Refresh the events list and slots
-      await fetchEvents();
+      console.log('Refreshing slots after upload...');
+      // Don't call fetchEvents() here as it clears eventSlots
+      // Instead, just refresh the slots for this specific event
       if (selectedEvent) {
+        console.log('Fetching updated slots for event:', selectedEvent.truckersmpId);
         await fetchEventSlots(selectedEvent.truckersmpId);
       }
       
       if (onEventUpdated) onEventUpdated();
       
       // Show success message
-      setSuccessWithTimeout('Slots uploaded successfully!');
+      setSuccessWithTimeout(`Successfully uploaded ${response.data.count} slots for route ${response.data.routeName}!`);
+      
+      // Also show a more detailed success message
+      setTimeout(() => {
+        setSuccess(`Created ${response.data.count} slots for route ${response.data.routeName}. You can now view them in the existing slots section below.`);
+      }, 100);
       
     } catch (error) {
       console.error('Error uploading slots:', error);
-      setError(error.response?.data?.message || 'Failed to upload slots');
+      let errorMessage = 'Failed to upload slots';
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.status === 404) {
+        errorMessage = 'Event or route not found. Please check the event ID and route name.';
+      } else if (error.response?.status === 400) {
+        errorMessage = 'Invalid data. Please check the slot information.';
+      } else if (error.response?.status === 500) {
+        errorMessage = 'Server error. Please check the console for details.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setUploadLoading(false);
     }
@@ -472,6 +719,213 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
     }
   };
 
+  const handleApproveRequest = async (requestId, slotId) => {
+    if (!slotId) {
+      setError('Please select a slot to allocate before approving');
+      return;
+    }
+
+    if (!window.confirm('Are you sure you want to approve this request and allocate it to the selected slot?')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+      setSuccess('');
+
+      const response = await axiosInstance.patch(
+        `/special-events/${selectedEvent.truckersmpId}/requests/${requestId}/approve`,
+        { slotId }
+      );
+
+      console.log('Request approved:', response.data);
+      setSuccessWithTimeout('Request approved and slot allocated successfully!');
+      fetchEventSlots(selectedEvent.truckersmpId); // Refresh slots to update request count
+    } catch (error) {
+      console.error('Error approving request:', error);
+      setError(error.response?.data?.message || 'Failed to approve request');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRejectRequest = async (requestId) => {
+    if (!window.confirm('Are you sure you want to reject this request?')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+      setSuccess('');
+
+      const reason = prompt('Please provide a reason for rejection:');
+      if (!reason) {
+        setError('Rejection reason is required');
+        return;
+      }
+
+      const response = await axiosInstance.patch(
+        `/special-events/${selectedEvent.truckersmpId}/requests/${requestId}/reject`,
+        { reason }
+      );
+
+      console.log('Request rejected:', response.data);
+      setSuccessWithTimeout('Request rejected successfully!');
+      fetchEventSlots(selectedEvent.truckersmpId); // Refresh slots to update request count
+    } catch (error) {
+      console.error('Error rejecting request:', error);
+      setError(error.response?.data?.message || 'Failed to reject request');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSetSlotsCount = async (route) => {
+    // Ensure route has proper structure
+    if (!route.slotImages) {
+      route.slotImages = [];
+    }
+    if (!route.slotCount) {
+      route.slotCount = 0;
+    }
+    
+    if (!route.slotCount || route.slotCount < 1) {
+      setError('Slot count must be at least 1');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+      setSuccess('');
+
+      console.log('Setting slots count with data:', {
+        eventId: selectedEvent.truckersmpId,
+        routeName: route.name,
+        slotCount: route.slotCount
+      });
+
+      const response = await axiosInstance.post(
+        `/special-events/${selectedEvent.truckersmpId}/routes/${route.name}/slots-count`,
+        { slotCount: route.slotCount }
+      );
+
+      console.log('Slot count set:', response.data);
+      setSuccessWithTimeout(`Slot count for route ${route.name} set to ${route.slotCount}!`);
+      fetchEventSlots(selectedEvent.truckersmpId); // Refresh slots to update slot count
+    } catch (error) {
+      console.error('Error setting slot count:', error);
+      setError(error.response?.data?.message || 'Failed to set slot count');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateSlots = async (route) => {
+    console.log('handleCreateSlots called with route:', route);
+    console.log('Route slotCount:', route.slotCount);
+    console.log('Route slotImages:', route.slotImages);
+    
+    // Ensure route has proper structure
+    if (!route.slotImages) {
+      route.slotImages = [];
+    }
+    if (!route.slotCount) {
+      route.slotCount = 0;
+    }
+    
+    if (!route.slotCount || route.slotCount < 1) {
+      setError('Slot count must be at least 1');
+      return;
+    }
+
+    if (route.slotImages && route.slotImages.length !== route.slotCount) {
+      setError('Please provide data for each slot');
+      return;
+    }
+
+    if (route.slotImages.some(slot => !slot || !slot.url)) {
+      setError('All slots must have an image URL');
+      return;
+    }
+
+    if (route.slotImages.some(slot => !slot.maxVtc || slot.maxVtc < 1)) {
+      setError('All slots must have a valid max VTC count (minimum 1)');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+      setSuccess('');
+
+      console.log('Creating slots with data:', {
+        eventId: selectedEvent.truckersmpId,
+        routeName: route.name,
+        slotCount: route.slotCount,
+        slotImages: route.slotImages
+      });
+
+      const response = await axiosInstance.post(
+        `/special-events/${selectedEvent.truckersmpId}/routes/${route.name}/slots-count`,
+        { slotCount: route.slotCount, slotImages: route.slotImages }
+      );
+
+      console.log('Slots created:', response.data);
+      setSuccessWithTimeout(`Successfully created ${response.data.slots} slots for route ${route.name}!`);
+      fetchEventSlots(selectedEvent.truckersmpId); // Refresh slots to show new slots
+    } catch (error) {
+      console.error('Error creating slots:', error);
+      setError(error.response?.data?.message || 'Failed to create slots');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // NEW: Delete a slot
+  const handleDeleteSlot = async (slotId, eventId) => {
+    if (!window.confirm('Are you sure you want to delete this slot? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      const response = await axiosInstance.delete(`/special-events/${eventId}/slots/${slotId}`);
+      console.log('Slot deleted:', response.data);
+      
+      // Refresh slots for this event
+      await fetchEventSlots(eventId);
+      
+      // Show success message
+      setSuccessWithTimeout('Slot deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting slot:', error);
+      setError('Failed to delete slot');
+    }
+  };
+
+  // NEW: Delete an approved request
+  const handleDeleteApprovedRequest = async (requestId, eventId) => {
+    if (!window.confirm('Are you sure you want to delete this approved request? This will free up the allocated slot.')) {
+      return;
+    }
+    
+    try {
+      const response = await axiosInstance.delete(`/special-events/${eventId}/requests/${requestId}`);
+      console.log('Approved request deleted:', response.data);
+      
+      // Refresh slots for this event
+      await fetchEventSlots(eventId);
+      
+      // Show success message
+      setSuccessWithTimeout('Approved request deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting approved request:', error);
+      setError('Failed to delete approved request');
+    }
+  };
+
   if (loading) {
     return (
       <Dialog open={open} maxWidth="md" fullWidth>
@@ -487,12 +941,12 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
 
   return (
     <Dialog open={open} maxWidth="lg" fullWidth>
-      <DialogTitle>
+      <DialogTitle sx={{ backgroundColor: 'primary.main', color: 'white' }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6">
-            {editMode ? (selectedEvent ? 'Edit Special Event' : 'Create Special Event') : 'Manage Special Events'}
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+            {editMode ? (selectedEvent ? '✏️ Edit Special Event' : '➕ Create Special Event') : '🎉 Manage Special Events'}
           </Typography>
-          <IconButton onClick={handleClose}>
+          <IconButton onClick={handleClose} sx={{ color: 'white' }}>
             <CloseIcon />
           </IconButton>
         </Box>
@@ -514,13 +968,15 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
           // Edit/Create Event Form
           <Box>
             <Tabs value={activeTab} onChange={(e, newValue) => {
+              console.log('Tab changed from', activeTab, 'to', newValue);
               setActiveTab(newValue);
               setError('');
               setSuccess('');
-            }} sx={{ mb: 3 }}>
-              <Tab label="Event Details" />
-              <Tab label="Routes" />
-              <Tab label="Upload Slots" />
+            }} sx={{ mb: 3, backgroundColor: 'rgba(25, 118, 210, 0.05)', borderRadius: 1 }}>
+              <Tab label="📋 Event Details" sx={{ fontWeight: 600 }} />
+              <Tab label="🛣️ Routes" sx={{ fontWeight: 600 }} />
+              <Tab label="🎯 Manage Slots for Routes" sx={{ fontWeight: 600 }} />
+              <Tab label="📝 Manage Requests" sx={{ fontWeight: 600 }} />
             </Tabs>
 
             {activeTab === 0 && (
@@ -780,13 +1236,13 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
                           )}
                           
                           {/* Display existing slots for this route */}
-                          {selectedEvent && eventSlots[route.name] && eventSlots[route.name].length > 0 && (
+                          {selectedEvent && (eventSlots[selectedEvent.truckersmpId] || eventSlotsRef.current[selectedEvent.truckersmpId]) && (eventSlots[selectedEvent.truckersmpId] || eventSlotsRef.current[selectedEvent.truckersmpId])[route.name] && (eventSlots[selectedEvent.truckersmpId] || eventSlotsRef.current[selectedEvent.truckersmpId])[route.name].length > 0 && (
                             <Box sx={{ mt: 2 }}>
                               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                                Existing Slots ({eventSlots[route.name].length}):
+                                Existing Slots ({(eventSlots[selectedEvent.truckersmpId] || eventSlotsRef.current[selectedEvent.truckersmpId])[route.name].length}):
                               </Typography>
                               <Stack spacing={1}>
-                                {eventSlots[route.name].map((slot, slotIndex) => (
+                                {(eventSlots[selectedEvent.truckersmpId] || eventSlotsRef.current[selectedEvent.truckersmpId])[route.name].map((slot, slotIndex) => (
                                   <Chip
                                     key={slotIndex}
                                     label={`${slot.slotName} (${slot.slotNumber})`}
@@ -814,200 +1270,847 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
 
             {activeTab === 2 && selectedEvent && (
               <Box>
-                <Typography variant="h6" gutterBottom>
-                  Upload Slots for Route
-                </Typography>
-                
-                <Paper sx={{ p: 2, mb: 2 }}>
-                  <FormControl fullWidth sx={{ mb: 2 }}>
-                    <InputLabel>Select Route</InputLabel>
-                    <Select
-                      value={slotsForm.routeName}
-                      onChange={(e) => setSlotsForm(prev => ({ ...prev, routeName: e.target.value }))}
-                      label="Select Route"
-                    >
-                      {selectedEvent.routes && selectedEvent.routes.length > 0 ? selectedEvent.routes.map((route) => (
-                        <MenuItem key={route.name} value={route.name}>
-                          {route.name}
-                        </MenuItem>
-                      )) : (
-                        <MenuItem disabled>No routes available</MenuItem>
-                      )}
-                    </Select>
-                  </FormControl>
-
-                  <Divider sx={{ my: 2 }} />
-
-                  <Typography variant="subtitle1" gutterBottom>
-                    Add Slots
-                  </Typography>
-                  
-                  <Grid container spacing={2} alignItems="center">
-                    <Grid item xs={12} sm={2}>
-                      <TextField
-                        label="Slot #"
-                        type="number"
-                        value={newSlot.slotNumber}
-                        onChange={(e) => setNewSlot(prev => ({ ...prev, slotNumber: parseInt(e.target.value) || 1 }))}
-                        fullWidth
-                        inputProps={{ min: 1 }}
-                      />
-                    </Grid>
-                    
-                    <Grid item xs={12} sm={3}>
-                      <TextField
-                        label="Slot Name *"
-                        value={newSlot.slotName}
-                        onChange={(e) => setNewSlot(prev => ({ ...prev, slotName: e.target.value }))}
-                        fullWidth
-                        required
-                      />
-                    </Grid>
-                    
-                    <Grid item xs={12} sm={3}>
-                      <TextField
-                        label="Min Players"
-                        type="number"
-                        value={newSlot.minPlayers}
-                        onChange={(e) => setNewSlot(prev => ({ ...prev, minPlayers: parseInt(e.target.value) || 1 }))}
-                        fullWidth
-                        inputProps={{ min: 1 }}
-                      />
-                    </Grid>
-                    
-                    <Grid item xs={12} sm={2}>
-                      <TextField
-                        label="Max VTCs"
-                        type="number"
-                        value={newSlot.maxVtc}
-                        onChange={(e) => setNewSlot(prev => ({ ...prev, maxVtc: parseInt(e.target.value) || 1 }))}
-                        fullWidth
-                        inputProps={{ min: 1 }}
-                      />
-                    </Grid>
-                    
-                    <Grid item xs={12} sm={2}>
-                      <Button
-                        variant="contained"
-                        startIcon={<AddIcon />}
-                        onClick={handleAddSlot}
-                        disabled={!newSlot.slotName.trim()}
-                        fullWidth
-                      >
-                        Add
-                      </Button>
-                    </Grid>
-                  </Grid>
-                  
-                  <Grid container spacing={2} sx={{ mt: 2 }}>
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        label="Description"
-                        value={newSlot.description}
-                        onChange={(e) => setNewSlot(prev => ({ ...prev, description: e.target.value }))}
-                        fullWidth
-                        multiline
-                        rows={2}
-                      />
-                    </Grid>
-                    
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        label="Image URL"
-                        value={newSlot.imageUrl}
-                        onChange={(e) => setNewSlot(prev => ({ ...prev, imageUrl: e.target.value }))}
-                        fullWidth
-                      />
-                    </Grid>
-                  </Grid>
-
-                  <Box sx={{ mt: 2 }}>
-                    <Typography variant="subtitle2" gutterBottom>
-                      Special Requirements
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 700 }}>
+                      🎯 Manage Slots for Routes
                     </Typography>
-                    <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-                      <TextField
-                        size="small"
-                        value={newRequirement}
-                        onChange={(e) => setNewRequirement(e.target.value)}
-                        placeholder="Add requirement"
-                        onKeyPress={(e) => e.key === 'Enter' && handleAddRequirement()}
-                      />
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        onClick={handleAddRequirement}
-                        disabled={!newRequirement.trim()}
-                      >
-                        Add
-                      </Button>
-                    </Box>
-                    
-                    <Stack direction="row" spacing={1} flexWrap="wrap">
-                      {newSlot.specialRequirements && newSlot.specialRequirements.length > 0 ? newSlot.specialRequirements.map((req, index) => (
-                        <Chip
-                          key={index}
-                          label={req}
-                          onDelete={() => handleRemoveRequirement(index)}
-                          size="small"
-                        />
-                      )) : (
-                        <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                          No special requirements added
-                        </Typography>
-                      )}
-                    </Stack>
-                  </Box>
-                </Paper>
-
-                {slotsForm.slots.length > 0 && (
-                  <Paper sx={{ p: 2, mb: 2 }}>
-                    <Typography variant="subtitle1" gutterBottom>
-                      Slots to Upload ({slotsForm.slots.length})
-                    </Typography>
-                    
-                    <Grid container spacing={1}>
-                      {slotsForm.slots && slotsForm.slots.length > 0 ? slotsForm.slots.map((slot, index) => (
-                        <Grid item xs={12} sm={6} md={4} key={index}>
-                          <Card variant="outlined">
-                            <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Typography variant="subtitle2">
-                                  {slot.slotName}
-                                </Typography>
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleRemoveSlot(index)}
-                                  color="error"
-                                >
-                                  <DeleteIcon />
-                                </IconButton>
-                              </Box>
-                              <Typography variant="caption" color="text.secondary">
-                                Slot #{slot.slotNumber} • Min: {slot.minPlayers} • Max: {slot.maxVtc}
-                              </Typography>
-                            </CardContent>
-                          </Card>
-                        </Grid>
-                      )) : (
-                        <Grid item xs={12}>
-                          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-                            No slots added yet. Add slots above to get started.
-                          </Typography>
-                        </Grid>
-                      )}
-                    </Grid>
-                    
+                  <Box sx={{ display: 'flex', gap: 1 }}>
                     <Button
-                      variant="contained"
-                      startIcon={<UploadIcon />}
-                      onClick={handleUploadSlots}
-                      disabled={uploadLoading || !slotsForm.routeName}
-                      sx={{ mt: 2 }}
+                      variant="outlined"
+                      startIcon={<RefreshIcon />}
+                      onClick={() => fetchEventSlots(selectedEvent.truckersmpId)}
+                      size="small"
                     >
-                      {uploadLoading ? <CircularProgress size={20} /> : 'Upload Slots'}
+                      Refresh Slots
                     </Button>
+                  </Box>
+                </Box>
+                
+                {/* Route Slots Management */}
+                {selectedEvent.routes && selectedEvent.routes.length > 0 ? (
+                  <Grid container spacing={3}>
+                    {selectedEvent.routes.map((route) => (
+                      <Grid item xs={12} md={6} key={route.name}>
+                        <Paper sx={{ p: 3, border: '2px solid', borderColor: 'primary.main' }}>
+                          <Typography variant="h6" gutterBottom color="primary">
+                            Route: {route.name}
+                          </Typography>
+                          
+                                                      {/* Current Slots Display */}
+                            {eventSlots[selectedEvent.truckersmpId] && 
+                             eventSlots[selectedEvent.truckersmpId][route.name] && 
+                             eventSlots[selectedEvent.truckersmpId][route.name].length > 0 ? (
+                              <Box sx={{ mb: 3 }}>
+                                <Typography variant="subtitle2" gutterBottom sx={{ color: 'text.primary', fontWeight: 600 }}>
+                                  📊 Current Slots: {eventSlots[selectedEvent.truckersmpId][route.name].length}
+                                </Typography>
+                                                              <Grid container spacing={1}>
+                                  {eventSlots[selectedEvent.truckersmpId][route.name].map((slot, idx) => (
+                                    <Grid item xs={6} key={slot._id || idx}>
+                                      <Card variant="outlined" sx={{ p: 1, position: 'relative' }}>
+                                        <Box sx={{ textAlign: 'center' }}>
+                                          {slot.imageUrl && (
+                                            <img 
+                                              src={slot.imageUrl} 
+                                              alt={`Slot ${slot.slotNumber}`}
+                                              style={{ 
+                                                width: '100%', 
+                                                height: '80px', 
+                                                objectFit: 'cover',
+                                                borderRadius: '4px'
+                                              }}
+                                            />
+                                          )}
+                                                                                     <Typography variant="caption" display="block" sx={{ color: 'text.primary', fontWeight: 600 }}>
+                                             {slot.slotName}
+                                           </Typography>
+                                           <Typography variant="caption" display="block" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>
+                                             👥 {slot.maxVtc - (slot.allocatedVtcs || 0)}/{slot.maxVtc} available
+                                           </Typography>
+                                           <Chip 
+                                             label={slot.status === 'full' ? 'FULL' : slot.status === 'assigned' ? 'PARTIAL' : 'AVAILABLE'} 
+                                             size="small" 
+                                             color={slot.status === 'available' ? 'success' : slot.status === 'assigned' ? 'warning' : 'error'}
+                                             sx={{ mb: 1 }}
+                                           />
+                                          <Button
+                                            variant="outlined"
+                                            color="error"
+                                            size="small"
+                                            onClick={() => handleDeleteSlot(slot._id, selectedEvent.truckersmpId)}
+                                            sx={{ 
+                                              fontSize: '0.7rem',
+                                              py: 0.5,
+                                              px: 1,
+                                              minWidth: 'auto'
+                                            }}
+                                          >
+                                            Delete
+                                          </Button>
+                                        </Box>
+                                      </Card>
+                                    </Grid>
+                                  ))}
+                                </Grid>
+                            </Box>
+                                                      ) : (
+                              <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontWeight: 500 }}>
+                                📭 No slots configured for this route
+                              </Typography>
+                            )}
+                          
+                                                      {/* Set Slots Count Form */}
+                            <Box sx={{ p: 2, backgroundColor: 'rgba(25, 118, 210, 0.08)', borderRadius: 2, border: '1px solid rgba(25, 118, 210, 0.2)' }}>
+                              <Typography variant="subtitle2" gutterBottom sx={{ color: 'text.primary', fontWeight: 600 }}>
+                                ⚙️ Configure Slots
+                              </Typography>
+                            
+                            <Grid container spacing={2} alignItems="center">
+                              <Grid item xs={4}>
+                                <TextField
+                                  label="Number of Slots"
+                                  type="number"
+                                  value={route.slotCount || ''}
+                                  onChange={(e) => {
+                                    const newRoutes = [...selectedEvent.routes];
+                                    const routeIndex = newRoutes.findIndex(r => r.name === route.name);
+                                    newRoutes[routeIndex] = { ...route, slotCount: parseInt(e.target.value) || 0 };
+                                    setSelectedEvent({ ...selectedEvent, routes: newRoutes });
+                                  }}
+                                  fullWidth
+                                  size="small"
+                                  inputProps={{ min: 1, max: 20 }}
+                                />
+                              </Grid>
+                              <Grid item xs={8}>
+                                <Button
+                                  variant="contained"
+                                  onClick={() => handleSetSlotsCount(route)}
+                                  disabled={!route.slotCount || route.slotCount < 1}
+                                  fullWidth
+                                  size="small"
+                                >
+                                  Set Slots Count
+                                </Button>
+                              </Grid>
+                            </Grid>
+                          </Box>
+                          
+                                                      {/* Add Slot Images Form */}
+                            {route.slotCount && route.slotCount > 0 && (
+                              <Box sx={{ mt: 2, p: 2, backgroundColor: 'rgba(33, 150, 243, 0.08)', borderRadius: 2, border: '1px solid rgba(33, 150, 243, 0.2)' }}>
+                                                                 <Typography variant="subtitle2" gutterBottom sx={{ color: 'text.primary', fontWeight: 600 }}>
+                                   🖼️ Configure Slots ({route.slotImages ? route.slotImages.length : 0}/{route.slotCount})
+                                 </Typography>
+                              
+                                                             <Grid container spacing={2}>
+                                 {Array.from({ length: route.slotCount }, (_, i) => (
+                                   <Grid item xs={12} key={i}>
+                                     <Box sx={{ p: 2, border: '1px solid rgba(0,0,0,0.1)', borderRadius: 1, backgroundColor: 'rgba(0,0,0,0.02)' }}>
+                                       <Typography variant="subtitle2" gutterBottom sx={{ color: 'text.primary', fontWeight: 600 }}>
+                                         🎯 Slot {i + 1}
+                                       </Typography>
+                                       <Grid container spacing={2}>
+                                         <Grid item xs={8}>
+                                           <TextField
+                                             label="Image URL"
+                                             value={route.slotImages ? route.slotImages[i]?.url || '' : ''}
+                                             onChange={(e) => {
+                                               const newRoutes = [...selectedEvent.routes];
+                                               const routeIndex = newRoutes.findIndex(r => r.name === route.name);
+                                               if (!newRoutes[routeIndex].slotImages) {
+                                                 newRoutes[routeIndex].slotImages = [];
+                                               }
+                                               if (!newRoutes[routeIndex].slotImages[i]) {
+                                                 newRoutes[routeIndex].slotImages[i] = {};
+                                               }
+                                               newRoutes[routeIndex].slotImages[i].url = e.target.value;
+                                               setSelectedEvent({ ...selectedEvent, routes: newRoutes });
+                                             }}
+                                             fullWidth
+                                             size="small"
+                                             placeholder="https://example.com/slot-image.jpg"
+                                           />
+                                         </Grid>
+                                         <Grid item xs={4}>
+                                           <TextField
+                                             label="Max VTCs"
+                                             type="number"
+                                             value={route.slotImages ? route.slotImages[i]?.maxVtc || 1 : 1}
+                                             onChange={(e) => {
+                                               const newRoutes = [...selectedEvent.routes];
+                                               const routeIndex = newRoutes.findIndex(r => r.name === route.name);
+                                               if (!newRoutes[routeIndex].slotImages) {
+                                                 newRoutes[routeIndex].slotImages = [];
+                                               }
+                                               if (!newRoutes[routeIndex].slotImages[i]) {
+                                                 newRoutes[routeIndex].slotImages[i] = {};
+                                               }
+                                               newRoutes[routeIndex].slotImages[i].maxVtc = parseInt(e.target.value) || 1;
+                                               setSelectedEvent({ ...selectedEvent, routes: newRoutes });
+                                             }}
+                                             fullWidth
+                                             size="small"
+                                             inputProps={{ min: 1, max: 20 }}
+                                             helperText="Capacity per slot"
+                                           />
+                                         </Grid>
+                                       </Grid>
+                                     </Box>
+                                   </Grid>
+                                 ))}
+                               </Grid>
+                              
+                                                             <Button
+                                 variant="contained"
+                                 onClick={() => handleCreateSlots(route)}
+                                 disabled={!route.slotImages || route.slotImages.length !== route.slotCount || route.slotImages.some(slot => !slot || !slot.url || !slot.maxVtc)}
+                                 sx={{ mt: 2 }}
+                                 fullWidth
+                                 startIcon={<UploadIcon />}
+                               >
+                                 Create {route.slotCount} Slots
+                               </Button>
+                               
+                               {/* Debug info */}
+                               <Box sx={{ mt: 1, p: 1, backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: 1, fontSize: '0.7rem' }}>
+                                 <Typography variant="caption" color="text.secondary">
+                                   Debug: slotCount={route.slotCount}, slotImages={route.slotImages ? route.slotImages.length : 'undefined'}
+                                 </Typography>
+                                 <Button
+                                   size="small"
+                                   variant="outlined"
+                                   onClick={() => {
+                                     console.log('Route data for', route.name, ':', route);
+                                     console.log('slotCount:', route.slotCount);
+                                     console.log('slotImages:', route.slotImages);
+                                   }}
+                                   sx={{ mt: 0.5, fontSize: '0.6rem' }}
+                                 >
+                                   Log Route Data
+                                 </Button>
+                               </Box>
+                            </Box>
+                          )}
+                        </Paper>
+                      </Grid>
+                    ))}
+                  </Grid>
+                                  ) : (
+                    <Paper sx={{ p: 4, textAlign: 'center', backgroundColor: 'rgba(255, 152, 0, 0.05)' }}>
+                      <Typography variant="h6" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
+                        🛣️ No routes configured
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                        Add routes in the Routes tab first, then come back to configure slots.
+                      </Typography>
+                    </Paper>
+                  )}
+              </Box>
+            )}
+
+            {activeTab === 3 && selectedEvent && (
+              <Box>
+                {console.log('Rendering Manage Requests tab for event:', selectedEvent.truckersmpId)}
+                {console.log('Current eventSlots state:', eventSlots)}
+                {console.log('Event slots for this event:', eventSlots[selectedEvent.truckersmpId])}
+                
+                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                   <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 700 }}>
+                     📝 Manage Slot Requests & Allocations
+                   </Typography>
+                   
+                                      {/* Debug Info */}
+                   <Box sx={{ display: 'flex', gap: 1 }}>
+                     <Button
+                       size="small"
+                       variant="outlined"
+                       onClick={() => {
+                         console.log('Current eventSlots state:', eventSlots);
+                         console.log('Event slots for this event:', eventSlots[selectedEvent.truckersmpId]);
+                         if (eventSlots[selectedEvent.truckersmpId]) {
+                           console.log('Route requests:', eventSlots[selectedEvent.truckersmpId].routeRequests);
+                         }
+                       }}
+                       sx={{ fontSize: '0.7rem' }}
+                     >
+                       Debug State
+                     </Button>
+                   </Box>
+                   <Box sx={{ display: 'flex', gap: 1 }}>
+                                         <Button
+                       variant="outlined"
+                       startIcon={<CloseIcon />}
+                       onClick={() => {
+                         setEditMode(false);
+                         setSelectedEvent(null);
+                         setActiveTab(0);
+                       }}
+                       size="small"
+                     >
+                       Back to Events
+                     </Button>
+                     
+                     {/* Debug Button */}
+                     <Button
+                       variant="outlined"
+                       size="small"
+                       onClick={async () => {
+                         try {
+                           const response = await axiosInstance.get(`/special-events/${selectedEvent.truckersmpId}`);
+                           console.log('Admin debug - Current event data:', response.data);
+                           console.log('Admin debug - Route requests:', response.data.routeRequests);
+                           // Refresh the slots data
+                           await fetchEventSlots(selectedEvent.truckersmpId);
+                         } catch (error) {
+                           console.error('Admin debug error:', error);
+                         }
+                       }}
+                       sx={{ fontSize: '0.7rem' }}
+                     >
+                       🔍 Debug API
+                     </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<RefreshIcon />}
+                      onClick={() => fetchEventSlots(selectedEvent.truckersmpId)}
+                      size="small"
+                    >
+                      Refresh
+                    </Button>
+                  </Box>
+                                 </Box>
+                 
+                 {/* Allocation Summary */}
+                 {(() => {
+                   const allRequests = eventSlots[selectedEvent.truckersmpId]?.routeRequests ? 
+                     Object.values(eventSlots[selectedEvent.truckersmpId].routeRequests).flat() : [];
+                   const totalRequests = allRequests.length;
+                   const unassignedRequests = allRequests.filter(req => !req.routeName || req.routeName === 'unassigned' || req.status === 'pending');
+                   const approvedRequests = allRequests.filter(req => req.status === 'approved');
+                   const totalSlots = Object.values(eventSlots[selectedEvent.truckersmpId] || {})
+                     .filter(key => key !== 'routeRequests' && key !== 'unassigned')
+                     .reduce((total, routeSlots) => total + routeSlots.length, 0);
+                   
+                   return (
+                     <Paper sx={{ p: 3, mb: 3, backgroundColor: 'rgba(25, 118, 210, 0.05)', border: '2px solid', borderColor: 'primary.main' }}>
+                       <Typography variant="h6" gutterBottom sx={{ color: 'primary.main', fontWeight: 'bold' }}>
+                         📊 Allocation Summary
+                       </Typography>
+                       <Grid container spacing={3}>
+                         <Grid item xs={12} sm={3}>
+                           <Box sx={{ textAlign: 'center' }}>
+                             <Typography variant="h4" color="primary" sx={{ fontWeight: 700 }}>{totalRequests}</Typography>
+                             <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 600 }}>Total Requests</Typography>
+                           </Box>
+                         </Grid>
+                         <Grid item xs={12} sm={3}>
+                           <Box sx={{ textAlign: 'center' }}>
+                             <Typography variant="h4" color="warning" sx={{ fontWeight: 700 }}>{unassignedRequests.length}</Typography>
+                             <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 600 }}>Unassigned</Typography>
+                           </Box>
+                         </Grid>
+                         <Grid item xs={12} sm={3}>
+                           <Box sx={{ textAlign: 'center' }}>
+                             <Typography variant="h4" color="success" sx={{ fontWeight: 700 }}>{approvedRequests.length}</Typography>
+                             <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 600 }}>Approved</Typography>
+                           </Box>
+                         </Grid>
+                         <Grid item xs={12} sm={3}>
+                           <Box sx={{ textAlign: 'center' }}>
+                             <Typography variant="h4" color="info" sx={{ fontWeight: 700 }}>{totalSlots}</Typography>
+                             <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 600 }}>Total Slots</Typography>
+                           </Box>
+                         </Grid>
+                       </Grid>
+                     </Paper>
+                   );
+                 })()}
+                 
+                 {/* Check if we have any slots data */}
+                {(!eventSlots[selectedEvent.truckersmpId] || Object.keys(eventSlots[selectedEvent.truckersmpId]).length === 0) ? (
+                  <Paper sx={{ p: 4, textAlign: 'center', backgroundColor: 'rgba(255, 193, 7, 0.08)', border: '1px solid rgba(255, 193, 7, 0.3)' }}>
+                    <Typography variant="h6" color="warning.main" gutterBottom sx={{ fontWeight: 700 }}>
+                      {loadingSlots[selectedEvent.truckersmpId] ? '⏳ Loading Slots...' : '📊 No Slots Data Found'}
+                    </Typography>
+                    {loadingSlots[selectedEvent.truckersmpId] ? (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                        <CircularProgress size={40} />
+                      </Box>
+                    ) : (
+                      <>
+                        <Typography variant="body2" color="text.primary" sx={{ mb: 2, fontWeight: 500 }}>
+                          The slots data is empty. This could mean:
+                        </Typography>
+                        <Box component="ul" sx={{ textAlign: 'left', maxWidth: '600px', mx: 'auto', color: 'text.primary' }}>
+                          <li>No slots have been created for this event yet</li>
+                          <li>The slots data failed to load from the backend</li>
+                          <li>There's a data structure issue</li>
+                        </Box>
+                        <Button
+                          variant="contained"
+                          onClick={() => fetchEventSlots(selectedEvent.truckersmpId)}
+                          sx={{ mt: 2 }}
+                        >
+                          🔄 Try Loading Slots Again
+                        </Button>
+                      </>
+                    )}
                   </Paper>
+                ) : (
+                  <>
+                                         {/* Display unassigned requests first */}
+                     {(() => {
+                       const allRequests = eventSlots[selectedEvent.truckersmpId]?.routeRequests ? 
+                         Object.values(eventSlots[selectedEvent.truckersmpId].routeRequests).flat() : [];
+                       const unassignedRequests = allRequests.filter(req => !req.routeName || req.routeName === 'unassigned' || req.status === 'pending');
+                      
+                      if (unassignedRequests.length > 0) {
+                        return (
+                          <Paper sx={{ p: 3, mb: 3, backgroundColor: 'rgba(255, 152, 0, 0.05)', border: '2px solid', borderColor: 'warning.main' }}>
+                            <Typography variant="h5" gutterBottom sx={{ color: 'warning.main', fontWeight: 'bold' }}>
+                              ⏳ Unassigned Requests ({unassignedRequests.length})
+                            </Typography>
+                            <Typography variant="body2" color="text.primary" sx={{ mb: 2, fontWeight: 500 }}>
+                              These requests need to be allocated to a route and slot by an admin.
+                            </Typography>
+                            
+                            <Grid container spacing={2}>
+                              {unassignedRequests.map((request, reqIndex) => (
+                                <Grid item xs={12} md={6} key={request._id || reqIndex}>
+                                  <Paper variant="outlined" sx={{ p: 2, borderColor: 'warning.main', backgroundColor: 'rgba(255, 152, 0, 0.05)' }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                      <Box sx={{ flex: 1 }}>
+                                        <Typography variant="h6" fontWeight="bold" color="warning.main">
+                                          🏢 {request.vtcName}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.primary" gutterBottom sx={{ fontWeight: 500 }}>
+                                          👤 Role: {request.vtcRole || 'N/A'} • 👥 Players: {request.playercount}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.primary" gutterBottom>
+                                          💬 Discord: {request.discordUsername}
+                                        </Typography>
+                                        {request.vtcLink && (
+                                          <Typography variant="body2" color="text.primary" gutterBottom>
+                                            🔗 VTC: {request.vtcLink}
+                                          </Typography>
+                                        )}
+                                        {request.notes && (
+                                          <Typography variant="body2" color="text.primary" gutterBottom>
+                                            📝 Notes: {request.notes}
+                                          </Typography>
+                                        )}
+                                        <Typography variant="caption" color="text.secondary" display="block" sx={{ fontWeight: 500 }}>
+                                          ⏰ Requested: {new Date(request.requestedAt).toLocaleDateString()}
+                                        </Typography>
+                                      </Box>
+                                      
+                                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                        <Chip 
+                                          label="UNASSIGNED" 
+                                          size="small" 
+                                          color="warning"
+                                        />
+                                        
+                                        {/* Route Allocation Dropdown */}
+                                        <FormControl size="small" sx={{ minWidth: 120 }}>
+                                          <InputLabel>Allocate to Route</InputLabel>
+                                          <Select
+                                            value={request.allocatedRouteName || ''}
+                                            onChange={(e) => {
+                                              // Update the request with selected route
+                                              const newAllRequests = [...allRequests];
+                                              const reqIndex = newAllRequests.findIndex(r => r._id === request._id);
+                                              if (reqIndex !== -1) {
+                                                newAllRequests[reqIndex] = { ...request, allocatedRouteName: e.target.value };
+                                                // Update the state
+                                                setEventSlots(prev => ({
+                                                  ...prev,
+                                                  [selectedEvent.truckersmpId]: {
+                                                    ...prev[selectedEvent.truckersmpId],
+                                                    routeRequests: {
+                                                      ...prev[selectedEvent.truckersmpId].routeRequests,
+                                                      [e.target.value]: [...(prev[selectedEvent.truckersmpId].routeRequests?.[e.target.value] || []), newAllRequests[reqIndex]]
+                                                    }
+                                                  }
+                                                }));
+                                              }
+                                            }}
+                                            label="Allocate to Route"
+                                          >
+                                            {selectedEvent.routes.map((route) => (
+                                              <MenuItem key={route.name} value={route.name}>
+                                                {route.name}
+                                              </MenuItem>
+                                            ))}
+                                          </Select>
+                                        </FormControl>
+                                        
+                                        {/* Action Buttons */}
+                                        <Stack direction="row" spacing={0.5}>
+                                          <Button
+                                            variant="outlined"
+                                            color="success"
+                                            size="small"
+                                            onClick={() => handleApproveRequest(request._id, request.allocatedSlotId)}
+                                            disabled={!request.allocatedRouteName}
+                                            title={!request.allocatedRouteName ? "Please select a route first" : "Approve request"}
+                                          >
+                                            Allocate Route
+                                          </Button>
+                                        </Stack>
+                                      </Box>
+                                    </Box>
+                                  </Paper>
+                                </Grid>
+                              ))}
+                            </Grid>
+                          </Paper>
+                        );
+                      }
+                      return null;
+                    })()}
+                    
+                    {/* Display all routes with their slots and requests */}
+                                         {Object.keys(eventSlots[selectedEvent.truckersmpId] || {}).map(routeName => {
+                       // Skip routeRequests key and unassigned requests as they're not route names
+                       if (routeName === 'routeRequests' || routeName === 'unassigned') return null;
+                      
+                      const routeSlots = eventSlots[selectedEvent.truckersmpId][routeName] || [];
+                      const routeRequests = eventSlots[selectedEvent.truckersmpId].routeRequests ? 
+                        eventSlots[selectedEvent.truckersmpId].routeRequests[routeName] || [] : [];
+                      
+                      console.log(`Processing route: ${routeName}`);
+                      console.log(`Route slots:`, routeSlots);
+                      console.log(`Route requests:`, routeRequests);
+                      
+                      return (
+                        <Paper key={routeName} sx={{ p: 3, mb: 3, backgroundColor: 'rgba(25, 118, 210, 0.02)', border: '2px solid', borderColor: 'primary.main' }}>
+                          <Typography variant="h5" gutterBottom sx={{ color: 'primary.main', fontWeight: 'bold' }}>
+                            🛣️ Route: {routeName}
+                          </Typography>
+                          
+                          {/* Route Summary */}
+                          <Box sx={{ display: 'flex', gap: 4, mb: 3, p: 2, backgroundColor: 'rgba(25, 118, 210, 0.08)', borderRadius: 2, border: '1px solid rgba(25, 118, 210, 0.2)' }}>
+                            <Box sx={{ textAlign: 'center' }}>
+                              <Typography variant="h4" color="primary" sx={{ fontWeight: 700 }}>{routeSlots.length}</Typography>
+                              <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 600 }}>Total Slots</Typography>
+                            </Box>
+                                                         <Box sx={{ textAlign: 'center' }}>
+                               <Typography variant="h4" color="success" sx={{ fontWeight: 700 }}>
+                                 {routeSlots.reduce((total, slot) => total + (slot.maxVtc - (slot.allocatedVtcs || 0)), 0)}
+                               </Typography>
+                               <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 600 }}>Available Spots</Typography>
+                             </Box>
+                                                         <Box sx={{ textAlign: 'center' }}>
+                               <Typography variant="h4" color="warning" sx={{ fontWeight: 700 }}>
+                                 {routeSlots.filter(s => s.status === 'assigned' || s.status === 'full').length}
+                               </Typography>
+                               <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 600 }}>Used Slots</Typography>
+                             </Box>
+                            <Box sx={{ textAlign: 'center' }}>
+                              <Typography variant="h4" color="info" sx={{ fontWeight: 700 }}>{routeRequests.length}</Typography>
+                              <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 600 }}>Total Requests</Typography>
+                            </Box>
+                          </Box>
+                          
+                          {/* Slots Grid with Assignments */}
+                          <Typography variant="h6" gutterBottom sx={{ mt: 3, color: 'text.primary', fontWeight: 700 }}>
+                            🎯 Route Slots & Assignments
+                          </Typography>
+                          <Grid container spacing={2} sx={{ mb: 3 }}>
+                            {routeSlots.map((slot, slotIndex) => (
+                              <Grid item xs={12} sm={6} md={4} key={slot._id || slotIndex}>
+                                <Card 
+                                  variant="outlined" 
+                                  sx={{ 
+                                    borderColor: slot.status === 'available' ? 'success.main' : 'warning.main',
+                                    borderWidth: 2,
+                                    height: '100%',
+                                    backgroundColor: slot.status === 'available' ? 'rgba(76, 175, 80, 0.05)' : 'rgba(255, 152, 0, 0.05)'
+                                  }}
+                                >
+                                  <CardContent sx={{ textAlign: 'center', p: 2 }}>
+                                    {/* Slot Image */}
+                                    {slot.imageUrl && (
+                                      <Box sx={{ mb: 2 }}>
+                                        <img 
+                                          src={slot.imageUrl} 
+                                          alt={`Slot ${slot.slotNumber}`}
+                                          style={{ 
+                                            width: '100%', 
+                                            height: '120px', 
+                                            objectFit: 'cover',
+                                            borderRadius: '8px',
+                                            border: '1px solid #e0e0e0'
+                                          }}
+                                        />
+                                      </Box>
+                                    )}
+                                    
+                                    <Typography variant="h6" fontWeight="bold" gutterBottom sx={{ color: 'text.primary' }}>
+                                      🎯 {slot.slotName || `Slot ${slot.slotNumber}`}
+                                    </Typography>
+                                    
+                                                                         <Chip 
+                                       label={slot.status === 'full' ? 'FULL' : slot.status === 'assigned' ? 'PARTIAL' : 'AVAILABLE'} 
+                                       size="small" 
+                                       color={slot.status === 'available' ? 'success' : slot.status === 'assigned' ? 'warning' : 'error'}
+                                       sx={{ mb: 1, fontWeight: 600 }}
+                                     />
+                                    
+                                                                         <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
+                                       👥 Max VTCs: {slot.maxVtc} • Available: {slot.maxVtc - (slot.allocatedVtcs || 0)}
+                                     </Typography>
+                                  </CardContent>
+                                </Card>
+                              </Grid>
+                            ))}
+                          </Grid>
+                          
+                          {/* Current Slot Assignments */}
+                          <Box sx={{ mt: 3, p: 2, backgroundColor: 'rgba(76, 175, 80, 0.05)', borderRadius: 2, border: '1px solid rgba(76, 175, 80, 0.2)' }}>
+                            <Typography variant="h6" gutterBottom sx={{ color: 'success.main', fontWeight: 700 }}>
+                              ✅ Current Slot Assignments
+                            </Typography>
+                            <Grid container spacing={2}>
+                              {routeSlots.map((slot, slotIndex) => {
+                                const slotRequests = routeRequests.filter(req => 
+                                  req.allocatedSlotId === slot._id && req.status === 'approved'
+                                );
+                                
+                                return (
+                                  <Grid item xs={12} sm={6} md={4} key={slot._id || slotIndex}>
+                                    <Paper variant="outlined" sx={{ p: 2, borderColor: 'success.main' }}>
+                                      <Typography variant="subtitle1" fontWeight="bold" gutterBottom sx={{ color: 'success.main' }}>
+                                        🎯 {slot.slotName || `Slot ${slot.slotNumber}`}
+                                      </Typography>
+                                      
+                                      <Typography variant="body2" color="text.primary" sx={{ mb: 1 }}>
+                                        👥 Capacity: {slot.allocatedVtcs || 0}/{slot.maxVtc} VTCs
+                                      </Typography>
+                                      
+                                      {slotRequests.length > 0 ? (
+                                        <Box>
+                                          <Typography variant="body2" color="text.primary" sx={{ fontWeight: 600, mb: 1 }}>
+                                            🏢 Assigned VTCs:
+                                          </Typography>
+                                          {slotRequests.map((req, reqIdx) => (
+                                            <Chip
+                                              key={reqIdx}
+                                              label={`${req.vtcName} (${req.playercount} players)`}
+                                              size="small"
+                                              color="success"
+                                              sx={{ mr: 0.5, mb: 0.5 }}
+                                            />
+                                          ))}
+                                        </Box>
+                                      ) : (
+                                        <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                                          No VTCs assigned to this slot
+                                        </Typography>
+                                      )}
+                                    </Paper>
+                                  </Grid>
+                                );
+                              })}
+                            </Grid>
+                          </Box>
+                          
+                          {/* Requests Section */}
+                          <Typography variant="h6" gutterBottom sx={{ mt: 3, color: 'text.primary', fontWeight: 700 }}>
+                            ⏳ Pending Requests ({routeRequests.filter(r => r.status === 'pending').length})
+                          </Typography>
+                          
+                          {routeRequests.filter(r => r.status === 'pending').length > 0 ? (
+                            <Grid container spacing={2}>
+                              {routeRequests.filter(r => r.status === 'pending').map((request, reqIndex) => (
+                                <Grid item xs={12} md={6} key={request._id || reqIndex}>
+                                  <Paper variant="outlined" sx={{ p: 2, borderColor: 'warning.main', backgroundColor: 'rgba(255, 152, 0, 0.05)' }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                      <Box sx={{ flex: 1 }}>
+                                        <Typography variant="h6" fontWeight="bold" color="warning.main">
+                                          🏢 {request.vtcName}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.primary" gutterBottom sx={{ fontWeight: 500 }}>
+                                          👤 Role: {request.vtcRole || 'N/A'} • 👥 Players: {request.playercount}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.primary" gutterBottom>
+                                          💬 Discord: {request.discordUsername}
+                                        </Typography>
+                                        {request.vtcLink && (
+                                          <Typography variant="body2" color="text.primary" gutterBottom>
+                                            🔗 VTC: {request.vtcLink}
+                                          </Typography>
+                                        )}
+                                        {request.notes && (
+                                          <Typography variant="body2" color="text.primary" gutterBottom>
+                                            📝 Notes: {request.notes}
+                                          </Typography>
+                                        )}
+                                        <Typography variant="caption" color="text.secondary" display="block" sx={{ fontWeight: 500 }}>
+                                          ⏰ Requested: {new Date(request.requestedAt).toLocaleDateString()}
+                                        </Typography>
+                                      </Box>
+                                      
+                                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                        <Chip 
+                                          label="PENDING" 
+                                          size="small" 
+                                          color="warning"
+                                        />
+                                        
+                                        {/* Slot Allocation Dropdown */}
+                                        <FormControl size="small" sx={{ minWidth: 120 }}>
+                                          <InputLabel>Allocate to Slot</InputLabel>
+                                          <Select
+                                            value={request.allocatedSlotId || ''}
+                                            onChange={(e) => {
+                                              // Update the request with selected slot
+                                              const newRouteRequests = [...routeRequests];
+                                              const reqIndex = newRouteRequests.findIndex(r => r._id === request._id);
+                                              if (reqIndex !== -1) {
+                                                newRouteRequests[reqIndex] = { ...request, allocatedSlotId: e.target.value };
+                                                // Update the state
+                                                setEventSlots(prev => ({
+                                                  ...prev,
+                                                  [selectedEvent.truckersmpId]: {
+                                                    ...prev[selectedEvent.truckersmpId],
+                                                    routeRequests: {
+                                                      ...prev[selectedEvent.truckersmpId].routeRequests,
+                                                      [routeName]: newRouteRequests
+                                                    }
+                                                  }
+                                                }));
+                                              }
+                                            }}
+                                            label="Allocate to Slot"
+                                          >
+                                                                                         {routeSlots.filter(s => s.status !== 'full' && (s.allocatedVtcs || 0) < s.maxVtc).map((slot) => (
+                                               <MenuItem key={slot._id} value={slot._id}>
+                                                 {slot.slotName || `Slot ${slot.slotNumber}`} 
+                                                 ({slot.maxVtc - (slot.allocatedVtcs || 0)} available)
+                                               </MenuItem>
+                                             ))}
+                                          </Select>
+                                        </FormControl>
+                                        
+                                        {/* Action Buttons */}
+                                        <Stack direction="row" spacing={0.5}>
+                                          <Button
+                                            variant="outlined"
+                                            color="success"
+                                            size="small"
+                                            onClick={() => handleApproveRequest(request._id, request.allocatedSlotId)}
+                                            disabled={!request.allocatedSlotId}
+                                            title={!request.allocatedSlotId ? "Please select a slot first" : "Approve request"}
+                                          >
+                                            Approve
+                                          </Button>
+                                          <Button
+                                            variant="outlined"
+                                            color="error"
+                                            size="small"
+                                            onClick={() => handleRejectRequest(request._id)}
+                                          >
+                                            Reject
+                                          </Button>
+                                        </Stack>
+                                      </Box>
+                                    </Box>
+                                  </Paper>
+                                </Grid>
+                              ))}
+                            </Grid>
+                          ) : (
+                            <Paper sx={{ p: 3, textAlign: 'center', backgroundColor: 'rgba(255, 152, 0, 0.05)' }}>
+                              <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
+                                📭 No pending requests for this route
+                              </Typography>
+                            </Paper>
+                          )}
+                          
+                          {/* Approved/Rejected Requests */}
+                          {(routeRequests.filter(r => r.status === 'approved' || r.status === 'rejected').length > 0) && (
+                            <Box sx={{ mt: 3 }}>
+                              <Typography variant="h6" gutterBottom sx={{ color: 'text.primary', fontWeight: 700 }}>
+                                📋 Processed Requests
+                              </Typography>
+                              <Grid container spacing={2}>
+                                {routeRequests.filter(r => r.status === 'approved' || r.status === 'rejected').map((request, reqIndex) => (
+                                  <Grid item xs={12} md={6} key={request._id || reqIndex}>
+                                    <Paper 
+                                      variant="outlined" 
+                                      sx={{ 
+                                        p: 2, 
+                                        borderColor: request.status === 'approved' ? 'success.main' : 'error.main',
+                                        backgroundColor: request.status === 'approved' ? 'rgba(76, 175, 80, 0.08)' : 'rgba(244, 67, 54, 0.08)'
+                                      }}
+                                    >
+                                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                        <Box sx={{ flex: 1 }}>
+                                          <Typography variant="h6" fontWeight="bold" 
+                                            color={request.status === 'approved' ? 'success.main' : 'error.main'}>
+                                            🏢 {request.vtcName}
+                                          </Typography>
+                                          <Typography variant="body2" color="text.primary" gutterBottom sx={{ fontWeight: 500 }}>
+                                            👤 Role: {request.vtcRole || 'N/A'} • 👥 Players: {request.playercount}
+                                          </Typography>
+                                          <Typography variant="body2" color="text.primary" gutterBottom>
+                                            💬 Discord: {request.discordUsername}
+                                          </Typography>
+                                          {request.status === 'approved' && request.allocatedSlotName && (
+                                            <Typography variant="body2" color="success.main" fontWeight="bold" gutterBottom>
+                                              ✅ Allocated to: {request.allocatedSlotName} (#{request.allocatedSlotNumber})
+                                            </Typography>
+                                          )}
+                                          {request.status === 'rejected' && request.rejectionReason && (
+                                            <Typography variant="body2" color="error.main" fontWeight="bold" gutterBottom>
+                                              ❌ Reason: {request.rejectionReason}
+                                            </Typography>
+                                          )}
+                                          <Typography variant="caption" color="text.secondary" display="block" sx={{ fontWeight: 500 }}>
+                                            {request.status === 'approved' ? 'Approved' : 'Rejected'}: {new Date(request.status === 'approved' ? request.approvedAt : request.rejectedAt).toLocaleDateString()}
+                                          </Typography>
+                                        </Box>
+                                        
+                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'flex-end' }}>
+                                          <Chip 
+                                            label={request.status.toUpperCase()} 
+                                            size="small" 
+                                            color={request.status === 'approved' ? 'success' : 'error'}
+                                            sx={{ fontWeight: 600 }}
+                                          />
+                                          
+                                          {/* Delete button for approved requests */}
+                                          {request.status === 'approved' && (
+                                            <Button
+                                              variant="outlined"
+                                              color="error"
+                                              size="small"
+                                              onClick={() => handleDeleteApprovedRequest(request._id, selectedEvent.truckersmpId)}
+                                              sx={{ 
+                                                fontSize: '0.7rem',
+                                                py: 0.5,
+                                                px: 1,
+                                                minWidth: 'auto'
+                                              }}
+                                            >
+                                              Delete
+                                            </Button>
+                                          )}
+                                        </Box>
+                                      </Box>
+                                    </Paper>
+                                  </Grid>
+                                ))}
+                              </Grid>
+                            </Box>
+                          )}
+                        </Paper>
+                      );
+                    })}
+                  </>
                 )}
               </Box>
             )}
@@ -1027,6 +2130,15 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
                   title="Refresh Events"
                 >
                   Refresh
+                </Button>
+                <Button
+                  variant="outlined"
+                  startIcon={<RefreshIcon />}
+                  onClick={forceRefreshAllSlots}
+                  title="Refresh All Slots"
+                  color="warning"
+                >
+                  Refresh Slots
                 </Button>
                 <Button
                   variant="contained"
@@ -1069,14 +2181,25 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
                               color="secondary"
                             />
                             <Chip
-                            //   label={`${event.routes?.length || 0} Routes`}
-                              size="small"
-                              icon={<RouteIcon />}
-                            />
-                            <Chip
                               label={event.status}
                               size="small"
                               color={event.status === 'upcoming' ? 'success' : 'default'}
+                            />
+                            {event.routes && event.routes.length > 0 && (
+                              <Chip
+                                label={`${event.routes.length} Routes`}
+                                size="small"
+                                icon={<RouteIcon />}
+                                color="info"
+                              />
+                            )}
+                            <Chip
+                              label={loadingSlots[event.truckersmpId] ? 'Loading...' : `${getEventSlotCount(event.truckersmpId)} Total Slots`}
+                              size="small"
+                              color="secondary"
+                              onClick={() => ensureEventSlotsLoaded(event.truckersmpId)}
+                              sx={{ cursor: 'pointer' }}
+                              icon={loadingSlots[event.truckersmpId] ? <CircularProgress size={16} /> : undefined}
                             />
                           </Stack>
                         </Box>
@@ -1090,17 +2213,32 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
                           >
                             Edit
                           </Button>
-                          <Button
-                            variant="outlined"
-                            startIcon={<UploadIcon />}
-                            onClick={() => {
-                              setSelectedEvent(event);
-                              setActiveTab(2);
-                            }}
-                            sx={{ mr: 1 }}
-                          >
-                            Upload Slots
-                          </Button>
+                                                     <Button
+                             variant="outlined"
+                             startIcon={<UploadIcon />}
+                             onClick={() => {
+                               setSelectedEvent(event);
+                               setActiveTab(2);
+                             }}
+                             sx={{ mr: 1 }}
+                           >
+                             Upload Slots
+                           </Button>
+                           <Button
+                             variant="outlined"
+                             startIcon={<CheckIcon />}
+                             onClick={() => {
+                               setSelectedEvent(event);
+                               setEditMode(true);
+                               setActiveTab(3);
+                               // Fetch slots for this event to show requests
+                               fetchEventSlots(event.truckersmpId);
+                             }}
+                             sx={{ mr: 1 }}
+                             color="info"
+                           >
+                             Manage Requests
+                           </Button>
                           <Button
                             variant="outlined"
                             color="error"
