@@ -197,6 +197,7 @@ const Navbar = () => {
         { label: 'License', path: '/license', icon: <DirectionsCar /> },
         { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
         { label: 'Contact', path: '/contact', icon: <Event /> },
+         { label: 'Events', path: '/events', icon: <Event /> },
       ];
     } else {
       return [
@@ -204,7 +205,7 @@ const Navbar = () => {
         { label: 'Events', path: '/events', icon: <Event /> },
         { label: 'Special Events', path: '/special-events', icon: <EventIcon /> },
         { label: 'Apply', path: '/apply', icon: <Dashboard /> },
-        { label: 'License', path: '/license', icon: <DirectionsCar /> },
+        // { label: 'License', path: '/riders/licence', icon: <DirectionsCar /> },
         { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
         { label: 'Contact', path: '/contact', icon: <Event /> },
       ];

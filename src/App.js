@@ -236,11 +236,11 @@ function App() {
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   <Route path="/events" element={<Home />} />
                   
+                    <Route path="/riders/licence" element={<LicenseGenerator />} />
                   {/* Protected routes */}
                   <Route element={<PrivateRoute allowedRoles={["admin","eventteam"]} />}>
                     <Route path="/admin" element={<AdminDashboard />} />
                     <Route path="/admin/analytics" element={<AnalyticsDashboard />} />
-                    <Route path="/admin/license" element={<LicenseGenerator />} />
                   </Route>
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>
