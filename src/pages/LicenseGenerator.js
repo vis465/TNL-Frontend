@@ -28,7 +28,7 @@ import axiosInstance from '../utils/axios';
 
 
 const LicenseGenerator = () => {
-    const licenseRef = useRef(null);
+    
 
   const [selectedMemberId, setSelectedMemberId] = useState('');
   const [teamMembers, setTeamMembers] = useState([]);
@@ -316,7 +316,7 @@ const toBase64 = async (url) => {
     </Box>
 
     {!memberData ? (
-      <div id='license-card' ref="licence-card">
+      <div id='license-card'>
       <Card sx={{
         height: 280,
         display: 'flex',
@@ -339,7 +339,7 @@ const toBase64 = async (url) => {
         {/* License Card - ID Card Style */}
         
         <Box
-          ref={licenseRef}
+          
           sx={{
             width: '100%',
             height: 380,
