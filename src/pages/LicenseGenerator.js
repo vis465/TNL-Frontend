@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import imageToBase64 from 'image-to-base64/browser';
 import domtoimage from 'dom-to-image-more';
+import { toPng } from 'html-to-image';
 
 import {
   Container,
@@ -28,7 +29,8 @@ import axiosInstance from '../utils/axios';
 
 
 const LicenseGenerator = () => {
-    
+    const elementRef = useRef(null);
+
 
   const [selectedMemberId, setSelectedMemberId] = useState('');
   const [teamMembers, setTeamMembers] = useState([]);
@@ -133,10 +135,10 @@ const toBase64 = async (url) => {
       console.log('Team response:', response.data);
       
       if (response.data && response.data.members) {
-        console.log('Found members in response.data.members:', response.data.members.length);
+        
         setTeamMembers(response.data.members);
       } else if (response.data && response.data.response && response.data.response.members) {
-        console.log('Found members in response.data.response.members:', response.data.response.members.length);
+        
         setTeamMembers(response.data.response.members);
       } else if (response.data && response.data.departments) {
         // If the data is organized by departments, flatten it
@@ -155,7 +157,19 @@ const toBase64 = async (url) => {
     }
   };
 
-
+ const htmlToImageConvert = () => {
+  console.log("poda")
+    toPng(elementRef.current, { cacheBust: false })
+      .then((dataUrl) => {
+        const link = document.createElement("a");
+        link.download = "my-image-name.png";
+        link.href = dataUrl;
+        link.click();
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
 
 
   const resetForm = () => {
@@ -339,7 +353,7 @@ const toBase64 = async (url) => {
         {/* License Card - ID Card Style */}
         
         <Box
-          
+          ref={elementRef}
           sx={{
             width: '100%',
             height: 380,
@@ -404,6 +418,7 @@ const toBase64 = async (url) => {
             }}>
               {/* Chakra in center */}
              <img
+             crossOrigin="anonymous"
   alt="United States"
   src="http://purecatamphetamine.github.io/country-flag-icons/3x2/IN.svg"/>
             </Box>
@@ -458,6 +473,7 @@ const toBase64 = async (url) => {
               {memberData.avatar ? (
                 <img
                   src={memberData.avatar}
+                  // crossOrigin="tnlsite"
                    
                   alt={`${memberData.username} avatar`}
                   style={{
@@ -633,7 +649,7 @@ const toBase64 = async (url) => {
         </Box>
 
         {/* Download Button */}
-       
+       <button onClick={htmlToImageConvert}>Download</button>
       </Box>
     )}
   </Paper>

@@ -1150,6 +1150,7 @@ const SpecialEvent = () => {
                         overflow: "hidden",
                       }}
                     >
+                      
                       <img
                         src={slot.imageUrl}
                         alt={`Slot ${slot.slotNumber}`}
@@ -1159,6 +1160,7 @@ const SpecialEvent = () => {
                           objectFit: "cover",
                         }}
                       />
+                      
                       {/* Image Overlay */}
                       <Box
                         sx={{
@@ -1509,7 +1511,8 @@ const SpecialEvent = () => {
                         {slot.maxVtc - (slot.allocatedVtcs || 0)}/{slot.maxVtc}{" "}
                         spots available
                       </Typography>
-                      
+                      <a href={slot.imageUrl}>
+                      <button >View image</button></a>
                       {/* Allocation Summary */}
                       {(() => {
                         const allocatedVtcs = getSlotAllocations(slot, currentRoute?.name);

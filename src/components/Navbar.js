@@ -194,7 +194,7 @@ const Navbar = () => {
     if (isAdmin) {
       return [
         { label: 'Dashboard', path: '/admin', icon: <Dashboard /> },
-        { label: 'License', path: '/license', icon: <DirectionsCar /> },
+        { label: 'License', path: '/riders/license', icon: <DirectionsCar /> },
         { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
         { label: 'Contact', path: '/contact', icon: <Event /> },
          { label: 'Events', path: '/events', icon: <Event /> },
