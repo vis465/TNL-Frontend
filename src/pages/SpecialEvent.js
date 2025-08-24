@@ -19,6 +19,7 @@ import {
   Link,
   Paper,
   List,
+  
   Avatar,
   AvatarGroup,
   Tooltip,
@@ -63,6 +64,7 @@ import {
   CheckCircle as CheckIcon,
   Cancel as CancelIcon,
   Pending as PendingIcon,
+  
   Info as InfoIcon,
   Warning as WarningIcon,
   Star as StarIcon,
@@ -75,6 +77,8 @@ import {
   Sync as SyncIcon,
   Add as AddIcon,
 } from "@mui/icons-material";
+import HailIcon from '@mui/icons-material/Hail';
+
 import { format, addHours } from "date-fns";
 import axiosInstance from "../utils/axios";
 import ReactMarkdown from "react-markdown";
@@ -110,12 +114,12 @@ const SpecialEvent = () => {
   const [requestSuccess, setRequestSuccess] = useState(false);
   const [expandedSlots, setExpandedSlots] = useState({});
   const [routeRequests, setRouteRequests] = useState({});
-
+const[tmpdata,Settmpdata]=useState(null)
   const theme = useTheme();
 
   // Function to get allocated VTCs for a specific slot
   const getSlotAllocations = (slot, routeName) => {
-    console.log("getSlotAllocations called with:", { slot: slot._id, routeName, routeRequests });
+    // console.log("getSlotAllocations called with:", { slot: slot._id, routeName, routeRequests });
     if (!routeRequests[routeName]) {
       console.log(`No requests found for route: ${routeName}`);
       return [];
@@ -124,59 +128,66 @@ const SpecialEvent = () => {
     const allocations = routeRequests[routeName].filter(request => 
       request.allocatedSlotId === slot._id && request.status === 'approved'
     );
-    console.log(`Found ${allocations.length} allocations for slot ${slot._id}`);
+    // console.log(`Found ${allocations.length} allocations for slot ${slot._id}`);
     return allocations;
   };
 
   // Function to get pending requests for a specific slot
   const getSlotPendingRequests = (slot, routeName) => {
-    console.log("getSlotPendingRequests called with:", { slot: slot._id, routeName, routeRequests });
+    // console.log("getSlotPendingRequests called with:", { slot: slot._id, routeName, routeRequests });
     if (!routeRequests[routeName]) {
-      console.log(`No requests found for route: ${routeName}`);
+      // console.log(`No requests found for route: ${routeName}`);
       return [];
     }
     
     const pending = routeRequests[routeName].filter(request => 
       request.allocatedSlotId === slot._id && request.status === 'pending'
     );
-    console.log(`Found ${pending.length} pending requests for slot ${slot._id}`);
+    // console.log(`Found ${pending.length} pending requests for slot ${slot._id}`);
     return pending;
   };
 
-  useEffect(() => {
-    const fetchEvent = async () => {
-      if (!id) return;
+useEffect(() => {
+  const fetchData = async () => {
+    if (!id) return;
 
-      try {
-        setLoading(true);
-        setError("");
+    try {
+      setLoading(true);
+      setError("");
 
-        const response = await axiosInstance.get(`/special-events/${id}`);
-        setEvent(response.data.event);
-        console.log(response.data.event);
-        setRouteSlots(response.data.routeSlots);
-        
-        // Set route requests for allocation display
-        if (response.data.routeRequests) {
-          console.log("Setting route requests:", response.data.routeRequests);
-          setRouteRequests(response.data.routeRequests);
-        } else {
-          console.log("No route requests found in response");
-        }
+      // Fetch special event
+      const specialEventRes = await axiosInstance.get(`/special-events/${id}`);
+      setEvent(specialEventRes.data.event);
+      
 
-        if (response.data.event.routes.length > 0) {
-          setSelectedRoute(0);
-        }
-      } catch (error) {
-        console.error("Error fetching special event:", error);
-        setError("Failed to load event details");
-      } finally {
-        setLoading(false);
+      setRouteSlots(specialEventRes.data.routeSlots);
+
+      // Set route requests for allocation display
+      if (specialEventRes.data.routeRequests) {
+      
+        setRouteRequests(specialEventRes.data.routeRequests);
+      } else {
+        console.log("No route requests found in response");
       }
-    };
 
-    fetchEvent();
-  }, [id]);
+      if (specialEventRes.data.event.routes.length > 0) {
+        setSelectedRoute(0);
+      }
+
+      // Fetch event details
+      const eventDetailsRes = await axiosInstance.get(`/events/${id}`);
+      
+      Settmpdata(eventDetailsRes.data)
+    } catch (error) {
+      console.error("Error fetching event data:", error);
+      setError("Failed to load event details");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchData();
+}, [id]);
 
   const handleRequestRoute = () => {
     setRequestForm({
@@ -506,292 +517,378 @@ const SpecialEvent = () => {
         ></Box>
 
         {/* Enhanced Event Header */}
-        <Paper
-          elevation={0}
-          sx={{
-            position: "relative",
-            overflow: "hidden",
-            borderRadius: 6,
-            mb: 4,
-            background:
-              "linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(26,26,46,0.9) 100%)",
-            border: "2px solid",
-            borderImage: "linear-gradient(45deg, #FFD700, #FF9800, #FFD700) 1",
-            "&::before": {
-              content: '""',
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              height: "8px",
-              background:
-                "linear-gradient(90deg, #FFD700 0%, #FF6B35 25%, #F7931E 50%, #FFD700 75%, #FF9800 100%)",
-              backgroundSize: "200% 100%",
-              animation: "shimmer 3s ease-in-out infinite",
-              "@keyframes shimmer": {
-                "0%": { backgroundPosition: "-200% 0" },
-                "100%": { backgroundPosition: "200% 0" },
-              },
-            },
-          }}
-        >
-          <Box sx={{ position: "relative", zIndex: 2, p: 5 }}>
-            <Grid container spacing={4} alignItems="center">
-              <Grid item xs={12} md={8}>
-                {/* Event Type Badge */}
+      <Paper
+  elevation={0}
+  sx={{
+    position: "relative",
+    overflow: "hidden",
+    borderRadius: 3,
+    mb: 4,
+    background: "rgba(0, 0, 0, 0.4)",
+    backdropFilter: "blur(20px)",
+    border: "1px solid rgba(255, 215, 0, 0.1)",
+    transition: "all 0.3s ease",
+    "&:hover": {
+      border: "1px solid rgba(255, 215, 0, 0.2)",
+    },
+    "&::before": {
+      content: '""',
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      height: "3px",
+      background: "linear-gradient(90deg, #FFD700, #FF9800, #F57C00, #FFD700)",
+      backgroundSize: "300% 100%",
+      animation: "flow 4s ease-in-out infinite",
+      "@keyframes flow": {
+        "0%, 100%": { backgroundPosition: "0% 50%" },
+        "50%": { backgroundPosition: "100% 50%" },
+      },
+    },
+  }}
+>
+  <Box sx={{ position: "relative", zIndex: 2, p: 4 }}>
+    <Grid container spacing={4} alignItems="stretch">
+      <Grid item xs={12} md={8}>
+        {/* Clean Title Section */}
+        <Box sx={{ mb: 4 }}>
+          <Typography
+            variant="h2"
+            sx={{
+              fontFamily: "'Inter', 'Roboto', sans-serif",
+              fontWeight: 700,
+              background: "linear-gradient(135deg, #FFD700 0%, #FF9800 100%)",
+              backgroundClip: "text",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              mb: 2,
+              fontSize: { xs: "2rem", md: "2.5rem" },
+              lineHeight: 1.2,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            {event.title}
+          </Typography>
 
-                {/* Enhanced Title */}
+          <Typography
+            variant="body1"
+            sx={{
+              color: "rgba(255,255,255,0.8)",
+              fontSize: "1.1rem",
+              lineHeight: 1.6,
+              fontWeight: 400,
+              maxWidth: "90%",
+            }}
+          >
+            {event.description}
+          </Typography>
+        </Box>
+
+        {/* Refined Info Cards Grid */}
+        <Grid container spacing={2} sx={{ mt: 2 }}>
+          <Grid item xs={12} sm={6} md={4}>
+            <Box
+              sx={{
+                p: 2.5,
+                borderRadius: 2,
+                background: "rgba(255, 255, 255, 0.03)",
+                border: "1px solid rgba(255, 215, 0, 0.15)",
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                height: "100%",
+                "&:hover": {
+                  transform: "translateY(-2px)",
+                  background: "rgba(255, 215, 0, 0.05)",
+                  border: "1px solid rgba(255, 215, 0, 0.25)",
+                  boxShadow: "0 8px 32px rgba(255, 215, 0, 0.1)",
+                },
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}>
+                <EventIcon sx={{ color: "#FFD700", fontSize: 20 }} />
                 <Typography
-                  variant="h2"
-                  gutterBottom
+                  variant="caption"
                   sx={{
-                    fontFamily: "'Montserrat', 'Roboto', sans-serif",
-                    fontWeight: 900,
-                    background:
-                      "linear-gradient(45deg, #FFD700 0%, #FF9800 50%, #FFD700 100%)",
-                    backgroundClip: "text",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    textShadow: "0 0 30px rgba(255, 215, 0, 0.5)",
-                    mb: 3,
-                    letterSpacing: "2px",
+                    color: "rgba(255,255,255,0.5)",
+                    fontWeight: 500,
+                    fontSize: "0.7rem",
                     textTransform: "uppercase",
+                    letterSpacing: "0.5px",
                   }}
                 >
-                  {event.title}
+                  Date
                 </Typography>
+              </Box>
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  color: "#FFD700",
+                  fontWeight: 600,
+                  fontSize: "0.95rem",
+                }}
+              >
+                August 25, 2025
+              </Typography>
+            </Box>
+          </Grid>
 
-                {/* Enhanced Description */}
+          <Grid item xs={12} sm={6} md={4}>
+            <Box
+              sx={{
+                p: 2.5,
+                borderRadius: 2,
+                background: "rgba(255, 255, 255, 0.03)",
+                border: "1px solid rgba(255, 193, 7, 0.15)",
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                height: "100%",
+                "&:hover": {
+                  transform: "translateY(-2px)",
+                  background: "rgba(255, 193, 7, 0.05)",
+                  border: "1px solid rgba(255, 193, 7, 0.25)",
+                  boxShadow: "0 8px 32px rgba(255, 193, 7, 0.1)",
+                },
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}>
+                <ScheduleIcon sx={{ color: "#FFC107", fontSize: 20 }} />
                 <Typography
-                  variant="h6"
-                  color="rgba(255,255,255,0.9)"
-                  paragraph
+                  variant="caption"
                   sx={{
-                    lineHeight: 1.8,
-                    fontSize: "1.3rem",
-                    fontWeight: 300,
-                    mb: 4,
-                    textShadow: "0 2px 4px rgba(0,0,0,0.3)",
+                    color: "rgba(255,255,255,0.5)",
+                    fontWeight: 500,
+                    fontSize: "0.7rem",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
                   }}
                 >
-                  {event.description}
+                  Time
                 </Typography>
+              </Box>
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  color: "#FFC107",
+                  fontWeight: 600,
+                  fontSize: "0.95rem",
+                }}
+              >
+                2:00 PM - 6:00 PM
+              </Typography>
+            </Box>
+          </Grid>
 
-                {/* Premium Info Cards Grid */}
-                <Grid container spacing={3} sx={{ mt: 2 }}>
-                  <Grid item xs={12} sm={6}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 3,
-                        p: 3,
-                        borderRadius: 3,
-                        background:
-                          "linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 152, 0, 0.1) 100%)",
-                        border: "2px solid rgba(255, 215, 0, 0.3)",
-                        backdropFilter: "blur(10px)",
-                        transition: "all 0.3s ease",
-                        "&:hover": {
-                          transform: "translateY(-2px)",
-                          boxShadow: "0 12px 40px rgba(255, 215, 0, 0.2)",
-                        },
-                      }}
-                    >
-                      <EventIcon sx={{ color: "#FFD700", fontSize: 36 }} />
-                      <Box>
-                        <Typography
-                          variant="caption"
-                          color="rgba(255,255,255,0.7)"
-                          sx={{ fontWeight: 700, fontSize: "0.9rem" }}
-                        >
-                          📅 EVENT DATE
-                        </Typography>
-                        <Typography
-                          variant="h6"
-                          sx={{ color: "#FFD700", fontWeight: 800 }}
-                        >
-                          August 25, 2025
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Grid>
+          <Grid item xs={12} sm={6} md={4}>
+            <Box
+              sx={{
+                p: 2.5,
+                borderRadius: 2,
+                background: "rgba(255, 255, 255, 0.03)",
+                border: "1px solid rgba(255, 152, 0, 0.15)",
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                height: "100%",
+                "&:hover": {
+                  transform: "translateY(-2px)",
+                  background: "rgba(255, 152, 0, 0.05)",
+                  border: "1px solid rgba(255, 152, 0, 0.25)",
+                  boxShadow: "0 8px 32px rgba(255, 152, 0, 0.1)",
+                },
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}>
+                <LocationIcon sx={{ color: "#FF9800", fontSize: 20 }} />
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "rgba(255,255,255,0.5)",
+                    fontWeight: 500,
+                    fontSize: "0.7rem",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  Meeting
+                </Typography>
+              </Box>
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  color: "#FF9800",
+                  fontWeight: 600,
+                  fontSize: "0.95rem",
+                }}
+              >
+                {event.meetingPoint}
+              </Typography>
+            </Box>
+          </Grid>
 
-                  <Grid item xs={12} sm={6}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 3,
-                        p: 3,
-                        borderRadius: 3,
-                        background:
-                          "linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, rgba(255, 152, 0, 0.1) 100%)",
-                        border: "2px solid rgba(255, 193, 7, 0.3)",
-                        backdropFilter: "blur(10px)",
-                        transition: "all 0.3s ease",
-                        "&:hover": {
-                          transform: "translateY(-2px)",
-                          boxShadow: "0 12px 40px rgba(255, 193, 7, 0.2)",
-                        },
-                      }}
-                    >
-                      <ScheduleIcon sx={{ color: "#FFC107", fontSize: 36 }} />
-                      <Box>
-                        <Typography
-                          variant="caption"
-                          color="rgba(255,255,255,0.7)"
-                          sx={{ fontWeight: 700, fontSize: "0.9rem" }}
-                        >
-                          ⏰ DURATION
-                        </Typography>
-                        <Typography
-                          variant="h6"
-                          sx={{ color: "#FFC107", fontWeight: 800 }}
-                        >
-                          2:00 PM - 6:00 PM
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Grid>
+          <Grid item xs={12} md={8}>
+            <Box
+              sx={{
+                p: 2.5,
+                borderRadius: 2,
+                background: "rgba(255, 255, 255, 0.03)",
+                border: "1px solid rgba(245, 124, 0, 0.15)",
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                height: "100%",
+                "&:hover": {
+                  transform: "translateY(-2px)",
+                  background: "rgba(245, 124, 0, 0.05)",
+                  border: "1px solid rgba(245, 124, 0, 0.25)",
+                  boxShadow: "0 8px 32px rgba(245, 124, 0, 0.1)",
+                },
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}>
+                <TruckIcon sx={{ color: "#F57C00", fontSize: 20 }} />
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "rgba(255,255,255,0.5)",
+                    fontWeight: 500,
+                    fontSize: "0.7rem",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  Route
+                </Typography>
+              </Box>
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  color: "#F57C00",
+                  fontWeight: 600,
+                  fontSize: "0.95rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  flexWrap: "wrap",
+                }}
+              >
+                <span>{event.departurePoint}</span>
+                <Box
+                  component="span"
+                  sx={{
+                    color: "rgba(255,255,255,0.3)",
+                    fontSize: "0.8rem",
+                  }}
+                >
+                  →
+                </Box>
+                <span>{event.arrivalPoint}</span>
+              </Typography>
+            </Box>
+          </Grid>
 
-                  <Grid item xs={12} sm={6}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 3,
-                        p: 3,
-                        borderRadius: 3,
-                        background:
-                          "linear-gradient(135deg, rgba(255, 152, 0, 0.15) 0%, rgba(245, 124, 0, 0.1) 100%)",
-                        border: "2px solid rgba(255, 152, 0, 0.3)",
-                        backdropFilter: "blur(10px)",
-                        transition: "all 0.3s ease",
-                        "&:hover": {
-                          transform: "translateY(-2px)",
-                          boxShadow: "0 12px 40px rgba(255, 152, 0, 0.2)",
-                        },
-                      }}
-                    >
-                      <LocationIcon sx={{ color: "#FF9800", fontSize: 36 }} />
-                      <Box>
-                        <Typography
-                          variant="caption"
-                          color="rgba(255,255,255,0.7)"
-                          sx={{ fontWeight: 700, fontSize: "0.9rem" }}
-                        >
-                          🎯 MEETING POINT
-                        </Typography>
-                        <Typography
-                          variant="h6"
-                          sx={{ color: "#FF9800", fontWeight: 800 }}
-                        >
-                          {event.meetingPoint}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Grid>
+          <Grid item xs={12} md={4}>
+            <Box
+              sx={{
+                p: 2.5,
+                borderRadius: 2,
+                background: "rgba(255, 255, 255, 0.03)",
+                border: "1px solid rgba(76, 175, 80, 0.15)",
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                height: "100%",
+                "&:hover": {
+                  transform: "translateY(-2px)",
+                  background: "rgba(76, 175, 80, 0.05)",
+                  border: "1px solid rgba(76, 175, 80, 0.25)",
+                  boxShadow: "0 8px 32px rgba(76, 175, 80, 0.1)",
+                },
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}>
+                <HailIcon sx={{ color: "#4caf50", fontSize: 20 }} />
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "rgba(255,255,255,0.5)",
+                    fontWeight: 500,
+                    fontSize: "0.7rem",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  Attendees
+                </Typography>
+              </Box>
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  fontWeight: 600,
+                  fontSize: "0.95rem",
+                  lineHeight: 1.3,
+                }}
+              >
+                <Box component="span" sx={{ color: "#FF9800" }}>
+                  {tmpdata?.attendances?.confirmed}
+                </Box>{" "}
+                <Box component="span" sx={{ color: "rgba(255,255,255,0.6)" }}>
+                  riders from
+                </Box>{" "}
+                <Box component="span" sx={{ color: "#4caf50" }}>
+                  {tmpdata?.attendances?.vtcs}
+                </Box>{" "}
+                <Box component="span" sx={{ color: "rgba(255,255,255,0.6)" }}>
+                  VTCs
+                </Box>
+              </Typography>
+            </Box>
+          </Grid>
+        </Grid>
+      </Grid>
 
-                  <Grid item xs={12} sm={6}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 3,
-                        p: 3,
-                        borderRadius: 3,
-                        background:
-                          "linear-gradient(135deg, rgba(245, 124, 0, 0.15) 0%, rgba(255, 107, 53, 0.1) 100%)",
-                        border: "2px solid rgba(245, 124, 0, 0.3)",
-                        backdropFilter: "blur(10px)",
-                        transition: "all 0.3s ease",
-                        "&:hover": {
-                          transform: "translateY(-2px)",
-                          boxShadow: "0 12px 40px rgba(245, 124, 0, 0.2)",
-                        },
-                      }}
-                    >
-                      <TruckIcon sx={{ color: "#F57C00", fontSize: 36 }} />
-                      <Box>
-                        <Typography
-                          variant="caption"
-                          color="rgba(255,255,255,0.7)"
-                          sx={{ fontWeight: 700, fontSize: "0.9rem" }}
-                        >
-                          🛣️ ROUTE
-                        </Typography>
-                        <Typography
-                          variant="h6"
-                          sx={{ color: "#F57C00", fontWeight: 800 }}
-                        >
-                          {event.departurePoint} → {event.arrivalPoint}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Grid>
-                </Grid>
-              </Grid>
-
-              {event.banner && (
-                <Grid item xs={12} md={4}>
-                  <Box
-                    sx={{
-                      position: "relative",
-                      borderRadius: 4,
-                      overflow: "hidden",
-                      border: "3px solid",
-                      borderImage: "linear-gradient(45deg, #FFD700, #FF9800) 1",
-                      boxShadow: "0 20px 60px rgba(255, 215, 0, 0.3)",
-                      "&::before": {
-                        content: '""',
-                        position: "absolute",
-                        top: -2,
-                        left: -2,
-                        right: -2,
-                        bottom: -2,
-                        background:
-                          "linear-gradient(45deg, #FFD700, #FF9800, #FFD700)",
-                        borderRadius: 4,
-                        zIndex: -1,
-                        animation: "borderRotate 3s linear infinite",
-                        "@keyframes borderRotate": {
-                          "0%": { transform: "rotate(0deg)" },
-                          "100%": { transform: "rotate(360deg)" },
-                        },
-                      },
-                    }}
-                  >
-                    <CardMedia
-                      component="img"
-                      image={event.banner}
-                      alt={event.title}
-                      sx={{
-                        height: 320,
-                        objectFit: "cover",
-                        filter: "brightness(0.9) contrast(1.1)",
-                      }}
-                    />
-                    <Box
-                      sx={{
-                        position: "absolute",
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        background:
-                          "linear-gradient(transparent, rgba(0,0,0,0.8))",
-                        p: 2,
-                      }}
-                    ></Box>
-                  </Box>
-                </Grid>
-              )}
-            </Grid>
-
-            {/* Enhanced Rules Section */}
+      {event.banner && (
+        <Grid item xs={12} md={4}>
+          <Box
+            sx={{
+              position: "relative",
+              borderRadius: 2,
+              overflow: "hidden",
+              height: { xs: 250, md: 400 },
+              border: "1px solid rgba(255, 215, 0, 0.2)",
+              background: "rgba(255, 255, 255, 0.02)",
+              transition: "all 0.3s ease",
+              "&:hover": {
+                border: "1px solid rgba(255, 215, 0, 0.3)",
+                boxShadow: "0 12px 40px rgba(255, 215, 0, 0.1)",
+              },
+            }}
+          >
+            <CardMedia
+              component="img"
+              image={event.banner}
+              alt={event.title}
+              sx={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                filter: "brightness(0.85) saturate(1.1)",
+                transition: "all 0.3s ease",
+              }}
+            />
+            <Box
+              sx={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: "linear-gradient(45deg, rgba(0,0,0,0.2), rgba(255,215,0,0.05))",
+                opacity: 0,
+                transition: "opacity 0.3s ease",
+                "&:hover": {
+                  opacity: 1,
+                },
+              }}
+            />
           </Box>
-        </Paper>
-
+        </Grid>
+      )}
+    </Grid>
+  </Box>
+</Paper>
         {/* Enhanced Route Tabs */}
         <Paper
           elevation={0}
@@ -947,7 +1044,11 @@ const SpecialEvent = () => {
                     variant="h4"
                     sx={{ color: "#FFD700", fontWeight: 800 }}
                   >
-                    {currentRouteSlots.length}
+                    {currentRouteSlots.reduce(
+                      (total, slot) =>
+                        total + (slot.maxVtc),
+                      0
+                    )}
                   </Typography>
                   <Typography
                     variant="body2"
@@ -975,7 +1076,7 @@ const SpecialEvent = () => {
                     color="rgba(255,255,255,0.8)"
                     sx={{ fontWeight: 700 }}
                   >
-                    AVAILABLE SPOTS
+                    AVAILABLE SLOTS
                   </Typography>
                 </Box>
               </Grid>
@@ -995,7 +1096,7 @@ const SpecialEvent = () => {
                     color="rgba(255,255,255,0.8)"
                     sx={{ fontWeight: 700 }}
                   >
-                    USED SPOTS
+                    BOOKED SPOTS
                   </Typography>
                 </Box>
               </Grid>
