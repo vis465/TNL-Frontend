@@ -1746,7 +1746,7 @@ const SpecialEvent = () => {
                       }}
                     />
                     <TextField
-                      label="VTC Discord Link"
+                      label="VTC Discord Link (PERMANENT)"
                       value={requestForm.DL}
                       onChange={(e) =>
                         setRequestForm((prev) => ({
