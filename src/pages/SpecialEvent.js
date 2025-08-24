@@ -1265,20 +1265,13 @@ const SpecialEvent = () => {
                                         }
                                         secondary={
                                           <>
-                                            <span style={{ color: "#FFD700" }}>
-                                              Role:
+                                          <span style={{ color: "#FFD700" }}>
+                                              Slot Number:
                                             </span>{" "}
-                                            {req.vtcRole || "N/A"}
+                                            {req.admincomment || "N/A"}
                                             <br />
-                                            <span style={{ color: "#4CAF50" }}>
-                                              Players:
-                                            </span>{" "}
-                                            {req.playercount || "N/A"}
-                                            <br />
-                                            <span style={{ color: "#2196F3" }}>
-                                              Discord:
-                                            </span>{" "}
-                                            {req.discordUsername || "N/A"}
+                                           
+                                            
                                             {req.vtcLink && (
                                               <>
                                                 <br />
@@ -1290,15 +1283,7 @@ const SpecialEvent = () => {
                                                 </Link>
                                               </>
                                             )}
-                                            {req.notes && (
-                                              <>
-                                                <br />
-                                                <span style={{ color: "#9C27B0" }}>
-                                                  Notes:
-                                                </span>{" "}
-                                                {req.notes}
-                                              </>
-                                            )}
+                                            
                                           </>
                                         }
                                       />
@@ -1309,79 +1294,7 @@ const SpecialEvent = () => {
                             )}
 
                             {/* Pending Requests */}
-                            {pendingRequests.length > 0 && (
-                              <>
-                                <Typography
-                                  variant="subtitle2"
-                                  color="#FF9800"
-                                  sx={{ fontWeight: 700, mb: 1 }}
-                                >
-                                  ⏳ PENDING REQUESTS
-                                </Typography>
-                                <List dense>
-                                  {pendingRequests.map((req, idx) => (
-                                    <ListItem
-                                      key={idx}
-                                      sx={{
-                                        background: "linear-gradient(135deg, rgba(255, 152, 0, 0.15) 0%, rgba(255, 152, 0, 0.05) 100%)",
-                                        borderRadius: 2,
-                                        mb: 1,
-                                        border: "1px solid rgba(255, 152, 0, 0.3)",
-                                      }}
-                                    >
-                                      <ListItemIcon>
-                                        <PendingIcon sx={{ color: "#FF9800" }} />
-                                      </ListItemIcon>
-                                      <ListItemText
-                                        primary={
-                                          <Typography variant="subtitle2" sx={{ color: "#FF9800", fontWeight: 700 }}>
-                                            {req.vtcName}
-                                          </Typography>
-                                        }
-                                        secondary={
-                                          <>
-                                            <span style={{ color: "#FFD700" }}>
-                                              Role:
-                                            </span>{" "}
-                                            {req.vtcRole || "N/A"}
-                                            <br />
-                                            <span style={{ color: "#FF9800" }}>
-                                              Players:
-                                            </span>{" "}
-                                            {req.playercount || "N/A"}
-                                            <br />
-                                            <span style={{ color: "#2196F3" }}>
-                                              Discord:
-                                            </span>{" "}
-                                            {req.discordUsername || "N/A"}
-                                            {req.vtcLink && (
-                                              <>
-                                                <br />
-                                                <span style={{ color: "#FF9800" }}>
-                                                  VTC Link:
-                                                </span>{" "}
-                                                <Link href={req.vtcLink} target="_blank" sx={{ color: "#FFD700" }}>
-                                                  View VTC
-                                                </Link>
-                                              </>
-                                            )}
-                                            {req.notes && (
-                                              <>
-                                                <br />
-                                                <span style={{ color: "#9C27B0" }}>
-                                                  Notes:
-                                                </span>{" "}
-                                                {req.notes}
-                                              </>
-                                            )}
-                                          </>
-                                        }
-                                      />
-                                    </ListItem>
-                                  ))}
-                                </List>
-                              </>
-                            )}
+                           
                           </Box>
                         );
                       }

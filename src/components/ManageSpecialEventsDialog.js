@@ -174,6 +174,7 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
   });
 
   const [newRequirement, setNewRequirement] = useState('');
+  const [adminComments, setAdminComments] = useState({});
 
   useEffect(() => {
     if (open) {
@@ -734,13 +735,23 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
       setError('');
       setSuccess('');
 
+      const adminComment = adminComments[requestId] || '';
+      
       const response = await axiosInstance.patch(
         `/special-events/${selectedEvent.truckersmpId}/requests/${requestId}/approve`,
-        { slotId }
+        { slotId, admincomment: adminComment }
       );
 
       console.log('Request approved:', response.data);
       setSuccessWithTimeout('Request approved and slot allocated successfully!');
+      
+      // Clear the admin comment for this request
+      setAdminComments(prev => {
+        const newComments = { ...prev };
+        delete newComments[requestId];
+        return newComments;
+      });
+      
       fetchEventSlots(selectedEvent.truckersmpId); // Refresh slots to update request count
     } catch (error) {
       console.error('Error approving request:', error);
@@ -766,13 +777,23 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
         return;
       }
 
+      const adminComment = adminComments[requestId] || '';
+
       const response = await axiosInstance.patch(
         `/special-events/${selectedEvent.truckersmpId}/requests/${requestId}/reject`,
-        { reason }
+        { reason, admincomment: adminComment }
       );
 
       console.log('Request rejected:', response.data);
       setSuccessWithTimeout('Request rejected successfully!');
+      
+      // Clear the admin comment for this request
+      setAdminComments(prev => {
+        const newComments = { ...prev };
+        delete newComments[requestId];
+        return newComments;
+      });
+      
       fetchEventSlots(selectedEvent.truckersmpId); // Refresh slots to update request count
     } catch (error) {
       console.error('Error rejecting request:', error);
@@ -2015,6 +2036,16 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
                                           >
                                             Reject
                                           </Button>
+                                          <TextField
+                                            size="small"
+                                            placeholder="Admin comment (optional)"
+                                            value={adminComments[request._id] || ''}
+                                            onChange={(e) => setAdminComments(prev => ({
+                                              ...prev,
+                                              [request._id]: e.target.value
+                                            }))}
+                                            sx={{ minWidth: '200px' }}
+                                          />
                                         </Stack>
                                       </Box>
                                     </Box>
@@ -2067,6 +2098,11 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
                                           {request.status === 'rejected' && request.rejectionReason && (
                                             <Typography variant="body2" color="error.main" fontWeight="bold" gutterBottom>
                                               ❌ Reason: {request.rejectionReason}
+                                            </Typography>
+                                          )}
+                                          {request.admincomment && (
+                                            <Typography variant="body2" color="info.main" fontWeight="bold" gutterBottom>
+                                              💬 Admin Comment: {request.admincomment}
                                             </Typography>
                                           )}
                                           <Typography variant="caption" color="text.secondary" display="block" sx={{ fontWeight: 500 }}>
