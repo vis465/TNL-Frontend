@@ -100,6 +100,7 @@ const SpecialEvent = () => {
     vtcLink: "",
     playercount: "",
     discordUsername: "",
+    DL:"",
     truck: "",
     trailer: "",
     notes: "",
@@ -183,6 +184,7 @@ const SpecialEvent = () => {
       vtcRole: "",
       playercount: 1,
       discordUsername: "",
+      DL:"",
       vtcLink: "",
       notes: "",
     });
@@ -202,6 +204,7 @@ const SpecialEvent = () => {
         discordUsername: requestForm.discordUsername,
         vtcLink: requestForm.vtcLink,
         notes: requestForm.notes,
+        DL:requestForm.DL,
       };
 
       // Submit general request (admin will allocate to route and slot)
@@ -1173,16 +1176,7 @@ const SpecialEvent = () => {
                           p: 2,
                         }}
                       >
-                        <Typography
-                          variant="h5"
-                          sx={{
-                            color: "#FFD700",
-                            fontWeight: 800,
-                            textShadow: "0 2px 4px rgba(0,0,0,0.8)",
-                          }}
-                        >
-                          🎯 {slot.slotName || `Slot ${slot.slotNumber}`}
-                        </Typography>
+                       
                       </Box>
                     </Box>
                   )}
@@ -1190,16 +1184,7 @@ const SpecialEvent = () => {
                   <CardContent sx={{ flex: 1, p: 3 }}>
                     {/* Slot Details */}
                     <Box sx={{ mb: 2 }}>
-                      <Typography
-                        variant="h6"
-                        sx={{
-                          color: "#FFD700",
-                          fontWeight: 800,
-                          mb: 1,
-                        }}
-                      >
-                        {slot.slotName || `Slot ${slot.slotNumber}`}
-                      </Typography>
+                     
                       <Typography
                         variant="body2"
                         color="rgba(255,255,255,0.8)"
@@ -1737,6 +1722,36 @@ const SpecialEvent = () => {
                         setRequestForm((prev) => ({
                           ...prev,
                           discordUsername: e.target.value,
+                        }))
+                      }
+                      fullWidth
+                      required
+                      placeholder="Your Discord username for notifications"
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          backgroundColor: "rgba(255,255,255,0.05)",
+                          "& fieldset": {
+                            borderColor: "rgba(255,255,255,0.3)",
+                          },
+                          "&.Mui-focused fieldset": {
+                            borderColor: "#FFD700",
+                            borderWidth: 2,
+                          },
+                        },
+                        "& .MuiInputLabel-root": {
+                          color: "rgba(255,255,255,0.8)",
+                          "&.Mui-focused": { color: "#FFD700" },
+                        },
+                        "& .MuiInputBase-input": { color: "white" },
+                      }}
+                    />
+                    <TextField
+                      label="VTC Discord Link"
+                      value={requestForm.DL}
+                      onChange={(e) =>
+                        setRequestForm((prev) => ({
+                          ...prev,
+                          DL: e.target.value,
                         }))
                       }
                       fullWidth
