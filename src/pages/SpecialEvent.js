@@ -556,8 +556,7 @@ useEffect(() => {
           <Typography
             variant="h2"
             sx={{
-              fontFamily: "'Inter', 'Roboto', sans-serif",
-              fontWeight: 700,
+              fontWeight: 800,
               background: "linear-gradient(135deg, #FFD700 0%, #FF9800 100%)",
               backgroundClip: "text",
               WebkitBackgroundClip: "text",
