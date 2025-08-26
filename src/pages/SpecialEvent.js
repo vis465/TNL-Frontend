@@ -189,6 +189,7 @@ useEffect(() => {
   fetchData();
 }, [id]);
 
+
   const handleRequestRoute = () => {
     setRequestForm({
       vtcName: "",
@@ -626,7 +627,13 @@ useEffect(() => {
                   fontSize: "0.95rem",
                 }}
               >
-                August 25, 2025
+               {new Date(event.startDate).toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric'
+})}
+
+
               </Typography>
             </Box>
           </Grid>
