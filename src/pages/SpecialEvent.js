@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import Markdown from 'react-markdown'
-import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import Markdown from "react-markdown";
+import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 
 import { useParams } from "react-router-dom";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
@@ -19,7 +19,6 @@ import {
   Link,
   Paper,
   List,
-  
   Avatar,
   AvatarGroup,
   Tooltip,
@@ -64,7 +63,6 @@ import {
   CheckCircle as CheckIcon,
   Cancel as CancelIcon,
   Pending as PendingIcon,
-  
   Info as InfoIcon,
   Warning as WarningIcon,
   Star as StarIcon,
@@ -77,7 +75,7 @@ import {
   Sync as SyncIcon,
   Add as AddIcon,
 } from "@mui/icons-material";
-import HailIcon from '@mui/icons-material/Hail';
+import HailIcon from "@mui/icons-material/Hail";
 
 import { format, addHours } from "date-fns";
 import axiosInstance from "../utils/axios";
@@ -104,7 +102,7 @@ const SpecialEvent = () => {
     vtcLink: "",
     playercount: "",
     discordUsername: "",
-    DL:"",
+    DL: "",
     truck: "",
     trailer: "",
     notes: "",
@@ -114,7 +112,7 @@ const SpecialEvent = () => {
   const [requestSuccess, setRequestSuccess] = useState(false);
   const [expandedSlots, setExpandedSlots] = useState({});
   const [routeRequests, setRouteRequests] = useState({});
-const[tmpdata,Settmpdata]=useState(null)
+  const [tmpdata, Settmpdata] = useState(null);
   const theme = useTheme();
 
   // Function to get allocated VTCs for a specific slot
@@ -124,9 +122,10 @@ const[tmpdata,Settmpdata]=useState(null)
       console.log(`No requests found for route: ${routeName}`);
       return [];
     }
-    
-    const allocations = routeRequests[routeName].filter(request => 
-      request.allocatedSlotId === slot._id && request.status === 'approved'
+
+    const allocations = routeRequests[routeName].filter(
+      (request) =>
+        request.allocatedSlotId === slot._id && request.status === "approved"
     );
     // console.log(`Found ${allocations.length} allocations for slot ${slot._id}`);
     return allocations;
@@ -139,56 +138,56 @@ const[tmpdata,Settmpdata]=useState(null)
       // console.log(`No requests found for route: ${routeName}`);
       return [];
     }
-    
-    const pending = routeRequests[routeName].filter(request => 
-      request.allocatedSlotId === slot._id && request.status === 'pending'
+
+    const pending = routeRequests[routeName].filter(
+      (request) =>
+        request.allocatedSlotId === slot._id && request.status === "pending"
     );
     // console.log(`Found ${pending.length} pending requests for slot ${slot._id}`);
     return pending;
   };
 
-useEffect(() => {
-  const fetchData = async () => {
-    if (!id) return;
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!id) return;
 
-    try {
-      setLoading(true);
-      setError("");
+      try {
+        setLoading(true);
+        setError("");
 
-      // Fetch special event
-      const specialEventRes = await axiosInstance.get(`/special-events/${id}`);
-      setEvent(specialEventRes.data.event);
-      
+        // Fetch special event
+        const specialEventRes = await axiosInstance.get(
+          `/special-events/${id}`
+        );
+        setEvent(specialEventRes.data.event);
 
-      setRouteSlots(specialEventRes.data.routeSlots);
+        setRouteSlots(specialEventRes.data.routeSlots);
 
-      // Set route requests for allocation display
-      if (specialEventRes.data.routeRequests) {
-      
-        setRouteRequests(specialEventRes.data.routeRequests);
-      } else {
-        console.log("No route requests found in response");
+        // Set route requests for allocation display
+        if (specialEventRes.data.routeRequests) {
+          setRouteRequests(specialEventRes.data.routeRequests);
+        } else {
+          console.log("No route requests found in response");
+        }
+
+        if (specialEventRes.data.event.routes.length > 0) {
+          setSelectedRoute(0);
+        }
+
+        // Fetch event details
+        const eventDetailsRes = await axiosInstance.get(`/events/${id}`);
+
+        Settmpdata(eventDetailsRes.data);
+      } catch (error) {
+        console.error("Error fetching event data:", error);
+        setError("Failed to load event details");
+      } finally {
+        setLoading(false);
       }
+    };
 
-      if (specialEventRes.data.event.routes.length > 0) {
-        setSelectedRoute(0);
-      }
-
-      // Fetch event details
-      const eventDetailsRes = await axiosInstance.get(`/events/${id}`);
-      
-      Settmpdata(eventDetailsRes.data)
-    } catch (error) {
-      console.error("Error fetching event data:", error);
-      setError("Failed to load event details");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchData();
-}, [id]);
-
+    fetchData();
+  }, [id]);
 
   const handleRequestRoute = () => {
     setRequestForm({
@@ -196,7 +195,7 @@ useEffect(() => {
       vtcRole: "",
       playercount: 1,
       discordUsername: "",
-      DL:"",
+      DL: "",
       vtcLink: "",
       notes: "",
     });
@@ -204,7 +203,6 @@ useEffect(() => {
   };
 
   const handleSubmitRequest = async () => {
-    
     try {
       setRequestLoading(true);
       setError("");
@@ -216,7 +214,7 @@ useEffect(() => {
         discordUsername: requestForm.discordUsername,
         vtcLink: requestForm.vtcLink,
         notes: requestForm.notes,
-        DL:requestForm.DL,
+        DL: requestForm.DL,
       };
 
       // Submit general request (admin will allocate to route and slot)
@@ -355,124 +353,144 @@ useEffect(() => {
   }
 
   if (error || !event) {
-   return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: theme.palette.mode === 'dark' ? '#0f0f0f' : '#fafafa',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        padding: '20px'
-      }}>
-        <div style={{
-          maxWidth: '480px',
-          width: '100%',
-          textAlign: 'center',
-          background: theme.palette.mode === 'dark' ? '#1a1a1a' : '#ffffff',
-          borderRadius: '8px',
-          padding: '48px 32px',
-          boxShadow: theme.palette.mode === 'dark' 
-            ? '0 1px 3px rgba(255, 255, 255, 0.05)' 
-            : '0 1px 3px rgba(0, 0, 0, 0.1)',
-          border: theme.palette.mode === 'dark' 
-            ? '1px solid #2a2a2a' 
-            : '1px solid #e5e7eb',
-          animation: 'fadeIn 0.4s ease-out'
-        }}>
-          
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor:
+            theme.palette.mode === "dark" ? "#0f0f0f" : "#fafafa",
+          fontFamily:
+            '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          padding: "20px",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: "480px",
+            width: "100%",
+            textAlign: "center",
+            background: theme.palette.mode === "dark" ? "#1a1a1a" : "#ffffff",
+            borderRadius: "8px",
+            padding: "48px 32px",
+            boxShadow:
+              theme.palette.mode === "dark"
+                ? "0 1px 3px rgba(255, 255, 255, 0.05)"
+                : "0 1px 3px rgba(0, 0, 0, 0.1)",
+            border:
+              theme.palette.mode === "dark"
+                ? "1px solid #2a2a2a"
+                : "1px solid #e5e7eb",
+            animation: "fadeIn 0.4s ease-out",
+          }}
+        >
           {/* Status Icon */}
-          <div style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '50%',
-            backgroundColor: theme.palette.mode === 'dark' ? '#2563eb' : '#3b82f6',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 24px',
-            animation: 'pulse 2s ease-in-out infinite'
-          }}>
-            <div style={{
-              width: '16px',
-              height: '16px',
-              borderRadius: '50%',
-              backgroundColor: 'white'
-            }} />
+          <div
+            style={{
+              width: "48px",
+              height: "48px",
+              borderRadius: "50%",
+              backgroundColor:
+                theme.palette.mode === "dark" ? "#2563eb" : "#3b82f6",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 24px",
+              animation: "pulse 2s ease-in-out infinite",
+            }}
+          >
+            <div
+              style={{
+                width: "16px",
+                height: "16px",
+                borderRadius: "50%",
+                backgroundColor: "white",
+              }}
+            />
           </div>
-          
+
           {/* Main Message */}
-          <h1 style={{
-            fontSize: '24px',
-            fontWeight: '600',
-            color: theme.palette.mode === 'dark' ? '#ffffff' : '#111827',
-            marginBottom: '8px',
-            lineHeight: '1.3'
-          }}>
+          <h1
+            style={{
+              fontSize: "24px",
+              fontWeight: "600",
+              color: theme.palette.mode === "dark" ? "#ffffff" : "#111827",
+              marginBottom: "8px",
+              lineHeight: "1.3",
+            }}
+          >
             Event Details Coming Soon
           </h1>
-          
+
           {/* Subtitle */}
-          <p style={{
-            fontSize: '16px',
-            color: theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280',
-            marginBottom: '32px',
-            lineHeight: '1.5',
-            fontWeight: '400'
-          }}>
-            We're working on something special for this event. Check back soon for all the exciting details.
+          <p
+            style={{
+              fontSize: "16px",
+              color: theme.palette.mode === "dark" ? "#9ca3af" : "#6b7280",
+              marginBottom: "32px",
+              lineHeight: "1.5",
+              fontWeight: "400",
+            }}
+          >
+            We're working on something special for this event. Check back soon
+            for all the exciting details.
           </p>
-          
+
           {/* Loading Bar */}
-     
-          
+
           {/* Back Button */}
           <button
             onClick={() => window.history.go(-2)}
             style={{
-              backgroundColor: 'transparent',
-              color: theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280',
-              fontWeight: '500',
-              fontSize: '14px',
-              border: `1px solid ${theme.palette.mode === 'dark' ? '#374151' : '#d1d5db'}`,
-              borderRadius: '6px',
-              padding: '10px 16px',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px'
+              backgroundColor: "transparent",
+              color: theme.palette.mode === "dark" ? "#9ca3af" : "#6b7280",
+              fontWeight: "500",
+              fontSize: "14px",
+              border: `1px solid ${
+                theme.palette.mode === "dark" ? "#374151" : "#d1d5db"
+              }`,
+              borderRadius: "6px",
+              padding: "10px 16px",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
             }}
             onMouseEnter={(e) => {
-              e.target.style.borderColor = theme.palette.mode === 'dark' ? '#4b5563' : '#9ca3af';
-              e.target.style.color = theme.palette.mode === 'dark' ? '#d1d5db' : '#374151';
+              e.target.style.borderColor =
+                theme.palette.mode === "dark" ? "#4b5563" : "#9ca3af";
+              e.target.style.color =
+                theme.palette.mode === "dark" ? "#d1d5db" : "#374151";
             }}
             onMouseLeave={(e) => {
-              e.target.style.borderColor = theme.palette.mode === 'dark' ? '#374151' : '#d1d5db';
-              e.target.style.color = theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280';
+              e.target.style.borderColor =
+                theme.palette.mode === "dark" ? "#374151" : "#d1d5db";
+              e.target.style.color =
+                theme.palette.mode === "dark" ? "#9ca3af" : "#6b7280";
             }}
           >
             <span>←</span>
             Go Back
           </button>
         </div>
-        
+
         {/* CSS Animations */}
         <style jsx>{`
-        @keyframes drive {
-          0% {
-            transform: translateX(-10%);
+          @keyframes drive {
+            0% {
+              transform: translateX(-10%);
+            }
+            100% {
+              transform: translateX(110%);
+            }
           }
-          100% {
-            transform: translateX(110%);
-          }
-        }
-      `}</style>
-
+        `}</style>
       </div>
     );
   }
-
 
   const currentRoute = event.routes[selectedRoute];
   const currentRouteSlots = routeSlots[currentRoute?.name] || [];
@@ -518,383 +536,425 @@ useEffect(() => {
         ></Box>
 
         {/* Enhanced Event Header */}
-      <Paper
-  elevation={0}
-  sx={{
-    position: "relative",
-    overflow: "hidden",
-    borderRadius: 3,
-    mb: 4,
-    background: "rgba(0, 0, 0, 0.4)",
-    backdropFilter: "blur(20px)",
-    border: "1px solid rgba(255, 215, 0, 0.1)",
-    transition: "all 0.3s ease",
-    "&:hover": {
-      border: "1px solid rgba(255, 215, 0, 0.2)",
-    },
-    "&::before": {
-      content: '""',
-      position: "absolute",
-      top: 0,
-      left: 0,
-      right: 0,
-      height: "3px",
-      background: "linear-gradient(90deg, #FFD700, #FF9800, #F57C00, #FFD700)",
-      backgroundSize: "300% 100%",
-      animation: "flow 4s ease-in-out infinite",
-      "@keyframes flow": {
-        "0%, 100%": { backgroundPosition: "0% 50%" },
-        "50%": { backgroundPosition: "100% 50%" },
-      },
-    },
-  }}
->
-  <Box sx={{ position: "relative", zIndex: 2, p: 4 }}>
-    <Grid container spacing={4} alignItems="stretch">
-      <Grid item xs={12} md={8}>
-        {/* Clean Title Section */}
-        <Box sx={{ mb: 4 }}>
-          <Typography
-            variant="h2"
-            sx={{
-              fontWeight: 800,
-              background: "linear-gradient(135deg, #FFD700 0%, #FF9800 100%)",
-              backgroundClip: "text",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              mb: 2,
-              fontSize: { xs: "2rem", md: "2.5rem" },
-              lineHeight: 1.2,
-              letterSpacing: "-0.02em",
-            }}
-          >
-            {event.title}
-          </Typography>
-
-          <Typography
-            variant="body1"
-            sx={{
-              color: "rgba(255,255,255,0.8)",
-              fontSize: "1.1rem",
-              lineHeight: 1.6,
-              fontWeight: 400,
-              maxWidth: "90%",
-            }}
-          >
-            {event.description}
-          </Typography>
-        </Box>
-
-        {/* Refined Info Cards Grid */}
-        <Grid container spacing={2} sx={{ mt: 2 }}>
-          <Grid item xs={12} sm={6} md={4}>
-            <Box
-              sx={{
-                p: 2.5,
-                borderRadius: 2,
-                background: "rgba(255, 255, 255, 0.03)",
-                border: "1px solid rgba(255, 215, 0, 0.15)",
-                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                height: "100%",
-                "&:hover": {
-                  transform: "translateY(-2px)",
-                  background: "rgba(255, 215, 0, 0.05)",
-                  border: "1px solid rgba(255, 215, 0, 0.25)",
-                  boxShadow: "0 8px 32px rgba(255, 215, 0, 0.1)",
-                },
-              }}
-            >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}>
-                <EventIcon sx={{ color: "#FFD700", fontSize: 20 }} />
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: "rgba(255,255,255,0.5)",
-                    fontWeight: 500,
-                    fontSize: "0.7rem",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  Date
-                </Typography>
-              </Box>
-              <Typography
-                variant="subtitle1"
-                sx={{
-                  color: "#FFD700",
-                  fontWeight: 600,
-                  fontSize: "0.95rem",
-                }}
-              >
-               {new Date(event.startDate).toLocaleDateString('en-US', {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric'
-})}
-
-
-              </Typography>
-            </Box>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={4}>
-            <Box
-              sx={{
-                p: 2.5,
-                borderRadius: 2,
-                background: "rgba(255, 255, 255, 0.03)",
-                border: "1px solid rgba(255, 193, 7, 0.15)",
-                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                height: "100%",
-                "&:hover": {
-                  transform: "translateY(-2px)",
-                  background: "rgba(255, 193, 7, 0.05)",
-                  border: "1px solid rgba(255, 193, 7, 0.25)",
-                  boxShadow: "0 8px 32px rgba(255, 193, 7, 0.1)",
-                },
-              }}
-            >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}>
-                <ScheduleIcon sx={{ color: "#FFC107", fontSize: 20 }} />
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: "rgba(255,255,255,0.5)",
-                    fontWeight: 500,
-                    fontSize: "0.7rem",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  Time
-                </Typography>
-              </Box>
-              <Typography
-                variant="subtitle1"
-                sx={{
-                  color: "#FFC107",
-                  fontWeight: 600,
-                  fontSize: "0.95rem",
-                }}
-              >
-                2:00 PM - 6:00 PM
-              </Typography>
-            </Box>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={4}>
-            <Box
-              sx={{
-                p: 2.5,
-                borderRadius: 2,
-                background: "rgba(255, 255, 255, 0.03)",
-                border: "1px solid rgba(255, 152, 0, 0.15)",
-                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                height: "100%",
-                "&:hover": {
-                  transform: "translateY(-2px)",
-                  background: "rgba(255, 152, 0, 0.05)",
-                  border: "1px solid rgba(255, 152, 0, 0.25)",
-                  boxShadow: "0 8px 32px rgba(255, 152, 0, 0.1)",
-                },
-              }}
-            >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}>
-                <LocationIcon sx={{ color: "#FF9800", fontSize: 20 }} />
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: "rgba(255,255,255,0.5)",
-                    fontWeight: 500,
-                    fontSize: "0.7rem",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  Meeting
-                </Typography>
-              </Box>
-              <Typography
-                variant="subtitle1"
-                sx={{
-                  color: "#FF9800",
-                  fontWeight: 600,
-                  fontSize: "0.95rem",
-                }}
-              >
-                {event.meetingPoint}
-              </Typography>
-            </Box>
-          </Grid>
-
-          <Grid item xs={12} md={8}>
-            <Box
-              sx={{
-                p: 2.5,
-                borderRadius: 2,
-                background: "rgba(255, 255, 255, 0.03)",
-                border: "1px solid rgba(245, 124, 0, 0.15)",
-                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                height: "100%",
-                "&:hover": {
-                  transform: "translateY(-2px)",
-                  background: "rgba(245, 124, 0, 0.05)",
-                  border: "1px solid rgba(245, 124, 0, 0.25)",
-                  boxShadow: "0 8px 32px rgba(245, 124, 0, 0.1)",
-                },
-              }}
-            >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}>
-                <TruckIcon sx={{ color: "#F57C00", fontSize: 20 }} />
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: "rgba(255,255,255,0.5)",
-                    fontWeight: 500,
-                    fontSize: "0.7rem",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  Route
-                </Typography>
-              </Box>
-              <Typography
-                variant="subtitle1"
-                sx={{
-                  color: "#F57C00",
-                  fontWeight: 600,
-                  fontSize: "0.95rem",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  flexWrap: "wrap",
-                }}
-              >
-                <span>{event.departurePoint}</span>
-                <Box
-                  component="span"
-                  sx={{
-                    color: "rgba(255,255,255,0.3)",
-                    fontSize: "0.8rem",
-                  }}
-                >
-                  →
-                </Box>
-                <span>{event.arrivalPoint}</span>
-              </Typography>
-            </Box>
-          </Grid>
-
-          <Grid item xs={12} md={4}>
-            <Box
-              sx={{
-                p: 2.5,
-                borderRadius: 2,
-                background: "rgba(255, 255, 255, 0.03)",
-                border: "1px solid rgba(76, 175, 80, 0.15)",
-                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                height: "100%",
-                "&:hover": {
-                  transform: "translateY(-2px)",
-                  background: "rgba(76, 175, 80, 0.05)",
-                  border: "1px solid rgba(76, 175, 80, 0.25)",
-                  boxShadow: "0 8px 32px rgba(76, 175, 80, 0.1)",
-                },
-              }}
-            >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}>
-                <HailIcon sx={{ color: "#4caf50", fontSize: 20 }} />
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: "rgba(255,255,255,0.5)",
-                    fontWeight: 500,
-                    fontSize: "0.7rem",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  Attendees
-                </Typography>
-              </Box>
-              <Typography
-                variant="subtitle1"
-                sx={{
-                  fontWeight: 600,
-                  fontSize: "0.95rem",
-                  lineHeight: 1.3,
-                }}
-              >
-                <Box component="span" sx={{ color: "#FF9800" }}>
-                  {tmpdata?.attendances?.confirmed}
-                </Box>{" "}
-                <Box component="span" sx={{ color: "rgba(255,255,255,0.6)" }}>
-                  riders from
-                </Box>{" "}
-                <Box component="span" sx={{ color: "#4caf50" }}>
-                  {tmpdata?.attendances?.vtcs}
-                </Box>{" "}
-                <Box component="span" sx={{ color: "rgba(255,255,255,0.6)" }}>
-                  VTCs
-                </Box>
-              </Typography>
-            </Box>
-          </Grid>
-        </Grid>
-      </Grid>
-
-      {event.banner && (
-        <Grid item xs={12} md={4}>
-          <Box
-            sx={{
-              position: "relative",
-              borderRadius: 2,
-              overflow: "hidden",
-              height: { xs: 250, md: 400 },
+        <Paper
+          elevation={0}
+          sx={{
+            position: "relative",
+            overflow: "hidden",
+            borderRadius: 3,
+            mb: 4,
+            background: "rgba(0, 0, 0, 0.4)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(255, 215, 0, 0.1)",
+            transition: "all 0.3s ease",
+            "&:hover": {
               border: "1px solid rgba(255, 215, 0, 0.2)",
-              background: "rgba(255, 255, 255, 0.02)",
-              transition: "all 0.3s ease",
-              "&:hover": {
-                border: "1px solid rgba(255, 215, 0, 0.3)",
-                boxShadow: "0 12px 40px rgba(255, 215, 0, 0.1)",
+            },
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: "3px",
+              background:
+                "linear-gradient(90deg, #FFD700, #FF9800, #F57C00, #FFD700)",
+              backgroundSize: "300% 100%",
+              animation: "flow 4s ease-in-out infinite",
+              "@keyframes flow": {
+                "0%, 100%": { backgroundPosition: "0% 50%" },
+                "50%": { backgroundPosition: "100% 50%" },
               },
-            }}
-          >
-            <CardMedia
-              component="img"
-              image={event.banner}
-              alt={event.title}
-              sx={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                filter: "brightness(0.85) saturate(1.1)",
-                transition: "all 0.3s ease",
-              }}
-            />
-            <Box
-              sx={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: "linear-gradient(45deg, rgba(0,0,0,0.2), rgba(255,215,0,0.05))",
-                opacity: 0,
-                transition: "opacity 0.3s ease",
-                "&:hover": {
-                  opacity: 1,
-                },
-              }}
-            />
+            },
+          }}
+        >
+          <Box sx={{ position: "relative", zIndex: 2, p: 4 }}>
+            <Grid container spacing={4} alignItems="stretch">
+              <Grid item xs={12} md={8}>
+                {/* Clean Title Section */}
+                <Box sx={{ mb: 4 }}>
+                  <Typography
+                    variant="h2"
+                    sx={{
+                      fontWeight: 800,
+                      background:
+                        "linear-gradient(135deg, #FFD700 0%, #FF9800 100%)",
+                      backgroundClip: "text",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      mb: 2,
+                      fontSize: { xs: "2rem", md: "2.5rem" },
+                      lineHeight: 1.2,
+                      letterSpacing: "-0.02em",
+                    }}
+                  >
+                    {event.title}
+                  </Typography>
+
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      color: "rgba(255,255,255,0.8)",
+                      fontSize: "1.1rem",
+                      lineHeight: 1.6,
+                      fontWeight: 400,
+                      maxWidth: "90%",
+                    }}
+                  >
+                    {event.description}
+                  </Typography>
+                </Box>
+
+                {/* Refined Info Cards Grid */}
+                <Grid container spacing={2} sx={{ mt: 2 }}>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <Box
+                      sx={{
+                        p: 2.5,
+                        borderRadius: 2,
+                        background: "rgba(255, 255, 255, 0.03)",
+                        border: "1px solid rgba(255, 215, 0, 0.15)",
+                        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                        height: "100%",
+                        "&:hover": {
+                          transform: "translateY(-2px)",
+                          background: "rgba(255, 215, 0, 0.05)",
+                          border: "1px solid rgba(255, 215, 0, 0.25)",
+                          boxShadow: "0 8px 32px rgba(255, 215, 0, 0.1)",
+                        },
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1.5,
+                          mb: 1,
+                        }}
+                      >
+                        <EventIcon sx={{ color: "#FFD700", fontSize: 20 }} />
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "rgba(255,255,255,0.5)",
+                            fontWeight: 500,
+                            fontSize: "0.7rem",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.5px",
+                          }}
+                        >
+                          Date
+                        </Typography>
+                      </Box>
+                      <Typography
+                        variant="subtitle1"
+                        sx={{
+                          color: "#FFD700",
+                          fontWeight: 600,
+                          fontSize: "0.95rem",
+                        }}
+                      >
+                        {new Date(event.startDate).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </Typography>
+                    </Box>
+                  </Grid>
+
+                  <Grid item xs={12} sm={6} md={4}>
+                    <Box
+                      sx={{
+                        p: 2.5,
+                        borderRadius: 2,
+                        background: "rgba(255, 255, 255, 0.03)",
+                        border: "1px solid rgba(255, 193, 7, 0.15)",
+                        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                        height: "100%",
+                        "&:hover": {
+                          transform: "translateY(-2px)",
+                          background: "rgba(255, 193, 7, 0.05)",
+                          border: "1px solid rgba(255, 193, 7, 0.25)",
+                          boxShadow: "0 8px 32px rgba(255, 193, 7, 0.1)",
+                        },
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1.5,
+                          mb: 1,
+                        }}
+                      >
+                        <ScheduleIcon sx={{ color: "#FFC107", fontSize: 20 }} />
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "rgba(255,255,255,0.5)",
+                            fontWeight: 500,
+                            fontSize: "0.7rem",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.5px",
+                          }}
+                        >
+                          Time
+                        </Typography>
+                      </Box>
+                      <Typography
+                        variant="subtitle1"
+                        sx={{
+                          color: "#FFC107",
+                          fontWeight: 600,
+                          fontSize: "0.95rem",
+                        }}
+                      >
+                        2:00 PM - 6:00 PM
+                      </Typography>
+                    </Box>
+                  </Grid>
+
+                  <Grid item xs={12} sm={6} md={4}>
+                    <Box
+                      sx={{
+                        p: 2.5,
+                        borderRadius: 2,
+                        background: "rgba(255, 255, 255, 0.03)",
+                        border: "1px solid rgba(255, 152, 0, 0.15)",
+                        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                        height: "100%",
+                        "&:hover": {
+                          transform: "translateY(-2px)",
+                          background: "rgba(255, 152, 0, 0.05)",
+                          border: "1px solid rgba(255, 152, 0, 0.25)",
+                          boxShadow: "0 8px 32px rgba(255, 152, 0, 0.1)",
+                        },
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1.5,
+                          mb: 1,
+                        }}
+                      >
+                        <LocationIcon sx={{ color: "#FF9800", fontSize: 20 }} />
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "rgba(255,255,255,0.5)",
+                            fontWeight: 500,
+                            fontSize: "0.7rem",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.5px",
+                          }}
+                        >
+                          Meeting
+                        </Typography>
+                      </Box>
+                      <Typography
+                        variant="subtitle1"
+                        sx={{
+                          color: "#FF9800",
+                          fontWeight: 600,
+                          fontSize: "0.95rem",
+                        }}
+                      >
+                        {event.meetingPoint}
+                      </Typography>
+                    </Box>
+                  </Grid>
+
+                  <Grid item xs={12} md={8}>
+                    <Box
+                      sx={{
+                        p: 2.5,
+                        borderRadius: 2,
+                        background: "rgba(255, 255, 255, 0.03)",
+                        border: "1px solid rgba(245, 124, 0, 0.15)",
+                        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                        height: "100%",
+                        "&:hover": {
+                          transform: "translateY(-2px)",
+                          background: "rgba(245, 124, 0, 0.05)",
+                          border: "1px solid rgba(245, 124, 0, 0.25)",
+                          boxShadow: "0 8px 32px rgba(245, 124, 0, 0.1)",
+                        },
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1.5,
+                          mb: 1,
+                        }}
+                      >
+                        <TruckIcon sx={{ color: "#F57C00", fontSize: 20 }} />
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "rgba(255,255,255,0.5)",
+                            fontWeight: 500,
+                            fontSize: "0.7rem",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.5px",
+                          }}
+                        >
+                          Route
+                        </Typography>
+                      </Box>
+                      <Typography
+                        variant="subtitle1"
+                        sx={{
+                          color: "#F57C00",
+                          fontWeight: 600,
+                          fontSize: "0.95rem",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <span>{event.departurePoint}</span>
+                        <Box
+                          component="span"
+                          sx={{
+                            color: "rgba(255,255,255,0.3)",
+                            fontSize: "0.8rem",
+                          }}
+                        >
+                          →
+                        </Box>
+                        <span>{event.arrivalPoint}</span>
+                      </Typography>
+                    </Box>
+                  </Grid>
+
+                  <Grid item xs={12} md={4}>
+                    <Box
+                      sx={{
+                        p: 2.5,
+                        borderRadius: 2,
+                        background: "rgba(255, 255, 255, 0.03)",
+                        border: "1px solid rgba(76, 175, 80, 0.15)",
+                        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                        height: "100%",
+                        "&:hover": {
+                          transform: "translateY(-2px)",
+                          background: "rgba(76, 175, 80, 0.05)",
+                          border: "1px solid rgba(76, 175, 80, 0.25)",
+                          boxShadow: "0 8px 32px rgba(76, 175, 80, 0.1)",
+                        },
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1.5,
+                          mb: 1,
+                        }}
+                      >
+                        <HailIcon sx={{ color: "#4caf50", fontSize: 20 }} />
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "rgba(255,255,255,0.5)",
+                            fontWeight: 500,
+                            fontSize: "0.7rem",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.5px",
+                          }}
+                        >
+                          Attendees
+                        </Typography>
+                      </Box>
+                      <Typography
+                        variant="subtitle1"
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: "0.95rem",
+                          lineHeight: 1.3,
+                        }}
+                      >
+                        <Box component="span" sx={{ color: "#FF9800" }}>
+                          {tmpdata?.attendances?.confirmed}
+                        </Box>{" "}
+                        <Box
+                          component="span"
+                          sx={{ color: "rgba(255,255,255,0.6)" }}
+                        >
+                          riders from
+                        </Box>{" "}
+                        <Box component="span" sx={{ color: "#4caf50" }}>
+                          {tmpdata?.attendances?.vtcs}
+                        </Box>{" "}
+                        <Box
+                          component="span"
+                          sx={{ color: "rgba(255,255,255,0.6)" }}
+                        >
+                          VTCs
+                        </Box>
+                      </Typography>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Grid>
+
+              {event.banner && (
+                <Grid item xs={12} md={4}>
+                  <Box
+                    sx={{
+                      position: "relative",
+                      borderRadius: 2,
+                      overflow: "hidden",
+                      height: { xs: 250, md: 400 },
+                      border: "1px solid rgba(255, 215, 0, 0.2)",
+                      background: "rgba(255, 255, 255, 0.02)",
+                      transition: "all 0.3s ease",
+                      "&:hover": {
+                        border: "1px solid rgba(255, 215, 0, 0.3)",
+                        boxShadow: "0 12px 40px rgba(255, 215, 0, 0.1)",
+                      },
+                    }}
+                  >
+                    <CardMedia
+                      component="img"
+                      image={event.banner}
+                      alt={event.title}
+                      sx={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        filter: "brightness(0.85) saturate(1.1)",
+                        transition: "all 0.3s ease",
+                      }}
+                    />
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background:
+                          "linear-gradient(45deg, rgba(0,0,0,0.2), rgba(255,215,0,0.05))",
+                        opacity: 0,
+                        transition: "opacity 0.3s ease",
+                        "&:hover": {
+                          opacity: 1,
+                        },
+                      }}
+                    />
+                  </Box>
+                </Grid>
+              )}
+            </Grid>
           </Box>
-        </Grid>
-      )}
-    </Grid>
-  </Box>
-</Paper>
+        </Paper>
         {/* Enhanced Route Tabs */}
         <Paper
           elevation={0}
@@ -1051,8 +1111,7 @@ useEffect(() => {
                     sx={{ color: "#FFD700", fontWeight: 800 }}
                   >
                     {currentRouteSlots.reduce(
-                      (total, slot) =>
-                        total + (slot.maxVtc),
+                      (total, slot) => total + slot.maxVtc,
                       0
                     )}
                   </Typography>
@@ -1260,7 +1319,6 @@ useEffect(() => {
                         overflow: "hidden",
                       }}
                     >
-                      
                       <img
                         src={slot.imageUrl}
                         alt={`Slot ${slot.slotNumber}`}
@@ -1270,7 +1328,7 @@ useEffect(() => {
                           objectFit: "cover",
                         }}
                       />
-                      
+
                       {/* Image Overlay */}
                       <Box
                         sx={{
@@ -1282,16 +1340,13 @@ useEffect(() => {
                             "linear-gradient(transparent, rgba(0,0,0,0.8))",
                           p: 2,
                         }}
-                      >
-                       
-                      </Box>
+                      ></Box>
                     </Box>
                   )}
 
                   <CardContent sx={{ flex: 1, p: 3 }}>
                     {/* Slot Details */}
                     <Box sx={{ mb: 2 }}>
-                     
                       <Typography
                         variant="body2"
                         color="rgba(255,255,255,0.8)"
@@ -1319,10 +1374,19 @@ useEffect(() => {
 
                     {/* Booked Slot Details */}
                     {(() => {
-                      const allocatedVtcs = getSlotAllocations(slot, currentRoute?.name);
-                      const pendingRequests = getSlotPendingRequests(slot, currentRoute?.name);
-                      
-                      if (allocatedVtcs.length > 0 || pendingRequests.length > 0) {
+                      const allocatedVtcs = getSlotAllocations(
+                        slot,
+                        currentRoute?.name
+                      );
+                      const pendingRequests = getSlotPendingRequests(
+                        slot,
+                        currentRoute?.name
+                      );
+
+                      if (
+                        allocatedVtcs.length > 0 ||
+                        pendingRequests.length > 0
+                      ) {
                         return (
                           <Box sx={{ mb: 2 }}>
                             {/* Allocated VTCs */}
@@ -1340,42 +1404,55 @@ useEffect(() => {
                                     <ListItem
                                       key={idx}
                                       sx={{
-                                        background: "linear-gradient(135deg, rgba(76, 175, 80, 0.15) 0%, rgba(76, 175, 80, 0.05) 100%)",
+                                        background:
+                                          "linear-gradient(135deg, rgba(76, 175, 80, 0.15) 0%, rgba(76, 175, 80, 0.05) 100%)",
                                         borderRadius: 2,
                                         mb: 1,
-                                        border: "1px solid rgba(76, 175, 80, 0.3)",
+                                        border:
+                                          "1px solid rgba(76, 175, 80, 0.3)",
                                       }}
                                     >
                                       <ListItemIcon>
-                                        <CheckCircleIcon sx={{ color: "#4CAF50" }} />
+                                        <CheckCircleIcon
+                                          sx={{ color: "#4CAF50" }}
+                                        />
                                       </ListItemIcon>
                                       <ListItemText
                                         primary={
-                                          <Typography variant="subtitle2" sx={{ color: "#4CAF50", fontWeight: 700 }}>
+                                          <Typography
+                                            variant="subtitle2"
+                                            sx={{
+                                              color: "#4CAF50",
+                                              fontWeight: 700,
+                                            }}
+                                          >
                                             {req.vtcName}
                                           </Typography>
                                         }
                                         secondary={
                                           <>
-                                          <span style={{ color: "#FFD700" }}>
+                                            <span style={{ color: "#FFD700" }}>
                                               Slot Number:
                                             </span>{" "}
                                             {req.admincomment || "N/A"}
                                             <br />
-                                           
-                                            
                                             {req.vtcLink && (
                                               <>
                                                 <br />
-                                                <span style={{ color: "#FF9800" }}>
+                                                <span
+                                                  style={{ color: "#FF9800" }}
+                                                >
                                                   VTC Link:
                                                 </span>{" "}
-                                                <Link href={req.vtcLink} target="_blank" sx={{ color: "#FFD700" }}>
+                                                <Link
+                                                  href={req.vtcLink}
+                                                  target="_blank"
+                                                  sx={{ color: "#FFD700" }}
+                                                >
                                                   View VTC
                                                 </Link>
                                               </>
                                             )}
-                                            
                                           </>
                                         }
                                       />
@@ -1386,7 +1463,6 @@ useEffect(() => {
                             )}
 
                             {/* Pending Requests */}
-                           
                           </Box>
                         );
                       }
@@ -1468,20 +1544,20 @@ useEffect(() => {
                             color="rgba(255,255,255,0.9)"
                             sx={{ fontWeight: 700 }}
                           >
-                            This slot is partially filled ({slot.allocatedVtcs || 0}/{slot.maxVtc} spots taken)
+                            This slot is partially filled (
+                            {slot.allocatedVtcs || 0}/{slot.maxVtc} spots taken)
                           </Typography>
                         </>
                       ) : (
                         <>
-                          <CancelIcon
-                            sx={{ color: "#F44336", fontSize: 24 }}
-                          />
+                          <CancelIcon sx={{ color: "#F44336", fontSize: 24 }} />
                           <Typography
                             variant="body2"
                             color="rgba(255,255,255,0.9)"
                             sx={{ fontWeight: 700 }}
                           >
-                            This slot is full ({slot.maxVtc}/{slot.maxVtc} spots taken)
+                            This slot is full ({slot.maxVtc}/{slot.maxVtc} spots
+                            taken)
                           </Typography>
                         </>
                       )}
@@ -1517,40 +1593,85 @@ useEffect(() => {
                         spots available
                       </Typography>
                       <a href={slot.imageUrl}>
-                      <button >View image</button></a>
+                        <button>View image</button>
+                      </a>
                       {/* Allocation Summary */}
                       {(() => {
-                        const allocatedVtcs = getSlotAllocations(slot, currentRoute?.name);
-                        const pendingRequests = getSlotPendingRequests(slot, currentRoute?.name);
-                        
-                        if (allocatedVtcs.length > 0 || pendingRequests.length > 0) {
+                        const allocatedVtcs = getSlotAllocations(
+                          slot,
+                          currentRoute?.name
+                        );
+                        const pendingRequests = getSlotPendingRequests(
+                          slot,
+                          currentRoute?.name
+                        );
+
+                        if (
+                          allocatedVtcs.length > 0 ||
+                          pendingRequests.length > 0
+                        ) {
                           return (
-                            <Box sx={{ mt: 2, p: 2, background: "rgba(255,255,255,0.05)", borderRadius: 2 }}>
-                              <Typography variant="caption" color="rgba(255,255,255,0.8)" sx={{ fontWeight: 600 }}>
+                            <Box
+                              sx={{
+                                mt: 2,
+                                p: 2,
+                                background: "rgba(255,255,255,0.05)",
+                                borderRadius: 2,
+                              }}
+                            >
+                              <Typography
+                                variant="caption"
+                                color="rgba(255,255,255,0.8)"
+                                sx={{ fontWeight: 600 }}
+                              >
                                 📊 ALLOCATION SUMMARY
                               </Typography>
-                              <Box sx={{ display: "flex", justifyContent: "space-around", mt: 1 }}>
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  justifyContent: "space-around",
+                                  mt: 1,
+                                }}
+                              >
                                 <Box sx={{ textAlign: "center" }}>
-                                  <Typography variant="h6" sx={{ color: "#4CAF50", fontWeight: 800 }}>
+                                  <Typography
+                                    variant="h6"
+                                    sx={{ color: "#4CAF50", fontWeight: 800 }}
+                                  >
                                     {allocatedVtcs.length}
                                   </Typography>
-                                  <Typography variant="caption" color="rgba(255,255,255,0.7)">
+                                  <Typography
+                                    variant="caption"
+                                    color="rgba(255,255,255,0.7)"
+                                  >
                                     Confirmed
                                   </Typography>
                                 </Box>
                                 <Box sx={{ textAlign: "center" }}>
-                                  <Typography variant="h6" sx={{ color: "#FF9800", fontWeight: 800 }}>
+                                  <Typography
+                                    variant="h6"
+                                    sx={{ color: "#FF9800", fontWeight: 800 }}
+                                  >
                                     {pendingRequests.length}
                                   </Typography>
-                                  <Typography variant="caption" color="rgba(255,255,255,0.7)">
+                                  <Typography
+                                    variant="caption"
+                                    color="rgba(255,255,255,0.7)"
+                                  >
                                     Pending
                                   </Typography>
                                 </Box>
                                 <Box sx={{ textAlign: "center" }}>
-                                  <Typography variant="h6" sx={{ color: "#2196F3", fontWeight: 800 }}>
+                                  <Typography
+                                    variant="h6"
+                                    sx={{ color: "#2196F3", fontWeight: 800 }}
+                                  >
                                     {slot.maxVtc - (slot.allocatedVtcs || 0)}
                                   </Typography>
-                                  <Typography variant="caption" color="rgba(255,255,255,0.7)">
+                                  <Typography
+                                    variant="caption"
+                                    color="rgba(255,255,255,0.7)"
+                                  >
                                     Available
                                   </Typography>
                                 </Box>
@@ -1611,13 +1732,9 @@ useEffect(() => {
               <strong style={{ color: "#FFD700" }}>{currentRoute?.name}</strong>{" "}
               route.
               <br />
-              
             </Typography>
 
-            
-
             {/* Debug Button */}
-          
           </Paper>
         )}
 
