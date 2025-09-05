@@ -50,6 +50,7 @@ import LicenseGenerator from './pages/LicenseGenerator';
 import SpecialEvent from './pages/SpecialEvent';
 import HRDashboard from './pages/HRDashboard';
 import HRRoute from './components/HRRoute';
+import PublicAttendance from './pages/PublicAttendance';
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -234,6 +235,7 @@ function App() {
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   <Route path="/events" element={<Home />} />
                   <Route path="/riders/licence" element={<LicenseGenerator />} />
+                  <Route path="/attendance" element={<PublicAttendance />} />
                   
                   {/* Protected routes */}
                   <Route element={<PrivateRoute allowedRoles={["admin","eventteam"]} />}>

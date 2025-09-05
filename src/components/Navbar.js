@@ -213,6 +213,7 @@ const Navbar = () => {
         { label: 'Our Team', path: '/team', icon: <PersonAdd /> },
         { label: 'Events', path: '/events', icon: <Event /> },
         { label: 'Special Events', path: '/special-events', icon: <EventIcon /> },
+        { label: 'Attendance', path: '/attendance', icon: <PeopleIcon /> },
         { label: 'Apply', path: '/apply', icon: <Dashboard /> },
         // { label: 'License', path: '/riders/licence', icon: <DirectionsCar /> },
         { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
