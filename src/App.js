@@ -48,7 +48,8 @@ import RedirectBasedOnHost from './components/RedirectBasedOnHost';
 import PlayerProfile from './pages/playerprofile';
 import LicenseGenerator from './pages/LicenseGenerator';
 import SpecialEvent from './pages/SpecialEvent';
-
+import HRDashboard from './pages/HRDashboard';
+import HRRoute from './components/HRRoute';
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -57,7 +58,6 @@ export const ThemeContext = createContext({
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(true);
-
 
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
@@ -216,8 +216,6 @@ function App() {
               <Box component="main" sx={{ flexGrow: 1 }}>
                 <Routes>
                   {/* Public routes */}
-                  
-                  
                   <Route path="/player" element={<PlayerProfile playerId={5304347} />} />
                   <Route path="/" element={<Landing />} />
                   <Route path="/login" element={<Login />} />
@@ -235,13 +233,15 @@ function App() {
                   <Route path="/terms" element={<TermsOfService />} />
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   <Route path="/events" element={<Home />} />
+                  <Route path="/riders/licence" element={<LicenseGenerator />} />
                   
-                    <Route path="/riders/licence" element={<LicenseGenerator />} />
                   {/* Protected routes */}
                   <Route element={<PrivateRoute allowedRoles={["admin","eventteam"]} />}>
                     <Route path="/admin" element={<AdminDashboard />} />
                     <Route path="/admin/analytics" element={<AnalyticsDashboard />} />
                   </Route>
+                  {/* HR Team routes */}
+                  <Route path="/hr" element={<HRRoute><HRDashboard /></HRRoute>} />
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>
               </Box>

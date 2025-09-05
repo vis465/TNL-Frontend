@@ -21,6 +21,7 @@ import {
   DirectionsCar, 
   Logout, 
   PersonAdd,
+  People as PeopleIcon,
   Speed,
   Notifications,
   FireTruckOutlined,
@@ -188,6 +189,7 @@ const Navbar = () => {
   };
 
   const isAdmin = user?.role === 'admin' || user?.role === 'eventteam';
+  const isHR = user?.role === 'hrteam' || user?.role === 'admin';
 
   // Navigation items based on user role
   const getNavItems = () => {
@@ -197,7 +199,14 @@ const Navbar = () => {
         { label: 'License', path: '/riders/license', icon: <DirectionsCar /> },
         { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
         { label: 'Contact', path: '/contact', icon: <Event /> },
-         { label: 'Events', path: '/events', icon: <Event /> },
+        { label: 'Events', path: '/events', icon: <Event /> },
+      ];
+    } else if (isHR) {
+      return [
+        { label: 'HR Dashboard', path: '/hr', icon: <PeopleIcon /> },
+        { label: 'Events', path: '/events', icon: <Event /> },
+        { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
+        { label: 'Contact', path: '/contact', icon: <Event /> },
       ];
     } else {
       return [
