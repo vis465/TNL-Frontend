@@ -31,18 +31,24 @@ import {
   Search as SearchIcon,
   Group as GroupIcon,
   Person as PersonIcon,
-  EmojiEvents as EmojiEventsIcon
+  EmojiEvents as EmojiEventsIcon,
+  Leaderboard as LeaderboardIcon,
+  EmojiEvents as TrophyIcon,
+  Star as StarIcon,
+  MilitaryTech as MedalIcon
 } from '@mui/icons-material';
 import axiosInstance from '../utils/axios';
 
 const PublicAttendance = () => {
   const [events, setEvents] = useState([]);
+  const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchAttendanceData();
+    fetchLeaderboard();
   }, []);
 
   const fetchAttendanceData = async () => {
@@ -56,6 +62,15 @@ const PublicAttendance = () => {
       console.error('Error fetching attendance data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchLeaderboard = async () => {
+    try {
+      const response = await axiosInstance.get('/hr-events/public/leaderboard?limit=10');
+      setLeaderboard(response.data);
+    } catch (error) {
+      console.error('Error fetching leaderboard:', error);
     }
   };
 
@@ -80,6 +95,24 @@ const PublicAttendance = () => {
       case 'completed': return 'primary';
       case 'cancelled': return 'error';
       default: return 'default';
+    }
+  };
+
+  const getRankIcon = (index) => {
+    switch (index) {
+      case 0: return <TrophyIcon sx={{ color: '#FFD700' }} />; // Gold
+      case 1: return <MedalIcon sx={{ color: '#C0C0C0' }} />; // Silver
+      case 2: return <MedalIcon sx={{ color: '#CD7F32' }} />; // Bronze
+      default: return <StarIcon sx={{ color: 'primary.main' }} />;
+    }
+  };
+
+  const getRankColor = (index) => {
+    switch (index) {
+      case 0: return '#FFD700'; // Gold
+      case 1: return '#C0C0C0'; // Silver
+      case 2: return '#CD7F32'; // Bronze
+      default: return 'primary.main';
     }
   };
 
@@ -138,25 +171,105 @@ const PublicAttendance = () => {
             <Typography variant="body2">Total Attendances</Typography>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 2, textAlign: 'center', bgcolor: 'info.main', color: 'white' }}>
-            <EmojiEventsIcon sx={{ fontSize: 40, mb: 1 }} />
-            <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
-              {activeEvents}
-            </Typography>
-            <Typography variant="body2">Active Events</Typography>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 2, textAlign: 'center', bgcolor: 'warning.main', color: 'white' }}>
-            <GroupIcon sx={{ fontSize: 40, mb: 1 }} />
-            <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
-              {completedEvents}
-            </Typography>
-            <Typography variant="body2">Completed Events</Typography>
-          </Card>
-        </Grid>
+        
+        
       </Grid>
+
+      {/* Leaderboard Section */}
+      <Box sx={{ mb: 4 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+          <LeaderboardIcon sx={{ mr: 1, color: 'primary.main', fontSize: 32 }} />
+          <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+            Attendance Leaderboard
+          </Typography>
+        </Box>
+        
+        {leaderboard.length > 0 ? (
+          <Grid container spacing={2}>
+            {leaderboard.map((member, index) => (
+              <Grid item xs={12} sm={6} md={4} key={member._id}>
+                <Card 
+                  sx={{ 
+                    p: 2, 
+                    textAlign: 'center',
+                    border: index < 3 ? `2px solid ${getRankColor(index)}` : '1px solid',
+                    borderColor: index < 3 ? getRankColor(index) : 'divider',
+                    bgcolor: index < 3 ? `${getRankColor(index)}10` : 'background.paper',
+                    position: 'relative',
+                    overflow: 'visible'
+                  }}
+                >
+                  {/* Rank Badge */}
+                  <Box sx={{ 
+                    position: 'absolute', 
+                    top: -12, 
+                    left: '50%', 
+                    transform: 'translateX(-50%)',
+                    bgcolor: 'background.paper',
+                    borderRadius: '50%',
+                    p: 0.5,
+                    border: `2px solid ${getRankColor(index)}`
+                  }}>
+                    {getRankIcon(index)}
+                  </Box>
+                  
+                  {/* Rank Number */}
+                  <Typography 
+                    variant="h6" 
+                    sx={{ 
+                      fontWeight: 'bold', 
+                      color: getRankColor(index),
+                      mt: 1,
+                      mb: 1
+                    }}
+                  >
+                    #{index + 1}
+                  </Typography>
+                  
+                  {/* Username */}
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
+                    {member.username}
+                  </Typography>
+                  
+                  {/* TruckersMP ID */}
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    ID: {member.truckersmpUserId}
+                  </Typography>
+                  
+                  {/* Events Attended */}
+                  <Chip 
+                    icon={<TrendingUpIcon />}
+                    label={`${member.totalEventsAttended} Events`}
+                    color="primary"
+                    size="large"
+                    sx={{ 
+                      fontWeight: 'bold',
+                      fontSize: '1rem',
+                      py: 2,
+                      px: 1
+                    }}
+                  />
+                  
+                  {/* Last Updated */}
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                    Last active: {formatDate(member.lastUpdated)}
+                  </Typography>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        ) : (
+          <Paper sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50' }}>
+            <LeaderboardIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
+            <Typography variant="h6" color="text.secondary" gutterBottom>
+              No Leaderboard Data
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              No members have attended events yet
+            </Typography>
+          </Paper>
+        )}
+      </Box>
 
       {/* Search Bar */}
       <Box sx={{ mb: 3 }}>
