@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
+  Grid,
+  Card,
+  CardContent,
+  
+} from '@mui/material';
+import {
   Container,
   Typography,
   Paper,
@@ -322,7 +328,7 @@ const AdminDashboard = () => {
       }}
     >
       <List sx={{ width: 250 }}>
-        {['Events Management', 'Booking Requests'].map((text, index) => (
+        {['Events Management', 'Booking Requests', 'Special Events', 'Management Overview'].map((text, index) => (
           <ListItem 
             button 
             key={text}
@@ -338,9 +344,9 @@ const AdminDashboard = () => {
         {user?.role === 'admin' && (
           <ListItem 
             button 
-            selected={activeTab === 2}
+            selected={activeTab === 4}
             onClick={() => {
-              setActiveTab(2);
+              setActiveTab(4);
               setDrawerOpen(false);
             }}
           >
@@ -451,6 +457,7 @@ const AdminDashboard = () => {
             <Tab label="Events Management" />
             <Tab label="Booking Requests" />
             <Tab label="Special Events" />
+            <Tab label="Management Overview" />
             {user?.role === 'admin' && <Tab label="Analytics" />}
           </Tabs>
         </Paper>
@@ -995,8 +1002,76 @@ const AdminDashboard = () => {
         </Paper>
       )}
 
+      {/* Management Overview Tab */}
+      {activeTab === 3 && (
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={4}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Event Management
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  Manage events, slots, and bookings. Create and organize trucking events for the community.
+                </Typography>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  href="/admin"
+                  target="_blank"
+                >
+                  Manage Events
+                </Button>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} md={4}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Challenge Management
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  Create and manage driving challenges. Track driver progress and leaderboards.
+                </Typography>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  href="/admin/challenges"
+                  target="_blank"
+                >
+                  Manage Challenges
+                </Button>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} md={4}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Analytics Dashboard
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  View detailed analytics and reports for events, challenges, and user engagement.
+                </Typography>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  href="/admin/analytics"
+                  target="_blank"
+                >
+                  View Analytics
+                </Button>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      )}
+
       {/* Analytics Tab */}
-      {activeTab === 3 && user?.role === 'admin' && (
+      {activeTab === 4 && user?.role === 'admin' && (
         <Paper sx={{ 
           borderRadius: 2, 
           overflow: 'hidden', 

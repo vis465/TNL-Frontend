@@ -51,6 +51,10 @@ import SpecialEvent from './pages/SpecialEvent';
 import HRDashboard from './pages/HRDashboard';
 import HRRoute from './components/HRRoute';
 import PublicAttendance from './pages/PublicAttendance';
+import AdminChallenges from './pages/AdminChallenges';
+import RiderChallenges from './pages/RiderChallenges';
+import ChallengeDetails from './pages/ChallengeDetails';
+import PublicChallenges from './pages/PublicChallenges';
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -236,11 +240,15 @@ function App() {
                   <Route path="/events" element={<Home />} />
                   <Route path="/riders/licence" element={<LicenseGenerator />} />
                   <Route path="/attendance" element={<PublicAttendance />} />
+                  <Route path="/riders/:driverId/challenges" element={<RiderChallenges />} />
+                  <Route path="/challenges" element={<PublicChallenges />} />
                   
                   {/* Protected routes */}
                   <Route element={<PrivateRoute allowedRoles={["admin","eventteam"]} />}>
                     <Route path="/admin" element={<AdminDashboard />} />
                     <Route path="/admin/analytics" element={<AnalyticsDashboard />} />
+                    <Route path="/admin/challenges" element={<AdminChallenges />} />
+                    <Route path="/admin/challenges/:id" element={<ChallengeDetails />} />
                   </Route>
                   {/* HR Team routes */}
                   <Route path="/hr" element={<HRRoute><HRDashboard /></HRRoute>} />
