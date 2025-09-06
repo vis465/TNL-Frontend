@@ -321,14 +321,7 @@ const PublicAttendance = () => {
                     <Typography variant="body2" sx={{ opacity: 0.9,color:'black' }}>
                       {formatDate(event.eventDate)} • {event.attendees?.length || 0} attendees
                     </Typography>
-                    {event.description && (
-                      <Typography variant="body2" sx={{ opacity: 0.8, mt: 0.5,color:'black' }}>
-                        {event.description.length > 100 
-                          ? `${event.description.substring(0, 100)}...` 
-                          : event.description
-                        }
-                      </Typography>
-                    )}
+                    
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Chip 
