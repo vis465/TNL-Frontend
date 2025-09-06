@@ -13,6 +13,8 @@ import EventDetails from './pages/EventDetails';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import AdminDashboard from './pages/AdminDashboard';
+import EventManagement from './pages/EventManagement';
+import AttendanceManagement from './pages/AttendanceManagement';
 import MyBookings from './pages/MyBookings';
 import Servers from './pages/Servers';
 import PrivateRoute from './components/PrivateRoute';
@@ -246,12 +248,14 @@ function App() {
                   {/* Protected routes */}
                   <Route element={<PrivateRoute allowedRoles={["admin","eventteam"]} />}>
                     <Route path="/admin" element={<AdminDashboard />} />
+                    <Route path="/admin/events" element={<EventManagement />} />
+                    <Route path="/admin/attendance" element={<HRDashboard />} />
                     <Route path="/admin/analytics" element={<AnalyticsDashboard />} />
                     <Route path="/admin/challenges" element={<AdminChallenges />} />
                     <Route path="/admin/challenges/:id" element={<ChallengeDetails />} />
                   </Route>
                   {/* HR Team routes */}
-                  <Route path="/hr" element={<HRRoute><HRDashboard /></HRRoute>} />
+                  
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>
               </Box>
