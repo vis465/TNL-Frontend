@@ -30,6 +30,8 @@ import {
   Tab,
   IconButton,
   Tooltip,
+  TextField,
+  Snackbar,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -38,6 +40,7 @@ import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import LeaderboardIcon from '@mui/icons-material/Leaderboard';
+import WorkIcon from '@mui/icons-material/Work';
 import axiosInstance from '../utils/axios';
 
 const PublicChallenges = () => {
@@ -50,6 +53,12 @@ const PublicChallenges = () => {
   const [leaderboard, setLeaderboard] = useState([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [leaderboardDialogOpen, setLeaderboardDialogOpen] = useState(false);
+  const [jobId, setJobId] = useState('');
+  const [jobValidationLoading, setJobValidationLoading] = useState(false);
+  const [validationResult, setValidationResult] = useState(null);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -57,6 +66,54 @@ const PublicChallenges = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const validateJob = async () => {
+    if (!jobId || jobId.trim() === '') {
+      setSnackbarMessage('Please enter a valid job ID');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
+
+    try {
+      setJobValidationLoading(true);
+      const data = JSON.stringify({
+        "jobId": parseInt(jobId, 10) // Ensure it's a number
+      });
+      
+      const response = await axiosInstance.post("/webhook/job", data, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log(response.data);
+      setValidationResult(response.data);
+      
+      // More specific success messaging
+      const result = response.data;
+      if (result.success) {
+        if (result.matchedChallenges && result.matchedChallenges.length > 0) {
+          setSnackbarMessage(`Job validated! Matched ${result.matchedChallenges.length} challenge(s)`);
+        } else {
+          setSnackbarMessage('Job validated but no challenges matched');
+        }
+        setSnackbarSeverity('success');
+      } else {
+        setSnackbarMessage('Job validation failed');
+        setSnackbarSeverity('error');
+      }
+      setSnackbarOpen(true);
+      
+    } catch (error) {
+      console.error('Error validating job:', error);
+      setSnackbarMessage('Failed to validate job. Please try again.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    } finally {
+      setJobValidationLoading(false);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -108,6 +165,10 @@ const PublicChallenges = () => {
     return 'primary';
   };
 
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
+  };
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
@@ -142,6 +203,169 @@ const PublicChallenges = () => {
           Refresh
         </Button>
       </Box>
+
+      {/* Job Validation Section */}
+      <Paper sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+          <WorkIcon sx={{ mr: 1, color: 'primary.main' }} />
+          <Typography variant="h6" component="h2">
+            Job Validation
+          </Typography>
+        </Box>
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 2, 
+          alignItems: 'center',
+          flexDirection: { xs: 'column', sm: 'row' },
+          alignItems: { xs: 'stretch', sm: 'center' }
+        }}>
+          <TextField
+            label="Job ID"
+            type="number"
+            value={jobId}
+            onChange={(e) => setJobId(e.target.value)}
+            placeholder="Enter job number"
+            variant="outlined"
+            size="medium"
+            sx={{ minWidth: { xs: '100%', sm: '200px' } }}
+            inputProps={{
+              min: 1,
+              step: 1
+            }}
+          />
+          <Button
+            variant="contained"
+            onClick={validateJob}
+            disabled={jobValidationLoading || !jobId}
+            sx={{ 
+              minWidth: '120px',
+              height: '56px' // Match TextField height
+            }}
+          >
+            {jobValidationLoading ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              'Validate Job'
+            )}
+          </Button>
+        </Box>
+        
+        {validationResult && (
+          <Box sx={{ mt: 2 }} >
+            <Paper 
+              elevation={2} 
+              sx={{ 
+                p: 3, 
+                borderRadius: 2,
+                
+                border: `2px solid ${validationResult.success ? '#4caf50' : '#f44336'}`
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                {validationResult.success ? (
+                  <CheckCircleIcon sx={{ color: 'success.main', fontSize: 28, mr: 1 }} />
+                ) : (
+                  <PendingIcon sx={{ color: 'error.main', fontSize: 28, mr: 1 }} />
+                )}
+                <Typography variant="h6" fontWeight="bold" color={validationResult.success ? 'success.main' : 'error.main'}>
+                  {validationResult.success ? 'Job Validation Successful!' : 'Job Validation Failed'}
+                </Typography>
+              </Box>
+
+              <Typography variant="body1" sx={{ mb: 2, fontWeight: 500 }}>
+                {validationResult.message}
+              </Typography>
+
+              <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid item xs={12} sm={4}>
+                  <Box sx={{ 
+                    textAlign: 'center', 
+                    p: 2, 
+                   
+                    borderRadius: 1 
+                  }}>
+                    <Typography variant="h4" fontWeight="bold" color="primary.main">
+                      {validationResult.matchedChallenges?.length || 0}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Challenges Matched
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <Box sx={{ 
+                    textAlign: 'center', 
+                    p: 2, 
+                  
+                    borderRadius: 1 
+                  }}>
+                    <Typography variant="h4" fontWeight="bold" color="secondary.main">
+                      {validationResult.progressEntriesCreated || 0}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Progress Entries
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <Box sx={{ 
+                    textAlign: 'center', 
+                    p: 2, 
+                   
+                    borderRadius: 1 
+                  }}>
+                    <Typography variant="h4" fontWeight="bold" color="info.main">
+                      {validationResult.success ? '✓' : '✗'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Status
+                    </Typography>
+                  </Box>
+                </Grid>
+              </Grid>
+
+              {validationResult.matchedChallenges && validationResult.matchedChallenges.length > 0 ? (
+                <Box>
+                  <Typography variant="body1" fontWeight="bold" gutterBottom sx={{ color: 'success.dark' }}>
+                    🎉 Great job! Your delivery matched these challenges:
+                  </Typography>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {validationResult.matchedChallenges.map((challenge, index) => (
+                      <Chip
+                        key={index}
+                        label={challenge.name || `Challenge ${index + 1}`}
+                        color="success"
+                        variant="filled"
+                        sx={{ 
+                          fontWeight: 'bold',
+                          '& .MuiChip-label': { px: 2 }
+                        }}
+                        icon={<EmojiEventsIcon />}
+                      />
+                    ))}
+                  </Stack>
+                </Box>
+              ) : (
+                <Alert 
+                  severity="warning" 
+                  sx={{ 
+                    bgcolor: 'rgba(255, 193, 7, 0.1)',
+                    border: '1px solid rgba(255, 193, 7, 0.3)'
+                  }}
+                >
+                  <Typography variant="body1" fontWeight="bold" gutterBottom>
+                    No challenges matched this time
+                  </Typography>
+                  <Typography variant="body2">
+                    Your job was processed successfully, but it didn't match any active challenge criteria. 
+                    This could be due to route, distance, or cargo requirements. Keep driving - more challenges await! 🚛
+                  </Typography>
+                </Alert>
+              )}
+            </Paper>
+          </Box>
+        )}
+      </Paper>
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -202,16 +426,21 @@ const PublicChallenges = () => {
                     <Typography variant="body2" color="text.secondary">
                       <strong>Cargo:</strong> {challenge.cargo}
                     </Typography>
-                    <Typography variant="h5" color="text.secondary">
+                    <Typography variant="body2" color="text.secondary">
                       <strong>Requirements:</strong> {challenge.requiredJobs} jobs • Min {challenge.minDistance} km per job
                     </Typography>
                   </Stack>
 
                   {challenge.rewards && (
-                    <Box sx={{ mt: 2, p: 1, borderRadius: 1 ,color:'black',bgcolor:"red"}}>
-                      <Typography variant="body" color="white">
-                    <strong>Rewards: {challenge.rewards}</strong>
-                        
+                    <Box sx={{ 
+                      mt: 2, 
+                      p: 2, 
+                      borderRadius: 1,
+                      bgcolor: 'error.main',
+                      color: 'error.contrastText'
+                    }}>
+                      <Typography variant="body1" fontWeight="bold">
+                        Rewards: {challenge.rewards}
                       </Typography>
                     </Box>
                   )}
@@ -411,6 +640,17 @@ const PublicChallenges = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+      >
+        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };
