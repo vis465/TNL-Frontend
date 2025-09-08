@@ -128,130 +128,128 @@ const ChallengeDetails = () => {
       pb: 3
     }}>
       {/* Header */}
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        mb: 3,
-        flexWrap: 'wrap',
-        gap: 1
-      }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Button
-            startIcon={<ArrowBackIcon />}
-            onClick={() => window.close()}
-            variant="outlined"
-          >
-            Back
-          </Button>
-          <Box>
-            <Typography variant="h4" component="h1" gutterBottom>
-              {challenge.name}
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Challenge Details & Driver Progress
-            </Typography>
+      <Paper sx={{ mb: 3, borderRadius: 3, overflow: 'hidden' }}>
+        <Box sx={{
+          px: { xs: 2.5, sm: 3 },
+          py: 2.5,
+          background: (theme) => `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+          color: 'primary.contrastText',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 2
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Button
+              startIcon={<ArrowBackIcon />}
+              onClick={() => window.close()}
+              variant="outlined"
+              sx={{ color: 'inherit', borderColor: 'rgba(255,255,255,0.6)' }}
+            >
+              Back
+            </Button>
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 900 }}>
+                {challenge.name}
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                Challenge Details & Driver Progress
+              </Typography>
+            </Box>
           </Box>
+          <Button
+            variant="outlined"
+            startIcon={<RefreshIcon />}
+            onClick={() => fetchChallengeDetails(challenge._id)}
+            sx={{ color: 'inherit', borderColor: 'rgba(255,255,255,0.6)' }}
+            disabled={loading}
+          >
+            Refresh
+          </Button>
         </Box>
-        <Button
-          variant="outlined"
-          startIcon={<RefreshIcon />}
-          onClick={() => fetchChallengeDetails(challenge._id)}
-          disabled={loading}
-        >
-          Refresh
-        </Button>
-      </Box>
+      </Paper>
 
       {/* Challenge Info */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid item xs={12} md={6}>
-          <Card>
+          <Card sx={{ borderRadius: 3, overflow: 'hidden' }}>
             <CardContent>
               <Typography variant="h6" gutterBottom>
                 Challenge Information
               </Typography>
-              <Stack spacing={2}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Route
-                  </Typography>
-                   <Typography variant="body1">
-                     {challenge.startCity} ({challenge.startCompany}) → {challenge.endCity} ({challenge.endCompany})
-                   </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Cargo
-                  </Typography>
-                   <Typography variant="body1">
-                     {challenge.cargo}
-                   </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Requirements
-                  </Typography>
-                  <Typography variant="body1">
-                    {challenge.requiredJobs} jobs • Min {challenge.minDistance} km per job
-                  </Typography>
-                </Box>
-                {challenge.description && (
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Description
-                    </Typography>
-                    <Typography variant="body1">
-                      {challenge.description}
+              <Grid container spacing={1.5}>
+                <Grid item xs={12}>
+                  <Box sx={{ p: 1.5, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                    <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 800 }}>Route</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 700 }}>
+                      {challenge.startCity} ({challenge.startCompany}) → {challenge.endCity} ({challenge.endCompany})
                     </Typography>
                   </Box>
+                </Grid>
+                <Grid item xs={6}>
+                  <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'info.main', color: 'info.contrastText', textAlign: 'center' }}>
+                    <Typography variant="overline" sx={{ display: 'block', fontWeight: 900, opacity: 0.9 }}>Cargo</Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 900 }}>{challenge.cargo}</Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={6}>
+                  <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'secondary.main', color: 'secondary.contrastText', textAlign: 'center' }}>
+                    <Typography variant="overline" sx={{ display: 'block', fontWeight: 900, opacity: 0.9 }}>Min Distance</Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 900 }}>{challenge.minDistance} km</Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12}>
+                  <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'primary.main', color: 'primary.contrastText', textAlign: 'center' }}>
+                    <Typography variant="overline" sx={{ display: 'block', fontWeight: 900, opacity: 0.9 }}>Required Jobs</Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 900 }}>{challenge.requiredJobs}</Typography>
+                  </Box>
+                </Grid>
+                {challenge.description && (
+                  <Grid item xs={12}>
+                    <Box sx={{ p: 1.5, borderRadius: 2, border: '1px dashed', borderColor: 'divider' }}>
+                      <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 800 }}>Description</Typography>
+                      <Typography variant="body1">{challenge.description}</Typography>
+                    </Box>
+                  </Grid>
                 )}
                 {challenge.rewards && (
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Rewards
-                    </Typography>
-                    <Typography variant="body1">
-                      {challenge.rewards}
-                    </Typography>
-                  </Box>
+                  <Grid item xs={12}>
+                    <Box sx={{ p: 1.5, borderRadius: 2, border: '1px dashed', borderColor: 'divider' }}>
+                      <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 800 }}>Rewards</Typography>
+                      <Typography variant="body1">{challenge.rewards}</Typography>
+                    </Box>
+                  </Grid>
                 )}
-              </Stack>
+              </Grid>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} md={6}>
-          <Card>
+          <Card sx={{ borderRadius: 3 }}>
             <CardContent>
               <Typography variant="h6" gutterBottom>
                 Statistics
               </Typography>
-              <Stack spacing={2}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Total Drivers
-                  </Typography>
-                  <Typography variant="body1">
-                    {drivers.length}
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Completed Challenges
-                  </Typography>
-                  <Typography variant="body1">
-                    {drivers.filter(d => d.isCompleted).length}
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Completion Rate
-                  </Typography>
-                  <Typography variant="body1">
-                    {drivers.length > 0 ? ((drivers.filter(d => d.isCompleted).length / drivers.length) * 100).toFixed(1) : 0}%
-                  </Typography>
-                </Box>
-              </Stack>
+              <Grid container spacing={1.5}>
+                <Grid item xs={4}>
+                  <Box sx={{ p: 1.5, borderRadius: 2, border: '1px solid', borderColor: 'divider', textAlign: 'center' }}>
+                    <Typography variant="overline" sx={{ fontWeight: 800, opacity: 0.7 }}>Drivers</Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 900 }}>{drivers.length}</Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={4}>
+                  <Box sx={{ p: 1.5, borderRadius: 2, border: '1px solid', borderColor: 'divider', textAlign: 'center' }}>
+                    <Typography variant="overline" sx={{ fontWeight: 800, opacity: 0.7 }}>Completed</Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 900 }}>{drivers.filter(d => d.isCompleted).length}</Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={4}>
+                  <Box sx={{ p: 1.5, borderRadius: 2, border: '1px solid', borderColor: 'divider', textAlign: 'center' }}>
+                    <Typography variant="overline" sx={{ fontWeight: 800, opacity: 0.7 }}>Rate</Typography>
+                    <Typography variant="h6" color="primary" sx={{ fontWeight: 900 }}>{drivers.length > 0 ? ((drivers.filter(d => d.isCompleted).length / drivers.length) * 100).toFixed(1) : 0}%</Typography>
+                  </Box>
+                </Grid>
+              </Grid>
             </CardContent>
           </Card>
         </Grid>

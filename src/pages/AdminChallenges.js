@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+  Divider,
   Container,
   Typography,
   Paper,
@@ -68,7 +69,8 @@ const AdminChallenges = () => {
     requiredJobs: 1,
     cargo: '',
     status: 'active',
-    rewards: ''
+    rewards: '',
+    allowAutoPark: false
   });
 
   useEffect(() => {
@@ -231,7 +233,8 @@ const AdminChallenges = () => {
       requiredJobs: challenge.requiredJobs,
       cargo: challenge.cargo,
       status: challenge.status,
-      rewards: challenge.rewards || ''
+      rewards: challenge.rewards || '',
+      allowAutoPark: Boolean(challenge.allowAutoPark)
     });
     setEditDialogOpen(true);
   };
@@ -253,7 +256,8 @@ const AdminChallenges = () => {
       requiredJobs: 1,
       cargo: '',
       status: 'active',
-      rewards: ''
+      rewards: '',
+      allowAutoPark: false
     });
     setSelectedChallenge(null);
   };
@@ -286,35 +290,42 @@ const AdminChallenges = () => {
       pt: { xs: 8, sm: 9 },
       pb: 3
     }}>
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        mb: 3,
-        flexWrap: 'wrap',
-        gap: 1
-      }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Challenge Management
-        </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Button
-            variant="outlined"
-            startIcon={<RefreshIcon />}
-            onClick={fetchChallenges}
-            disabled={loading}
-          >
-            Refresh
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={openCreateDialog}
-          >
-            Create Challenge
-          </Button>
+      <Paper sx={{ mb: 3, borderRadius: 3, overflow: 'hidden' }}>
+        <Box sx={{
+          px: { xs: 2.5, sm: 3 },
+          py: 2.5,
+          background: (theme) => 'yellow',
+          color: 'primary.contrastText',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 2
+        }}>
+          <Box>
+            <Typography variant="h5" sx={{ fontWeight: 900 ,color:'black'}}>Challenge Management</Typography>
+            <Typography variant="body2" sx={{ opacity: 0.9 ,color:'black'}}>Create, edit and monitor driving challenges</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Button
+              variant="outlined"
+              startIcon={<RefreshIcon />}
+              onClick={fetchChallenges}
+              sx={{ color: 'inherit', borderColor: 'rgba(255,255,255,0.6)',color:'black' }}
+              disabled={loading}
+            >
+              Refresh
+            </Button>
+            <Button
+              variant="contained"
+              color="secondary"
+              startIcon={<AddIcon />}
+              onClick={openCreateDialog}
+            >
+              Create Challenge
+            </Button>
+          </Box>
         </Box>
-      </Box>
+      </Paper>
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -338,52 +349,73 @@ const AdminChallenges = () => {
       <Grid container spacing={3}>
         {challenges.map((challenge) => (
           <Grid item xs={12} sm={6} md={4} key={challenge._id}>
-            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <CardContent sx={{ flexGrow: 1 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                  <Typography variant="h6" component="h2" gutterBottom>
-                    {challenge.name}
-                  </Typography>
-                  <Chip 
-                    label={challenge.status} 
-                    color={challenge.status === 'active' ? 'success' : 'default'}
-                    size="small"
-                  />
-                </Box>
-                
-                <Stack spacing={1} sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    <strong>Route:</strong> {challenge.startCity} ({challenge.startCompany}) → {challenge.endCity} ({challenge.endCompany})
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    <strong>Requirements:</strong> {challenge.requiredJobs} jobs • Min {challenge.minDistance} km per job
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    <strong>Cargo:</strong> {challenge.cargo}
-                  </Typography>
+            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 3, overflow: 'hidden' }}>
+              <Box sx={{
+                px: { xs: 2, sm: 2.5 },
+                py: 1.5,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: (theme) => `linear-gradient(135deg, ${challenge.status === 'active' ? theme.palette.success.main : theme.palette.grey[600]} 0%, ${theme.palette.primary.dark} 100%)`,
+                color: 'primary.contrastText'
+              }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 900 }}>{challenge.name}</Typography>
+                <Stack direction="row" spacing={1}>
+                  <Chip label={challenge.status.toUpperCase()} size="small" color={challenge.status === 'active' ? 'success' : 'default'} sx={{ fontWeight: 700 }} />
+                  <Chip label={challenge.allowAutoPark ? 'AUTO PARK: ON' : 'AUTO PARK: OFF'} size="small" color={challenge.allowAutoPark ? 'info' : 'warning'} sx={{ fontWeight: 700 }} />
                 </Stack>
+              </Box>
+              <CardContent sx={{ flexGrow: 1 }}>
+                <Grid container spacing={1.5}>
+                  <Grid item xs={12}>
+                    <Box sx={{ p: 1.5, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                      <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 800 }}>Route</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 700 }}>
+                        {challenge.startCity} ({challenge.startCompany}) → {challenge.endCity} ({challenge.endCompany})
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'primary.main', color: 'primary.contrastText', textAlign: 'center' }}>
+                      <Typography variant="overline" sx={{ display: 'block', fontWeight: 900, opacity: 0.9 }}>Required Jobs</Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 900 }}>{challenge.requiredJobs}</Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'secondary.main', color: 'secondary.contrastText', textAlign: 'center' }}>
+                      <Typography variant="overline" sx={{ display: 'block', fontWeight: 900, opacity: 0.9 }}>Min Distance</Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 900 }}>{challenge.minDistance} km</Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Box sx={{ p: 1.5, borderRadius: 2, border: '1px dashed', borderColor: 'divider' }}>
+                      <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 800 }}>Cargo</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 700 }}>{challenge.cargo}</Typography>
+                    </Box>
+                  </Grid>
+                </Grid>
 
-                {/* Stats */}
                 {challenge.stats && (
-                  <Box sx={{ mt: 2, p: 1, bgcolor: 'background.default', borderRadius: 1 }}>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      Statistics:
-                    </Typography>
-                    <Stack direction="row" spacing={2}>
-                      <Typography variant="caption">
-                        Total: {challenge.stats.totalProgress}
-                      </Typography>
-                      <Typography variant="caption">
-                        Completed: {challenge.stats.completedProgress}
-                      </Typography>
-                      <Typography variant="caption">
-                        Drivers: {challenge.stats.uniqueDrivers}
-                      </Typography>
-                    </Stack>
-                    <Typography variant="caption" color="primary">
-                      Completion Rate: {challenge.stats.completionRate}%
-                    </Typography>
-                  </Box>
+                  <Grid container spacing={1.5} sx={{ mt: 1.5 }}>
+                    <Grid item xs={4}>
+                      <Box sx={{ p: 1, borderRadius: 2, border: '1px solid', borderColor: 'divider', textAlign: 'center' }}>
+                        <Typography variant="overline" sx={{ fontWeight: 800, opacity: 0.7 }}>Total</Typography>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 900 }}>{challenge.stats.totalProgress}</Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={4}>
+                      <Box sx={{ p: 1, borderRadius: 2, border: '1px solid', borderColor: 'divider', textAlign: 'center' }}>
+                        <Typography variant="overline" sx={{ fontWeight: 800, opacity: 0.7 }}>Drivers</Typography>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 900 }}>{challenge.stats.uniqueDrivers}</Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={4}>
+                      <Box sx={{ p: 1, borderRadius: 2, border: '1px solid', borderColor: 'divider', textAlign: 'center' }}>
+                        <Typography variant="overline" sx={{ fontWeight: 800, opacity: 0.7 }}>Rate</Typography>
+                        <Typography variant="subtitle1" color="primary" sx={{ fontWeight: 900 }}>{challenge.stats.completionRate}%</Typography>
+                      </Box>
+                    </Grid>
+                  </Grid>
                 )}
               </CardContent>
               
@@ -460,17 +492,23 @@ const AdminChallenges = () => {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>
+        <DialogTitle sx={{ pb: 1 }}>
           {createDialogOpen ? 'Create New Challenge' : 'Edit Challenge'}
         </DialogTitle>
         <DialogContent>
-          <Stack spacing={3} sx={{ mt: 1 }}>
+          <Stack spacing={2.5} sx={{ mt: 1 }}>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <Chip label={formData.status === 'active' ? 'ACTIVE' : 'INACTIVE'} color={formData.status === 'active' ? 'success' : 'default'} size="small" sx={{ fontWeight: 700 }} />
+              <Chip label={formData.allowAutoPark ? 'AUTO PARK: ON' : 'AUTO PARK: OFF'} color={formData.allowAutoPark ? 'info' : 'warning'} size="small" sx={{ fontWeight: 700 }} />
+            </Box>
+            <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 800 }}>Basics</Typography>
             <TextField
               label="Challenge Name"
               value={formData.name}
               onChange={handleInputChange('name')}
               fullWidth
               required
+              placeholder="e.g., Innsbruck → Verona Logs Sprint"
             />
             
             <TextField
@@ -480,8 +518,10 @@ const AdminChallenges = () => {
               fullWidth
               multiline
               rows={2}
+              placeholder="Tell a short story about this challenge..."
             />
-            
+            <Divider />
+            <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 800 }}>Route</Typography>
             <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField
                 label="Start City"
@@ -490,6 +530,7 @@ const AdminChallenges = () => {
                 fullWidth
                 required
                 placeholder="e.g., Berlin"
+                helperText="Use city names as in-game (we normalize automatically)"
               />
               <TextField
                 label="Start Company"
@@ -498,6 +539,7 @@ const AdminChallenges = () => {
                 fullWidth
                 required
                 placeholder="e.g., Tradeaux"
+                helperText="Company at the departure city"
               />
             </Box>
             
@@ -509,6 +551,7 @@ const AdminChallenges = () => {
                 fullWidth
                 required
                 placeholder="e.g., Paris"
+                helperText="Destination city"
               />
               <TextField
                 label="End Company"
@@ -517,9 +560,11 @@ const AdminChallenges = () => {
                 fullWidth
                 required
                 placeholder="e.g., Lisette Logistics"
+                helperText="Company at the destination city"
               />
             </Box>
-            
+            <Divider />
+            <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 800 }}>Requirements</Typography>
             <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField
                 label="Minimum Distance (km)"
@@ -529,6 +574,7 @@ const AdminChallenges = () => {
                 fullWidth
                 required
                 inputProps={{ min: 1 }}
+                helperText="Minimum distance per job to qualify"
               />
               <TextField
                 label="Required Jobs"
@@ -538,6 +584,7 @@ const AdminChallenges = () => {
                 fullWidth
                 required
                 inputProps={{ min: 1 }}
+                helperText="Number of qualifying jobs to complete the challenge"
               />
             </Box>
             
@@ -548,6 +595,7 @@ const AdminChallenges = () => {
               fullWidth
               required
               placeholder="e.g., Wood Bark"
+              helperText="Exact cargo name; we normalize for matching"
             />
             
             <TextField
@@ -557,7 +605,8 @@ const AdminChallenges = () => {
               fullWidth
               placeholder="e.g., Special badge, Discord role, etc."
             />
-            
+            <Divider />
+            <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 800 }}>Settings</Typography>
             <FormControlLabel
               control={
                 <Switch
@@ -567,6 +616,19 @@ const AdminChallenges = () => {
               }
               label="Active"
             />
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={Boolean(formData.allowAutoPark)}
+                  onChange={(e) => setFormData(prev => ({ ...prev, allowAutoPark: e.target.checked }))}
+                />
+              }
+              label="Allow Auto Park"
+            />
+            <Typography variant="caption" color="text.secondary">
+              If enabled, jobs that were auto-parked will be accepted for this challenge.
+            </Typography>
           </Stack>
         </DialogContent>
         <DialogActions>

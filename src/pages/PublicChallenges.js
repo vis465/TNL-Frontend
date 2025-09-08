@@ -32,6 +32,7 @@ import {
   Tooltip,
   TextField,
   Snackbar,
+  Collapse,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -59,6 +60,7 @@ const PublicChallenges = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
+  const [openChallengeId, setOpenChallengeId] = useState(null);
   
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -248,6 +250,7 @@ const PublicChallenges = () => {
               'Validate Job'
             )}
           </Button>
+          <p>Enter JOB id for validation</p>
         </Box>
         
         {validationResult && (
@@ -400,28 +403,30 @@ const PublicChallenges = () => {
         <Grid container spacing={3}>
           {challenges.map((challenge) => (
             <Grid item xs={12} key={challenge._id}>
-              <Card
-                onClick={() => openLeaderboard(challenge)}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLeaderboard(challenge); } }}
-                tabIndex={0}
-                role="button"
-                sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 3, overflow: 'hidden', cursor: 'pointer', transition: 'transform 0.15s ease, box-shadow 0.15s ease', '&:hover': { transform: 'translateY(-2px)', boxShadow: 6 } }}
-              >
+              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 3, overflow: 'hidden' }}>
                 {/* Hero header */}
-                <Box sx={{
+                <Box
+                  onClick={() => setOpenChallengeId(prev => prev === challenge._id ? null : challenge._id)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenChallengeId(prev => prev === challenge._id ? null : challenge._id); } }}
+                  tabIndex={0}
+                  role="button"
+                  sx={{
                   px: { xs: 2.5, sm: 3 },
                   py: 2,
-                  background: (theme) => `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                  color: 'primary.contrastText'
+                  background: (theme) => `yellow`,
+                  color: 'primary.contrastText',
+                  cursor: 'pointer'
                 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="h5" component="h2" sx={{ fontWeight: 900, lineHeight: 1.1 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="h5" component="h2" sx={{ fontWeight: 900, lineHeight: 1.1 ,color:'black'}}>
                       {challenge.name}
                     </Typography>
+                    <p style={{color:'black'}}>Click to read more about the challenge</p>
                     <Chip label="ACTIVE" color="success" size="medium" sx={{ fontWeight: 700, bgcolor: 'success.light', color: 'success.dark' }} />
                   </Box>
                 </Box>
 
+                <Collapse in={openChallengeId === challenge._id} timeout="auto" unmountOnExit>
                 <CardContent sx={{ flexGrow: 1, p: { xs: 2.5, sm: 3 } }}>
                   {/* Story / description */}
                   {challenge.description && (
@@ -434,7 +439,16 @@ const PublicChallenges = () => {
                       </Typography>
                     </Box>
                   )}
-
+ {challenge.rewards && (
+                    <Box sx={{ mb: 3, p: 2, borderRadius: 2, bgcolor: 'success.light', color: 'success.dark', border: '1px dashed', borderColor: 'success.main' }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 800 ,color:'red'}}>
+                        Rewards
+                      </Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 600,color:'black'}}>
+                        {challenge.rewards}
+                      </Typography>
+                    </Box>
+                  )}
                   {/* Route and Cargo tiles (same style as stats) */}
                   <Grid container spacing={1.5} sx={{ mb: 2.5 }}>
                     <Grid item xs={12} sm={6}>
@@ -471,23 +485,15 @@ const PublicChallenges = () => {
                     </Grid>
                   </Grid>
 
-                  {challenge.rewards && (
-                    <Box sx={{ mt: 1, p: 2, borderRadius: 2, bgcolor: 'success.light', color: 'success.dark', border: '1px dashed', borderColor: 'success.main' }}>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
-                        Rewards
-                      </Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                        {challenge.rewards}
-                      </Typography>
-                    </Box>
-                  )}
+                 
                 </CardContent>
 
                 <CardActions sx={{ justifyContent: 'flex-end', p: 2 }}>
-                  <Button size="small" endIcon={<LeaderboardIcon />}>
-                    Tap to view leaderboard
+                  <Button size="small" endIcon={<LeaderboardIcon />} onClick={() => openLeaderboard(challenge)}>
+                    View leaderboard
                   </Button>
                 </CardActions>
+                </Collapse>
               </Card>
             </Grid>
           ))}
@@ -560,7 +566,7 @@ const PublicChallenges = () => {
                       <Grid container spacing={1.5}>
                         <Grid item xs={12} sm={4}>
                           <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'success.main', color: 'success.contrastText', textAlign: 'center' }}>
-                            <Typography variant="overline" sx={{ display: 'block', fontWeight: 800, opacity: 0.9 }}>Completed</Typography>
+                            <Typography variant="overline" sx={{ display: 'block', fontWeight: 800, opacity: 0.9 }}>Completed Challenges</Typography>
                             <Typography variant="h4" sx={{ fontWeight: 900 }}>
                               {Number.isFinite(champion.completedChallenges) ? champion.completedChallenges : 0}
                             </Typography>
@@ -587,7 +593,7 @@ const PublicChallenges = () => {
                       <Grid container spacing={1.5}>
                         <Grid item xs={12} sm={4}>
                           <Box sx={{ p: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider', textAlign: 'center' }}>
-                            <Typography variant="overline" sx={{ display: 'block', fontWeight: 800, opacity: 0.7 }}>Completed</Typography>
+                            <Typography variant="overline" sx={{ display: 'block', fontWeight: 800, opacity: 0.7 }}>Completed Challenges</Typography>
                             <Typography variant="h5" sx={{ fontWeight: 800 }}>
                               {Number.isFinite(champion.completedChallenges) ? champion.completedChallenges : 0}
                             </Typography>
