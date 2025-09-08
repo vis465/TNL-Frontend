@@ -399,61 +399,93 @@ const PublicChallenges = () => {
       {activeTab === 0 && (
         <Grid container spacing={3}>
           {challenges.map((challenge) => (
-            <Grid item xs={12} sm={6} md={4} key={challenge._id}>
-              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                    <Typography variant="h6" component="h2" gutterBottom>
+            <Grid item xs={12} key={challenge._id}>
+              <Card
+                onClick={() => openLeaderboard(challenge)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLeaderboard(challenge); } }}
+                tabIndex={0}
+                role="button"
+                sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 3, overflow: 'hidden', cursor: 'pointer', transition: 'transform 0.15s ease, box-shadow 0.15s ease', '&:hover': { transform: 'translateY(-2px)', boxShadow: 6 } }}
+              >
+                {/* Hero header */}
+                <Box sx={{
+                  px: { xs: 2.5, sm: 3 },
+                  py: 2,
+                  background: (theme) => `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                  color: 'primary.contrastText'
+                }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="h5" component="h2" sx={{ fontWeight: 900, lineHeight: 1.1 }}>
                       {challenge.name}
                     </Typography>
-                    <Chip 
-                      label="Active" 
-                      color="success"
-                      size="small"
-                    />
+                    <Chip label="ACTIVE" color="success" size="medium" sx={{ fontWeight: 700, bgcolor: 'success.light', color: 'success.dark' }} />
                   </Box>
-                  
+                </Box>
+
+                <CardContent sx={{ flexGrow: 1, p: { xs: 2.5, sm: 3 } }}>
+                  {/* Story / description */}
                   {challenge.description && (
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                      {challenge.description}
-                    </Typography>
+                    <Box sx={{ mb: 2.5 }}>
+                      <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 800, letterSpacing: 1 }}>
+                        Story
+                      </Typography>
+                      <Typography variant="body1" sx={{ mt: 0.5, fontSize: { xs: '0.98rem', sm: '1.05rem' }, lineHeight: 1.6 }}>
+                        {challenge.description}
+                      </Typography>
+                    </Box>
                   )}
-                  
-                  <Stack spacing={1} sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      <strong>Route:</strong> {challenge.startCity} ({challenge.startCompany}) → {challenge.endCity} ({challenge.endCompany})
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      <strong>Cargo:</strong> {challenge.cargo}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      <strong>Requirements:</strong> {challenge.requiredJobs} jobs • Min {challenge.minDistance} km per job
-                    </Typography>
-                  </Stack>
+
+                  {/* Route and Cargo tiles (same style as stats) */}
+                  <Grid container spacing={1.5} sx={{ mb: 2.5 }}>
+                    <Grid item xs={12} sm={6}>
+                      <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'info.main', color: 'info.contrastText', textAlign: 'center' }}>
+                        <Typography variant="overline" sx={{ display: 'block', fontWeight: 800, opacity: 0.9 }}>Route</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                          {`${challenge.startCity} (${challenge.startCompany}) → ${challenge.endCity} (${challenge.endCompany})`}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'warning.main', color: 'warning.contrastText', textAlign: 'center' }}>
+                        <Typography variant="overline" sx={{ display: 'block', fontWeight: 800, opacity: 0.9 }}>Cargo</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                          {challenge.cargo}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  </Grid>
+
+                  {/* Key stats */}
+                  <Grid container spacing={1.5} sx={{ mb: 2.5 }}>
+                    <Grid item xs={6}>
+                      <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'primary.main', color: 'primary.contrastText', textAlign: 'center' }}>
+                        <Typography variant="overline" sx={{ display: 'block', fontWeight: 800, opacity: 0.9 }}>Required Jobs</Typography>
+                        <Typography variant="h4" sx={{ fontWeight: 900 }}>{challenge.requiredJobs}</Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'secondary.main', color: 'secondary.contrastText', textAlign: 'center' }}>
+                        <Typography variant="overline" sx={{ display: 'block', fontWeight: 800, opacity: 0.9 }}>Min Distance</Typography>
+                        <Typography variant="h4" sx={{ fontWeight: 900 }}>{challenge.minDistance} km</Typography>
+                      </Box>
+                    </Grid>
+                  </Grid>
 
                   {challenge.rewards && (
-                    <Box sx={{ 
-                      mt: 2, 
-                      p: 2, 
-                      borderRadius: 1,
-                      bgcolor: 'error.main',
-                      color: 'error.contrastText'
-                    }}>
-                      <Typography variant="body1" fontWeight="bold">
-                        Rewards: {challenge.rewards}
+                    <Box sx={{ mt: 1, p: 2, borderRadius: 2, bgcolor: 'success.light', color: 'success.dark', border: '1px dashed', borderColor: 'success.main' }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
+                        Rewards
+                      </Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                        {challenge.rewards}
                       </Typography>
                     </Box>
                   )}
                 </CardContent>
-                
-                <CardActions sx={{ justifyContent: 'space-between', p: 2 }}>
-                  <Button
-                    size="small"
-                    startIcon={<LeaderboardIcon />}
-                    onClick={() => openLeaderboard(challenge)}
-                    disabled={leaderboardLoading}
-                  >
-                    View Leaderboard
+
+                <CardActions sx={{ justifyContent: 'flex-end', p: 2 }}>
+                  <Button size="small" endIcon={<LeaderboardIcon />}>
+                    Tap to view leaderboard
                   </Button>
                 </CardActions>
               </Card>
@@ -464,73 +496,127 @@ const PublicChallenges = () => {
 
       {/* Champions Tab */}
       {activeTab === 1 && (
-        <Paper sx={{ borderRadius: 2, overflow: 'auto' }}>
-          <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
-            <Typography variant="h6" gutterBottom>
-              <EmojiEventsIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-              Overall Champions
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Drivers who have completed the most challenges
-            </Typography>
-          </Box>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Rank</TableCell>
-                  <TableCell>Driver</TableCell>
-                  <TableCell>Challenges Completed</TableCell>
-                  <TableCell>Total Jobs</TableCell>
-                  <TableCell>Total Distance</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {champions.map((champion, index) => (
-                  <TableRow key={champion._id}>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        {index === 0 && <EmojiEventsIcon sx={{ color: 'gold', mr: 1 }} />}
-                        {index === 1 && <EmojiEventsIcon sx={{ color: 'silver', mr: 1 }} />}
-                        {index === 2 && <EmojiEventsIcon sx={{ color: '#cd7f32', mr: 1 }} />}
-                        <Typography variant="h6" color="primary">
-                          #{index + 1}
-                        </Typography>
+        <Box>
+          <Paper sx={{ borderRadius: 2, overflow: 'hidden', mb: 2 }}>
+            <Box sx={{ p: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: (theme) => theme.palette.background.paper, borderBottom: 1, borderColor: 'divider' }}>
+              <Box>
+                <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+                  <EmojiEventsIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                  Overall Champions
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Drivers who have completed the most challenges
+                </Typography>
+              </Box>
+            </Box>
+          </Paper>
+
+          <Grid container spacing={2}>
+            {champions.map((champion, index) => (
+              <Grid item xs={12} md={6} key={champion._id}>
+                <Card sx={{ borderRadius: 3, overflow: 'hidden', border: index > 2 ? '1px solid' : 'none', borderColor: index > 2 ? 'divider' : 'transparent' }}>
+                  {index <= 2 ? (
+                    <Box sx={{
+                      px: { xs: 2.5, sm: 3 },
+                      py: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      background: (theme) => `linear-gradient(135deg, ${index === 0 ? theme.palette.warning.main : index === 1 ? theme.palette.grey[500] : '#cd7f32'} 0%, ${theme.palette.primary.dark} 100%)`,
+                      color: 'primary.contrastText'
+                    }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <EmojiEventsIcon sx={{ color: index === 0 ? 'gold' : index === 1 ? 'silver' : '#cd7f32' }} />
+                        <Typography variant="h6" sx={{ fontWeight: 900 }}>#{index + 1}</Typography>
                       </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Box>
-                        <Typography variant="body2" fontWeight="bold">
+                      <Box sx={{ textAlign: 'right' }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
                           {champion.driverUsername || 'Unknown'}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary" fontFamily="monospace">
+                        <Typography variant="caption" sx={{ opacity: 0.8 }}>
                           ID: {champion._id}
                         </Typography>
                       </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={champion.completedChallenges}
-                        color="success"
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {champion.totalJobs}
+                    </Box>
+                  ) : (
+                    <Box sx={{
+                      px: { xs: 2.5, sm: 3 },
+                      py: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      bgcolor: 'background.paper'
+                    }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Chip label={`#${index + 1}`} size="small" />
+                        {champion.driverUsername || 'Unknown'}
                       </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {champion.totalDistance.toFixed(2)} km
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Paper>
+                      <Typography variant="caption" color="text.secondary">ID: {champion._id}</Typography>
+                    </Box>
+                  )}
+
+                  <CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
+                    {index <= 2 ? (
+                      <Grid container spacing={1.5}>
+                        <Grid item xs={12} sm={4}>
+                          <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'success.main', color: 'success.contrastText', textAlign: 'center' }}>
+                            <Typography variant="overline" sx={{ display: 'block', fontWeight: 800, opacity: 0.9 }}>Completed</Typography>
+                            <Typography variant="h4" sx={{ fontWeight: 900 }}>
+                              {Number.isFinite(champion.completedChallenges) ? champion.completedChallenges : 0}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                        <Grid item xs={12} sm={4}>
+                          <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'info.main', color: 'info.contrastText', textAlign: 'center' }}>
+                            <Typography variant="overline" sx={{ display: 'block', fontWeight: 800, opacity: 0.9 }}>Jobs</Typography>
+                            <Typography variant="h4" sx={{ fontWeight: 900 }}>
+                              {Number.isFinite(champion.totalJobs) ? champion.totalJobs : 0}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                        <Grid item xs={12} sm={4}>
+                          <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'secondary.main', color: 'secondary.contrastText', textAlign: 'center' }}>
+                            <Typography variant="overline" sx={{ display: 'block', fontWeight: 800, opacity: 0.9 }}>Distance</Typography>
+                            <Typography variant="h5" sx={{ fontWeight: 900 }}>
+                              {(Number(champion.totalDistance) || 0)} km
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      </Grid>
+                    ) : (
+                      <Grid container spacing={1.5}>
+                        <Grid item xs={12} sm={4}>
+                          <Box sx={{ p: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider', textAlign: 'center' }}>
+                            <Typography variant="overline" sx={{ display: 'block', fontWeight: 800, opacity: 0.7 }}>Completed</Typography>
+                            <Typography variant="h5" sx={{ fontWeight: 800 }}>
+                              {Number.isFinite(champion.completedChallenges) ? champion.completedChallenges : 0}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                        <Grid item xs={12} sm={4}>
+                          <Box sx={{ p: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider', textAlign: 'center' }}>
+                            <Typography variant="overline" sx={{ display: 'block', fontWeight: 800, opacity: 0.7 }}>Jobs</Typography>
+                            <Typography variant="h5" sx={{ fontWeight: 800 }}>
+                              {Number.isFinite(champion.totalJobs) ? champion.totalJobs : 0}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                        <Grid item xs={12} sm={4}>
+                          <Box sx={{ p: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider', textAlign: 'center' }}>
+                            <Typography variant="overline" sx={{ display: 'block', fontWeight: 800, opacity: 0.7 }}>Distance</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                              {(Number(champion.totalDistance) || 0)} km
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      </Grid>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
       )}
 
       {challenges.length === 0 && activeTab === 0 && (
@@ -606,12 +692,12 @@ const PublicChallenges = () => {
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2">
-                          {entry.completedJobs} / {selectedChallenge?.requiredJobs}
+                          {Math.min(entry?.completedJobs ?? 0, selectedChallenge?.requiredJobs ?? 0)} / {selectedChallenge?.requiredJobs ?? 0}
                         </Typography>
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2">
-                          {entry.totalDistance.toFixed(2)} km
+                          {entry.totalDistance} km
                         </Typography>
                       </TableCell>
                       <TableCell>
