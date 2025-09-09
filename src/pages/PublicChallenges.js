@@ -33,6 +33,10 @@ import {
   TextField,
   Snackbar,
   Collapse,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -57,6 +61,8 @@ const PublicChallenges = () => {
   const [jobId, setJobId] = useState('');
   const [jobValidationLoading, setJobValidationLoading] = useState(false);
   const [validationResult, setValidationResult] = useState(null);
+  const [selectedChallengeId, setSelectedChallengeId] = useState('');
+  const [applyLoading, setApplyLoading] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
@@ -76,11 +82,18 @@ const PublicChallenges = () => {
       setSnackbarOpen(true);
       return;
     }
+    if (!selectedChallengeId) {
+      setSnackbarMessage('Please select a challenge to apply this job to');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
 
     try {
       setJobValidationLoading(true);
       const data = JSON.stringify({
-        "jobId": parseInt(jobId, 10) // Ensure it's a number
+        jobId: parseInt(jobId, 10),
+        selectedChallengeId
       });
       
       const response = await axiosInstance.post("/webhook/job", data, {
@@ -94,26 +107,51 @@ const PublicChallenges = () => {
       
       // More specific success messaging
       const result = response.data;
-      if (result.success) {
-        if (result.matchedChallenges && result.matchedChallenges.length > 0) {
-          setSnackbarMessage(`Job validated! Matched ${result.matchedChallenges.length} challenge(s)`);
-        } else {
-          setSnackbarMessage('Job validated but no challenges matched');
-        }
-        setSnackbarSeverity('success');
-      } else {
-        setSnackbarMessage('Job validation failed');
-        setSnackbarSeverity('error');
-      }
+      console.log(result);
+      setSnackbarMessage(result.message || (result.success ? 'Success' : 'Request failed'));
+      setSnackbarSeverity(result.success ? 'success' : 'error');
       setSnackbarOpen(true);
       
     } catch (error) {
       console.error('Error validating job:', error);
-      setSnackbarMessage('Failed to validate job. Please try again.');
+      const serverMsg = error.response?.data?.message;
+      setSnackbarMessage(serverMsg || 'Failed to validate job. Please check the Job ID and selected challenge, then try again.');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
     } finally {
       setJobValidationLoading(false);
+    }
+  };
+
+  const applyJobToChallenge = async () => {
+    if (!selectedChallengeId) {
+      setSnackbarMessage('Please select a challenge to apply this job');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
+    try {
+      setApplyLoading(true);
+      const data = JSON.stringify({
+        jobId: parseInt(jobId, 10),
+        selectedChallengeId
+      });
+      const response = await axiosInstance.post('/webhook/job', data, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      setValidationResult(response.data);
+      setSnackbarMessage(response.data.message || 'Job applied to challenge');
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+    } catch (error) {
+      console.error('Error applying job to challenge:', error);
+      const serverMsg = error.response?.data?.message;
+      setSnackbarMessage(serverMsg || 'Failed to apply job to challenge. Ensure the job meets the selected challenge requirements.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    } finally {
+      setApplyLoading(false);
     }
   };
 
@@ -235,6 +273,21 @@ const PublicChallenges = () => {
               step: 1
             }}
           />
+          <FormControl sx={{ minWidth: { xs: '100%', sm: 280 } }}>
+            <InputLabel id="challenge-select-label">Select Challenge</InputLabel>
+            <Select
+              labelId="challenge-select-label"
+              label="Select Challenge"
+              value={selectedChallengeId}
+              onChange={(e) => setSelectedChallengeId(e.target.value)}
+            >
+              {(challenges || []).map((c) => (
+                <MenuItem key={c._id} value={c._id}>
+                  {c.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           <Button
             variant="contained"
             onClick={validateJob}
@@ -278,6 +331,49 @@ const PublicChallenges = () => {
               <Typography variant="body1" sx={{ mb: 2, fontWeight: 500 }}>
                 {validationResult.message}
               </Typography>
+
+              {/* Challenge selection when multiple matches and not yet committed */}
+              {Array.isArray(validationResult.matchedChallenges) && validationResult.matchedChallenges.length > 0 && !validationResult.committed && (
+                <Box sx={{ mb: 2, p: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 1 }}>Select a challenge to apply this job</Typography>
+                  <Stack spacing={1}>
+                    {validationResult.matchedChallenges.map((mc) => (
+                      <Paper key={mc.challengeId} variant="outlined" sx={{ p: 1.5 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
+                          <Box sx={{ flex: 1 }}>
+                            <Typography variant="body1" sx={{ fontWeight: 700 }}>{mc.challengeName}</Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              Distance: {mc.distance} / {mc.minRequired} km • Top speed: {mc.topSpeedKmh} km/h{mc.maxTopSpeedKmh ? ` ≤ ${mc.maxTopSpeedKmh}` : ''}{mc.maxTruckDamagePercent ? ` • Damage ≤ ${mc.maxTruckDamagePercent}%` : ''}
+                            </Typography>
+                          </Box>
+                          <Box>
+                            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                              <input
+                                type="radio"
+                                name="challengeSelect"
+                                value={mc.challengeId}
+                                checked={selectedChallengeId === mc.challengeId}
+                                onChange={(e) => setSelectedChallengeId(e.target.value)}
+                                style={{ marginRight: 8 }}
+                              />
+                              Choose
+                            </label>
+                          </Box>
+                        </Box>
+                      </Paper>
+                    ))}
+                  </Stack>
+                  <Box sx={{ textAlign: 'right', mt: 2 }}>
+                    <Button
+                      variant="contained"
+                      disabled={!selectedChallengeId || applyLoading}
+                      onClick={applyJobToChallenge}
+                    >
+                      {applyLoading ? 'Applying...' : 'Apply Job to Selected Challenge'}
+                    </Button>
+                  </Box>
+                </Box>
+              )}
 
               <Grid container spacing={2} sx={{ mb: 2 }}>
                 <Grid item xs={12} sm={4}>
@@ -422,7 +518,22 @@ const PublicChallenges = () => {
                       {challenge.name}
                     </Typography>
                     <p style={{color:'black'}}>Click to read more about the challenge</p>
-                    <Chip label="ACTIVE" color="success" size="medium" sx={{ fontWeight: 700, bgcolor: 'success.light', color: 'success.dark' }} />
+                    <Stack direction="row" spacing={1}>
+                      <Chip label="ACTIVE" color="success" size="medium" sx={{ fontWeight: 700, bgcolor: 'success.light', color: 'success.dark' }} />
+                      {challenge.difficulty && (
+                        <Chip 
+                          label={`DIFFICULTY: ${String(challenge.difficulty).toUpperCase()}`}
+                          size="medium"
+                          color={
+                            challenge.difficulty === 'easy' ? 'success' :
+                            challenge.difficulty === 'medium' ? 'info' :
+                            challenge.difficulty === 'hard' ? 'warning' : 'error'
+                          }
+                          sx={{ fontWeight: 700 }}
+                        />
+                      )}
+                      
+                    </Stack>
                   </Box>
                 </Box>
 
@@ -455,7 +566,7 @@ const PublicChallenges = () => {
                       <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'info.main', color: 'info.contrastText', textAlign: 'center' }}>
                         <Typography variant="overline" sx={{ display: 'block', fontWeight: 800, opacity: 0.9 }}>Route</Typography>
                         <Typography variant="h6" sx={{ fontWeight: 800 }}>
-                          {`${challenge.startCity} (${challenge.startCompany}) → ${challenge.endCity} (${challenge.endCompany})`}
+                          {`${challenge.startCity || 'Any City'} (${challenge.startCompany || 'Any Company'}) → ${challenge.endCity || 'Any City'} (${challenge.endCompany || 'Any Company'})`}
                         </Typography>
                       </Box>
                     </Grid>
@@ -471,18 +582,34 @@ const PublicChallenges = () => {
 
                   {/* Key stats */}
                   <Grid container spacing={1.5} sx={{ mb: 2.5 }}>
-                    <Grid item xs={6}>
+                    <Grid item xs={12} sm={6}>
                       <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'primary.main', color: 'primary.contrastText', textAlign: 'center' }}>
                         <Typography variant="overline" sx={{ display: 'block', fontWeight: 800, opacity: 0.9 }}>Required Jobs</Typography>
                         <Typography variant="h4" sx={{ fontWeight: 900 }}>{challenge.requiredJobs}</Typography>
                       </Box>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid item xs={12} sm={6}>
                       <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'secondary.main', color: 'secondary.contrastText', textAlign: 'center' }}>
                         <Typography variant="overline" sx={{ display: 'block', fontWeight: 800, opacity: 0.9 }}>Min Distance</Typography>
                         <Typography variant="h4" sx={{ fontWeight: 900 }}>{challenge.minDistance} km</Typography>
                       </Box>
                     </Grid>
+                    {!!challenge.maxTopSpeedKmh && Number(challenge.maxTopSpeedKmh) > 0 && (
+                      <Grid item xs={12} sm={6}>
+                        <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'error.main', color: 'error.contrastText', textAlign: 'center' }}>
+                          <Typography variant="overline" sx={{ display: 'block', fontWeight: 800, opacity: 0.9 }}>Max Top Speed</Typography>
+                          <Typography variant="h4" sx={{ fontWeight: 900 }}>{Number(challenge.maxTopSpeedKmh)} km/h</Typography>
+                        </Box>
+                      </Grid>
+                    )}
+                    {!!challenge.maxTruckDamagePercent && Number(challenge.maxTruckDamagePercent) > 0 && (
+                      <Grid item xs={12} sm={6}>
+                        <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'warning.dark', color: 'warning.contrastText', textAlign: 'center' }}>
+                          <Typography variant="overline" sx={{ display: 'block', fontWeight: 800, opacity: 0.9 }}>Max Truck Damage allowed</Typography>
+                          <Typography variant="h4" sx={{ fontWeight: 900 }}>{Number(challenge.maxTruckDamagePercent)}%</Typography>
+                        </Box>
+                      </Grid>
+                    )}
                   </Grid>
 
                  

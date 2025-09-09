@@ -32,6 +32,10 @@ import {
   Tooltip,
   Switch,
   FormControlLabel,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -70,7 +74,10 @@ const AdminChallenges = () => {
     cargo: '',
     status: 'active',
     rewards: '',
-    allowAutoPark: false
+    allowAutoPark: false,
+    maxTopSpeedKmh: '',
+    maxTruckDamagePercent: '',
+    difficulty: 'medium'
   });
 
   useEffect(() => {
@@ -98,9 +105,8 @@ const AdminChallenges = () => {
       setError('');
       
       // Validate form data
-      if (!formData.name || !formData.startCity || !formData.startCompany || 
-          !formData.endCity || !formData.endCompany || !formData.minDistance || !formData.cargo) {
-        setError('All fields are required');
+      if (!formData.name || !formData.minDistance || !formData.cargo) {
+        setError('Required: name, minDistance, cargo');
         return;
       }
 
@@ -117,10 +123,10 @@ const AdminChallenges = () => {
       // Normalize names before sending to backend
       const normalizedData = {
         ...formData,
-        startCity: normalizeName(formData.startCity),
-        startCompany: normalizeName(formData.startCompany),
-        endCity: normalizeName(formData.endCity),
-        endCompany: normalizeName(formData.endCompany),
+        startCity: formData.startCity ? normalizeName(formData.startCity) : '',
+        startCompany: formData.startCompany ? normalizeName(formData.startCompany) : '',
+        endCity: formData.endCity ? normalizeName(formData.endCity) : '',
+        endCompany: formData.endCompany ? normalizeName(formData.endCompany) : '',
         cargo: normalizeName(formData.cargo)
       };
       
@@ -142,9 +148,8 @@ const AdminChallenges = () => {
       setActionLoading(true);
       setError('');
       
-      if (!formData.name || !formData.startCity || !formData.startCompany || 
-          !formData.endCity || !formData.endCompany || !formData.minDistance || !formData.cargo) {
-        setError('All fields are required');
+      if (!formData.name || !formData.minDistance || !formData.cargo) {
+        setError('Required: name, minDistance, cargo');
         return;
       }
 
@@ -161,10 +166,10 @@ const AdminChallenges = () => {
       // Normalize names before sending to backend
       const normalizedData = {
         ...formData,
-        startCity: normalizeName(formData.startCity),
-        startCompany: normalizeName(formData.startCompany),
-        endCity: normalizeName(formData.endCity),
-        endCompany: normalizeName(formData.endCompany),
+        startCity: formData.startCity ? normalizeName(formData.startCity) : '',
+        startCompany: formData.startCompany ? normalizeName(formData.startCompany) : '',
+        endCity: formData.endCity ? normalizeName(formData.endCity) : '',
+        endCompany: formData.endCompany ? normalizeName(formData.endCompany) : '',
         cargo: normalizeName(formData.cargo)
       };
       
@@ -234,7 +239,10 @@ const AdminChallenges = () => {
       cargo: challenge.cargo,
       status: challenge.status,
       rewards: challenge.rewards || '',
-      allowAutoPark: Boolean(challenge.allowAutoPark)
+      allowAutoPark: Boolean(challenge.allowAutoPark),
+      maxTopSpeedKmh: challenge.maxTopSpeedKmh || '',
+      maxTruckDamagePercent: challenge.maxTruckDamagePercent || '',
+      difficulty: challenge.difficulty || 'medium'
     });
     setEditDialogOpen(true);
   };
@@ -257,7 +265,10 @@ const AdminChallenges = () => {
       cargo: '',
       status: 'active',
       rewards: '',
-      allowAutoPark: false
+      allowAutoPark: false,
+      maxTopSpeedKmh: '',
+      maxTruckDamagePercent: '',
+      difficulty: 'medium'
     });
     setSelectedChallenge(null);
   };
@@ -363,6 +374,9 @@ const AdminChallenges = () => {
                 <Stack direction="row" spacing={1}>
                   <Chip label={challenge.status.toUpperCase()} size="small" color={challenge.status === 'active' ? 'success' : 'default'} sx={{ fontWeight: 700 }} />
                   <Chip label={challenge.allowAutoPark ? 'AUTO PARK: ON' : 'AUTO PARK: OFF'} size="small" color={challenge.allowAutoPark ? 'info' : 'warning'} sx={{ fontWeight: 700 }} />
+                  {challenge.difficulty && (
+                    <Chip label={`DIFFICULTY: ${challenge.difficulty.toUpperCase()}`} size="small" color="secondary" sx={{ fontWeight: 700 }} />
+                  )}
                 </Stack>
               </Box>
               <CardContent sx={{ flexGrow: 1 }}>
@@ -371,7 +385,7 @@ const AdminChallenges = () => {
                     <Box sx={{ p: 1.5, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
                       <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 800 }}>Route</Typography>
                       <Typography variant="body1" sx={{ fontWeight: 700 }}>
-                        {challenge.startCity} ({challenge.startCompany}) → {challenge.endCity} ({challenge.endCompany})
+                        {(challenge.startCity || 'Any City')} ({challenge.startCompany || 'Any Company'}) → {(challenge.endCity || 'Any City')} ({challenge.endCompany || 'Any Company'})
                       </Typography>
                     </Box>
                   </Grid>
@@ -524,43 +538,39 @@ const AdminChallenges = () => {
             <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 800 }}>Route</Typography>
             <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField
-                label="Start City"
+                label="Start City (leave blank for Any)"
                 value={formData.startCity}
                 onChange={handleInputChange('startCity')}
                 fullWidth
-                required
                 placeholder="e.g., Berlin"
-                helperText="Use city names as in-game (we normalize automatically)"
+                helperText="Leave empty to allow any city"
               />
               <TextField
-                label="Start Company"
+                label="Start Company (leave blank for Any)"
                 value={formData.startCompany}
                 onChange={handleInputChange('startCompany')}
                 fullWidth
-                required
                 placeholder="e.g., Tradeaux"
-                helperText="Company at the departure city"
+                helperText="Leave empty to allow any company"
               />
             </Box>
             
             <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField
-                label="End City"
+                label="End City (leave blank for Any)"
                 value={formData.endCity}
                 onChange={handleInputChange('endCity')}
                 fullWidth
-                required
                 placeholder="e.g., Paris"
-                helperText="Destination city"
+                helperText="Leave empty to allow any city"
               />
               <TextField
-                label="End Company"
+                label="End Company (leave blank for Any)"
                 value={formData.endCompany}
                 onChange={handleInputChange('endCompany')}
                 fullWidth
-                required
                 placeholder="e.g., Lisette Logistics"
-                helperText="Company at the destination city"
+                helperText="Leave empty to allow any company"
               />
             </Box>
             <Divider />
@@ -604,6 +614,40 @@ const AdminChallenges = () => {
               onChange={handleInputChange('rewards')}
               fullWidth
               placeholder="e.g., Special badge, Discord role, etc."
+            />
+            <FormControl fullWidth>
+              <InputLabel id="difficulty-label">Difficulty</InputLabel>
+              <Select
+                labelId="difficulty-label"
+                value={formData.difficulty}
+                label="Difficulty"
+                onChange={handleInputChange('difficulty')}
+              >
+                <MenuItem value="easy">Easy</MenuItem>
+                <MenuItem value="medium">Medium</MenuItem>
+                <MenuItem value="hard">Hard</MenuItem>
+                <MenuItem value="extreme">Extreme</MenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              label="Max Top Speed (km/h)"
+              type="number"
+              value={formData.maxTopSpeedKmh}
+              onChange={handleInputChange('maxTopSpeedKmh')}
+              fullWidth
+              placeholder="e.g., 110"
+              helperText="Optional. Jobs exceeding this top speed will not qualify"
+              inputProps={{ min: 0 }}
+            />
+            <TextField
+              label="Max Truck Damage (%)"
+              type="number"
+              value={formData.maxTruckDamagePercent}
+              onChange={handleInputChange('maxTruckDamagePercent')}
+              fullWidth
+              placeholder="e.g., 20"
+              helperText="Optional. Jobs exceeding this damage will not qualify"
+              inputProps={{ min: 0, max: 100 }}
             />
             <Divider />
             <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 800 }}>Settings</Typography>
