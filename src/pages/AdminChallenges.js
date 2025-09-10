@@ -77,7 +77,8 @@ const AdminChallenges = () => {
     allowAutoPark: false,
     maxTopSpeedKmh: '',
     maxTruckDamagePercent: '',
-    difficulty: 'medium'
+    difficulty: 'medium',
+    endDate: ''
   });
 
   useEffect(() => {
@@ -105,8 +106,8 @@ const AdminChallenges = () => {
       setError('');
       
       // Validate form data
-      if (!formData.name || !formData.minDistance || !formData.cargo) {
-        setError('Required: name, minDistance, cargo');
+      if (!formData.name || !formData.minDistance || !formData.cargo || !formData.endDate) {
+        setError('Required: name, minDistance, cargo, endDate');
         return;
       }
 
@@ -117,6 +118,13 @@ const AdminChallenges = () => {
 
       if (formData.requiredJobs <= 0) {
         setError('Required jobs must be greater than 0');
+        return;
+      }
+
+      // Validate endDate is in the future
+      const endDateTime = new Date(formData.endDate);
+      if (endDateTime <= new Date()) {
+        setError('End date must be in the future');
         return;
       }
 
@@ -148,8 +156,8 @@ const AdminChallenges = () => {
       setActionLoading(true);
       setError('');
       
-      if (!formData.name || !formData.minDistance || !formData.cargo) {
-        setError('Required: name, minDistance, cargo');
+      if (!formData.name || !formData.minDistance || !formData.cargo || !formData.endDate) {
+        setError('Required: name, minDistance, cargo, endDate');
         return;
       }
 
@@ -160,6 +168,13 @@ const AdminChallenges = () => {
 
       if (formData.requiredJobs <= 0) {
         setError('Required jobs must be greater than 0');
+        return;
+      }
+
+      // Validate endDate is in the future
+      const endDateTime = new Date(formData.endDate);
+      if (endDateTime <= new Date()) {
+        setError('End date must be in the future');
         return;
       }
 
@@ -242,7 +257,8 @@ const AdminChallenges = () => {
       allowAutoPark: Boolean(challenge.allowAutoPark),
       maxTopSpeedKmh: challenge.maxTopSpeedKmh || '',
       maxTruckDamagePercent: challenge.maxTruckDamagePercent || '',
-      difficulty: challenge.difficulty || 'medium'
+      difficulty: challenge.difficulty || 'medium',
+      endDate: challenge.endDate ? new Date(challenge.endDate).toISOString().slice(0, 16) : ''
     });
     setEditDialogOpen(true);
   };
@@ -615,6 +631,20 @@ const AdminChallenges = () => {
               fullWidth
               placeholder="e.g., Special badge, Discord role, etc."
             />
+            
+            <TextField
+              label="End Date & Time (IST)"
+              type="datetime-local"
+              value={formData.endDate}
+              onChange={handleInputChange('endDate')}
+              fullWidth
+              required
+              InputLabelProps={{
+                shrink: true,
+              }}
+              helperText="Challenge will automatically become inactive after this time"
+            />
+            
             <FormControl fullWidth>
               <InputLabel id="difficulty-label">Difficulty</InputLabel>
               <Select

@@ -736,7 +736,7 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
       setSuccess('');
 
       const adminComment = adminComments[requestId] || '';
-      
+
       const response = await axiosInstance.patch(
         `/special-events/${selectedEvent.truckersmpId}/requests/${requestId}/approve`,
         { slotId, admincomment: adminComment }

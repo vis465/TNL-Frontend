@@ -67,6 +67,9 @@ const PublicChallenges = () => {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const [openChallengeId, setOpenChallengeId] = useState(null);
+  const [countdowns, setCountdowns] = useState({});
+  const [firstCompleters, setFirstCompleters] = useState([]);
+  const [firstCompletersLoading, setFirstCompletersLoading] = useState(false);
   
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -74,6 +77,62 @@ const PublicChallenges = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Fetch first completers when tab 1 is selected
+  useEffect(() => {
+    if (activeTab === 1 && firstCompleters.length === 0) {
+      fetchFirstCompleters();
+    }
+  }, [activeTab]);
+
+  // Countdown timer effect
+  useEffect(() => {
+    const updateCountdowns = () => {
+      const now = new Date();
+      const newCountdowns = {};
+      
+      challenges.forEach(challenge => {
+        if (challenge.endDate) {
+          const endTime = new Date(challenge.endDate);
+          const timeLeft = endTime - now;
+          
+          if (timeLeft > 0) {
+            const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+            
+            newCountdowns[challenge._id] = {
+              days,
+              hours,
+              minutes,
+              seconds,
+              total: timeLeft
+            };
+          } else {
+            newCountdowns[challenge._id] = {
+              days: 0,
+              hours: 0,
+              minutes: 0,
+              seconds: 0,
+              total: 0,
+              expired: true
+            };
+          }
+        }
+      });
+      
+      setCountdowns(newCountdowns);
+    };
+
+    // Update immediately
+    updateCountdowns();
+    
+    // Update every second
+    const interval = setInterval(updateCountdowns, 1000);
+    
+    return () => clearInterval(interval);
+  }, [challenges]);
 
   const validateJob = async () => {
     if (!jobId || jobId.trim() === '') {
@@ -115,7 +174,33 @@ const PublicChallenges = () => {
     } catch (error) {
       console.error('Error validating job:', error);
       const serverMsg = error.response?.data?.message;
-      setSnackbarMessage(serverMsg || 'Failed to validate job. Please check the Job ID and selected challenge, then try again.');
+      
+      // Handle specific error cases with user-friendly messages
+      let errorMessage = 'Failed to validate job. Please try again.';
+      
+      if (serverMsg) {
+        if (serverMsg.includes('Job start time must be after challenge creation time')) {
+          errorMessage = 'This job started before the selected challenge was created. Please choose a different job or challenge.';
+        } else if (serverMsg.includes('No valid challenges found')) {
+          errorMessage = 'No challenges are available for this job. The job may have started before any active challenges were created.';
+        } else if (serverMsg.includes('missing job start time')) {
+          errorMessage = 'Invalid job data: Job start time is missing. Please check the Job ID and try again.';
+        } else if (serverMsg.includes('invalid job start time format')) {
+          errorMessage = 'Invalid job data: Job start time format is incorrect. Please check the Job ID and try again.';
+        } else if (serverMsg.includes('already been processed')) {
+          errorMessage = 'This job has already been used for a challenge. Please choose a different job.';
+        } else if (serverMsg.includes('does not meet selected challenge requirements')) {
+          errorMessage = 'This job does not meet the selected challenge requirements. Please check the job details and try a different challenge.';
+        } else if (serverMsg.includes('Selected challenge is not available for this job')) {
+          errorMessage = 'The selected challenge is not available for this job. The job started before this challenge was created. Please choose a different challenge.';
+        } else if (serverMsg.includes('Selected challenge not found')) {
+          errorMessage = 'The selected challenge is no longer available. Please refresh and try again.';
+        } else {
+          errorMessage = serverMsg;
+        }
+      }
+      
+      setSnackbarMessage(errorMessage);
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
     } finally {
@@ -147,7 +232,29 @@ const PublicChallenges = () => {
     } catch (error) {
       console.error('Error applying job to challenge:', error);
       const serverMsg = error.response?.data?.message;
-      setSnackbarMessage(serverMsg || 'Failed to apply job to challenge. Ensure the job meets the selected challenge requirements.');
+      
+      // Handle specific error cases with user-friendly messages
+      let errorMessage = 'Failed to apply job to challenge. Please try again.';
+      
+      if (serverMsg) {
+        if (serverMsg.includes('Job start time must be after challenge creation time')) {
+          errorMessage = 'This job started before the selected challenge was created. Please choose a different job or challenge.';
+        } else if (serverMsg.includes('No valid challenges found')) {
+          errorMessage = 'No challenges are available for this job. The job may have started before any active challenges were created.';
+        } else if (serverMsg.includes('already used for a challenge')) {
+          errorMessage = 'This job has already been used for a challenge. Please choose a different job.';
+        } else if (serverMsg.includes('does not meet selected challenge requirements')) {
+          errorMessage = 'This job does not meet the selected challenge requirements. Please check the job details and try a different challenge.';
+        } else if (serverMsg.includes('Selected challenge is not available for this job')) {
+          errorMessage = 'The selected challenge is not available for this job. The job started before this challenge was created. Please choose a different challenge.';
+        } else if (serverMsg.includes('Selected challenge not found')) {
+          errorMessage = 'The selected challenge is no longer available. Please refresh and try again.';
+        } else {
+          errorMessage = serverMsg;
+        }
+      }
+      
+      setSnackbarMessage(errorMessage);
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
     } finally {
@@ -186,6 +293,19 @@ const PublicChallenges = () => {
       setError('Failed to fetch leaderboard');
     } finally {
       setLeaderboardLoading(false);
+    }
+  };
+
+  const fetchFirstCompleters = async () => {
+    try {
+      setFirstCompletersLoading(true);
+      const response = await axiosInstance.get('/challenges/first-completers');
+      setFirstCompleters(response.data.firstCompleters || []);
+    } catch (error) {
+      console.error('Error fetching first completers:', error);
+      setError('Failed to fetch first completers data');
+    } finally {
+      setFirstCompletersLoading(false);
     }
   };
 
@@ -252,6 +372,14 @@ const PublicChallenges = () => {
             Job Validation
           </Typography>
         </Box>
+        
+        {/* Time Validation Info */}
+        <Alert severity="info" sx={{ mb: 2 }}>
+          <Typography variant="body2">
+            <strong>Note:</strong> Jobs can only be applied to challenges that were created before the job started. 
+            Older jobs cannot be used for newer challenges.
+          </Typography>
+        </Alert>
         <Box sx={{ 
           display: 'flex', 
           gap: 2, 
@@ -489,6 +617,7 @@ const PublicChallenges = () => {
             }}
           >
             <Tab label="Active Challenges" />
+            <Tab label="First Completers" />
             <Tab label="Champions" />
           </Tabs>
         </Paper>
@@ -518,7 +647,7 @@ const PublicChallenges = () => {
                       {challenge.name}
                     </Typography>
                     <p style={{color:'black'}}>Click to read more about the challenge</p>
-                    <Stack direction="row" spacing={1}>
+                    <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', justifyContent: 'center' }}>
                       <Chip label="ACTIVE" color="success" size="medium" sx={{ fontWeight: 700, bgcolor: 'success.light', color: 'success.dark' }} />
                       {challenge.difficulty && (
                         <Chip 
@@ -533,7 +662,272 @@ const PublicChallenges = () => {
                         />
                       )}
                       
+                      {/* Quick countdown status in header */}
+                      {challenge.endDate && countdowns[challenge._id] && (
+                        <Chip 
+                          label={
+                            countdowns[challenge._id].expired 
+                              ? "EXPIRED" 
+                              : countdowns[challenge._id].total < 60 * 60 * 1000 
+                                ? `${Math.floor(countdowns[challenge._id].total / (60 * 1000))}m LEFT`
+                                : countdowns[challenge._id].total < 24 * 60 * 60 * 1000
+                                  ? `${Math.floor(countdowns[challenge._id].total / (60 * 60 * 1000))}h LEFT`
+                                  : `${countdowns[challenge._id].days}d LEFT`
+                          }
+                          size="medium"
+                          sx={{ 
+                            fontWeight: 600,
+                            background: countdowns[challenge._id].expired 
+                              ? 'linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%)'
+                              : countdowns[challenge._id].total < 60 * 60 * 1000
+                                ? 'linear-gradient(135deg, #ff9a56 0%, #ff6b6b 100%)'
+                                : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            color: 'white',
+                            boxShadow: countdowns[challenge._id].expired 
+                              ? '0 4px 16px rgba(255, 107, 107, 0.3)'
+                              : countdowns[challenge._id].total < 60 * 60 * 1000
+                                ? '0 4px 16px rgba(255, 154, 86, 0.3)'
+                                : '0 4px 16px rgba(102, 126, 234, 0.3)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            backdropFilter: 'blur(10px)',
+                            animation: countdowns[challenge._id].total < 60 * 1000 && !countdowns[challenge._id].expired 
+                              ? 'pulse 1s infinite' 
+                              : 'none',
+                            '@keyframes pulse': {
+                              '0%': { transform: 'scale(1)' },
+                              '50%': { transform: 'scale(1.05)' },
+                              '100%': { transform: 'scale(1)' }
+                            }
+                          }}
+                        />
+                      )}
                     </Stack>
+                    
+                    {/* Countdown Timer */}
+                    {challenge.endDate && countdowns[challenge._id] && (
+                      <Box sx={{ 
+                        mt: 3, 
+                        textAlign: 'center',
+                        position: 'relative'
+                      }}>
+                        {countdowns[challenge._id].expired ? (
+                          <Box sx={{
+                            p: 3,
+                            borderRadius: 3,
+                            background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%)',
+                            color: 'white',
+                            boxShadow: '0 8px 32px rgba(255, 107, 107, 0.3)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            backdropFilter: 'blur(10px)'
+                          }}>
+                            <Box sx={{ mb: 2 }}>
+                              <Typography variant="h5" sx={{ 
+                                fontWeight: 700, 
+                                mb: 1,
+                                textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                              }}>
+                                Challenge Expired
+                              </Typography>
+                              <Typography variant="body2" sx={{ 
+                                opacity: 0.9,
+                                fontWeight: 500
+                              }}>
+                                No longer accepting submissions
+                              </Typography>
+                            </Box>
+                          </Box>
+                        ) : (
+                          <Box sx={{
+                            p: 3,
+                            borderRadius: 3,
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            color: 'white',
+                            boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            backdropFilter: 'blur(10px)',
+                            position: 'relative',
+                            overflow: 'hidden'
+                          }}>
+                            {/* Animated background */}
+                            <Box sx={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
+                              background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%)',
+                              animation: 'shimmer 3s infinite',
+                              '@keyframes shimmer': {
+                                '0%': { transform: 'translateX(-100%)' },
+                                '100%': { transform: 'translateX(100%)' }
+                              }
+                            }} />
+                            
+                            <Box sx={{ position: 'relative', zIndex: 1 }}>
+                              <Typography variant="h6" sx={{ 
+                                fontWeight: 600, 
+                                mb: 2,
+                                textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                                letterSpacing: '0.5px'
+                              }}>
+                                Time Remaining
+                              </Typography>
+                              
+                              <Stack direction="row" spacing={2} justifyContent="center" sx={{ flexWrap: 'wrap' }}>
+                                {countdowns[challenge._id].days > 0 && (
+                                  <Box sx={{ 
+                                    textAlign: 'center',
+                                    minWidth: 80,
+                                    p: 1.5,
+                                    borderRadius: 2,
+                                    background: 'rgba(255, 255, 255, 0.15)',
+                                    backdropFilter: 'blur(10px)',
+                                    border: '1px solid rgba(255, 255, 255, 0.2)'
+                                  }}>
+                                    <Typography variant="h3" sx={{ 
+                                      fontWeight: 800, 
+                                      lineHeight: 1,
+                                      fontFamily: '"Roboto Mono", monospace',
+                                      textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                                      mb: 0.5
+                                    }}>
+                                      {countdowns[challenge._id].days.toString().padStart(2, '0')}
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ 
+                                      fontWeight: 600,
+                                      textTransform: 'uppercase',
+                                      letterSpacing: '1px',
+                                      opacity: 0.9
+                                    }}>
+                                      Days
+                                    </Typography>
+                                  </Box>
+                                )}
+                                
+                                <Box sx={{ 
+                                  textAlign: 'center',
+                                  minWidth: 80,
+                                  p: 1.5,
+                                  borderRadius: 2,
+                                  background: 'rgba(255, 255, 255, 0.15)',
+                                  backdropFilter: 'blur(10px)',
+                                  border: '1px solid rgba(255, 255, 255, 0.2)'
+                                }}>
+                                  <Typography variant="h3" sx={{ 
+                                    fontWeight: 800, 
+                                    lineHeight: 1,
+                                    fontFamily: '"Roboto Mono", monospace',
+                                    textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                                    mb: 0.5
+                                  }}>
+                                    {countdowns[challenge._id].hours.toString().padStart(2, '0')}
+                                  </Typography>
+                                  <Typography variant="caption" sx={{ 
+                                    fontWeight: 600,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '1px',
+                                    opacity: 0.9
+                                  }}>
+                                    Hours
+                                  </Typography>
+                                </Box>
+                                
+                                <Box sx={{ 
+                                  textAlign: 'center',
+                                  minWidth: 80,
+                                  p: 1.5,
+                                  borderRadius: 2,
+                                  background: 'rgba(255, 255, 255, 0.15)',
+                                  backdropFilter: 'blur(10px)',
+                                  border: '1px solid rgba(255, 255, 255, 0.2)'
+                                }}>
+                                  <Typography variant="h3" sx={{ 
+                                    fontWeight: 800, 
+                                    lineHeight: 1,
+                                    fontFamily: '"Roboto Mono", monospace',
+                                    textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                                    mb: 0.5
+                                  }}>
+                                    {countdowns[challenge._id].minutes.toString().padStart(2, '0')}
+                                  </Typography>
+                                  <Typography variant="caption" sx={{ 
+                                    fontWeight: 600,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '1px',
+                                    opacity: 0.9
+                                  }}>
+                                    Minutes
+                                  </Typography>
+                                </Box>
+                                
+                                <Box sx={{ 
+                                  textAlign: 'center',
+                                  minWidth: 80,
+                                  p: 1.5,
+                                  borderRadius: 2,
+                                  background: 'rgba(255, 255, 255, 0.15)',
+                                  backdropFilter: 'blur(10px)',
+                                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                                  animation: countdowns[challenge._id].total < 60 * 1000 ? 'pulse 1s infinite' : 'none',
+                                  '@keyframes pulse': {
+                                    '0%': { transform: 'scale(1)' },
+                                    '50%': { transform: 'scale(1.05)' },
+                                    '100%': { transform: 'scale(1)' }
+                                  }
+                                }}>
+                                  <Typography variant="h3" sx={{ 
+                                    fontWeight: 800, 
+                                    lineHeight: 1,
+                                    fontFamily: '"Roboto Mono", monospace',
+                                    textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                                    mb: 0.5
+                                  }}>
+                                    {countdowns[challenge._id].seconds.toString().padStart(2, '0')}
+                                  </Typography>
+                                  <Typography variant="caption" sx={{ 
+                                    fontWeight: 600,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '1px',
+                                    opacity: 0.9
+                                  }}>
+                                    Seconds
+                                  </Typography>
+                                </Box>
+                              </Stack>
+                              
+                              {/* Elegant progress indicator */}
+                              {countdowns[challenge._id].total < 24 * 60 * 60 * 1000 && (
+                                <Box sx={{ mt: 3 }}>
+                                  <Box sx={{
+                                    height: 4,
+                                    borderRadius: 2,
+                                    background: 'rgba(255, 255, 255, 0.2)',
+                                    overflow: 'hidden',
+                                    position: 'relative'
+                                  }}>
+                                    <Box sx={{
+                                      height: '100%',
+                                      width: `${(countdowns[challenge._id].total / (24 * 60 * 60 * 1000)) * 100}%`,
+                                      background: 'linear-gradient(90deg, #ff6b6b 0%, #ff8e8e 100%)',
+                                      borderRadius: 2,
+                                      transition: 'width 1s ease-in-out'
+                                    }} />
+                                  </Box>
+                                  <Typography variant="caption" sx={{ 
+                                    mt: 1,
+                                    display: 'block',
+                                    fontWeight: 500,
+                                    opacity: 0.9
+                                  }}>
+                                    Less than 24 hours remaining
+                                  </Typography>
+                                </Box>
+                              )}
+                            </Box>
+                          </Box>
+                        )}
+                      </Box>
+                    )}
                   </Box>
                 </Box>
 
@@ -628,7 +1022,7 @@ const PublicChallenges = () => {
       )}
 
       {/* Champions Tab */}
-      {activeTab === 1 && (
+      {activeTab === 2 && (
         <Box>
           <Paper sx={{ borderRadius: 2, overflow: 'hidden', mb: 2 }}>
             <Box sx={{ p: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: (theme) => theme.palette.background.paper, borderBottom: 1, borderColor: 'divider' }}>
@@ -763,7 +1157,7 @@ const PublicChallenges = () => {
         </Paper>
       )}
 
-      {champions.length === 0 && activeTab === 1 && (
+      {champions.length === 0 && activeTab === 2 && (
         <Paper sx={{ p: 4, textAlign: 'center' }}>
           <Typography variant="h6" color="text.secondary" gutterBottom>
             No champions yet
@@ -772,6 +1166,182 @@ const PublicChallenges = () => {
             Complete some challenges to appear on the leaderboard!
           </Typography>
         </Paper>
+      )}
+
+      {/* First Completers Tab */}
+      {activeTab === 1 && (
+        <Box>
+          <Paper sx={{ borderRadius: 2, overflow: 'hidden', mb: 2 }}>
+            <Box sx={{ p: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: (theme) => theme.palette.background.paper, borderBottom: 1, borderColor: 'divider' }}>
+              <Box>
+                <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+                  <EmojiEventsIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                  First Completers
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Drivers who completed each challenge first
+                </Typography>
+                {firstCompleters.length > 0 && (
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                    Showing {firstCompleters.length} first completers from all challenges
+                  </Typography>
+                )}
+              </Box>
+              <Button
+                variant="outlined"
+                startIcon={<RefreshIcon />}
+                onClick={fetchFirstCompleters}
+                disabled={firstCompletersLoading}
+                size="small"
+              >
+                {firstCompletersLoading ? 'Loading...' : 'Refresh'}
+              </Button>
+            </Box>
+          </Paper>
+
+          {firstCompletersLoading ? (
+            <Box display="flex" justifyContent="center" p={4}>
+              <CircularProgress />
+            </Box>
+          ) : firstCompleters.length > 0 ? (
+            <Grid container spacing={2}>
+              {firstCompleters.map((challenge, index) => (
+                <Grid item xs={12} key={challenge.challengeId}>
+                  <Card sx={{ 
+                    borderRadius: 3, 
+                    overflow: 'hidden',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)'
+                  }}>
+                    <CardContent sx={{ p: 3 }}>
+                      {/* Challenge Header */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+                        <Box>
+                          <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
+                            🏆 {challenge.challengeName}
+                          </Typography>
+                          <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                            <Chip 
+                              label={challenge.challengeDifficulty?.toUpperCase() || 'MEDIUM'}
+                              size="small"
+                              sx={{ 
+                                fontWeight: 600,
+                                bgcolor: 'rgba(255, 255, 255, 0.2)',
+                                color: 'white',
+                                border: '1px solid rgba(255, 255, 255, 0.3)'
+                              }}
+                            />
+                            <Chip 
+                              label={`${challenge.totalCompleters} Total Completers`}
+                              size="small"
+                              sx={{ 
+                                fontWeight: 600,
+                                bgcolor: 'rgba(255, 255, 255, 0.2)',
+                                color: 'white',
+                                border: '1px solid rgba(255, 255, 255, 0.3)'
+                              }}
+                            />
+                            <Chip 
+                              label={challenge.challengeStatus === 'active' ? '🟢 Active' : '🔴 Completed'}
+                              size="small"
+                              sx={{ 
+                                fontWeight: 600,
+                                bgcolor: 'rgba(255, 255, 255, 0.2)',
+                                color: 'white',
+                                border: '1px solid rgba(255, 255, 255, 0.3)'
+                              }}
+                            />
+                          </Box>
+                        </Box>
+                        <Box sx={{ textAlign: 'right' }}>
+                          <Typography variant="h4" sx={{ fontWeight: 800, fontFamily: 'monospace' }}>
+                            #{index + 1}
+                          </Typography>
+                          <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                            Challenge
+                          </Typography>
+                        </Box>
+                      </Box>
+                      
+                      {/* Top 3 Completers */}
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {challenge.completers.map((completer, completerIndex) => (
+                          <Box key={completer.driverId} sx={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center',
+                            p: 2,
+                            borderRadius: 2,
+                            bgcolor: completerIndex === 0 ? 'rgba(255, 215, 0, 0.2)' : 'rgba(255, 255, 255, 0.1)',
+                            backdropFilter: 'blur(10px)',
+                            border: completerIndex === 0 ? '2px solid rgba(255, 215, 0, 0.5)' : '1px solid rgba(255, 255, 255, 0.2)',
+                            position: 'relative'
+                          }}>
+                            {/* Position Badge */}
+                            <Box sx={{ 
+                              position: 'absolute', 
+                              top: -8, 
+                              left: 16,
+                              bgcolor: completerIndex === 0 ? '#FFD700' : completerIndex === 1 ? '#C0C0C0' : '#CD7F32',
+                              color: 'white',
+                              borderRadius: '50%',
+                              width: 32,
+                              height: 32,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: 800,
+                              fontSize: '0.9rem',
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+                            }}>
+                              {completer.position}
+                            </Box>
+                            
+                            <Box sx={{ flex: 1, ml: 4 }}>
+                              <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
+                                {completer.driverUsername}
+                              </Typography>
+                              <Typography variant="body2" sx={{ opacity: 0.9, mb: 0.5 }}>
+                                Driver ID: {completer.driverId}
+                              </Typography>
+                              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                                Distance: {Math.round(completer.totalDistance || 0)} km • {completer.completedJobs} jobs
+                              </Typography>
+                            </Box>
+                            
+                            <Box sx={{ textAlign: 'right' }}>
+                              <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                                Completed in
+                              </Typography>
+                              <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: 'monospace' }}>
+                                {completer.daysToComplete > 0 ? `${completer.daysToComplete} days` : 
+                                 completer.hoursToComplete > 0 ? `${completer.hoursToComplete} hours` : 'Same day'}
+                              </Typography>
+                              <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>
+                                {completer.completionTime ? new Date(completer.completionTime).toLocaleDateString() : 'Unknown'}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        ))}
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          ) : (
+            <Paper sx={{ p: 4, textAlign: 'center' }}>
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No first completers yet
+              </Typography>
+              <Typography variant="body2" color="text.secondary" paragraph>
+                Complete challenges to see who finished first!
+              </Typography>
+            </Paper>
+          )}
+        </Box>
       )}
 
       {/* Leaderboard Dialog */}
