@@ -258,7 +258,7 @@ const AdminChallenges = () => {
       maxTopSpeedKmh: challenge.maxTopSpeedKmh || '',
       maxTruckDamagePercent: challenge.maxTruckDamagePercent || '',
       difficulty: challenge.difficulty || 'medium',
-      endDate: challenge.endDate ? new Date(challenge.endDate).toISOString().slice(0, 16) : ''
+      endDate: challenge.endDateIST || ''
     });
     setEditDialogOpen(true);
   };
@@ -421,6 +421,13 @@ const AdminChallenges = () => {
                     <Box sx={{ p: 1.5, borderRadius: 2, border: '1px dashed', borderColor: 'divider' }}>
                       <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 800 }}>Cargo</Typography>
                       <Typography variant="body1" sx={{ fontWeight: 700 }}>{challenge.cargo}</Typography>
+                    </Box>
+                  </Grid>
+                  
+                  <Grid item xs={12}>
+                    <Box sx={{ p: 1.5, borderRadius: 2, border: '1px dashed', borderColor: 'divider' }}>
+                      <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 800 }}>End Date (IST)</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 700 }}>{challenge.endDateFormatted || 'Not set'}</Typography>
                     </Box>
                   </Grid>
                 </Grid>

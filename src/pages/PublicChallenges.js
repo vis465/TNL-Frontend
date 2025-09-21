@@ -583,10 +583,7 @@ const PublicChallenges = () => {
                   <Typography variant="body1" fontWeight="bold" gutterBottom>
                     No challenges matched this time
                   </Typography>
-                  <Typography variant="body2">
-                    Your job was processed successfully, but it didn't match any active challenge criteria. 
-                    This could be due to route, distance, or cargo requirements. Keep driving - more challenges await! 🚛
-                  </Typography>
+                 
                 </Alert>
               )}
             </Paper>
