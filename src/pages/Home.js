@@ -18,12 +18,14 @@ import {
   useTheme,
   Paper,
   alpha,
+  Divider,
 } from '@mui/material';
 import { format, isPast, isFuture, isWithinInterval, addHours } from 'date-fns';
 import axiosInstance from '../utils/axios';
 import Marquee from "react-fast-marquee";
 import placeholderimage from "../img/placeholder.jpg"
 import { styled, keyframes } from '@mui/material/styles';
+import RouteIcon from '@mui/icons-material/Route';
 
 // Animation keyframes
 const fadeIn = keyframes`
@@ -280,6 +282,7 @@ const formatDateTime = (date) => {
 };
 const Home = () => {
   const [events, setEvents] = useState([]);
+  const [specialEvents, setSpecialEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState(0);
@@ -287,6 +290,7 @@ const Home = () => {
 
   useEffect(() => {
     fetchEvents();
+    fetchSpecialEvents();
   }, []);
 
   const fetchEvents = async () => {
@@ -294,7 +298,7 @@ const Home = () => {
       
       const response = await axiosInstance.get('/events');
       const eventsData = response.data.response || response.data;
-      console.log(eventsData)
+      console.log("eventsData",eventsData)
       
       
       if (!Array.isArray(eventsData)) {
@@ -311,6 +315,23 @@ const Home = () => {
       setError('Error fetching events. Please try again later.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSpecialEvents = async () => {
+    try {
+      console.log('Fetching special events from Home page...');
+      const response = await axiosInstance.get('/special-events');
+      
+      
+      // Ensure we have an array of events
+      const eventsData =  response.data
+      console.log('Processed special events data:', eventsData);
+      setSpecialEvents(eventsData);
+    } catch (specialError) {
+      console.warn('Failed to fetch special events in Home:', specialError);
+      console.warn('Special events error details:', specialError.response?.data);
+      setSpecialEvents([]);
     }
   };
 
@@ -512,6 +533,277 @@ const Home = () => {
         <PageTitle variant="h3" component="h1" gutterBottom>
           Convoys
         </PageTitle>
+        
+        {/* Special Events Section */}
+        {specialEvents?.length > 0 && (
+  <>
+    <Box sx={{ mb: 4 }}>
+      <Typography variant="h4" component="h2" gutterBottom sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: 1,
+        color: '#F57C00', // Deep orange-yellow
+        fontFamily: "'Montserrat', sans-serif",
+        fontWeight: 700,
+        textShadow: '0 2px 4px rgba(245, 124, 0, 0.2)'
+      }}>
+        <RouteIcon sx={{ color: '#FFD700', fontSize: 28 }} />
+        Special Events
+      </Typography>
+      <Typography variant="body1" color="text.secondary" sx={{ 
+        mb: 3, 
+        fontFamily: "'Montserrat', sans-serif",
+        fontSize: '1.1rem',
+        fontWeight: 500
+      }}>
+        Request-based slot allocation events
+      </Typography>
+      
+      <Stack spacing={3}>
+        {specialEvents.map((event) => (
+          <StyledCard 
+            key={event._id} 
+            sx={{ 
+              display: 'flex',
+              flexDirection: 'column',
+              minHeight: 220,
+              border: '3px solid',
+              borderColor: '#FFD700', // Gold border
+              borderRadius: 3,
+              overflow: 'hidden',
+              position: 'relative',
+              backgroundImage: event.banner && event.banner.length > 1 
+                ? `url(${event.banner})` 
+                : `url(${placeholderimage})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backdropFilter: 'blur(8px)',
+                backgroundColor: theme.palette.mode === 'dark' 
+                  ? 'rgba(0, 0, 0, 0.6)'
+                  : 'rgba(255, 255, 255, 0.85)',
+                zIndex: 1
+              },
+              '&::after': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: '4px',
+                background: 'linear-gradient(90deg, #FFD700 0%, #FFC107 50%, #FF9800 100%)',
+                zIndex: 3
+              },
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: '0 12px 40px rgba(255, 215, 0, 0.3)',
+                borderColor: '#FFC107',
+                '&::before': {
+                  backdropFilter: 'blur(6px)',
+                  backgroundColor: theme.palette.mode === 'dark' 
+                    ? 'rgba(0, 0, 0, 0.5)'
+                    : 'rgba(255, 255, 255, 0.8)',
+                }
+              },
+              transition: 'all 0.3s ease-in-out'
+            }}
+          >
+            {/* Special Badge Overlay */}
+            <Box sx={{
+              position: 'absolute',
+              top: 16,
+              right: 16,
+              background: 'linear-gradient(45deg, #FFD700 0%, #FFC107 100%)',
+              borderRadius: '20px',
+              px: 2,
+              py: 0.5,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+              zIndex: 4
+            }}>
+              <Typography variant="caption" sx={{ 
+                color: '#1A1A1A',
+                fontWeight: 700,
+                fontSize: '0.75rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px'
+              }}>
+                ⭐ SPECIAL
+              </Typography>
+            </Box>
+
+            {/* Content Section */}
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              flex: 1,
+              p: 3,
+              position: 'relative',
+              zIndex: 2
+            }}>
+              {/* Header */}
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="h5" component="h5" sx={{
+                  fontFamily: "'Montserrat', sans-serif",
+                  fontWeight: 700,
+                  color: theme.palette.mode === 'dark' ? '#FFD700' : '#E65100',
+                  mb: 1,
+                  fontSize: { xs: '1.3rem', md: '1.5rem' }
+                }}>
+                  {event.title}
+                </Typography>
+                
+                <Typography variant="body2" color="text.secondary" sx={{
+                  lineHeight: 1.6,
+                  mb: 2
+                }}>
+                  {event.description.slice(0, 100)}...
+                </Typography>
+              </Box>
+
+              {/* Event Details */}
+              <Box sx={{ 
+                display: 'flex', 
+                flexDirection: { xs: 'column', sm: 'row' },
+                gap: 2,
+                mb: 2,
+                flex: 1
+              }}>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="body2" sx={{ 
+                    mb: 0.5,
+                    color: theme.palette.mode === 'dark' ? '#FFF8E1' : '#5D4037'
+                  }}>
+                    <Box component="span" sx={{ fontWeight: 600, color: '#F57C00' }}>
+                      🖥️ Server:
+                    </Box> {event.server || 'Not specified'}
+                  </Typography>
+                  
+                  <Typography variant="body2" sx={{ 
+                    mb: 0.5,
+                    color: theme.palette.mode === 'dark' ? '#FFF8E1' : '#5D4037'
+                  }}>
+                    <Box component="span" sx={{ fontWeight: 600, color: '#F57C00' }}>
+                      🕐 Meetup:
+                    </Box> {event.startDate ? format(new Date(event.startDate), "dd-MMM-yyyy HH:mm") : 'Not specified'} UTC
+                  </Typography>
+                  
+                  <Typography variant="body2" sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#FFF8E1' : '#5D4037'
+                  }}>
+                    <Box component="span" sx={{ fontWeight: 600, color: '#F57C00' }}>
+                      🚚 Departure:
+                    </Box> {event.endtime ? format(new Date(event.endtime), "dd-MMM-yyyy HH:mm") : 'Not specified'} UTC
+                  </Typography>
+                </Box>
+
+                {/* Status & Routes Info */}
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 120 }}>
+                  <Chip
+                    label={event.status || 'Unknown'}
+                    color={getStatusColor(event.status)}
+                    size="small"
+                    sx={{ 
+                      fontWeight: 600,
+                      '& .MuiChip-label': {
+                        fontSize: '0.75rem'
+                      }
+                    }}
+                  />
+                  <Chip
+                    label={`${event.routes?.length || 0} Routes`}
+                    size="small"
+                    icon={<RouteIcon sx={{ fontSize: '16px !important' }} />}
+                    sx={{ 
+                      backgroundColor: '#FFE082',
+                      color: '#E65100',
+                      fontWeight: 600,
+                      '& .MuiChip-label': {
+                        fontSize: '0.75rem'
+                      }
+                    }}
+                  />
+                </Box>
+              </Box>
+
+              {/* Action Buttons */}
+              <Box sx={{ 
+                display: 'flex', 
+                gap: 1.5, 
+                mt: 'auto',
+                flexWrap: 'wrap'
+              }}>
+                <Button
+                  variant="contained"
+                  href={`/special-events/${event.truckersmpId}`}
+                  sx={{
+                    background: 'linear-gradient(45deg, #FFD700 0%, #FFC107 100%)',
+                    color: '#1A1A1A',
+                    fontWeight: 700,
+                    px: 3,
+                    py: 1,
+                    borderRadius: 2,
+                    textTransform: 'none',
+                    fontSize: '0.9rem',
+                    boxShadow: '0 4px 14px rgba(255, 215, 0, 0.4)',
+                    '&:hover': {
+                      background: 'linear-gradient(45deg, #FFC107 0%, #FF9800 100%)',
+                      boxShadow: '0 6px 20px rgba(255, 215, 0, 0.6)',
+                      transform: 'translateY(-1px)'
+                    }
+                  }}
+                >
+                  📋 View Details
+                </Button>
+                
+                {event.externalLink && (
+                  <Button
+                    variant="outlined"
+                    href={`https://www.TruckersMP.com/events/${event.truckersmpId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{
+                      borderColor: '#FFD700',
+                      color: theme.palette.mode === 'dark' ? '#FFD700' : '#F57C00',
+                      fontWeight: 600,
+                      px: 3,
+                      py: 1,
+                      borderRadius: 2,
+                      borderWidth: 2,
+                      textTransform: 'none',
+                      fontSize: '0.9rem',
+                      '&:hover': {
+                        borderColor: '#FFC107',
+                        backgroundColor: 'rgba(255, 215, 0, 0.1)',
+                        borderWidth: 2
+                      }
+                    }}
+                  >
+                    🌐 TruckersMP
+                  </Button>
+                )}
+              </Box>
+            </Box>
+          </StyledCard>
+        ))}
+      </Stack>
+    </Box>
+    
+    <Divider sx={{ 
+      my: 4, 
+      borderColor: '#FFD700',
+      '&::before, &::after': {
+        borderColor: '#FFD700'
+      }
+    }} />
+  </>
+)}
         
         <StyledTabs value={activeTab} onChange={handleTabChange}>
           <Tab label={`Upcoming (${upcoming.length})`} />

@@ -50,6 +50,7 @@ import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import GroupsIcon from "@mui/icons-material/Groups";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import AddIcon from "@mui/icons-material/Add";
+import LabelIcon from "@mui/icons-material/Label";
 import { format, addHours } from "date-fns";
 import axiosInstance from "../utils/axios";
 import ReactMarkdown from "react-markdown";
@@ -58,6 +59,7 @@ import RequestSlotDialog from "../components/RequestSlotDialog";
 import BookedSlots from "../components/BookedSlots";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+
 const EventDetails = () => {
   const { id } = useParams();
   const { user } = useAuth();
@@ -107,7 +109,8 @@ const EventDetails = () => {
           : [];
 
         setEvent(eventResponse.data);
-        console.log(eventResponse.data);
+        console.log("slotsResponse",slotsResponse.data);
+        console.log(eventResponse.data)
         setSlots(processedSlots);
       } catch (error) {
         console.error("Error details:", error);
@@ -121,6 +124,7 @@ const EventDetails = () => {
 
     fetchData();
   }, [id]);
+
   let freeslots = 0;
   slots.map((slot) => {
     const internal = slot.slots;
@@ -130,11 +134,13 @@ const EventDetails = () => {
         : (freeslots = freeslots + 0);
     });
   });
+
   const handleSlotImageChange = (event) => {
     const files = Array.from(event.target.files);
     setSlotImages(files);
     setSlotDescriptions(new Array(files.length).fill(""));
   };
+
   const markdownStyles = {
     paragraph: {
       color: "#333",
@@ -153,6 +159,7 @@ const EventDetails = () => {
       textDecoration: "underline",
     },
   };
+
   const handleDescriptionChange = (index, value) => {
     const newDescriptions = [...slotDescriptions];
     newDescriptions[index] = value;
@@ -306,7 +313,7 @@ const EventDetails = () => {
     <Box sx={{ bgcolor: "background.default", minHeight: "100vh" }}>
       {/* Hero Section */}
       <Box sx={{ position: "relative", mb: 6 }}>
-        {event.banner > 1 && (
+        {event.banner.length > 1 && (
           <Box
             sx={{
               position: "relative",
@@ -340,7 +347,7 @@ const EventDetails = () => {
               }}
             >
               <Container maxWidth="lg">
-                <Typography
+                {/* <Typography
                   variant="h2"
                   component="h1"
                   sx={{
@@ -352,7 +359,7 @@ const EventDetails = () => {
                   }}
                 >
                   {event.title}
-                </Typography>
+                </Typography> */}
                 <Stack
                   direction="row"
                   spacing={2}
@@ -436,7 +443,7 @@ const EventDetails = () => {
         )}
       </Box>
       <Box sx={{ position: "relative", mb: 6 }}>
-        {event.banner < 1 && (
+        {event.banner.length < 1 && (
           <Box
             sx={{
               position: "relative",
@@ -892,7 +899,50 @@ const EventDetails = () => {
                             <Typography variant="p">
                               Click on the image to view{" "}
                             </Typography>
-                            <Box sx={{ mb: 2, mt: 3 }}>
+                            
+                            {/* Display Slot Name */}
+                            {slot.slots && slot.slots.length > 0 && slot.slots[0].name && (
+                              <Box sx={{ mb: 2, mt: 2 }}>
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                                  <LabelIcon color="primary" fontSize="small" />
+                                  <Typography variant="subtitle2" fontWeight={600}>
+                                    Slot Location:
+                                  </Typography>
+                                </Box>
+                                <Chip
+                                  label={slot.slots[0].name}
+                                  color="info"
+                                  variant="outlined"
+                                  sx={{
+                                    fontWeight: 500,
+                                    fontSize: "0.875rem",
+                                  }}
+                                />
+                              </Box>
+                            )}
+
+                            {/* Display Min Players Requirement */}
+                            {slot.slots && slot.slots.length > 0 && slot.slots[0].minnumber && (
+                              <Box sx={{ mb: 2 }}>
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                                  <GroupsIcon color="secondary" fontSize="small" />
+                                  <Typography variant="subtitle2" fontWeight={600}>
+                                    Min Players Required:
+                                  </Typography>
+                                </Box>
+                                <Chip
+                                  label={`${slot.slots[0].minnumber} players minimum`}
+                                  color="secondary"
+                                  variant="outlined"
+                                  sx={{
+                                    fontWeight: 500,
+                                    fontSize: "0.875rem",
+                                  }}
+                                />
+                              </Box>
+                            )}
+
+                            <Box sx={{ mb: 2 }}>
                               <Chip
                                 label={`${
                                   slot.slots.filter((s) => s.isAvailable).length
@@ -1431,8 +1481,7 @@ const EventDetails = () => {
           </Button>
         </DialogActions>
       </Dialog>
-
-      <RequestSlotDialog
+{requestSlotOpen&&<RequestSlotDialog
         open={requestSlotOpen}
         onClose={(success) => {
           setRequestSlotOpen(false);
@@ -1446,7 +1495,8 @@ const EventDetails = () => {
           // Refresh slots data after successful submission
           window.location.reload();
         }}
-      />
+      />}
+      
     </Box>
   );
 };

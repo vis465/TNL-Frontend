@@ -15,7 +15,7 @@ import axiosInstance from '../utils/axios';
 
 const Login = () => {
   const [formData, setFormData] = useState({
-    username: '',
+    identifier: '',
     password: '',
   });
   const [error, setError] = useState('');
@@ -33,11 +33,11 @@ const Login = () => {
     e.preventDefault();
     setError('');
     try {
-      console.log('Attempting login with:', { username: formData.username });
-      const response = await axiosInstance.post('/auth/login', {
-        username: formData.username,
-        password: formData.password
-      });
+      console.log('Attempting login with:', { identifier: formData.identifier });
+      const payload = formData.identifier.includes('@')
+        ? { email: formData.identifier, password: formData.password }
+        : { username: formData.identifier, password: formData.password };
+      const response = await axiosInstance.post('/auth/login', payload);
 
       console.log('Login response:', response.data);
       const { token, user } = response.data;
@@ -73,9 +73,9 @@ const Login = () => {
           <form onSubmit={handleSubmit}>
             <TextField
               fullWidth
-              label="Username"
-              name="username"
-              value={formData.username}
+              label="Email or Username"
+              name="identifier"
+              value={formData.identifier}
               onChange={handleChange}
               margin="normal"
               required

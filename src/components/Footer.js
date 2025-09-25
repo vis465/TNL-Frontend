@@ -91,10 +91,10 @@ const Footer = () => {
     <StyledFooter>
       <Column>
         <Typography variant="h5" fontWeight={500} gutterBottom>
-          TNL Booking
+          Tamilnadu Logistics
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Made with <span style={{ color: '#BA6573' }}>❤</span> by TNL Team
+          Made with <span style={{ color: 'yellow' }}>❤</span> by TNL Team
         </Typography>
         <SocialContainer>
           <IconButton component="a" href="https://www.youtube.com/channel/UCKkTkfbfe9R05ac34rRVWww" target="blank" className="link">
@@ -113,16 +113,16 @@ const Footer = () => {
       </Column>
 
       <Column sx={{ backgroundColor: '#121212', borderRadius: '1rem' }}>
-        <Typography component="a" href="https://www.tamilnadulogistics.in/Driver" style={{ color: 'inherit', textDecoration: 'none' }}>
+        <Typography component="a" href="/apply" style={{ color: 'inherit', textDecoration: 'none' }}>
           Apply as a Rider
         </Typography>
         <Typography component="a" href="https://www.truckersmp.com/vtc/70030" style={{ color: 'inherit', textDecoration: 'none' }}>
           Visit Truckers MP
         </Typography>
-        <Typography component="a" href="https://www.tamilnadulogistics.in/terms-of-service" style={{ color: 'inherit', textDecoration: 'none' }}>
+        <Typography component="a" href="/terms" style={{ color: 'inherit', textDecoration: 'none' }}>
           Terms of service
         </Typography>
-        <Typography component="a" href="https://www.tamilnadulogistics.in/privacy-policy" style={{ color: 'inherit', textDecoration: 'none' }}>
+        <Typography component="a" href="/privacy-policy" style={{ color: 'inherit', textDecoration: 'none' }}>
           privacy policy
         </Typography>
       </Column>

@@ -10,9 +10,7 @@ import {
   Menu,
   MenuItem,
   useTheme,
-  alpha,
   Container,
-  Badge,
   Avatar,
   Tooltip,
   Fade,
@@ -21,22 +19,26 @@ import {
   AccountCircle, 
   Dashboard, 
   DirectionsCar, 
-   
   Logout, 
   PersonAdd,
+  People as PeopleIcon,
   Speed,
   Notifications,
   FireTruckOutlined,
   Brightness4,
   Brightness7,
-  EventIcon,
+  
   Event,
   AdminPanelSettings,
+  MenuIcon,
+  Menu as MenuMui,
 } from '@mui/icons-material';
+import EventIcon from '@mui/icons-material/Event';
 import { useAuth } from '../contexts/AuthContext';
 import { styled, keyframes } from '@mui/material/styles';
 import { ThemeContext } from '../App';
 import logo from '../img/tnllogo.jpg';
+
 // Animation keyframes
 const pulse = keyframes`
   0% {
@@ -144,6 +146,7 @@ const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
+  const [mobileMenuAnchor, setMobileMenuAnchor] = useState(null);
   const [scrolled, setScrolled] = useState(false);
   const theme = useTheme();
   const { isDarkMode, toggleTheme } = useContext(ThemeContext);
@@ -166,17 +169,64 @@ const Navbar = () => {
     setAnchorEl(event.currentTarget);
   };
 
+  const handleMobileMenu = (event) => {
+    setMobileMenuAnchor(event.currentTarget);
+  };
+
   const handleClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleMobileClose = () => {
+    setMobileMenuAnchor(null);
   };
 
   const handleLogout = () => {
     logout();
     handleClose();
+    handleMobileClose();
     navigate('/login');
   };
 
-  const isAdmin = user?.role === 'admin' || user?.role === 'eventteam';
+  const isAdmin = user?.role === 'admin';
+  const isHR = user?.role === 'hrteam' || user?.role === 'admin';
+
+  // Navigation items based on user role
+  const getNavItems = () => {
+    if (isAdmin) {
+      return [
+        { label: 'Admin', path: '/admin', icon: <Dashboard /> },
+        { label: 'Jobs', path: '/admin/jobs', icon: <Speed /> },
+        { label: 'Users', path: '/admin/users', icon: <PeopleIcon /> },
+        
+        { label: 'License', path: '/riders/license', icon: <DirectionsCar /> },
+        { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
+        { label: 'Contact', path: '/contact', icon: <Event /> },
+        { label: 'Events', path: '/events', icon: <Event /> },
+      ];
+    } else if (isHR) {
+      return [
+        { label: 'HR Dashboard', path: '/hr', icon: <PeopleIcon /> },
+        { label: 'Events', path: '/events', icon: <Event /> },
+        { label: 'Jobs', path: '/admin/jobs', icon: <Speed /> },
+        { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
+        { label: 'Contact', path: '/contact', icon: <Event /> },
+      ];
+    } else {
+      return [
+        { label: 'Our Team', path: '/team', icon: <PersonAdd /> },
+        { label: 'Events', path: '/events', icon: <Event /> },
+        // { label: 'Special Events', path: '/special-events', icon: <EventIcon /> },
+        // { label: 'Attendance', path: '/attendance', icon: <PeopleIcon /> },
+        { label: 'Apply', path: '/apply', icon: <Dashboard /> },
+        // { label: 'License', path: '/riders/licence', icon: <DirectionsCar /> },
+        { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
+        { label: 'Contact', path: '/contact', icon: <Event /> },
+      ];
+    }
+  };
+
+  const navItems = getNavItems();
 
   return (
     <StyledAppBar 
@@ -188,10 +238,12 @@ const Navbar = () => {
     >
       <Container maxWidth="xl">
         <Toolbar disableGutters>
+          {/* Logo */}
           <AnimatedIcon sx={{ mr: 2 }}>
             <img src={logo} alt="logo" style={{ width: '28px', height: '28px' }} />
           </AnimatedIcon>
           
+          {/* Logo Text */}
           <LogoText
             variant="h6"
             component={RouterLink}
@@ -207,94 +259,22 @@ const Navbar = () => {
             Tamilnadu Logistics
           </LogoText>
 
-          {!isAdmin ? (
-            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
-              <NavButton
-                component={RouterLink}
-                to="/servers"
-                startIcon={<FireTruckOutlined />}
-              >
-                TMP Server Status
-              </NavButton>
-              <NavButton
-                component={RouterLink}
-                to="/contact"
-                startIcon={<Event />}
-              >
-                Contact
-              </NavButton>
-            </Box>
-          ) : (
-            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
-              {/* <NavButton
-                component={RouterLink}
-                to="/"
-                startIcon={<DirectionsCar />}
-              >
-                Home
-              </NavButton>
-              <NavButton
-                component={RouterLink}
-                to="/team"
-                startIcon={<PersonAdd />}
-              >
-                Our Team
-              </NavButton>
-              <NavButton
-                component={RouterLink}
-                to="/events"
-                startIcon={<Event />}
-              >
-                Events
-              </NavButton>
-              <NavButton
-                component={RouterLink}
-                to="/attending-events"
-                startIcon={<Event />}
-              >
-                Attending Events
-              </NavButton>
-              <NavButton
-                component={RouterLink}
-                to="/servers"
-                startIcon={<FireTruckOutlined />}
-              >
-                Server Status
-              </NavButton>
-              <NavButton
-                component={RouterLink}
-                to="/apply"
-                startIcon={<Dashboard />}
-              >
-                Apply
-              </NavButton>
-              <NavButton
-                component={RouterLink}
-                to="/contact"
-                startIcon={<Event />}
-              >
-                Contact
-              </NavButton> */}
-              <NavButton
-                component={RouterLink}
-                to="/admin"
-                startIcon={<Dashboard />}
-              >
-                Dashboard
-              </NavButton> 
-            </Box>
-          )}
-
+          {/* Desktop Navigation */}
           <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
-            <Tooltip title={isDarkMode ? "Light Mode" : "Dark Mode"}>
-              <IconButton
-                onClick={toggleTheme}
-                color="inherit"
-                sx={{ ml: 1 }}
+            {navItems.map((item) => (
+              <NavButton
+                key={item.path}
+                component={RouterLink}
+                to={item.path}
+                startIcon={item.icon}
               >
-                {isDarkMode ? <Brightness7 /> : <Brightness4 />}
-              </IconButton>
-            </Tooltip>
+                {item.label}
+              </NavButton>
+            ))}
+            
+            {/* Theme Toggle */}
+          
+            {/* User Menu for Desktop */}
             {isAuthenticated && (
               <Tooltip title="Account">
                 <IconButton
@@ -302,7 +282,7 @@ const Navbar = () => {
                   sx={{ ml: 1 }}
                   size="large"
                   aria-label="account of current user"
-                  aria-controls="menu-appbar"
+                  aria-controls="user-menu"
                   aria-haspopup="true"
                   color="inherit"
                 >
@@ -314,125 +294,108 @@ const Navbar = () => {
             )}
           </Box>
 
-          {/* Mobile menu */}
+          {/* Mobile Menu Button */}
           <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
             <IconButton
               size="large"
               aria-label="menu"
-              aria-controls="menu-appbar"
+              aria-controls="mobile-menu"
               aria-haspopup="true"
-              onClick={handleMenu}
+              onClick={handleMobileMenu}
               color="inherit"
             >
-              <AccountCircle />
+              <MenuMui />
             </IconButton>
-            <Menu
-              id="menu-appbar"
-              anchorEl={anchorEl}
-              anchorOrigin={{
-                vertical: 'bottom',
-                horizontal: 'right',
-              }}
-              keepMounted
-              transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-              open={Boolean(anchorEl)}
-              onClose={handleClose}
-              TransitionComponent={Fade}
-            >
-              {!isAdmin ? (
-            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
-              <NavButton
-                component={RouterLink}
-                to="/servers"
-                startIcon={<FireTruckOutlined />}
+          </Box>
+
+          {/* Desktop User Menu */}
+          <Menu
+            id="user-menu"
+            anchorEl={anchorEl}
+            anchorOrigin={{
+              vertical: 'bottom',
+              horizontal: 'right',
+            }}
+            keepMounted
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+            open={Boolean(anchorEl)}
+            onClose={handleClose}
+            TransitionComponent={Fade}
+          >
+            <MenuItem onClick={handleClose}>
+            <RouterLink to="/dashboard" style={{ display: 'flex', alignItems: 'center', color: 'inherit', textDecoration: 'none' }}>
+              <AccountCircle sx={{ mr: 1 }} />
+              Profile
+            </RouterLink>
+            </MenuItem>
+            <MenuItem onClick={handleLogout}>
+              <Logout sx={{ mr: 1 }} />
+              Logout
+            </MenuItem>
+          </Menu>
+
+          {/* Mobile Menu */}
+          <Menu
+            id="mobile-menu"
+            anchorEl={mobileMenuAnchor}
+            anchorOrigin={{
+              vertical: 'bottom',
+              horizontal: 'right',
+            }}
+            keepMounted
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+            open={Boolean(mobileMenuAnchor)}
+            onClose={handleMobileClose}
+            TransitionComponent={Fade}
+            sx={{
+              display: { xs: 'block', md: 'none' },
+            }}
+          >
+            {/* Navigation Items */}
+            {navItems.map((item) => (
+              <MenuItem 
+                key={item.path}
+                component={RouterLink} 
+                to={item.path} 
+                onClick={handleMobileClose}
               >
-                TMP Server Status
-              </NavButton>
-              <NavButton
-                component={RouterLink}
-                to="/contact"
-                startIcon={<Event />}
-              >
-                Contact
-              </NavButton>
-            </Box>
-          ) : (
-            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
-              {/* <NavButton
-                component={RouterLink}
-                to="/"
-                startIcon={<DirectionsCar />}
-              >
-                Home
-              </NavButton>
-              <NavButton
-                component={RouterLink}
-                to="/team"
-                startIcon={<PersonAdd />}
-              >
-                Our Team
-              </NavButton>
-              <NavButton
-                component={RouterLink}
-                to="/events"
-                startIcon={<Event />}
-              >
-                Events
-              </NavButton>
-              <NavButton
-                component={RouterLink}
-                to="/attending-events"
-                startIcon={<Event />}
-              >
-                Attending Events
-              </NavButton>
-              <NavButton
-                component={RouterLink}
-                to="/servers"
-                startIcon={<FireTruckOutlined />}
-              >
-                Server Status
-              </NavButton>
-              <NavButton
-                component={RouterLink}
-                to="/apply"
-                startIcon={<Dashboard />}
-              >
-                Apply
-              </NavButton>
-              <NavButton
-                component={RouterLink}
-                to="/contact"
-                startIcon={<Event />}
-              >
-                Contact
-              </NavButton> */}
-              <NavButton
-                component={RouterLink}
-                to="/admin"
-                startIcon={<Dashboard />}
-              >
-                Dashboard
-              </NavButton> 
-            </Box>
-          )}
-              <MenuItem onClick={() => { toggleTheme(); handleClose(); }}>
-                {isDarkMode ? "Light Mode" : "Dark Mode"}
+                {item.icon}
+                <Typography sx={{ ml: 1 }}>{item.label}</Typography>
               </MenuItem>
-              {isAuthenticated && (
+            ))}
+            
+            {/* Theme Toggle */}
+          
+            
+            {/* Authentication */}
+            {isAuthenticated ? (
+              <>
+                <MenuItem onClick={handleMobileClose}>
+                  <AccountCircle sx={{ mr: 1 }} />
+                  Profile
+                </MenuItem>
                 <MenuItem onClick={handleLogout}>
+                  <Logout sx={{ mr: 1 }} />
                   Logout
                 </MenuItem>
-              )}
-            </Menu>
-          </Box>
+              </>
+            ) : (
+              <MenuItem component={RouterLink} to="/login" onClick={handleMobileClose}>
+                <AccountCircle sx={{ mr: 1 }} />
+                Login
+              </MenuItem>
+            )}
+          </Menu>
         </Toolbar>
       </Container>
     </StyledAppBar>
   );
 };
 
-export default Navbar; 
+export default Navbar;

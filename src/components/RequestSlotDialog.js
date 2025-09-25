@@ -20,6 +20,7 @@ import {
 import axiosInstance from "../utils/axios";
 
 const RequestSlotDialog = ({ open, onClose, slot, onRequestSubmitted }) => {
+  console.log("param",slot)
   const [formData, setFormData] = useState({
     discordUsername: "",
     vtc: "",
@@ -34,8 +35,9 @@ const RequestSlotDialog = ({ open, onClose, slot, onRequestSubmitted }) => {
   });
   const [error, setError] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
-
+const [selectedslot,Setselectedslot]=useState(null)
   const [loading, setLoading] = useState(false);
+
 
   // Reset form when dialog opens
   useEffect(() => {
@@ -60,6 +62,7 @@ const RequestSlotDialog = ({ open, onClose, slot, onRequestSubmitted }) => {
   // Get available slot numbers
   const availableSlots = slot?.slots?.filter((s) => s.isAvailable) || [];
 
+
   const validateForm = () => {
     if (!formData.vtcName.trim()) {
       setError("VTC name is required");
@@ -83,6 +86,27 @@ const RequestSlotDialog = ({ open, onClose, slot, onRequestSubmitted }) => {
     }
     return true;
   };
+const handleSlotChange = (e) => {
+  const selectedValue = e.target.value;
+  setFormData({ ...formData, slotNumber: selectedValue });
+  Setselectedslot(selectedValue);
+  findminnumer(selectedValue, slot); 
+};
+
+
+const findminnumer = (selectedSlotNumber, eventData) => {
+  if (!Array.isArray(eventData.slots)) {
+    console.error("eventData.slots is not an array");
+    return;
+  }
+
+  const filtered = eventData.slots.filter(
+    (slot) => slot.number === Number(selectedSlotNumber)
+  );
+
+  return( filtered[0].minnumber);
+  
+};
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -98,6 +122,7 @@ const RequestSlotDialog = ({ open, onClose, slot, onRequestSubmitted }) => {
         vtcName: formData.vtcName,
         players: formData.playercount,
         discordUsername: formData.discordUsername,
+        
       });
 
       const response = await axiosInstance.post(`/slots/${slot._id}/request`, {
@@ -175,26 +200,25 @@ const RequestSlotDialog = ({ open, onClose, slot, onRequestSubmitted }) => {
             {/* Slot Number Selection */}
             <FormControl fullWidth sx={{ mb: 2 }}>
               <InputLabel id="slot-number-label">Select Slot Number</InputLabel>
-              <Select
-                labelId="slot-number-label"
-                id="slot-number"
-                value={formData.slotNumber}
-                label="Select Slot Number"
-                onChange={(e) =>
-                  setFormData({ ...formData, slotNumber: e.target.value })
-                }
-                disabled={loading}
-              >
-                {availableSlots.length > 0 ? (
-                  availableSlots.map((slotItem) => (
-                    <MenuItem key={slotItem.number} value={slotItem.number}>
-                      Slot {slotItem.number}
-                    </MenuItem>
-                  ))
-                ) : (
-                  <MenuItem disabled>No slots available</MenuItem>
-                )}
-              </Select>
+             <Select
+  labelId="slot-number-label"
+  id="slot-number"
+  value={formData.slotNumber}
+  label="Select Slot Number"
+  onChange={handleSlotChange}
+  disabled={loading}
+>
+  {availableSlots.length > 0 ? (
+    availableSlots.map((slotItem) => (
+      <MenuItem key={slotItem.number} value={slotItem.number}>
+        Slot {slotItem.number}
+      </MenuItem>
+    ))
+  ) : (
+    <MenuItem disabled>No slots available</MenuItem>
+  )}
+</Select>
+
             </FormControl>
 
             <Stack spacing={2}>

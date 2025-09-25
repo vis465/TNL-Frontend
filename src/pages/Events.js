@@ -60,14 +60,14 @@ const Events = () => {
     const fetchEvents = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${API_BASE_URL}/events`);
-        setEvents(response.data);
+        const eventsResponse = await axios.get(`${API_BASE_URL}/events`);
+        setEvents(eventsResponse.data);
+        
+        // No need to fetch special events here anymore
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching events:', error);
         setError('Failed to load events');
-      } finally {
-        setLoading(false);
-        console.log(events)
       }
     };
 
@@ -118,6 +118,19 @@ const Events = () => {
       </Typography>
 
       <Grid container spacing={4} sx={{ mt: 4 }}>
+        {/* Removed Special Events Section */}
+
+        {/* Regular Events */}
+        <Grid item xs={12}>
+          <Typography variant="h4" component="h2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <EventIcon color="primary" />
+            Events
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+            All available events
+          </Typography>
+        </Grid>
+        
         {events.map((event) => (
           <Grid item xs={12} sm={6} md={4} key={event._id}>
             <EventCard>

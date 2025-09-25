@@ -4,12 +4,19 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
 import theme from './theme';
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import EventDetails from './pages/EventDetails';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminJobs from './pages/AdminJobs';
+import AdminUsers from './pages/AdminUsers';
+import EventManagement from './pages/EventManagement';
+import AttendanceManagement from './pages/AttendanceManagement';
 import MyBookings from './pages/MyBookings';
 import Servers from './pages/Servers';
 import PrivateRoute from './components/PrivateRoute';
@@ -35,12 +42,25 @@ import '@fontsource/noto-sans-tamil/700.css';
 // New page imports
 import Landing from './pages/Landing';
 import ContactUs from './pages/ContactUs';
-import Application from './pages/Application';
+import JoinUsPage from './pages/Application';
 import Partners from './pages/Partners';
 import Team from './pages/Team';
-import TermsAndConditions from './pages/TermsAndConditions';
+import TermsOfService from './pages/TermsAndConditions';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import Events from './pages/Events';
+import RedirectBasedOnHost from './components/RedirectBasedOnHost';
+import PlayerProfile from './pages/playerprofile';
+import LicenseGenerator from './pages/LicenseGenerator';
+import SpecialEvent from './pages/SpecialEvent';
+import HRDashboard from './pages/HRDashboard';
+import PublicAttendance from './pages/PublicAttendance';
+import AdminChallenges from './pages/AdminChallenges';
+import RiderChallenges from './pages/RiderChallenges';
+import ChallengeDetails from './pages/ChallengeDetails';
+import PublicChallenges from './pages/PublicChallenges';
+import Leaderboard from './pages/Leaderboard';
+import UserDashboardV2 from './pages/UserDashboardV2';
+import RiderRegistration from './pages/RiderRegistration';
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -202,31 +222,54 @@ function App() {
               flexDirection: 'column',
               minHeight: '100vh'
             }}>
+              <RedirectBasedOnHost />
               <Navbar />
               <Box component="main" sx={{ flexGrow: 1 }}>
                 <Routes>
                   {/* Public routes */}
-                  
-                  <Route path="/" element={<Home />} />
+                  <Route path="/player" element={<PlayerProfile playerId={5304347} />} />
+                  <Route path="/" element={<Landing />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
                   <Route path="/servers" element={<Servers />} />
                   <Route path="/events/:id" element={<EventDetails />} />
+                  <Route path="/special-events/:id" element={<SpecialEvent />} />
                   <Route path="/attending-events" element={<AttendingEvents />} />
                   <Route path="/External/:id" element={<Others />} />
                   {/* New public routes */}
                   <Route path="/contact" element={<ContactUs />} />
-                  <Route path="/apply" element={<Application />} />
+                  <Route path="/apply" element={<JoinUsPage />} />
                   <Route path="/partners" element={<Partners />} />
                   <Route path="/team" element={<Team />} />
-                  <Route path="/terms" element={<TermsAndConditions />} />
+                  <Route path="/terms" element={<TermsOfService />} />
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-                  <Route path="/events" element={<Events />} />
-                  {/* Protected routes */}
-                  <Route element={<PrivateRoute allowedRoles={["admin","eventteam"]} />}>
+                  <Route path="/events" element={<Home />} />
+                  <Route path="/leaderboard" element={<Leaderboard />} />
+                  <Route path="/riders/licence" element={<LicenseGenerator />} />
+                  <Route path="/attendance" element={<PublicAttendance />} />
+                  <Route path="/riders/:driverId/challenges" element={<RiderChallenges />} />
+                  <Route path="/challenges" element={<PublicChallenges />} />
+                  <Route path="/rider/register" element={<RiderRegistration />} />
+                  {/* Authenticated personal routes */}
+                  <Route element={<PrivateRoute allowedRoles={["rider","admin","eventteam","hrteam"]} />}>
+                    <Route path="/my-bookings" element={<MyBookings />} />
+                    <Route path="/dashboard" element={<UserDashboardV2 />} />
+                    <Route path="/profile" element={<UserDashboardV2 />} />
+                  </Route>
+                  
+                  {/* Role-based admin area: shared dashboard, gated subroutes */}
+                  <Route element={<PrivateRoute allowedRoles={["admin","eventteam","hrteam"]} />}>
                     <Route path="/admin" element={<AdminDashboard />} />
-                    <Route path="/landing" element={<Landing />} />
-                    <Route path="/admin/analytics" element={<AnalyticsDashboard />} />
+                    {/* Admin only */}
+                    <Route path="/admin/users" element={<PrivateRoute allowedRoles={["admin"]}><AdminUsers /></PrivateRoute>} />
+                    {/* Admin + Event team */}
+                    <Route path="/admin/jobs" element={<PrivateRoute allowedRoles={["admin","eventteam"]}><AdminJobs /></PrivateRoute>} />
+                    <Route path="/admin/events" element={<PrivateRoute allowedRoles={["admin","eventteam"]}><EventManagement /></PrivateRoute>} />
+                    <Route path="/admin/analytics" element={<PrivateRoute allowedRoles={["admin","eventteam"]}><AnalyticsDashboard /></PrivateRoute>} />
+                    <Route path="/admin/challenges" element={<PrivateRoute allowedRoles={["admin","eventteam"]}><AdminChallenges /></PrivateRoute>} />
+                    <Route path="/admin/challenges/:id" element={<PrivateRoute allowedRoles={["admin","eventteam"]}><ChallengeDetails /></PrivateRoute>} />
+                    {/* Admin + HR team */}
+                    <Route path="/admin/attendance" element={<PrivateRoute allowedRoles={["admin","hrteam"]}><HRDashboard /></PrivateRoute>} />
                   </Route>
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>
