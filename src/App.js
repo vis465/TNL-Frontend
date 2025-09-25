@@ -64,6 +64,8 @@ import PublicChallenges from './pages/PublicChallenges';
 import Leaderboard from './pages/Leaderboard';
 import UserDashboardV2 from './pages/UserDashboardV2';
 import RiderRegistration from './pages/RiderRegistration';
+import AdminRiders from './pages/AdminRiders';
+import RiderAttendance from './pages/RiderAttendance';
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -259,6 +261,7 @@ function App() {
                     <Route path="/dashboard" element={<UserDashboardV2 />} />
                     <Route path="/profile" element={<UserDashboardV2 />} />
                     <Route path="/jobs" element={<RiderJobs />} />
+                    <Route path="/attendance" element={<RiderAttendance />} />
                     {/* <Route path="/jobs/:id" element={<JobDetailsMUI />} /> */}
                     <Route path="/jobs/:id" element={<JobDetails />} />
                   </Route>
@@ -276,6 +279,7 @@ function App() {
                     <Route path="/admin/challenges/:id" element={<PrivateRoute allowedRoles={["admin","eventteam"]}><ChallengeDetails /></PrivateRoute>} />
                     {/* Admin + HR team */}
                     <Route path="/admin/attendance" element={<PrivateRoute allowedRoles={["admin","hrteam"]}><HRDashboard /></PrivateRoute>} />
+                    <Route path="/admin/riders" element={<PrivateRoute allowedRoles={["admin","eventteam","hrteam"]}><AdminRiders /></PrivateRoute>} />
                   </Route>
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>

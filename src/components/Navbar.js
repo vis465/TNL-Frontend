@@ -25,6 +25,7 @@ import {
   Speed,
   Notifications,
   FireTruckOutlined,
+  EmojiEvents,
   Brightness4,
   Brightness7,
   
@@ -211,6 +212,7 @@ const Navbar = () => {
         { label: 'Events', path: '/events', icon: <Event /> },
         { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
         { label: 'Contact', path: '/contact', icon: <Event /> },
+        { label: 'Challenges', path: '/admin/challenges', icon: <EmojiEvents /> },
       ];
     } else if (isHR) {
       return [
@@ -219,6 +221,7 @@ const Navbar = () => {
         { label: 'VTC Jobs', path: '/jobs', icon: <Speed /> },
         { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
         { label: 'Contact', path: '/contact', icon: <Event /> },
+        { label: 'Challenges', path: '/admin/challenges', icon: <EmojiEvents /> },
       ];
     } else {
       return [

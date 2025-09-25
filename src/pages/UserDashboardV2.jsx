@@ -37,6 +37,7 @@ import AssignmentTurnedInOutlinedIcon from '@mui/icons-material/AssignmentTurned
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
 import TrackChangesOutlinedIcon from '@mui/icons-material/TrackChangesOutlined';
 import CloseIcon from '@mui/icons-material/Close';
+import Event from '@mui/icons-material/Event';
 
 export default function UserDashboard() {
   const [data, setData] = useState(null);
@@ -44,6 +45,9 @@ export default function UserDashboard() {
   const [attendanceOpen, setAttendanceOpen] = useState(false);
   const [attendancePage, setAttendancePage] = useState(1);
   const pageSize = 10;
+  const [activeAttendanceEvents, setActiveAttendanceEvents] = useState([]);
+  const [attendanceSubmitLoading, setAttendanceSubmitLoading] = useState(false);
+  const [attendanceSubmitMsg, setAttendanceSubmitMsg] = useState('');
 
   // Real API call
   useEffect(() => {
@@ -57,6 +61,37 @@ export default function UserDashboard() {
       }
     })();
   }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await axiosInstance.get('/attendance-events/active/me');
+        const events = Array.isArray(data) ? data : [];
+        setActiveAttendanceEvents(events);
+      } catch (e) {
+        // non-fatal for dashboard
+        console.warn('Failed to load attendance events');
+      }
+    })();
+  }, []);
+
+  const handleMarkAttendance = async (eventId) => {
+    try {
+      setAttendanceSubmitLoading(true);
+      setAttendanceSubmitMsg('');
+      await axiosInstance.post(`/attendance-events/${eventId}/mark-attendance`, {});
+      setAttendanceSubmitMsg('Attendance submitted for approval');
+      // refresh active list
+      const { data } = await axiosInstance.get('/attendance-events/active/me');
+      const events = Array.isArray(data) ? data : [];
+      setActiveAttendanceEvents(events);
+    } catch (e) {
+      setAttendanceSubmitMsg(e?.response?.data?.message || 'Failed to submit attendance');
+    } finally {
+      setAttendanceSubmitLoading(false);
+      setTimeout(() => setAttendanceSubmitMsg(''), 3000);
+    }
+  };
 
   // Derived chart data from latestJobs
   const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -310,9 +345,9 @@ export default function UserDashboard() {
                     <Stack key={e.id} direction="row" alignItems="center" justifyContent="space-between" sx={{ p: 1.5, borderRadius: 1, bgcolor: 'action.hover' }}>
                       <Box sx={{ minWidth: 0 }}>
                         <Typography variant="body1" fontWeight={600} noWrap>{e.title || 'Event'}</Typography>
-                        <Typography variant="caption" color="text.secondary">{e.eventDate ? new Date(e.eventDate).toLocaleDateString() : '—'}</Typography>
+                        <Typography variant="caption" color="text.secondary">{e.eventDate ? new Date(e.eventDate).toLocaleDateString() : '—'}{e.approvedAt ? ` • approved ${new Date(e.approvedAt).toLocaleDateString()}` : ''}</Typography>
                       </Box>
-                      <Chip size="small" color="success" variant="outlined" label={e.status || 'completed'} />
+                      <Chip size="small" color="success" variant="outlined" label="Approved" />
                     </Stack>
                   ))}
                   {((attendance?.eventsAttended || []).length || 0) === 0 && (
@@ -326,6 +361,44 @@ export default function UserDashboard() {
                     </Button>
                   </Box>
                 )}
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12}>
+            <Card variant="outlined">
+              <CardContent>
+                <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+                  <Typography variant="h6">Active Attendance</Typography>
+                  {attendanceSubmitMsg && (
+                    <Chip size="small" color="info" variant="outlined" label={attendanceSubmitMsg} />
+                  )}
+                </Stack>
+                <Stack spacing={1.5}>
+                  {activeAttendanceEvents.map((ev) => (
+                    <Stack key={ev._id} direction="row" alignItems="center" justifyContent="space-between" sx={{ p: 1.5, borderRadius: 1, bgcolor: 'action.hover' }}>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="body1" fontWeight={600} noWrap>{ev.title}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {new Date(ev.eventDate).toLocaleString()} {ev.endDate ? `- ${new Date(ev.endDate).toLocaleString()}` : ''}
+                        </Typography>
+                      </Box>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Chip size="small" label={ev.isAttendanceOpen ? 'Open' : 'Closed'} color={ev.isAttendanceOpen ? 'success' : 'default'} />
+                        <Button
+                          variant="contained"
+                          size="small"
+                          disabled={attendanceSubmitLoading || !ev.isAttendanceOpen}
+                          onClick={() => handleMarkAttendance(ev._id)}
+                        >
+                          I was there
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  ))}
+                  {activeAttendanceEvents.length === 0 && (
+                    <Typography variant="body2" color="text.secondary">No active attendance right now.</Typography>
+                  )}
+                </Stack>
               </CardContent>
             </Card>
           </Grid>
@@ -527,23 +600,50 @@ export default function UserDashboard() {
                   <TrackChangesOutlinedIcon color="disabled" fontSize="small" />
                 </Stack>
                 <Stack spacing={1.5}>
-                  {progress.map((p) => (
-                    <Box key={`${p.challengeId}-${p.jobId}`} sx={{ p: 1.5, borderRadius: 1, bgcolor: 'action.hover' }}>
-                      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
-                        <Typography variant="subtitle1" fontWeight={600}>{p.challengeName || p.challengeId}</Typography>
-                        {p.challengeCompleted && (
-                          <Chip size="small" color="success" variant="outlined" label="Completed" />
-                        )}
-                      </Stack>
-                      <Stack direction="row" alignItems="center" justifyContent="space-between">
-                        <Typography variant="body2" color="text.secondary">Distance: {p.distanceDriven} km</Typography>
-                        <Typography variant="body2" color="text.secondary">Job #{p.jobId}</Typography>
-                      </Stack>
-                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                        {new Date(p.timestamp).toLocaleDateString()}
-                      </Typography>
-                    </Box>
-                  ))}
+                  {(() => {
+                    // Group progress by challenge to show each challenge only once
+                    const challengeMap = new Map();
+                    progress.forEach((p) => {
+                      const challengeId = p.challengeId;
+                      if (!challengeMap.has(challengeId)) {
+                        challengeMap.set(challengeId, {
+                          challengeId,
+                          challengeName: p.challengeName || challengeId,
+                          totalDistance: 0,
+                          totalJobs: 0,
+                          isCompleted: false,
+                          lastUpdated: p.timestamp
+                        });
+                      }
+                      const challenge = challengeMap.get(challengeId);
+                      challenge.totalDistance += p.distanceDriven || 0;
+                      challenge.totalJobs += 1;
+                      if (p.challengeCompleted) {
+                        challenge.isCompleted = true;
+                      }
+                      if (new Date(p.timestamp) > new Date(challenge.lastUpdated)) {
+                        challenge.lastUpdated = p.timestamp;
+                      }
+                    });
+                    
+                    return Array.from(challengeMap.values()).map((challenge) => (
+                      <Box key={challenge.challengeId} sx={{ p: 1.5, borderRadius: 1, bgcolor: 'action.hover' }}>
+                        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+                          <Typography variant="subtitle1" fontWeight={600}>{challenge.challengeName}</Typography>
+                          {challenge.isCompleted && (
+                            <Chip size="small" color="success" variant="outlined" label="Completed" />
+                          )}
+                        </Stack>
+                        <Stack direction="row" alignItems="center" justifyContent="space-between">
+                          <Typography variant="body2" color="text.secondary">Total Distance: {challenge.totalDistance} km</Typography>
+                          <Typography variant="body2" color="text.secondary">Jobs: {challenge.totalJobs}</Typography>
+                        </Stack>
+                        <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                          Last updated: {new Date(challenge.lastUpdated).toLocaleDateString()}
+                        </Typography>
+                      </Box>
+                    ));
+                  })()}
                   {progress.length === 0 && (
                     <Stack alignItems="center" justifyContent="center" sx={{ py: 6 }} spacing={1}>
                       <TrackChangesOutlinedIcon color="disabled" fontSize="large" />

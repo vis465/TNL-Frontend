@@ -82,6 +82,8 @@ export default function AdminRiders() {
   const [modalOpen, setModalOpen] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [showActiveOnly, setShowActiveOnly] = useState(false);
+  const [gameFilter, setGameFilter] = useState('');
+  const [dlcFilter, setDlcFilter] = useState('');
 
   const isAdmin = useMemo(() => ['admin','eventteam','hrteam'].includes(user?.role), [user]);
   const load = async () => {
@@ -115,6 +117,17 @@ export default function AdminRiders() {
       result = result.filter(r => r.active);
     }
     
+    if (gameFilter) {
+      result = result.filter(r => Array.isArray(r.gamesOwned) && r.gamesOwned.includes(gameFilter));
+    }
+
+    if (dlcFilter) {
+      const [game, dlcName] = dlcFilter.split('::');
+      if (game && dlcName) {
+        result = result.filter(r => Array.isArray(r?.dlcsOwned?.[game]) && r.dlcsOwned[game].includes(dlcName));
+      }
+    }
+
     if (search) {
       const q = search.toLowerCase();
       result = result.filter((r) =>
@@ -127,7 +140,7 @@ export default function AdminRiders() {
     }
     
     return result;
-  }, [riders, search, showActiveOnly]);
+  }, [riders, search, showActiveOnly, gameFilter, dlcFilter]);
 
  
 
@@ -317,8 +330,49 @@ export default function AdminRiders() {
                 }}
               />
             </Grid>
-            
-           
+          <Grid item xs={12} md={3}>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <TextField
+                select
+                fullWidth
+                label="Game"
+                value={gameFilter}
+                onChange={(e) => { setGameFilter(e.target.value); setDlcFilter(''); }}
+                SelectProps={{ native: true }}
+              >
+                <option value="">All Games</option>
+                <option value="ets2">ETS2</option>
+                <option value="ats">ATS</option>
+              </TextField>
+              <TextField
+                select
+                fullWidth
+                label="DLC"
+                value={dlcFilter}
+                onChange={(e) => setDlcFilter(e.target.value)}
+                SelectProps={{ native: true }}
+              >
+                <option value="">All DLCs</option>
+                {gameFilter === 'ets2' && (
+                  [
+                    'Going East!','Scandinavia','Vive la France!','Italia','Beyond the Baltic Sea','Road to the Black Sea','Iberia','West Balkans','Heart of Russia (if released)',
+                    'Heavy Cargo Pack','Special Transport','High Power Cargo Pack','Cabin Accessories','Wheel Tuning Pack','Krone Trailer Pack','FH Tuning Pack','Mighty Griffin Tuning Pack'
+                  ].map((d) => (
+                    <option key={d} value={`ets2::${d}`}>{d}</option>
+                  ))
+                )}
+                {gameFilter === 'ats' && (
+                  [
+                    'New Mexico','Oregon','Washington','Utah','Idaho','Colorado','Wyoming','Montana','Texas','Oklahoma','Kansas','Nebraska','Arkansas',
+                    'Heavy Cargo Pack','Special Transport','Cabin Accessories','Wheel Tuning Pack'
+                  ].map((d) => (
+                    <option key={d} value={`ats::${d}`}>{d}</option>
+                  ))
+                )}
+              </TextField>
+            </Stack>
+          </Grid>
+
             <Grid item xs={6} md={1.5}>
               <Stack direction="row" alignItems="center" spacing={1}>
                 <FilterListIcon fontSize="small" />
@@ -333,6 +387,42 @@ export default function AdminRiders() {
           </Grid>
         </CardContent>
       </Card>
+
+    {/* DLC Analytics */}
+    <Grid container spacing={2} sx={{ mb: 3 }}>
+      <Grid item xs={12} md={6}>
+        <Card>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>DLC Ownership - ETS2</Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap">
+              {(() => {
+                const counts = new Map();
+                riders.forEach(r => (r?.dlcsOwned?.ets2 || []).forEach(d => counts.set(d, (counts.get(d) || 0) + 1)));
+                return Array.from(counts.entries()).sort((a,b) => b[1]-a[1]).slice(0, 20).map(([name, count]) => (
+                  <Chip key={name} label={`${name}: ${count}`} />
+                ));
+              })()}
+            </Stack>
+          </CardContent>
+        </Card>
+      </Grid>
+      <Grid item xs={12} md={6}>
+        <Card>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>DLC Ownership - ATS</Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap">
+              {(() => {
+                const counts = new Map();
+                riders.forEach(r => (r?.dlcsOwned?.ats || []).forEach(d => counts.set(d, (counts.get(d) || 0) + 1)));
+                return Array.from(counts.entries()).sort((a,b) => b[1]-a[1]).slice(0, 20).map(([name, count]) => (
+                  <Chip key={name} label={`${name}: ${count}`} />
+                ));
+              })()}
+            </Stack>
+          </CardContent>
+        </Card>
+      </Grid>
+    </Grid>
 
       {/* Riders Table */}
       <Paper sx={{ overflow: 'hidden' }}>

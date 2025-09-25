@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Container, Paper, Typography, TextField, Button, Grid, Alert, Box } from '@mui/material';
+import React, { useMemo, useState } from 'react';
+import { Container, Paper, Typography, TextField, Button, Grid, Alert, Box, FormControl, InputLabel, Select, MenuItem, Chip, Stack } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import ridersService from '../services/ridersService';
 
@@ -14,12 +14,46 @@ export default function RiderRegistration() {
     steamId: '',
     truckershubId: '',
     truckersmpId: '',
-    age: ''
+    age: '',
+    gamesOwned: [],
+    dlcsOwned: { ets2: [], ats: [] },
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  // Options
+  const gameOptions = useMemo(() => ([
+    { value: 'ets2', label: 'Euro Truck Simulator 2' },
+    { value: 'ats', label: 'American Truck Simulator' },
+  ]), []);
+
+  const ets2DlcOptions = useMemo(() => ([
+    "Going East!",
+    "Scandinavia",
+    "Vive La France!",
+    "Greece",
+    "Italia",
+    "Beyond the Baltic Sea",
+    "Western Balkans",
+    "Road to the Black Sea",
+    "Iberia"
+]), []);
+
+  const atsDlcOptions = useMemo(() => ([
+    "New Mexico",
+    "Arizona",
+    "Oregon",
+    "Washington",
+    "California",
+    "Utah",
+    "Colorado",
+    "Idaho",
+    "Wyoming",
+    "Montana",
+    "Texas"
+  ]), []);
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -38,6 +72,8 @@ export default function RiderRegistration() {
         truckershubId: form.truckershubId,
         truckersmpId: form.truckersmpId,
         age: form.age ? Number(form.age) : undefined,
+        gamesOwned: form.gamesOwned,
+        dlcsOwned: form.dlcsOwned,
       });
       localStorage.setItem('token', res.data.token);
       navigate('/');
@@ -85,6 +121,86 @@ export default function RiderRegistration() {
             <Grid item xs={12} sm={6}>
               <TextField fullWidth type="number" label="Age" name="age" value={form.age} onChange={onChange} />
             </Grid>
+
+          {/* Games Owned */}
+          <Grid item xs={12}>
+            <FormControl fullWidth>
+              <InputLabel id="games-owned-label">Games you own</InputLabel>
+              <Select
+                labelId="games-owned-label"
+                multiple
+                value={form.gamesOwned}
+                label="Games you own"
+                onChange={(e) => {
+                  const selected = e.target.value;
+                  const dlcsOwned = { ...form.dlcsOwned };
+                  if (!selected.includes('ets2')) dlcsOwned.ets2 = [];
+                  if (!selected.includes('ats')) dlcsOwned.ats = [];
+                  setForm({ ...form, gamesOwned: selected, dlcsOwned });
+                }}
+                renderValue={(selected) => (
+                  <Stack direction="row" spacing={1} flexWrap="wrap">
+                    {selected.map((v) => (
+                      <Chip key={v} label={gameOptions.find(g => g.value === v)?.label || v} size="small" />
+                    ))}
+                  </Stack>
+                )}
+              >
+                {gameOptions.map((g) => (
+                  <MenuItem key={g.value} value={g.value}>{g.label}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          {/* DLCs per game (optional) */}
+          {form.gamesOwned.includes('ets2') && (
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel id="ets2-dlcs-label">ETS2 DLCs you own (optional)</InputLabel>
+                <Select
+                  labelId="ets2-dlcs-label"
+                  multiple
+                  value={form.dlcsOwned.ets2}
+                  label="ETS2 DLCs you own (optional)"
+                  onChange={(e) => setForm({ ...form, dlcsOwned: { ...form.dlcsOwned, ets2: e.target.value } })}
+                  renderValue={(selected) => (
+                    <Stack direction="row" spacing={1} flexWrap="wrap">
+                      {selected.map((v) => (<Chip key={v} label={v} size="small" />))}
+                    </Stack>
+                  )}
+                >
+                  {ets2DlcOptions.map((d) => (
+                    <MenuItem key={d} value={d}>{d}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+          )}
+
+          {form.gamesOwned.includes('ats') && (
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel id="ats-dlcs-label">ATS DLCs you own (optional)</InputLabel>
+                <Select
+                  labelId="ats-dlcs-label"
+                  multiple
+                  value={form.dlcsOwned.ats}
+                  label="ATS DLCs you own (optional)"
+                  onChange={(e) => setForm({ ...form, dlcsOwned: { ...form.dlcsOwned, ats: e.target.value } })}
+                  renderValue={(selected) => (
+                    <Stack direction="row" spacing={1} flexWrap="wrap">
+                      {selected.map((v) => (<Chip key={v} label={v} size="small" />))}
+                    </Stack>
+                  )}
+                >
+                  {atsDlcOptions.map((d) => (
+                    <MenuItem key={d} value={d}>{d}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+          )}
             <Grid item xs={12}>
               <Button type="submit" variant="contained" fullWidth disabled={loading}>
                 {loading ? 'Submitting...' : 'Register'}

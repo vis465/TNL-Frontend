@@ -58,9 +58,11 @@ import axiosInstance from '../utils/axios';
 
 const HRDashboard = () => {
   const { user, isAuthenticated } = useAuth();
-  const [tabValue, setTabValue] = useState(0);
+  const [tabValue, setTabValue] = useState(3);
   const [events, setEvents] = useState([]);
+  const [attendanceEvents, setAttendanceEvents] = useState([]);
   const [attendanceStats, setAttendanceStats] = useState([]);
+  const [recentAttendances, setRecentAttendances] = useState([]);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -94,10 +96,15 @@ const HRDashboard = () => {
   // Remove member dialog state
   const [removeMemberOpen, setRemoveMemberOpen] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState(null);
+  
+  // Event details dialog state
+  const [eventDetailsOpen, setEventDetailsOpen] = useState(false);
+  const [selectedEventDetails, setSelectedEventDetails] = useState(null);
 
   useEffect(() => {
     if (user?.role === 'hrteam' || user?.role === 'admin') {
       fetchEvents();
+      fetchAttendanceEvents();
       fetchAttendanceStats();
       fetchMembers();
     }
@@ -116,10 +123,20 @@ const HRDashboard = () => {
     }
   };
 
+  const fetchAttendanceEvents = async () => {
+    try {
+      const response = await axiosInstance.get('/attendance-events');
+      setAttendanceEvents(response.data);
+    } catch (error) {
+      console.error('Error fetching attendance events:', error);
+    }
+  };
+
   const fetchAttendanceStats = async () => {
     try {
-      const response = await axiosInstance.get('/hr-events/attendance-stats');
-      setAttendanceStats(response.data);
+      const response = await axiosInstance.get('/attendance-events/stats');
+      setAttendanceStats(response.data.riderStats || []);
+      setRecentAttendances(response.data.recentAttendances || []);
     } catch (error) {
       console.error('Error fetching attendance stats:', error);
     }
@@ -135,25 +152,54 @@ const HRDashboard = () => {
   };
 
   const handleCreateEvent = async () => {
-    if (!eventId.trim()) {
-      setError('Please enter a TruckersMP Event ID');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      await axiosInstance.post('/hr-events/create', {
-        truckersmpEventId: eventId.trim()
-      });
+    if (tabValue === 3) {
+      // For attendance events, we need title and eventDate
+      if (!eventId.trim()) {
+        setError('Please enter an event title');
+        return;
+      }
       
-      setSuccess('Event created successfully');
-      setCreateEventOpen(false);
-      setEventId('');
-      fetchEvents();
-    } catch (error) {
-      setError(error.response?.data?.message || 'Failed to create event');
-    } finally {
-      setLoading(false);
+      try {
+        setLoading(true);
+        await axiosInstance.post('/attendance-events', {
+          title: eventId.trim(),
+          description: 'HR Event',
+          eventDate: new Date().toISOString(),
+          isAttendanceOpen: true
+        });
+        
+        setSuccess('Attendance event created successfully');
+        setCreateEventOpen(false);
+        setEventId('');
+        fetchEvents();
+        fetchAttendanceEvents();
+      } catch (error) {
+        setError(error.response?.data?.message || 'Failed to create attendance event');
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      // For regular HR events
+      if (!eventId.trim()) {
+        setError('Please enter a TruckersMP Event ID');
+        return;
+      }
+
+      try {
+        setLoading(true);
+        await axiosInstance.post('/hr-events/create', {
+          truckersmpEventId: eventId.trim()
+        });
+        
+        setSuccess('Event created successfully');
+        setCreateEventOpen(false);
+        setEventId('');
+        fetchEvents();
+      } catch (error) {
+        setError(error.response?.data?.message || 'Failed to create event');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -317,14 +363,66 @@ const HRDashboard = () => {
 
   // Data insights
   const totalMembers = attendanceStats.length;
-  const activeCount = activeMembers.length;
-  const inactiveCount = inactiveMembers.length;
+  const activeCount = attendanceStats.filter(member => member.totalEventsAttended > 0).length;
+  const inactiveCount = attendanceStats.filter(member => member.totalEventsAttended === 0).length;
   const activePercentage = totalMembers > 0 ? Math.round((activeCount / totalMembers) * 100) : 0;
-  const totalEvents = events.length;
-  const averageAttendance = totalEvents > 0 ? Math.round(attendanceStats.reduce((sum, member) => sum + member.totalEventsAttended, 0) / totalMembers) : 0;
+  const totalEvents = attendanceEvents.length;
+  const averageAttendance = totalMembers > 0 ? Math.round(attendanceStats.reduce((sum, member) => sum + member.totalEventsAttended, 0) / totalMembers) : 0;
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
+  };
+
+  const handleViewEventDetails = async (event) => {
+    try {
+      setLoading(true);
+      const response = await axiosInstance.get(`/attendance-events/${event._id}`);
+      setSelectedEventDetails(response.data);
+      setEventDetailsOpen(true);
+    } catch (error) {
+      setError('Failed to fetch event details');
+      console.error('Error fetching event details:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApproveAttendance = async (eventId, entryId) => {
+    try {
+      setLoading(true);
+      await axiosInstance.put(`/attendance-events/${eventId}/attendance/${entryId}`, {
+        status: 'approved'
+      });
+      setSuccess('Attendance approved successfully');
+      // Refresh event details
+      const response = await axiosInstance.get(`/attendance-events/${eventId}`);
+      setSelectedEventDetails(response.data);
+      fetchAttendanceEvents();
+    } catch (error) {
+      setError('Failed to approve attendance');
+      console.error('Error approving attendance:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRejectAttendance = async (eventId, entryId) => {
+    try {
+      setLoading(true);
+      await axiosInstance.put(`/attendance-events/${eventId}/attendance/${entryId}`, {
+        status: 'rejected'
+      });
+      setSuccess('Attendance rejected successfully');
+      // Refresh event details
+      const response = await axiosInstance.get(`/attendance-events/${eventId}`);
+      setSelectedEventDetails(response.data);
+      fetchAttendanceEvents();
+    } catch (error) {
+      setError('Failed to reject attendance');
+      console.error('Error rejecting attendance:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getStatusColor = (status) => {
@@ -411,83 +509,84 @@ const HRDashboard = () => {
         </Button>
       </Box>
 
-      {/* Data Insights Cards */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 2, textAlign: 'center', bgcolor: 'primary.main', color: 'white' }}>
-            <GroupIcon sx={{ fontSize: 40, mb: 1 }} />
-            <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
-              {totalMembers}
-            </Typography>
-            <Typography variant="body2">Total Members</Typography>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 2, textAlign: 'center', bgcolor: 'success.main', color: 'white' }}>
-            <PersonIcon sx={{ fontSize: 40, mb: 1 }} />
-            <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
-              {activeCount}
-            </Typography>
-            <Typography variant="body2">Active Members ({activePercentage}%)</Typography>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 2, textAlign: 'center', bgcolor: 'warning.main', color: 'white' }}>
-            <PersonOffIcon sx={{ fontSize: 40, mb: 1 }} />
-            <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
-              {inactiveCount}
-            </Typography>
-            <Typography variant="body2">Inactive Members</Typography>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 2, textAlign: 'center', bgcolor: 'info.main', color: 'white' }}>
-            <EmojiEventsIcon sx={{ fontSize: 40, mb: 1 }} />
-            <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
-              {averageAttendance}
-            </Typography>
-            <Typography variant="body2">Avg Events/Member</Typography>
-          </Card>
-        </Grid>
-      </Grid>
 
-      <Paper sx={{ mb: 3 }}>
-        <Tabs value={tabValue} onChange={handleTabChange}>
-          <Tab icon={<EventIcon />} label="Events" />
-          <Tab icon={<PeopleIcon />} label="Attendance Stats" />
-          <Tab icon={<ListIcon />} label="Event-wise Attendance" />
-        </Tabs>
-      </Paper>
+     
 
-      {tabValue === 0 && (
+      {tabValue === 3 && (
         <Box>
-          <Typography variant="h6" gutterBottom>
-            HR Events ({events.length})
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Attendance Events Management ({attendanceEvents.length})
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <TextField
+                type="date"
+                size="small"
+                InputLabelProps={{ shrink: true }}
+                sx={{ minWidth: 180 }}
+                onChange={(e) => {
+                  const selected = e.target.value ? new Date(e.target.value) : null;
+                  if (!selected) {
+                    fetchAttendanceEvents();
+                    return;
+                  }
+                  const start = new Date(selected);
+                  start.setHours(0,0,0,0);
+                  const end = new Date(selected);
+                  end.setHours(23,59,59,999);
+                  const filtered = attendanceEvents.filter(ev => {
+                    const d = new Date(ev.eventDate);
+                    return d >= start && d <= end;
+                  });
+                  setAttendanceEvents(filtered);
+                }}
+                placeholder="Filter by date"
+                InputProps={{ startAdornment: <CalendarTodayIcon sx={{ mr: 1, color: 'text.secondary' }} /> }}
+              />
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setCreateEventOpen(true)}
+              >
+                Create Attendance Event
+              </Button>
+            </Box>
+          </Box>
           
           {loading ? (
             <Box display="flex" justifyContent="center" p={4}>
               <CircularProgress />
             </Box>
+          ) : attendanceEvents.length === 0 ? (
+            <Paper sx={{ p: 4, textAlign: 'center' }}>
+              <EventIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No Attendance Events Found
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Create your first attendance event to start tracking rider attendance
+              </Typography>
+            </Paper>
           ) : (
             <TableContainer component={Paper}>
               <Table>
                 <TableHead>
                   <TableRow>
                     <TableCell>Event Title</TableCell>
+                    <TableCell>Description</TableCell>
                     <TableCell>Event Date</TableCell>
-                    <TableCell>Attendees</TableCell>
                     <TableCell>Status</TableCell>
-                    <TableCell>Created By</TableCell>
+                    <TableCell>Attendance Entries</TableCell>
+                    
                     <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {events.map((event) => (
+                  {attendanceEvents.map((event) => (
                     <TableRow key={event._id}>
                       <TableCell>{event.title}</TableCell>
+                      <TableCell>{event.description || 'No description'}</TableCell>
                       <TableCell>{formatDate(event.eventDate)}</TableCell>
-                      <TableCell>{event.attendees?.length || 0}</TableCell>
                       <TableCell>
                         <Chip 
                           label={event.status} 
@@ -495,35 +594,22 @@ const HRDashboard = () => {
                           size="small"
                         />
                       </TableCell>
-                      <TableCell>{event.createdBy?.username}</TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={`${event.attendanceEntries?.length || 0} entries`}
+                          color="primary"
+                          size="small"
+                        />
+                      </TableCell>
+                      
                       <TableCell>
                         <Box sx={{ display: 'flex', gap: 1 }}>
-                          <Tooltip title="Add Members">
+                          <Tooltip title="View Details">
                             <IconButton
                               size="small"
-                              onClick={() => {
-                                setSelectedEvent(event);
-                                setAddMembersOpen(true);
-                              }}
+                              onClick={() => handleViewEventDetails(event)}
                             >
-                              <PeopleIcon />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Edit Event">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleEditEvent(event)}
-                            >
-                              <EditIcon />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Delete Event">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleDeleteEvent(event)}
-                              sx={{ color: 'error.main' }}
-                            >
-                              <DeleteIcon />
+                              <EventIcon />
                             </IconButton>
                           </Tooltip>
                         </Box>
@@ -537,290 +623,21 @@ const HRDashboard = () => {
         </Box>
       )}
 
-      {tabValue === 1 && (
-        <Box>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Member Attendance Statistics
-            </Typography>
-            <TextField
-              size="small"
-              placeholder="Search members..."
-              value={attendanceSearchTerm}
-              onChange={(e) => setAttendanceSearchTerm(e.target.value)}
-              sx={{ minWidth: 250 }}
-              InputProps={{
-                startAdornment: <AnalyticsIcon sx={{ mr: 1, color: 'text.secondary' }} />
-              }}
-            />
-          </Box>
-          
-          {/* Active Members Section */}
-          <Box sx={{ mb: 4 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <PersonIcon sx={{ mr: 1, color: 'success.main' }} />
-              <Typography variant="h6" sx={{ color: 'success.main', fontWeight: 'bold' }}>
-                Active Members ({activeCount})
-              </Typography>
-            </Box>
-            
-            {activeMembers.length > 0 ? (
-              <TableContainer component={Paper} sx={{ mb: 3 }}>
-                <Table>
-                  <TableHead sx={{ bgcolor: 'success.light' }}>
-                    <TableRow>
-                      <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Username</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>TruckersMP ID</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Events Attended</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Last Updated</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {activeMembers
-                      .sort((a, b) => b.totalEventsAttended - a.totalEventsAttended)
-                      .map((member) => (
-                      <TableRow key={member._id} hover>
-                        <TableCell sx={{ fontWeight: 'medium' }}>{member.username}</TableCell>
-                        <TableCell sx={{ fontFamily: 'monospace' }}>{member.truckersmpUserId}</TableCell>
-                        <TableCell sx={{ textAlign: 'center' }}>
-                          <Chip 
-                            icon={<TrendingUpIcon />}
-                            label={member.totalEventsAttended}
-                            color="success"
-                            size="medium"
-                            sx={{ 
-                              fontWeight: 'bold',
-                              fontSize: '0.9rem',
-                              minWidth: '60px'
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell sx={{ color: 'text.secondary' }}>{formatDate(member.lastUpdated)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            ) : (
-              <Paper sx={{ p: 3, textAlign: 'center', bgcolor: 'grey.50' }}>
-                <PersonIcon sx={{ fontSize: 48, color: 'grey.400', mb: 1 }} />
-                <Typography variant="body1" color="text.secondary">
-                  No active members found
-                </Typography>
-              </Paper>
-            )}
-          </Box>
-
-          {/* Inactive Members Section */}
-          <Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <PersonOffIcon sx={{ mr: 1, color: 'warning.main' }} />
-              <Typography variant="h6" sx={{ color: 'warning.main', fontWeight: 'bold' }}>
-                Inactive Members ({inactiveCount})
-              </Typography>
-            </Box>
-            
-            {inactiveMembers.length > 0 ? (
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead sx={{ bgcolor: 'warning.light' }}>
-                    <TableRow>
-                      <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Username</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>TruckersMP ID</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Events Attended</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Last Updated</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {inactiveMembers
-                      .sort((a, b) => a.username.localeCompare(b.username))
-                      .map((member) => (
-                      <TableRow key={member._id} hover>
-                        <TableCell sx={{ fontWeight: 'medium' }}>{member.username}</TableCell>
-                        <TableCell sx={{ fontFamily: 'monospace' }}>{member.truckersmpUserId}</TableCell>
-                        <TableCell sx={{ textAlign: 'center' }}>
-                          <Chip 
-                            label="0"
-                            color="default"
-                            size="medium"
-                            sx={{ 
-                              fontWeight: 'bold',
-                              fontSize: '0.9rem',
-                              minWidth: '60px',
-                              opacity: 0.7
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell sx={{ color: 'text.secondary' }}>{formatDate(member.lastUpdated)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            ) : (
-              <Paper sx={{ p: 3, textAlign: 'center', bgcolor: 'grey.50' }}>
-                <PersonOffIcon sx={{ fontSize: 48, color: 'grey.400', mb: 1 }} />
-                <Typography variant="body1" color="text.secondary">
-                  All members are active! 🎉
-                </Typography>
-              </Paper>
-            )}
-          </Box>
-        </Box>
-      )}
-
-      {tabValue === 2 && (
-        <Box>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Event-wise Attendance
-            </Typography>
-            <TextField
-              size="small"
-              placeholder="Search events..."
-              value={attendanceSearchTerm}
-              onChange={(e) => setAttendanceSearchTerm(e.target.value)}
-              sx={{ minWidth: 250 }}
-              InputProps={{
-                startAdornment: <CalendarTodayIcon sx={{ mr: 1, color: 'text.secondary' }} />
-              }}
-            />
-          </Box>
-
-          {events.length === 0 ? (
-            <Paper sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50' }}>
-              <EventIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                No Events Found
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Create your first HR event to start tracking attendance
-              </Typography>
-            </Paper>
-          ) : (
-            <Box>
-              {events
-                .filter(event => 
-                  event.title.toLowerCase().includes(attendanceSearchTerm.toLowerCase()) ||
-                  event.description?.toLowerCase().includes(attendanceSearchTerm.toLowerCase())
-                )
-                .sort((a, b) => new Date(b.eventDate) - new Date(a.eventDate))
-                .map((event) => (
-                <Accordion key={event._id} sx={{ mb: 2, boxShadow: 2 }}>
-                  <AccordionSummary
-                    expandIcon={<ExpandMoreIcon />}
-                    sx={{ 
-                      bgcolor: 'primary.light',
-                      color: 'black',
-                      '&:hover': { bgcolor: 'primary.main' }
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', width: '100%',color:'black' }}>
-                      <EventIcon sx={{ mr: 2 }} />
-                      <Box sx={{ flexGrow: 1 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 'bold',color:'black' }}>
-                          {event.title}
-                        </Typography>
-                        <Typography variant="body2" sx={{ opacity: 0.9,color:'black' }}>
-                          {formatDate(event.eventDate)} • {event.attendees?.length || 0} attendees
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Chip 
-                          label={event.status} 
-                          color={getStatusColor(event.status)}
-                          size="small"
-                          sx={{ color: 'black', bgcolor: 'rgba(255,255,255,0.2)' }}
-                        />
-                        <Chip 
-                          icon={<PeopleIcon />}
-                          label={`${event.attendees?.length || 0} Members`}
-                          size="small"
-                          sx={{ color: 'black', bgcolor: 'rgba(255,255,255,0.2)' }}
-                        />
-                      </Box>
-                    </Box>
-                  </AccordionSummary>
-                  <AccordionDetails sx={{ p: 0 }}>
-                    {event.attendees && event.attendees.length > 0 ? (
-                      <TableContainer>
-                        <Table>
-                                                      <TableHead sx={{ bgcolor: 'grey.100',color:'black' }}>
-                              <TableRow>
-                                <TableCell sx={{ fontWeight: 'bold',color:'black' }}>Username</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold',color:'black' }}>TruckersMP ID</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', textAlign: 'center',color:'black' }}>Total Events</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold',color:'black' }}>Last Updated</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold',color:'black', textAlign: 'center' }}>Actions</TableCell>
-                              </TableRow>
-                            </TableHead>
-                          <TableBody>
-                            {event.attendees
-                              .sort((a, b) => a.username.localeCompare(b.username))
-                              .map((member) => (
-                              <TableRow key={member._id} hover>
-                                <TableCell sx={{ fontWeight: 'medium' }}>{member.username}</TableCell>
-                                <TableCell sx={{ fontFamily: 'monospace' }}>{member.truckersmpUserId}</TableCell>
-                                <TableCell sx={{ textAlign: 'center' }}>
-                                  <Chip 
-                                    icon={<TrendingUpIcon />}
-                                    label={member.totalEventsAttended || 0}
-                                    color="primary"
-                                    size="small"
-                                    sx={{ fontWeight: 'bold' }}
-                                  />
-                                </TableCell>
-                                <TableCell sx={{ color: 'text.secondary' }}>
-                                  {formatDate(member.lastUpdated)}
-                                </TableCell>
-                                <TableCell sx={{ textAlign: 'center' }}>
-                                  <Tooltip title="Remove from Event">
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => handleRemoveMember(event, member)}
-                                      sx={{ color: 'error.main' }}
-                                    >
-                                      <RemoveIcon />
-                                    </IconButton>
-                                  </Tooltip>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
-                    ) : (
-                      <Box sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50' }}>
-                        <PeopleIcon sx={{ fontSize: 48, color: 'grey.400', mb: 1 }} />
-                        <Typography variant="body1" color="text.secondary">
-                          No attendees for this event
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                          Click the "Add Members" button to add attendees
-                        </Typography>
-                      </Box>
-                    )}
-                  </AccordionDetails>
-                </Accordion>
-              ))}
-            </Box>
-          )}
-        </Box>
-      )}
-
       {/* Create Event Dialog */}
       <Dialog open={createEventOpen} onClose={() => setCreateEventOpen(false)}>
-        <DialogTitle>Create HR Event</DialogTitle>
+        <DialogTitle>
+          {tabValue === 3 ? 'Create Attendance Event' : 'Create HR Event'}
+        </DialogTitle>
         <DialogContent>
           <TextField
             autoFocus
             margin="dense"
-            label="TruckersMP Event ID"
+            label={tabValue === 3 ? 'Event Title' : 'TruckersMP Event ID'}
             fullWidth
             variant="outlined"
             value={eventId}
             onChange={(e) => setEventId(e.target.value)}
-            placeholder="Enter the TruckersMP event ID"
+            placeholder={tabValue === 3 ? 'Enter event title' : 'Enter the TruckersMP event ID'}
             sx={{ mt: 2 }}
           />
         </DialogContent>
@@ -1066,6 +883,133 @@ const HRDashboard = () => {
           >
             {loading ? <CircularProgress size={20} /> : 'Remove Member'}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Event Details Dialog */}
+      <Dialog open={eventDetailsOpen} onClose={() => setEventDetailsOpen(false)} maxWidth="lg" fullWidth>
+        <DialogTitle>
+          Event Details: {selectedEventDetails?.title}
+        </DialogTitle>
+        <DialogContent>
+          {selectedEventDetails && (
+            <Box>
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6" gutterBottom>Event Information</Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">Description:</Typography>
+                    <Typography variant="body1">{selectedEventDetails.description || 'No description'}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">Event Date:</Typography>
+                    <Typography variant="body1">{formatDate(selectedEventDetails.eventDate)}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">Status:</Typography>
+                    <Chip 
+                      label={selectedEventDetails.status} 
+                      color={getStatusColor(selectedEventDetails.status)}
+                      size="small"
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">Attendance Open:</Typography>
+                    <Chip 
+                      label={selectedEventDetails.isAttendanceOpen ? 'Yes' : 'No'} 
+                      color={selectedEventDetails.isAttendanceOpen ? 'success' : 'error'}
+                      size="small"
+                    />
+                  </Grid>
+                </Grid>
+              </Box>
+
+              <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
+                Attendance Entries ({selectedEventDetails.attendanceEntries?.length || 0})
+              </Typography>
+              
+              {selectedEventDetails.attendanceEntries && selectedEventDetails.attendanceEntries.length > 0 ? (
+                <TableContainer component={Paper} variant="outlined">
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Rider Name</TableCell>
+                        <TableCell>Username</TableCell>
+                        <TableCell>Employee ID</TableCell>
+                        <TableCell>Submitted At</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Notes</TableCell>
+                        <TableCell>Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {selectedEventDetails.attendanceEntries.map((entry) => (
+                        <TableRow key={entry._id}>
+                          <TableCell>{entry.riderId?.name || 'Unknown'}</TableCell>
+                          <TableCell>{entry.riderId?.username || 'Unknown'}</TableCell>
+                          <TableCell>{entry.riderId?.employeeID || 'N/A'}</TableCell>
+                          <TableCell>{formatDate(entry.markedAt)}</TableCell>
+                          <TableCell>
+                            <Chip 
+                              label={entry.status} 
+                              color={
+                                entry.status === 'approved' ? 'success' : 
+                                entry.status === 'rejected' ? 'error' : 
+                                'warning'
+                              }
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell>{entry.notes || '-'}</TableCell>
+                          <TableCell>
+                            {entry.status === 'pending' && (
+                              <Box sx={{ display: 'flex', gap: 1 }}>
+                                <Button
+                                  size="small"
+                                  variant="contained"
+                                  color="success"
+                                  onClick={() => handleApproveAttendance(selectedEventDetails._id, entry._id)}
+                                  disabled={loading}
+                                  startIcon={<CheckCircleIcon />}
+                                >
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="small"
+                                  variant="contained"
+                                  color="error"
+                                  onClick={() => handleRejectAttendance(selectedEventDetails._id, entry._id)}
+                                  disabled={loading}
+                                  startIcon={<CancelIcon />}
+                                >
+                                  Reject
+                                </Button>
+                              </Box>
+                            )}
+                            {entry.status !== 'pending' && (
+                              <Typography variant="body2" color="text.secondary">
+                                {entry.status === 'approved' ? 'Approved' : 'Rejected'}
+                              </Typography>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              ) : (
+                <Paper sx={{ p: 3, textAlign: 'center', bgcolor: 'grey.50' }}>
+                  <PeopleIcon sx={{ fontSize: 48, color: 'grey.400', mb: 1 }} />
+                  <Typography variant="body1" color="text.secondary">
+                    No attendance entries yet
+                  </Typography>
+                </Paper>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEventDetailsOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
     </Container>

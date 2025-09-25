@@ -26,10 +26,20 @@ import {
   Stack,
   TextField,
   InputAdornment,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import {
   People,
-  EventIcon,
+  Event,
   AssignmentIcon,
   Analytics,
   Search,
@@ -40,6 +50,11 @@ import {
   CheckCircle,
   Cancel,
   Pending,
+  Add,
+  Edit,
+  Delete,
+  Close,
+  Check,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import axiosInstance from '../utils/axios';
@@ -49,12 +64,26 @@ const AttendanceManagement = () => {
   const [attendance, setAttendance] = useState([]);
   const [events, setEvents] = useState([]);
   const [members, setMembers] = useState([]);
+  const [attendanceEvents, setAttendanceEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [eventFilter, setEventFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [user, setUser] = useState(null);
+  
+  // Event creation dialog state
+  const [eventDialogOpen, setEventDialogOpen] = useState(false);
+  const [eventForm, setEventForm] = useState({
+    title: '',
+    description: '',
+    eventDate: '',
+    endDate: '',
+    isAttendanceOpen: true
+  });
+  const [eventFormLoading, setEventFormLoading] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [eventDetailsOpen, setEventDetailsOpen] = useState(false);
   
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -78,20 +107,23 @@ const AttendanceManagement = () => {
       setLoading(true);
       setError('');
 
-      // Fetch attendance, events, and members data
-      const [attendanceResponse, eventsResponse, membersResponse] = await Promise.all([
+      // Fetch attendance, events, members, and attendance events data
+      const [attendanceResponse, eventsResponse, membersResponse, attendanceEventsResponse] = await Promise.all([
         axiosInstance.get('/attendance'),
         axiosInstance.get('/events'),
-        axiosInstance.get('/members')
+        axiosInstance.get('/members'),
+        axiosInstance.get('/attendance-events')
       ]);
 
       setAttendance(attendanceResponse.data.attendance || []);
       setEvents(eventsResponse.data.response || []);
       setMembers(membersResponse.data.members || []);
+      setAttendanceEvents(attendanceEventsResponse.data || []);
       
       console.log('Attendance:', attendanceResponse.data);
       console.log('Events:', eventsResponse.data);
       console.log('Members:', membersResponse.data);
+      console.log('Attendance Events:', attendanceEventsResponse.data);
 
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -107,6 +139,62 @@ const AttendanceManagement = () => {
 
   const handleRefresh = async () => {
     await fetchData();
+  };
+
+  // Event management functions
+  const handleCreateEvent = async () => {
+    try {
+      setEventFormLoading(true);
+      await axiosInstance.post('/attendance-events', eventForm);
+      setEventDialogOpen(false);
+      setEventForm({
+        title: '',
+        description: '',
+        eventDate: '',
+        endDate: '',
+        isAttendanceOpen: true
+      });
+      await fetchData();
+    } catch (error) {
+      console.error('Error creating event:', error);
+      setError('Failed to create event. Please try again.');
+    } finally {
+      setEventFormLoading(false);
+    }
+  };
+
+  const handleUpdateEvent = async (eventId, updates) => {
+    try {
+      await axiosInstance.put(`/attendance-events/${eventId}`, updates);
+      await fetchData();
+    } catch (error) {
+      console.error('Error updating event:', error);
+      setError('Failed to update event. Please try again.');
+    }
+  };
+
+  const handleApproveAttendance = async (eventId, entryId) => {
+    try {
+      await axiosInstance.put(`/attendance-events/${eventId}/attendance/${entryId}`, {
+        status: 'approved'
+      });
+      await fetchData();
+    } catch (error) {
+      console.error('Error approving attendance:', error);
+      setError('Failed to approve attendance. Please try again.');
+    }
+  };
+
+  const handleRejectAttendance = async (eventId, entryId) => {
+    try {
+      await axiosInstance.put(`/attendance-events/${eventId}/attendance/${entryId}`, {
+        status: 'rejected'
+      });
+      await fetchData();
+    } catch (error) {
+      console.error('Error rejecting attendance:', error);
+      setError('Failed to reject attendance. Please try again.');
+    }
   };
 
   const handleExportAttendance = async () => {
@@ -307,6 +395,7 @@ const AttendanceManagement = () => {
             <Tab label="Attendance Records" />
             <Tab label="Event Attendance" />
             <Tab label="Member Attendance" />
+            <Tab label="Attendance Events" />
             <Tab label="Reports" />
           </Tabs>
         </Paper>
@@ -545,8 +634,125 @@ const AttendanceManagement = () => {
         </Paper>
       )}
 
-      {/* Reports Tab */}
+      {/* Attendance Events Tab */}
       {activeTab === 3 && (
+        <Paper sx={{ borderRadius: 2, overflow: 'auto' }}>
+          <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+              <Typography variant="h6">Attendance Events Management</Typography>
+              <Button
+                variant="contained"
+                startIcon={<Add />}
+                onClick={() => setEventDialogOpen(true)}
+              >
+                Create Event
+              </Button>
+            </Stack>
+          </Box>
+          
+          <TableContainer>
+            <Table>
+              <TableHead>
+                  <TableRow>
+                    <TableCell>Event Title</TableCell>
+                    <TableCell>Event Date</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Attendance Open</TableCell>
+                    <TableCell>Entries</TableCell>
+                    <TableCell>Pending Approval</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+              </TableHead>
+              <TableBody>
+                {attendanceEvents.map((event) => (
+                  <TableRow key={event._id}>
+                    <TableCell>
+                      <Box>
+                        <Typography variant="subtitle2" fontWeight="bold">
+                          {event.title}
+                        </Typography>
+                        {event.description && (
+                          <Typography variant="caption" color="text.secondary">
+                            {event.description}
+                          </Typography>
+                        )}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {format(new Date(event.eventDate), 'MMM dd, yyyy HH:mm')}
+                      </Typography>
+                      {event.endDate && (
+                        <Typography variant="caption" color="text.secondary">
+                          to {format(new Date(event.endDate), 'MMM dd, yyyy HH:mm')}
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={event.status}
+                        color={event.status === 'open' ? 'success' : event.status === 'closed' ? 'default' : 'error'}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={event.isAttendanceOpen ? 'Open' : 'Closed'}
+                        color={event.isAttendanceOpen ? 'success' : 'default'}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {event.attendanceEntries?.length || 0} entries
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="warning.main">
+                        {event.attendanceEntries?.filter(entry => entry.status === 'pending').length || 0} pending
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={1}>
+                        <Tooltip title="Toggle Attendance">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleUpdateEvent(event._id, { isAttendanceOpen: !event.isAttendanceOpen })}
+                          >
+                            {event.isAttendanceOpen ? <Close /> : <Check />}
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="View Details">
+                          <IconButton
+                            size="small"
+                            onClick={() => {
+                              setSelectedEvent(event);
+                              setEventDetailsOpen(true);
+                            }}
+                          >
+                            <Event />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Close Event">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleUpdateEvent(event._id, { status: 'closed' })}
+                          >
+                            <Close />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
+      )}
+
+      {/* Reports Tab */}
+      {activeTab === 4 && (
         <Paper sx={{ borderRadius: 2, overflow: 'auto', p: 2 }}>
           <Typography variant="h6" gutterBottom>
             Attendance Reports
@@ -613,6 +819,188 @@ const AttendanceManagement = () => {
           </Grid>
         </Paper>
       )}
+
+      {/* Event Creation Dialog */}
+      <Dialog open={eventDialogOpen} onClose={() => setEventDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Create Attendance Event</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              fullWidth
+              label="Event Title"
+              value={eventForm.title}
+              onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
+              required
+            />
+            <TextField
+              fullWidth
+              label="Description"
+              value={eventForm.description}
+              onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })}
+              multiline
+              rows={3}
+            />
+            <TextField
+              fullWidth
+              label="Event Date"
+              type="datetime-local"
+              value={eventForm.eventDate}
+              onChange={(e) => setEventForm({ ...eventForm, eventDate: e.target.value })}
+              InputLabelProps={{ shrink: true }}
+              required
+            />
+            <TextField
+              fullWidth
+              label="End Date (Optional)"
+              type="datetime-local"
+              value={eventForm.endDate}
+              onChange={(e) => setEventForm({ ...eventForm, endDate: e.target.value })}
+              InputLabelProps={{ shrink: true }}
+            />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={eventForm.isAttendanceOpen}
+                  onChange={(e) => setEventForm({ ...eventForm, isAttendanceOpen: e.target.checked })}
+                />
+              }
+              label="Attendance Open for Marking"
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEventDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={handleCreateEvent}
+            variant="contained"
+            disabled={eventFormLoading || !eventForm.title || !eventForm.eventDate}
+          >
+            {eventFormLoading ? 'Creating...' : 'Create Event'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Event Details Dialog */}
+      <Dialog open={eventDetailsOpen} onClose={() => setEventDetailsOpen(false)} maxWidth="lg" fullWidth>
+        <DialogTitle>
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Typography variant="h6">
+              {selectedEvent?.title} - Attendance Details
+            </Typography>
+            <IconButton onClick={() => setEventDetailsOpen(false)}>
+              <Close />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
+        <DialogContent>
+          {selectedEvent && (
+            <Box>
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                <Grid item xs={12} md={6}>
+                  <Typography variant="subtitle1" fontWeight="bold">Event Information</Typography>
+                  <Typography variant="body2">Date: {format(new Date(selectedEvent.eventDate), 'MMM dd, yyyy HH:mm')}</Typography>
+                  {selectedEvent.endDate && (
+                    <Typography variant="body2">End: {format(new Date(selectedEvent.endDate), 'MMM dd, yyyy HH:mm')}</Typography>
+                  )}
+                  <Typography variant="body2">Status: {selectedEvent.status}</Typography>
+                  <Typography variant="body2">Attendance Open: {selectedEvent.isAttendanceOpen ? 'Yes' : 'No'}</Typography>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <Typography variant="subtitle1" fontWeight="bold">Statistics</Typography>
+                  <Typography variant="body2">Total Entries: {selectedEvent.attendanceEntries?.length || 0}</Typography>
+                  <Typography variant="body2" color="warning.main">
+                    Pending: {selectedEvent.attendanceEntries?.filter(entry => entry.status === 'pending').length || 0}
+                  </Typography>
+                  <Typography variant="body2" color="success.main">
+                    Approved: {selectedEvent.attendanceEntries?.filter(entry => entry.status === 'approved').length || 0}
+                  </Typography>
+                  <Typography variant="body2" color="error.main">
+                    Rejected: {selectedEvent.attendanceEntries?.filter(entry => entry.status === 'rejected').length || 0}
+                  </Typography>
+                </Grid>
+              </Grid>
+
+              <Typography variant="h6" gutterBottom>Attendance Entries</Typography>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Rider</TableCell>
+                      <TableCell>Marked At</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Notes</TableCell>
+                      <TableCell>Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {selectedEvent.attendanceEntries?.map((entry, index) => (
+                      <TableRow key={index}>
+                        <TableCell>
+                          <Typography variant="body2" fontWeight="bold">
+                            {entry.riderId?.name || 'Unknown'}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {entry.riderId?.employeeID || 'No ID'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {format(new Date(entry.markedAt), 'MMM dd, yyyy HH:mm')}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={entry.status}
+                            color={entry.status === 'approved' ? 'success' : entry.status === 'rejected' ? 'error' : 'warning'}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {entry.notes || '-'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          {entry.status === 'pending' && (
+                            <Stack direction="row" spacing={1}>
+                              <Button
+                                size="small"
+                                variant="contained"
+                                color="success"
+                                startIcon={<CheckCircle />}
+                                onClick={() => handleApproveAttendance(selectedEvent._id, entry._id)}
+                              >
+                                Approve
+                              </Button>
+                              <Button
+                                size="small"
+                                variant="contained"
+                                color="error"
+                                startIcon={<Cancel />}
+                                onClick={() => handleRejectAttendance(selectedEvent._id, entry._id)}
+                              >
+                                Reject
+                              </Button>
+                            </Stack>
+                          )}
+                          {entry.status !== 'pending' && (
+                            <Typography variant="body2" color="text.secondary">
+                              {entry.approvedBy?.username} - {format(new Date(entry.approvedAt), 'MMM dd, HH:mm')}
+                            </Typography>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEventDetailsOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

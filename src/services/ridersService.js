@@ -3,7 +3,7 @@ import api from '../utils/axios';
 const ridersService = {
   list: async () => {
     const { data } = await api.get('/riders');
-    return data;
+    return Array.isArray(data) ? data : (data?.items || []);
   },
   get: async (id) => {
     const { data } = await api.get(`/riders/${id}`);
