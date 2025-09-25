@@ -207,21 +207,21 @@ const Navbar = () => {
       ];
     } else if (isEventTeam) {
       return [
-        { label: 'Event Dashboard', path: '/admin', icon: <Dashboard /> },
+        { label: 'Admin', path: '/admin', icon: <Dashboard /> },
         { label: 'VTC Jobs', path: '/jobs', icon: <Speed /> },
         { label: 'Events', path: '/events', icon: <Event /> },
         { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
         { label: 'Contact', path: '/contact', icon: <Event /> },
-        { label: 'Challenges', path: '/admin/challenges', icon: <EmojiEvents /> },
+        
       ];
     } else if (isHR) {
       return [
-        { label: 'HR Dashboard', path: '/hr', icon: <PeopleIcon /> },
+        { label: 'Admin', path: '/admin', icon: <Dashboard /> },
         { label: 'Events', path: '/events', icon: <Event /> },
         { label: 'VTC Jobs', path: '/jobs', icon: <Speed /> },
         { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
         { label: 'Contact', path: '/contact', icon: <Event /> },
-        { label: 'Challenges', path: '/admin/challenges', icon: <EmojiEvents /> },
+        
       ];
     } else {
       return [

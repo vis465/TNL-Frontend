@@ -48,7 +48,8 @@ const AdminDashboard = () => {
       icon: <EmojiEvents sx={{ fontSize: 40, color: 'primary.main' }} />,
       color: 'primary',
       href: '/admin/events',
-      features: ['Event Management', 'Booking Requests', 'Special Events', 'Analytics']
+      features: ['Event Management', 'Booking Requests', 'Special Events', 'Analytics'],
+      allowedRoles: ['admin','eventteam']
     },
     {
       title: 'Challenge Management',
@@ -56,7 +57,8 @@ const AdminDashboard = () => {
       icon: <Directions sx={{ fontSize: 40, color: 'secondary.main' }} />,
       color: 'secondary',
       href: '/admin/challenges',
-      features: ['Create Challenges', 'Track Progress', 'View Leaderboards', 'Manage Rewards']
+      features: ['Create Challenges', 'Track Progress', 'View Leaderboards', 'Manage Rewards'],
+      allowedRoles: ['admin','eventteam','hrteam']
     },
     {
       title: 'Attendance Management',
@@ -64,7 +66,8 @@ const AdminDashboard = () => {
       icon: <People sx={{ fontSize: 40, color: 'success.main' }} />,
       color: 'success',
       href: '/admin/attendance',
-      features: ['Member Attendance', 'Event Participation', 'Attendance Reports', 'Member Management']
+      features: ['Member Attendance', 'Event Participation', 'Attendance Reports', 'Member Management'],
+      allowedRoles: ['admin','hrteam']
     },
     {
       title: 'Job Management',
@@ -72,16 +75,27 @@ const AdminDashboard = () => {
       icon: <Assignment sx={{ fontSize: 40, color: 'warning.main' }} />,
       color: 'warning',
       href: '/admin/jobs',
-      features: ['Browse Jobs', 'Filter by Status', 'Clean up old data']
+      features: ['Browse Jobs', 'Filter by Status', 'Clean up old data'],
+      allowedRoles: ['admin','eventteam']
     },
-    {
-      title: 'System Analytics',
-      description: 'View comprehensive analytics and reports for events, challenges, attendance, and user engagement.',
-      icon: <Analytics sx={{ fontSize: 40, color: 'info.main' }} />,
-      color: 'info',
-      href: '/admin/analytics',
-      features: ['Event Analytics', 'Challenge Statistics', 'Attendance Reports', 'User Engagement']
-    }
+        {
+          title: 'System Analytics',
+          description: 'View comprehensive analytics and reports for events, challenges, attendance, and user engagement.',
+          icon: <Analytics sx={{ fontSize: 40, color: 'info.main' }} />,
+          color: 'info',
+          href: '/admin/analytics',
+          features: ['Event Analytics', 'Challenge Statistics', 'Attendance Reports', 'User Engagement'],
+          allowedRoles: ['admin']
+        },
+        {
+          title: 'Achievement Management',
+          description: 'Issue and manage achievements for riders. Create custom achievements with logos and descriptions.',
+          icon: <EmojiEvents sx={{ fontSize: 40, color: 'warning.main' }} />,
+          color: 'warning',
+          href: '/admin/achievements',
+          features: ['Issue Achievements', 'Manage Awards', 'Track Recognition', 'Custom Badges'],
+          allowedRoles: ['admin', 'hrteam']
+        }
   ];
 
   return (
@@ -124,9 +138,11 @@ const AdminDashboard = () => {
         )}
       </Box>
 
-      {/* Management Cards */}
+      {/* Management Cards with RBAC gating */}
       <Grid container spacing={3}>
-        {managementCards.map((card, index) => (
+        {managementCards
+          .filter(card => !user || (card.allowedRoles || []).includes(user.role))
+          .map((card, index) => (
           <Grid item xs={12} sm={6} lg={3} key={index}>
             <Card 
             sx={{ 
@@ -193,19 +209,20 @@ const AdminDashboard = () => {
               </CardContent>
               
               <CardActions sx={{ p: 3, pt: 0 }}>
-                            <Button
-                              variant="contained"
+                <Button
+                  variant="contained"
                   color={card.color}
                   fullWidth
                   size="large"
                   href={card.href}
+                  disabled={user ? !(card.allowedRoles || []).includes(user.role) : true}
                   sx={{ 
                     fontWeight: 'bold',
                     py: 1.5
                   }}
                 >
                   Manage {card.title.split(' ')[0]}
-                            </Button>
+                </Button>
               </CardActions>
             </Card>
           </Grid>
@@ -213,49 +230,7 @@ const AdminDashboard = () => {
       </Grid>
 
       {/* Quick Stats or Additional Info */}
-      <Box sx={{ mt: 4 }}>
-        <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
-          Quick Access
-        </Typography>
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ p: 2, textAlign: 'center' }}>
-              <Assignment sx={{ fontSize: 30, color: 'primary.main', mb: 1 }} />
-              <Typography variant="h6">Events</Typography>
-              <Typography variant="body2" color="text.secondary">
-                Manage all events
-              </Typography>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ p: 2, textAlign: 'center' }}>
-              <Timeline sx={{ fontSize: 30, color: 'secondary.main', mb: 1 }} />
-              <Typography variant="h6">Challenges</Typography>
-              <Typography variant="body2" color="text.secondary">
-                Track driver progress
-            </Typography>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ p: 2, textAlign: 'center' }}>
-              <People sx={{ fontSize: 30, color: 'success.main', mb: 1 }} />
-              <Typography variant="h6">Attendance</Typography>
-              <Typography variant="body2" color="text.secondary">
-                Member participation
-          </Typography>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ p: 2, textAlign: 'center' }}>
-              <Assessment sx={{ fontSize: 30, color: 'info.main', mb: 1 }} />
-              <Typography variant="h6">Analytics</Typography>
-              <Typography variant="body2" color="text.secondary">
-                View reports
-            </Typography>
-            </Card>
-          </Grid>
-        </Grid>
-      </Box>
+    
     </Container>
   );
 };

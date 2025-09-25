@@ -66,6 +66,7 @@ import UserDashboardV2 from './pages/UserDashboardV2';
 import RiderRegistration from './pages/RiderRegistration';
 import AdminRiders from './pages/AdminRiders';
 import RiderAttendance from './pages/RiderAttendance';
+import AdminAchievements from './pages/AdminAchievements';
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -275,11 +276,12 @@ function App() {
                     <Route path="/admin/jobs" element={<PrivateRoute allowedRoles={["admin","eventteam"]}><AdminJobs /></PrivateRoute>} />
                     <Route path="/admin/events" element={<PrivateRoute allowedRoles={["admin","eventteam"]}><EventManagement /></PrivateRoute>} />
                     <Route path="/admin/analytics" element={<PrivateRoute allowedRoles={["admin","eventteam"]}><AnalyticsDashboard /></PrivateRoute>} />
-                    <Route path="/admin/challenges" element={<PrivateRoute allowedRoles={["admin","eventteam"]}><AdminChallenges /></PrivateRoute>} />
-                    <Route path="/admin/challenges/:id" element={<PrivateRoute allowedRoles={["admin","eventteam"]}><ChallengeDetails /></PrivateRoute>} />
+                    <Route path="/admin/challenges" element={<PrivateRoute allowedRoles={["admin","eventteam","hrteam"]}><AdminChallenges /></PrivateRoute>} />
+                    <Route path="/admin/challenges/:id" element={<PrivateRoute allowedRoles={["admin","eventteam","hrteam"]}><ChallengeDetails /></PrivateRoute>} />
                     {/* Admin + HR team */}
                     <Route path="/admin/attendance" element={<PrivateRoute allowedRoles={["admin","hrteam"]}><HRDashboard /></PrivateRoute>} />
                     <Route path="/admin/riders" element={<PrivateRoute allowedRoles={["admin","eventteam","hrteam"]}><AdminRiders /></PrivateRoute>} />
+                    <Route path="/admin/achievements" element={<PrivateRoute allowedRoles={["admin","hrteam"]}><AdminAchievements /></PrivateRoute>} />
                   </Route>
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>

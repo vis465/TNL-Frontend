@@ -158,7 +158,7 @@ export default function UserDashboard() {
     </Box>
   );
 
-  const { user, rider, latestJobs = [], progress = [], completions = [], totals = { totalKm: 0, totalRevenue: 0, totalJobs: 0 }, attendance = { totalEventsAttended: 0, eventsAttended: [] } } = data;
+  const { user, rider, latestJobs = [], progress = [], completions = [], totals = { totalKm: 0, totalRevenue: 0, totalJobs: 0 }, attendance = { totalEventsAttended: 0, eventsAttended: [] }, achievements = [] } = data;
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex' }}>
@@ -404,6 +404,35 @@ export default function UserDashboard() {
           </Grid>
         </Grid>
 
+        {/* Achievements */}
+        <Grid container spacing={3} sx={{ mb: 3 }}>
+          <Grid item xs={12}>
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="h6" sx={{ mb: 2 }}>Achievements</Typography>
+                {achievements.length === 0 ? (
+                  <Typography variant="body2" color="text.secondary">No achievements yet.</Typography>
+                ) : (
+                  <Grid container spacing={2}>
+                    {achievements.slice(0, 8).map((a, idx) => (
+                      <Grid item xs={12} sm={6} md={3} key={idx}>
+                        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ p: 1.5, borderRadius: 1, bgcolor: 'action.hover' }}>
+                          <Avatar src={a.logoUrl} alt={a.name} variant="rounded" sx={{ width: 40, height: 40 }} />
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="body1" fontWeight={600} noWrap>{a.name}</Typography>
+                            <Typography variant="caption" color="text.secondary" noWrap>{a.description || ''}</Typography>
+                            <Typography variant="caption" color="text.secondary" display="block">{a.issuedOn ? new Date(a.issuedOn).toLocaleDateString() : ''}</Typography>
+                          </Box>
+                        </Stack>
+                      </Grid>
+                    ))}
+                  </Grid>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
         <Dialog open={attendanceOpen} onClose={() => setAttendanceOpen(false)} fullWidth maxWidth="md">
           <DialogTitle>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
@@ -549,10 +578,11 @@ export default function UserDashboard() {
               <CardContent>
                 <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
                   <Typography variant="h6">Recent Deliveries</Typography>
-                  <LocalShippingOutlinedIcon color="disabled" fontSize="small" />
+                    <LocalShippingOutlinedIcon color="disabled" fontSize="small" />
+                  
                 </Stack>
                 <Stack spacing={1.5}>
-              {latestJobs.map((job, index) => (
+              {latestJobs.slice(0, 5).map((job, index) => (
                     <Stack key={job.jobID || index} direction="row" spacing={2} alignItems="center" sx={{ p: 1.5, borderRadius: 1, bgcolor: 'action.hover' }}>
                       <Box sx={{ width: 40, height: 40, borderRadius: 1, bgcolor: 'primary.light', color: 'primary.main', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <Inventory2OutlinedIcon fontSize="small" />
@@ -628,20 +658,20 @@ export default function UserDashboard() {
                     
                     return Array.from(challengeMap.values()).map((challenge) => (
                       <Box key={challenge.challengeId} sx={{ p: 1.5, borderRadius: 1, bgcolor: 'action.hover' }}>
-                        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+                      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
                           <Typography variant="subtitle1" fontWeight={600}>{challenge.challengeName}</Typography>
                           {challenge.isCompleted && (
-                            <Chip size="small" color="success" variant="outlined" label="Completed" />
-                          )}
-                        </Stack>
-                        <Stack direction="row" alignItems="center" justifyContent="space-between">
+                          <Chip size="small" color="success" variant="outlined" label="Completed" />
+                        )}
+                      </Stack>
+                      <Stack direction="row" alignItems="center" justifyContent="space-between">
                           <Typography variant="body2" color="text.secondary">Total Distance: {challenge.totalDistance} km</Typography>
                           <Typography variant="body2" color="text.secondary">Jobs: {challenge.totalJobs}</Typography>
-                        </Stack>
-                        <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                      </Stack>
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
                           Last updated: {new Date(challenge.lastUpdated).toLocaleDateString()}
-                        </Typography>
-                      </Box>
+                      </Typography>
+                    </Box>
                     ));
                   })()}
                   {progress.length === 0 && (
@@ -662,20 +692,20 @@ export default function UserDashboard() {
                   <EmojiEventsOutlinedIcon color="disabled" fontSize="small" />
                 </Stack>
                 <Stack spacing={1.5}>
-                  {completions.map((c) => (
+                  {data.achievements.map((c) => (
                     <Box key={`${c.challengeId}-${c.completionJobId}`} sx={{ p: 1.5, borderRadius: 1, bgcolor: 'background.paper', border: 1, borderColor: 'divider' }}>
-                      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
-                        <Typography variant="subtitle1" fontWeight={600}>{c.challengeName}</Typography>
-                        <Chip size="small" color="primary" variant="outlined" label={c.challengeDifficulty} />
+                      <Stack direction="row" alignItems="center"  sx={{ mb: 1 }}>
+                        <Avatar src={c.logoUrl} alt={c.name} variant="rounded" sx={{ width: 40, height: 40 , mr: 2}} />
+                        <Typography variant="subtitle1" fontWeight={600}>{c.name}</Typography>
+                        
                       </Stack>
                       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.5 }}>
-                        <Typography variant="body2" color="text.secondary">{c.totalJobsCompleted} jobs</Typography>
-                        <Typography variant="body2" color="text.secondary">{c.totalDistance} km</Typography>
+                        <Typography variant="body2" color="text.secondary">{c.description}</Typography>
                       </Stack>
-                      <Typography variant="caption" color="text.secondary">Completed: {new Date(c.completionTime).toLocaleDateString()}</Typography>
+                      <Typography variant="caption" color="text.secondary">Issued: {c.issuedOn ? new Date(c.issuedOn).toLocaleDateString() : ''}</Typography>
                     </Box>
                   ))}
-                  {completions.length === 0 && (
+                  {data.achievements.length === 0 && (
                     <Stack alignItems="center" justifyContent="center" sx={{ py: 6 }} spacing={1}>
                       <EmojiEventsOutlinedIcon color="disabled" fontSize="large" />
                       <Typography variant="body2" color="text.secondary">No achievements yet</Typography>
