@@ -17,15 +17,18 @@ export default function Leaderboard() {
   const [to, setTo] = useState('');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [attendance, setAttendance] = useState([]);
   const theme = useTheme();
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const { data } = await axiosInstance.get('/jobs/leaderboard', { 
-        params: { from: from || undefined, to: to || undefined } 
-      });
-      setData(data);
+      const [jobsRes, attRes] = await Promise.all([
+        axiosInstance.get('/jobs/leaderboard', { params: { from: from || undefined, to: to || undefined } }),
+        axiosInstance.get('/hr-events/public/leaderboard')
+      ]);
+      setData(jobsRes.data);
+      setAttendance(Array.isArray(attRes.data) ? attRes.data : []);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -364,7 +367,38 @@ export default function Leaderboard() {
 
             {/* Drivers Ranking Table */}
             <Grid item xs={12} md={8}>
+              <div className='mb-4'>
+            <Fade in={!loading} timeout={1000}>
+                <Card variant="outlined" sx={{ backgroundColor: 'background.paper', borderColor: alpha(theme.palette.divider, 0.12) }}>
+                  <CardContent>
+                    <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 2 }}>
+                      <EmojiEvents sx={{ fontSize: 20, color: 'warning.main' }} />
+                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                        Top Event Attendees
+                      </Typography>
+                    </Stack>
+                    <Divider sx={{ mb: 2, opacity: 0.6 }} />
+                    <Stack spacing={1.25}>
+                      {attendance.slice(0, 10).map((m, idx) => (
+                        <Stack key={m._id || idx} direction="row" alignItems="center" justifyContent="space-between">
+                          <Stack direction="row" alignItems="center" spacing={1}>
+                            <Typography sx={{ width: 22, textAlign: 'right', color: 'text.secondary' }}>{idx + 1}</Typography>
+                            <Avatar sx={{ width: 28, height: 28 }}>{(m.username || '?')[0]}</Avatar>
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>{m.username || 'Unknown'}</Typography>
+                          </Stack>
+                          <Chip size="small" label={(m.totalEventsAttended || 0)} color="warning" variant="outlined" />
+                        </Stack>
+                      ))}
+                      {attendance.length === 0 && (
+                        <Typography variant="body2" color="text.secondary">No attendance data.</Typography>
+                      )}
+                    </Stack>
+                  </CardContent>
+                </Card>
+              </Fade>
+              </div>
               <Fade in={!loading} timeout={1000}>
+                
                 <Card 
                   variant="outlined"
                   sx={{
@@ -443,7 +477,7 @@ export default function Leaderboard() {
             </Grid>
 
             {/* Location Analytics */}
-            <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={4}>
               <Stack spacing={3}>
                 <ProgressSection
                   title="Popular Sources"
@@ -459,6 +493,8 @@ export default function Leaderboard() {
                   color="success"
                   delay={400}
                 />
+              {/* Top Event Attendees */}
+              
               </Stack>
             </Grid>
           </Grid>
