@@ -221,6 +221,12 @@ export default function UserDashboard() {
                       <Typography variant="caption" color="text.secondary">{rider?.rating || 4.8}</Typography>
                     </Stack>
                     <Chip size="small" color="primary" variant="outlined" label={user?.role} />
+                    {rider?.age && (
+                      <Chip size="small" color="secondary" variant="outlined" label={`Age: ${rider.age}`} />
+                    )}
+                    {rider?.employeeID && (
+                      <Chip size="small" color="info" variant="outlined" label={rider.employeeID} />
+                    )}
                   </Stack>
                 </Box>
               </Stack>
@@ -427,6 +433,172 @@ export default function UserDashboard() {
                       </Grid>
                     ))}
                   </Grid>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        {/* Rider Profile Metadata */}
+        <Grid container spacing={3} sx={{ mb: 3 }}>
+          <Grid item xs={12}>
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="h6" sx={{ mb: 2 }}>Profile Information</Typography>
+                <Grid container spacing={3}>
+                  <Grid item xs={12} md={6}>
+                    <Stack spacing={2}>
+                      <Box>
+                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                          Steam Information
+                        </Typography>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Chip 
+                            size="small" 
+                            label={rider?.steamID ? `Steam ID: ${rider.steamID}` : 'No Steam ID'} 
+                            color={rider?.steamID ? 'primary' : 'default'}
+                            variant="outlined"
+                          />
+                        </Stack>
+                      </Box>
+                      <Box>
+                        <Typography variant="subtitle2"  gutterBottom>
+                          TruckersMP Information
+                        </Typography>
+                        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                          <Chip 
+                            size="small" 
+                            label={rider?.truckersmpId ? `TruckersMP ID: ${rider.truckersmpId}` : 'No TruckersMP ID'} 
+                            color={rider?.truckersmpId ? 'secondary' : 'default'}
+                            variant="outlined"
+                          />
+                          <Chip 
+                            size="small" 
+                            label={rider?.truckershubId ? `TruckersHub ID: ${rider.truckershubId}` : 'No TruckersHub ID'} 
+                            color={rider?.truckershubId ? 'success' : 'default'}
+                            variant="outlined"
+                          />
+                        </Stack>
+                      </Box>
+                    </Stack>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Stack spacing={2}>
+                      <Box>
+                        <Typography variant="subtitle2"  gutterBottom>
+                          DLCs Owned
+                        </Typography>
+                        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                          {rider?.dlcsOwned?.ets2?.length > 0 ? (
+                            <Chip 
+                              size="small" 
+                              label={`ETS2 DLCs: ${rider.dlcsOwned.ets2.length}`} 
+                              color="info"
+                              variant="outlined"
+                            />
+                          ) : (
+                            <Chip 
+                              size="small" 
+                              label="No ETS2 DLCs" 
+                              color="default"
+                              variant="outlined"
+                            />
+                          )}
+                          {rider?.dlcsOwned?.ats?.length > 0 ? (
+                            <Chip 
+                              size="small" 
+                              label={`ATS DLCs: ${rider.dlcsOwned.ats.length}`} 
+                              color="info"
+                              variant="outlined"
+                            />
+                          ) : (
+                            <Chip 
+                              size="small" 
+                              label="No ATS DLCs" 
+                              color="default"
+                              variant="outlined"
+                            />
+                          )}
+                        </Stack>
+                      </Box>
+                      <Box>
+                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                          Games Owned
+                        </Typography>
+                        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                          {rider?.gamesOwned?.length > 0 ? (
+                            <Chip 
+                              size="small" 
+                              label={`Games: ${rider.gamesOwned.length}`} 
+                              color="warning"
+                              variant="outlined"
+                            />
+                          ) : (
+                            <Chip 
+                              size="small" 
+                              label="No games listed" 
+                              color="default"
+                              variant="outlined"
+                            />
+                          )}
+                        </Stack>
+                      </Box>
+                    </Stack>
+                  </Grid>
+                </Grid>
+                {rider?.dlcsOwned?.ets2?.length > 0 && (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="subtitle2"  gutterBottom>
+                      ETS2 DLCs
+                    </Typography>
+                    <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                      {rider.dlcsOwned.ets2.map((dlc, index) => (
+                        <Chip 
+                          key={index}
+                          size="small" 
+                          label={dlc} 
+                           color="info"
+                              variant="outlined"
+                        />
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
+                {rider?.dlcsOwned?.ats?.length > 0 && (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="subtitle2" color gutterBottom>
+                      ATS DLCs
+                    </Typography>
+                    <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                      {rider.dlcsOwned.ats.map((dlc, index) => (
+                        <Chip 
+                          key={index}
+                          size="small" 
+                          label={dlc} 
+                           color="info"
+                              variant="outlined"
+                        />
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
+                {rider?.gamesOwned?.length > 0 && (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                      Games Owned
+                    </Typography>
+                    <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                      {rider.gamesOwned.map((game, index) => (
+                        <Chip 
+                          key={index}
+                          size="small" 
+                          label={game} 
+                          color="warning"
+                          variant="filled"
+                        />
+                      ))}
+                    </Stack>
+                  </Box>
                 )}
               </CardContent>
             </Card>
@@ -684,37 +856,7 @@ export default function UserDashboard() {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} lg={6}>
-            <Card variant="outlined">
-              <CardContent>
-                <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
-                  <Typography variant="h6">Achievements</Typography>
-                  <EmojiEventsOutlinedIcon color="disabled" fontSize="small" />
-                </Stack>
-                <Stack spacing={1.5}>
-                  {data.achievements.map((c) => (
-                    <Box key={`${c.challengeId}-${c.completionJobId}`} sx={{ p: 1.5, borderRadius: 1, bgcolor: 'background.paper', border: 1, borderColor: 'divider' }}>
-                      <Stack direction="row" alignItems="center"  sx={{ mb: 1 }}>
-                        <Avatar src={c.logoUrl} alt={c.name} variant="rounded" sx={{ width: 40, height: 40 , mr: 2}} />
-                        <Typography variant="subtitle1" fontWeight={600}>{c.name}</Typography>
-                        
-                      </Stack>
-                      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.5 }}>
-                        <Typography variant="body2" color="text.secondary">{c.description}</Typography>
-                      </Stack>
-                      <Typography variant="caption" color="text.secondary">Issued: {c.issuedOn ? new Date(c.issuedOn).toLocaleDateString() : ''}</Typography>
-                    </Box>
-                  ))}
-                  {data.achievements.length === 0 && (
-                    <Stack alignItems="center" justifyContent="center" sx={{ py: 6 }} spacing={1}>
-                      <EmojiEventsOutlinedIcon color="disabled" fontSize="large" />
-                      <Typography variant="body2" color="text.secondary">No achievements yet</Typography>
-                    </Stack>
-                  )}
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
+         
         </Grid>
       </Box>
       </Box>

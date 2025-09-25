@@ -51,7 +51,9 @@ import {
   Delete as DeleteIcon,
   Remove as RemoveIcon,
   Save as SaveIcon,
-  Cancel as CancelIcon
+  Cancel as CancelIcon,
+  Lock as LockIcon,
+  LockOpen as LockOpenIcon
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import axiosInstance from '../utils/axios';
@@ -425,6 +427,25 @@ const HRDashboard = () => {
     }
   };
 
+  const handleToggleAttendance = async (eventId, isAttendanceOpen) => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      await axiosInstance.patch(`/attendance-events/${eventId}/toggle-attendance`, {
+        isAttendanceOpen
+      });
+      
+      setSuccess(`Attendance ${isAttendanceOpen ? 'opened' : 'closed'} successfully`);
+      fetchAttendanceEvents();
+    } catch (error) {
+      console.error('Error toggling attendance:', error);
+      setError('Failed to toggle attendance status');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'active': return 'success';
@@ -576,8 +597,8 @@ const HRDashboard = () => {
                     <TableCell>Description</TableCell>
                     <TableCell>Event Date</TableCell>
                     <TableCell>Status</TableCell>
+                    <TableCell>Attendance Open</TableCell>
                     <TableCell>Attendance Entries</TableCell>
-                    
                     <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
@@ -596,6 +617,13 @@ const HRDashboard = () => {
                       </TableCell>
                       <TableCell>
                         <Chip 
+                          label={event.isAttendanceOpen ? 'Open' : 'Closed'} 
+                          color={event.isAttendanceOpen ? 'success' : 'default'}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Chip 
                           label={`${event.attendanceEntries?.length || 0} entries`}
                           color="primary"
                           size="small"
@@ -604,6 +632,15 @@ const HRDashboard = () => {
                       
                       <TableCell>
                         <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Tooltip title={event.isAttendanceOpen ? 'Close Attendance' : 'Open Attendance'}>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleToggleAttendance(event._id, !event.isAttendanceOpen)}
+                              color={event.isAttendanceOpen ? 'warning' : 'success'}
+                            >
+                              {event.isAttendanceOpen ? <LockIcon /> : <LockOpenIcon />}
+                            </IconButton>
+                          </Tooltip>
                           <Tooltip title="View Details">
                             <IconButton
                               size="small"
