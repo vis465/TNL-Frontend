@@ -24,7 +24,8 @@ import {
   DialogActions,
   FormControlLabel,
   Checkbox,
-  Divider
+  Divider,
+  LinearProgress
 } from '@mui/material';
 import axiosInstance from '../utils/axios';
 
@@ -239,6 +240,14 @@ export default function AdminJobs() {
               <Button size="small" onClick={fetchProgress}>Refresh</Button>
             </Stack>
           </Stack>
+          {progress?.progress && (
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                Import Status: {progress.progress.running ? 'Running' : 'Idle'} • {progress.progress.processed}/{progress.progress.total} ({progress.progress.percent}%)
+              </Typography>
+              <LinearProgress variant="determinate" value={progress.progress.percent} />
+            </Box>
+          )}
           <Grid container spacing={2}>
             <Grid item xs={6} md={3}><Typography variant="body2" color="text.secondary">Legacy Total</Typography><Typography variant="h6">{progress?.legacyTotal ?? '-'}</Typography></Grid>
             <Grid item xs={6} md={3}><Typography variant="body2" color="text.secondary">Imported Jobs</Typography><Typography variant="h6">{progress?.jobsTotal ?? '-'}</Typography></Grid>
