@@ -14,6 +14,9 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminJobs from './pages/AdminJobs';
+import RiderJobs from './pages/RiderJobs';
+
+import JobDetails from './pages/jobdetails';
 import AdminUsers from './pages/AdminUsers';
 import EventManagement from './pages/EventManagement';
 import AttendanceManagement from './pages/AttendanceManagement';
@@ -255,6 +258,9 @@ function App() {
                     <Route path="/my-bookings" element={<MyBookings />} />
                     <Route path="/dashboard" element={<UserDashboardV2 />} />
                     <Route path="/profile" element={<UserDashboardV2 />} />
+                    <Route path="/jobs" element={<RiderJobs />} />
+                    {/* <Route path="/jobs/:id" element={<JobDetailsMUI />} /> */}
+                    <Route path="/jobs/:id" element={<JobDetails />} />
                   </Route>
                   
                   {/* Role-based admin area: shared dashboard, gated subroutes */}

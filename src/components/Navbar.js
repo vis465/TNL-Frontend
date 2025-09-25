@@ -189,26 +189,34 @@ const Navbar = () => {
   };
 
   const isAdmin = user?.role === 'admin';
-  const isHR = user?.role === 'hrteam' || user?.role === 'admin';
+  const isEventTeam = user?.role === 'eventteam' || isAdmin;
+  const isHR = user?.role === 'hrteam' || isAdmin;
 
   // Navigation items based on user role
   const getNavItems = () => {
     if (isAdmin) {
       return [
         { label: 'Admin', path: '/admin', icon: <Dashboard /> },
-        { label: 'Jobs', path: '/admin/jobs', icon: <Speed /> },
         { label: 'Users', path: '/admin/users', icon: <PeopleIcon /> },
-        
-        { label: 'License', path: '/riders/license', icon: <DirectionsCar /> },
+        // { label: 'License', path: '/riders/licence', icon: <DirectionsCar /> },
+        { label: 'VTC Jobs ', path: '/jobs', icon: <Speed /> },
         { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
         { label: 'Contact', path: '/contact', icon: <Event /> },
         { label: 'Events', path: '/events', icon: <Event /> },
+      ];
+    } else if (isEventTeam) {
+      return [
+        { label: 'Event Dashboard', path: '/admin', icon: <Dashboard /> },
+        { label: 'VTC Jobs', path: '/jobs', icon: <Speed /> },
+        { label: 'Events', path: '/events', icon: <Event /> },
+        { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
+        { label: 'Contact', path: '/contact', icon: <Event /> },
       ];
     } else if (isHR) {
       return [
         { label: 'HR Dashboard', path: '/hr', icon: <PeopleIcon /> },
         { label: 'Events', path: '/events', icon: <Event /> },
-        { label: 'Jobs', path: '/admin/jobs', icon: <Speed /> },
+        { label: 'VTC Jobs', path: '/jobs', icon: <Speed /> },
         { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
         { label: 'Contact', path: '/contact', icon: <Event /> },
       ];
@@ -219,6 +227,7 @@ const Navbar = () => {
         // { label: 'Special Events', path: '/special-events', icon: <EventIcon /> },
         // { label: 'Attendance', path: '/attendance', icon: <PeopleIcon /> },
         { label: 'Apply', path: '/apply', icon: <Dashboard /> },
+        { label: 'VTC Jobs', path: '/jobs', icon: <Speed /> },
         // { label: 'License', path: '/riders/licence', icon: <DirectionsCar /> },
         { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
         { label: 'Contact', path: '/contact', icon: <Event /> },

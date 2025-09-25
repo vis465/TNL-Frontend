@@ -67,6 +67,14 @@ const AdminDashboard = () => {
       features: ['Member Attendance', 'Event Participation', 'Attendance Reports', 'Member Management']
     },
     {
+      title: 'Job Management',
+      description: 'Browse, filter and manage all imported jobs from TruckersHub.',
+      icon: <Assignment sx={{ fontSize: 40, color: 'warning.main' }} />,
+      color: 'warning',
+      href: '/admin/jobs',
+      features: ['Browse Jobs', 'Filter by Status', 'Clean up old data']
+    },
+    {
       title: 'System Analytics',
       description: 'View comprehensive analytics and reports for events, challenges, attendance, and user engagement.',
       icon: <Analytics sx={{ fontSize: 40, color: 'info.main' }} />,
