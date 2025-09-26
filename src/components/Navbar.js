@@ -39,6 +39,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { styled, keyframes } from '@mui/material/styles';
 import { ThemeContext } from '../App';
 import logo from '../img/tnllogo.jpg';
+import { getMyWallet } from '../services/walletService';
 
 // Animation keyframes
 const pulse = keyframes`
@@ -151,6 +152,7 @@ const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const theme = useTheme();
   const { isDarkMode, toggleTheme } = useContext(ThemeContext);
+  const [walletBalance, setWalletBalance] = useState(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -165,6 +167,12 @@ const Navbar = () => {
       window.removeEventListener('scroll', handleScroll);
     };
   }, [scrolled]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    getMyWallet().then(w => setWalletBalance(w.balance)).catch(() => {});
+  }, []);
 
   const handleMenu = (event) => {
     setAnchorEl(event.currentTarget);
@@ -283,6 +291,11 @@ const Navbar = () => {
                 {item.label}
               </NavButton>
             ))}
+            {walletBalance != null && (
+              <NavButton component={RouterLink} to="/contracts/me">
+                Tokens: {walletBalance}
+              </NavButton>
+            )}
             
             {/* Theme Toggle */}
           

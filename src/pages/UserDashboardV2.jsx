@@ -38,6 +38,9 @@ import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
 import TrackChangesOutlinedIcon from '@mui/icons-material/TrackChangesOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import Event from '@mui/icons-material/Event';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import { myContracts } from '../services/contractsService';
+import { getMyWallet } from '../services/walletService';
 
 export default function UserDashboard() {
   const [data, setData] = useState(null);
@@ -48,6 +51,8 @@ export default function UserDashboard() {
   const [activeAttendanceEvents, setActiveAttendanceEvents] = useState([]);
   const [attendanceSubmitLoading, setAttendanceSubmitLoading] = useState(false);
   const [attendanceSubmitMsg, setAttendanceSubmitMsg] = useState('');
+  const [contracts, setContracts] = useState({ active: [], history: [] });
+  const [wallet, setWallet] = useState({ balance: 0, transactions: [] });
 
   // Real API call
   useEffect(() => {
@@ -55,10 +60,28 @@ export default function UserDashboard() {
       try {
         const { data } = await axiosInstance.get('/me/dashboard');
         setData(data);
-        ////console.log(data)
+        // console.log(data.wallet.balance)
       } catch (e) {
         setError('Failed to load dashboard');
       }
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await myContracts();
+        setContracts(res);
+      } catch(e) {}
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const w = await getMyWallet();
+        setWallet({ balance: Number(w.balance || 0), transactions: Array.isArray(w.transactions) ? w.transactions : [] });
+      } catch(e) {}
     })();
   }, []);
 
@@ -214,6 +237,12 @@ export default function UserDashboard() {
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
+            <ListItemButton component={RouterLink} to="/contracts">
+              <ListItemIcon><AssignmentIcon /></ListItemIcon>
+              <ListItemText primary="Contracts" />
+            </ListItemButton>
+          </ListItem>
+          <ListItem disablePadding>
             {/* <ListItemButton component={RouterLink} to="/dashboard#achievements">
               <ListItemIcon><AssignmentTurnedInOutlinedIcon /></ListItemIcon>
               <ListItemText primary="Achievements" />
@@ -238,18 +267,17 @@ export default function UserDashboard() {
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                     {rider?.tmpIngameName} • {rider?.role || 'Professional'}
                   </Typography>
-                    <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 1 }}>
+                    <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 1, flexWrap: 'wrap' }}>
                     <Stack direction="row" spacing={1} alignItems="center">
                       <Typography variant="body2" color="warning.main">{'★★★★★'.slice(0, Math.max(1, Math.floor(rider?.rating || 4.8)))}</Typography>
                       <Typography variant="caption" color="text.secondary">{rider?.rating || 4.8}</Typography>
                     </Stack>
                     <Chip size="small" color="primary" variant="outlined" label={user?.role} />
-                    {rider?.age && (
-                      <Chip size="small" color="secondary" variant="outlined" label={`Age: ${rider.age}`} />
-                    )}
+                    
                     {rider?.employeeID && (
                       <Chip size="small" color="info" variant="outlined" label={rider.employeeID} />
                     )}
+                   
                   </Stack>
                 </Box>
               </Stack>
@@ -274,6 +302,36 @@ export default function UserDashboard() {
       <Box sx={{ maxWidth: 1200, mx: 'auto', px: 3, py: 4 }}>
         {/* Metrics */}
         <Grid container spacing={3} sx={{ mb: 3 }}>
+          <Grid item xs={12} md={3}>
+            <Card variant="outlined">
+              <CardContent>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Total Balance</Typography>
+                    <Typography
+                      variant="h2"
+                      fontWeight={700}
+                      sx={{
+                        mt: 0.5,
+                        color:
+                          Number(data?.wallet?.balance) < 0
+                            ? 'error.main'
+                            : undefined
+                      }}
+                    >
+                      {typeof data?.wallet?.balance === 'number'
+                        ? Number(data.wallet.balance).toLocaleString()
+                        : 0}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">tokens</Typography>
+                  </Box>
+                  <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'primary.light', color: 'primary.main' }}>
+                    <AttachMoneyOutlinedIcon />
+                  </Box>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
           <Grid item xs={12} md={3}>
             <Card variant="outlined">
               <CardContent>
@@ -350,6 +408,71 @@ export default function UserDashboard() {
             </Card>
           </Grid>
         </Grid>
+
+        {/* Active Contracts */}
+        {contracts.active?.length > 0 && (
+          <>
+            <Typography variant="h6" sx={{ mb: 1 }}>Active Contracts</Typography>
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+              {contracts.active.map(c => {
+                const tpl = c.templateId || {};
+                const total = (c.progress || []).length || 1;
+                const done = (c.progress || []).filter(p => p.status === 'done').length;
+                const pct = Math.round((done / total) * 100);
+                return (
+                  <Grid item xs={12} md={6} key={c._id}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Typography variant="subtitle1" fontWeight={700}>{tpl.title}</Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>{tpl.description}</Typography>
+                        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', mb: 1 }}>
+                          <Chip label={`Deadline: ${new Date(c.deadlineAt).toLocaleDateString()}`} />
+                          <Chip label={`Progress: ${done}/${total}`} />
+                        </Stack>
+                        <Box sx={{ mt: 1 }}>
+                          <Box sx={{ height: 8, bgcolor: 'divider', borderRadius: 4 }}>
+                            <Box sx={{ width: `${pct}%`, height: '100%', bgcolor: 'primary.main', borderRadius: 4 }} />
+                          </Box>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                );
+              })}
+            </Grid>
+          </>
+        )}
+
+        {/* Recent Wallet Transactions */}
+        <Typography variant="h6" sx={{ mb: 1 }}>Recent Transactions</Typography>
+        <Card variant="outlined" sx={{ mb: 3 }}>
+          <CardContent>
+            <Grid container spacing={1}>
+              {(wallet.transactions || []).slice(0, 10).map(tx => (
+                <Grid item xs={12} key={tx._id}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Chip size="small" label={tx.type} color={tx.type === 'credit' ? 'success' : 'default'} />
+                      <Typography variant="body2">{tx.title || (tx.type === 'credit' ? 'Credit' : 'Debit')}</Typography>
+                    </Stack>
+                    <Stack direction="row" spacing={2} alignItems="center">
+                      <Typography variant="body2">{new Date(tx.createdAt).toLocaleString()}</Typography>
+                      <Typography variant="subtitle2" color={tx.type === 'credit' ? 'success.main' : 'text.primary'}>
+                        {tx.type === 'credit' ? '+' : '-'}{tx.amount}
+                      </Typography>
+                      <Chip size="small" variant="outlined" label={`Balance: ${tx.balanceAfter}`} />
+                    </Stack>
+                  </Stack>
+                </Grid>
+              ))}
+              {(!wallet.transactions || wallet.transactions.length === 0) && (
+                <Grid item xs={12}>
+                  <Typography variant="body2" color="text.secondary">No transactions yet.</Typography>
+                </Grid>
+              )}
+            </Grid>
+          </CardContent>
+        </Card>
 
         {/* Attendance */}
         <Grid container spacing={3} sx={{ mb: 3 }}>

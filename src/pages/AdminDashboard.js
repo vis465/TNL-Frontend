@@ -60,6 +60,15 @@ const AdminDashboard = () => {
       features: ['Create Challenges', 'Track Progress', 'View Leaderboards', 'Manage Rewards'],
       allowedRoles: ['admin','eventteam','hrteam']
     },
+        {
+          title: 'Contracts',
+          description: 'Create story-like contract templates with tasks and constraints.',
+          icon: <Assignment sx={{ fontSize: 40, color: 'secondary.main' }} />,
+          color: 'secondary',
+          href: '/admin/contracts',
+          features: ['Templates', 'Tasks', 'Constraints', 'Deadlines'],
+          allowedRoles: ['admin','eventteam']
+        },
     {
       title: 'Attendance Management',
       description: 'Manage member attendance, track participation, and generate attendance reports for events.',
@@ -78,7 +87,7 @@ const AdminDashboard = () => {
       features: ['Browse Jobs', 'Filter by Status', 'Clean up old data'],
       allowedRoles: ['admin','eventteam']
     },
-        {
+    {
           title: 'System Analytics',
           description: 'View comprehensive analytics and reports for events, challenges, attendance, and user engagement.',
           icon: <Analytics sx={{ fontSize: 40, color: 'info.main' }} />,
@@ -87,6 +96,15 @@ const AdminDashboard = () => {
           features: ['Event Analytics', 'Challenge Statistics', 'Attendance Reports', 'User Engagement'],
           allowedRoles: ['admin']
         },
+    {
+      title: 'Bank',
+      description: 'View central bank balance, transactions, and pay bonuses to riders from the bank.',
+      icon: <Assessment sx={{ fontSize: 40, color: 'success.main' }} />,
+      color: 'success',
+      href: '/admin/bank',
+      features: ['Bank Balance', 'Transactions', 'Payout Bonuses'],
+      allowedRoles: ['admin']
+    },
         {
           title: 'Achievement Management',
           description: 'Issue and manage achievements for riders. Create custom achievements with logos and descriptions.',

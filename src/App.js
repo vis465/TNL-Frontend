@@ -69,6 +69,10 @@ import RiderAttendance from './pages/RiderAttendance';
 import AdminAchievements from './pages/AdminAchievements';
 import SteamCallback from './pages/SteamCallback';
 import SteamRegistration from './pages/SteamRegistration';
+import ContractsMarketplace from './pages/ContractsMarketplace';
+import MyContracts from './pages/MyContracts';
+import AdminBank from './pages/AdminBank';
+import AdminContracts from './pages/AdminContracts';
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -267,6 +271,8 @@ function App() {
                     <Route path="/profile" element={<UserDashboardV2 />} />
                     <Route path="/jobs" element={<RiderJobs />} />
                     <Route path="/attendance" element={<RiderAttendance />} />
+                  <Route path="/contracts" element={<ContractsMarketplace />} />
+                  <Route path="/contracts/me" element={<MyContracts />} />
                     {/* <Route path="/jobs/:id" element={<JobDetailsMUI />} /> */}
                     <Route path="/jobs/:id" element={<JobDetails />} />
                   </Route>
@@ -286,6 +292,8 @@ function App() {
                     <Route path="/admin/attendance" element={<PrivateRoute allowedRoles={["admin","hrteam"]}><HRDashboard /></PrivateRoute>} />
                     <Route path="/admin/riders" element={<PrivateRoute allowedRoles={["admin","eventteam","hrteam"]}><AdminRiders /></PrivateRoute>} />
                     <Route path="/admin/achievements" element={<PrivateRoute allowedRoles={["admin","hrteam"]}><AdminAchievements /></PrivateRoute>} />
+                    <Route path="/admin/bank" element={<PrivateRoute allowedRoles={["admin"]}><AdminBank /></PrivateRoute>} />
+                    <Route path="/admin/contracts" element={<PrivateRoute allowedRoles={["admin","eventteam"]}><AdminContracts /></PrivateRoute>} />
                   </Route>
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>
