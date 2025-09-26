@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import axiosInstance from '../utils/axios';
 import {
   Container,
@@ -12,18 +12,28 @@ import {
   Alert,
   FormControlLabel,
   Switch,
+  Divider,
 } from '@mui/material';
 
 const Register = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState({
     username: '',
     password: '',
     email: '',
-    vtcName: '',
+    vtcName: 'Tamilnadu Logistics',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Check for error from URL params
+  useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam === 'steam_auth_failed') {
+      setError('Steam authentication failed. Please try again.');
+    }
+  }, [searchParams]);
 
   const handleChange = (e) => {
     setFormData({
@@ -47,6 +57,10 @@ const Register = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSteamRegistration = () => {
+    navigate('/register/steam');
   };
 
   return (
@@ -92,15 +106,7 @@ const Register = () => {
             margin="normal"
             required
           />
-          <TextField
-            fullWidth
-            label="VTC Name"
-            name="vtcName"
-            value={formData.vtcName}
-            onChange={handleChange}
-            margin="normal"
-            required
-          />
+         
 
           <Button
             type="submit"
@@ -113,6 +119,37 @@ const Register = () => {
             {loading ? 'Registering...' : 'Register'}
           </Button>
         </form>
+
+        <Box sx={{ mt: 3 }}>
+          <Divider sx={{ mb: 2 }}>
+            <Typography variant="body2" color="text.secondary">
+              OR
+            </Typography>
+          </Divider>
+          
+          <Button
+            fullWidth
+            variant="outlined"
+            onClick={handleSteamRegistration}
+            sx={{ 
+              mt: 2,
+              backgroundColor: '#171a21',
+              color: 'white',
+              borderColor: '#171a21',
+              '&:hover': {
+                backgroundColor: '#2a475e',
+                borderColor: '#2a475e',
+              }
+            }}
+          >
+            <Box component="img" 
+              src="https://steamcommunity-a.akamaihd.net/public/images/signinthroughsteam/sits_01.png" 
+              alt="Steam"
+              sx={{ height: 20, mr: 1 }}
+            />
+            Register with Steam
+          </Button>
+        </Box>
 
         <Box sx={{ mt: 2, textAlign: 'center' }}>
           <Typography variant="body2">

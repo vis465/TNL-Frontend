@@ -67,6 +67,8 @@ import RiderRegistration from './pages/RiderRegistration';
 import AdminRiders from './pages/AdminRiders';
 import RiderAttendance from './pages/RiderAttendance';
 import AdminAchievements from './pages/AdminAchievements';
+import SteamCallback from './pages/SteamCallback';
+import SteamRegistration from './pages/SteamRegistration';
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -237,6 +239,8 @@ function App() {
                   <Route path="/" element={<Landing />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
+                  <Route path="/register/steam" element={<SteamRegistration />} />
+                  <Route path="/auth/steam/callback" element={<SteamCallback />} />
                   <Route path="/servers" element={<Servers />} />
                   <Route path="/events/:id" element={<EventDetails />} />
                   <Route path="/special-events/:id" element={<SpecialEvent />} />

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Container,
   Paper,
@@ -21,6 +21,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const handleChange = (e) => {
     setFormData({
@@ -28,6 +29,15 @@ const Login = () => {
       [e.target.name]: e.target.value,
     });
   };
+
+
+  // Check for error from URL params
+  React.useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam === 'steam_auth_failed') {
+      setError('Steam authentication failed. Please try again.');
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -100,6 +110,7 @@ const Login = () => {
               Login
             </Button>
           </form>
+          
           
         </Paper>
       </Box>

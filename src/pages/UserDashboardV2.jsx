@@ -205,8 +205,8 @@ export default function UserDashboard() {
           <Grid container alignItems="center" justifyContent="space-between" spacing={3}>
             <Grid item sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Stack direction="row" spacing={2} alignItems="center">
-                <Avatar sx={{ width: 72, height: 72, bgcolor: 'primary.main', fontSize: 28, fontWeight: 700 }}>
-                  {(rider?.name || user?.username || '?')[0].toUpperCase()}
+                <Avatar sx={{ width: 100, height: 100, bgcolor: 'primary.main', fontSize: 28, fontWeight: 700 }} src={rider?.avatar}>
+                  
                 </Avatar>
                 <Box>
                   <Typography variant="h4" fontWeight={700}>
@@ -277,9 +277,9 @@ export default function UserDashboard() {
                   <Box>
                     <Typography variant="caption" color="text.secondary">Total Revenue</Typography>
                     <Typography variant="h4" fontWeight={700} sx={{ mt: 0.5 }}>
-                      ${Number(totals?.totalRevenue || 0).toLocaleString()}
+                    ₹{Number(totals?.totalRevenue || 0).toLocaleString()}
                     </Typography>
-                    <Chip size="small" color="success" variant="outlined" label={'+12.5% this month'} sx={{ mt: 1 }} />
+                   
                   </Box>
                   <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'success.light', color: 'success.main' }}>
                     <AttachMoneyOutlinedIcon />
@@ -315,7 +315,7 @@ export default function UserDashboard() {
                   <Box>
                     <Typography variant="caption" color="text.secondary">Avg per Job</Typography>
                     <Typography variant="h4" fontWeight={700} sx={{ mt: 0.5 }}>
-                      ${Math.round((totals?.totalRevenue || 0) / (totals?.totalJobs || 1))}
+                    ₹{Math.round((totals?.totalRevenue || 0) / (totals?.totalJobs || 1))}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">revenue per delivery</Typography>
                   </Box>
@@ -495,6 +495,7 @@ export default function UserDashboard() {
                               label={`ETS2 DLCs: ${rider.dlcsOwned.ets2.length}`} 
                               color="info"
                               variant="outlined"
+                              sx={{m:4}}
                             />
                           ) : (
                             <Chip 
