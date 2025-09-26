@@ -25,6 +25,7 @@ import {
   Speed,
   Notifications,
   FireTruckOutlined,
+  EmojiEvents,
   Brightness4,
   Brightness7,
   
@@ -38,6 +39,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { styled, keyframes } from '@mui/material/styles';
 import { ThemeContext } from '../App';
 import logo from '../img/tnllogo.jpg';
+import { getMyWallet } from '../services/walletService';
 
 // Animation keyframes
 const pulse = keyframes`
@@ -150,6 +152,7 @@ const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const theme = useTheme();
   const { isDarkMode, toggleTheme } = useContext(ThemeContext);
+  const [walletBalance, setWalletBalance] = useState(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -164,6 +167,12 @@ const Navbar = () => {
       window.removeEventListener('scroll', handleScroll);
     };
   }, [scrolled]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    getMyWallet().then(w => setWalletBalance(w.balance)).catch(() => {});
+  }, []);
 
   const handleMenu = (event) => {
     setAnchorEl(event.currentTarget);
@@ -188,33 +197,48 @@ const Navbar = () => {
     navigate('/login');
   };
 
-  const isAdmin = user?.role === 'admin' || user?.role === 'eventteam';
-  const isHR = user?.role === 'hrteam' || user?.role === 'admin';
+  const isAdmin = user?.role === 'admin';
+  const isEventTeam = user?.role === 'eventteam' || isAdmin;
+  const isHR = user?.role === 'hrteam' || isAdmin;
 
   // Navigation items based on user role
   const getNavItems = () => {
     if (isAdmin) {
       return [
-        { label: 'Dashboard', path: '/admin', icon: <Dashboard /> },
-        { label: 'License', path: '/riders/license', icon: <DirectionsCar /> },
+        { label: 'Admin', path: '/admin', icon: <Dashboard /> },
+        { label: 'Users', path: '/admin/users', icon: <PeopleIcon /> },
+        // { label: 'License', path: '/riders/licence', icon: <DirectionsCar /> },
+        { label: 'VTC Jobs ', path: '/jobs', icon: <Speed /> },
         { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
-        { label: 'Contact', path: '/contact', icon: <Event /> },
+        
         { label: 'Events', path: '/events', icon: <Event /> },
+      ];
+    } else if (isEventTeam) {
+      return [
+        { label: 'Admin', path: '/admin', icon: <Dashboard /> },
+        { label: 'VTC Jobs', path: '/jobs', icon: <Speed /> },
+        { label: 'Events', path: '/events', icon: <Event /> },
+        { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
+        
+        
       ];
     } else if (isHR) {
       return [
-        { label: 'HR Dashboard', path: '/hr', icon: <PeopleIcon /> },
+        { label: 'Admin', path: '/admin', icon: <Dashboard /> },
         { label: 'Events', path: '/events', icon: <Event /> },
+        { label: 'VTC Jobs', path: '/jobs', icon: <Speed /> },
         { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
-        { label: 'Contact', path: '/contact', icon: <Event /> },
+        
+        
       ];
     } else {
       return [
         { label: 'Our Team', path: '/team', icon: <PersonAdd /> },
         { label: 'Events', path: '/events', icon: <Event /> },
-        { label: 'Special Events', path: '/special-events', icon: <EventIcon /> },
-        { label: 'Attendance', path: '/attendance', icon: <PeopleIcon /> },
+        // { label: 'Special Events', path: '/special-events', icon: <EventIcon /> },
+        // { label: 'Attendance', path: '/attendance', icon: <PeopleIcon /> },
         { label: 'Apply', path: '/apply', icon: <Dashboard /> },
+        { label: 'VTC Jobs', path: '/jobs', icon: <Speed /> },
         // { label: 'License', path: '/riders/licence', icon: <DirectionsCar /> },
         { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
         { label: 'Contact', path: '/contact', icon: <Event /> },
@@ -267,6 +291,11 @@ const Navbar = () => {
                 {item.label}
               </NavButton>
             ))}
+            {walletBalance != null && (
+              <NavButton component={RouterLink} to="/contracts/me">
+                Tokens: {walletBalance}
+              </NavButton>
+            )}
             
             {/* Theme Toggle */}
           
@@ -322,8 +351,10 @@ const Navbar = () => {
             TransitionComponent={Fade}
           >
             <MenuItem onClick={handleClose}>
+            <RouterLink to="/dashboard" style={{ display: 'flex', alignItems: 'center', color: 'inherit', textDecoration: 'none' }}>
               <AccountCircle sx={{ mr: 1 }} />
               Profile
+            </RouterLink>
             </MenuItem>
             <MenuItem onClick={handleLogout}>
               <Logout sx={{ mr: 1 }} />

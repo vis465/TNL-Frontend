@@ -13,6 +13,11 @@ import EventDetails from './pages/EventDetails';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminJobs from './pages/AdminJobs';
+import RiderJobs from './pages/RiderJobs';
+
+import JobDetails from './pages/jobdetails';
+import AdminUsers from './pages/AdminUsers';
 import EventManagement from './pages/EventManagement';
 import AttendanceManagement from './pages/AttendanceManagement';
 import MyBookings from './pages/MyBookings';
@@ -51,12 +56,23 @@ import PlayerProfile from './pages/playerprofile';
 import LicenseGenerator from './pages/LicenseGenerator';
 import SpecialEvent from './pages/SpecialEvent';
 import HRDashboard from './pages/HRDashboard';
-import HRRoute from './components/HRRoute';
 import PublicAttendance from './pages/PublicAttendance';
 import AdminChallenges from './pages/AdminChallenges';
 import RiderChallenges from './pages/RiderChallenges';
 import ChallengeDetails from './pages/ChallengeDetails';
 import PublicChallenges from './pages/PublicChallenges';
+import Leaderboard from './pages/Leaderboard';
+import UserDashboardV2 from './pages/UserDashboardV2';
+import RiderRegistration from './pages/RiderRegistration';
+import AdminRiders from './pages/AdminRiders';
+import RiderAttendance from './pages/RiderAttendance';
+import AdminAchievements from './pages/AdminAchievements';
+import SteamCallback from './pages/SteamCallback';
+import SteamRegistration from './pages/SteamRegistration';
+import ContractsMarketplace from './pages/ContractsMarketplace';
+import MyContracts from './pages/MyContracts';
+import AdminBank from './pages/AdminBank';
+import AdminContracts from './pages/AdminContracts';
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -227,6 +243,8 @@ function App() {
                   <Route path="/" element={<Landing />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
+                  <Route path="/register/steam" element={<SteamRegistration />} />
+                  <Route path="/auth/steam/callback" element={<SteamCallback />} />
                   <Route path="/servers" element={<Servers />} />
                   <Route path="/events/:id" element={<EventDetails />} />
                   <Route path="/special-events/:id" element={<SpecialEvent />} />
@@ -240,22 +258,43 @@ function App() {
                   <Route path="/terms" element={<TermsOfService />} />
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   <Route path="/events" element={<Home />} />
+                  <Route path="/leaderboard" element={<Leaderboard />} />
                   <Route path="/riders/licence" element={<LicenseGenerator />} />
                   <Route path="/attendance" element={<PublicAttendance />} />
                   <Route path="/riders/:driverId/challenges" element={<RiderChallenges />} />
                   <Route path="/challenges" element={<PublicChallenges />} />
-                  
-                  {/* Protected routes */}
-                  <Route element={<PrivateRoute allowedRoles={["admin","eventteam"]} />}>
-                    <Route path="/admin" element={<AdminDashboard />} />
-                    <Route path="/admin/events" element={<EventManagement />} />
-                    <Route path="/admin/attendance" element={<HRDashboard />} />
-                    <Route path="/admin/analytics" element={<AnalyticsDashboard />} />
-                    <Route path="/admin/challenges" element={<AdminChallenges />} />
-                    <Route path="/admin/challenges/:id" element={<ChallengeDetails />} />
+                  <Route path="/rider/register" element={<RiderRegistration />} />
+                  {/* Authenticated personal routes */}
+                  <Route element={<PrivateRoute allowedRoles={["rider","admin","eventteam","hrteam"]} />}>
+                    <Route path="/my-bookings" element={<MyBookings />} />
+                    <Route path="/dashboard" element={<UserDashboardV2 />} />
+                    <Route path="/profile" element={<UserDashboardV2 />} />
+                    <Route path="/jobs" element={<RiderJobs />} />
+                    <Route path="/attendance" element={<RiderAttendance />} />
+                  <Route path="/contracts" element={<ContractsMarketplace />} />
+                  <Route path="/contracts/me" element={<MyContracts />} />
+                    {/* <Route path="/jobs/:id" element={<JobDetailsMUI />} /> */}
+                    <Route path="/jobs/:id" element={<JobDetails />} />
                   </Route>
-                  {/* HR Team routes */}
                   
+                  {/* Role-based admin area: shared dashboard, gated subroutes */}
+                  <Route element={<PrivateRoute allowedRoles={["admin","eventteam","hrteam"]} />}>
+                    <Route path="/admin" element={<AdminDashboard />} />
+                    {/* Admin only */}
+                    <Route path="/admin/users" element={<PrivateRoute allowedRoles={["admin"]}><AdminUsers /></PrivateRoute>} />
+                    {/* Admin + Event team */}
+                    <Route path="/admin/jobs" element={<PrivateRoute allowedRoles={["admin","eventteam"]}><AdminJobs /></PrivateRoute>} />
+                    <Route path="/admin/events" element={<PrivateRoute allowedRoles={["admin","eventteam"]}><EventManagement /></PrivateRoute>} />
+                    <Route path="/admin/analytics" element={<PrivateRoute allowedRoles={["admin","eventteam"]}><AnalyticsDashboard /></PrivateRoute>} />
+                    <Route path="/admin/challenges" element={<PrivateRoute allowedRoles={["admin","eventteam","hrteam"]}><AdminChallenges /></PrivateRoute>} />
+                    <Route path="/admin/challenges/:id" element={<PrivateRoute allowedRoles={["admin","eventteam","hrteam"]}><ChallengeDetails /></PrivateRoute>} />
+                    {/* Admin + HR team */}
+                    <Route path="/admin/attendance" element={<PrivateRoute allowedRoles={["admin","hrteam"]}><HRDashboard /></PrivateRoute>} />
+                    <Route path="/admin/riders" element={<PrivateRoute allowedRoles={["admin","eventteam","hrteam"]}><AdminRiders /></PrivateRoute>} />
+                    <Route path="/admin/achievements" element={<PrivateRoute allowedRoles={["admin","hrteam"]}><AdminAchievements /></PrivateRoute>} />
+                    <Route path="/admin/bank" element={<PrivateRoute allowedRoles={["admin"]}><AdminBank /></PrivateRoute>} />
+                    <Route path="/admin/contracts" element={<PrivateRoute allowedRoles={["admin","eventteam"]}><AdminContracts /></PrivateRoute>} />
+                  </Route>
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>
               </Box>

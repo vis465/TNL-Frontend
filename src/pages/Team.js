@@ -211,7 +211,7 @@ const Team = () => {
         setError(null);
         
         const response = await axios.get(`${API_BASE_URL}/vtc/${VTC_ID}`);
-        
+        console.log(response.data);
         setVtcData(response.data);
 
       } catch (error) {
@@ -251,11 +251,30 @@ const Team = () => {
     setSelectedMember(member);
     setLoadingDetails(true);
     try {
-      
-      
-      const response = await axios.get(`${API_BASE_URL}/vtc/player/${member.userId}`);
-      
-      setPlayerDetails(response.data);
+      // Fetch TruckersHub driver stats via backend proxy using TruckersMP steamID (distinct from steamID64)
+      let thData = null;
+      // Prefer canonical TruckersMP steamID STRING if present, else fallback
+      console.log(member)
+      const steamID=member.steamID;
+      if (steamID) {
+        try {
+          const { data } = await axios.get(`${API_BASE_URL}/truckershub/driver/${steamID}`);
+          thData = data;
+        } catch (err) {
+          console.warn('TruckersHub fetch failed:', err?.response?.data || err?.message);
+        }
+      }
+
+      // Fallback to existing player endpoint if needed
+      let legacy = null;
+      try {
+        const response = await axios.get(`${API_BASE_URL}/vtc/player/${member.userId}`);
+        legacy = response.data;
+      } catch (err) {
+        // optional
+      }
+
+      setPlayerDetails(thData || legacy || {});
     } catch (error) {
       console.error('Error fetching player details:', error);
       console.error('Error response:', error.response?.data);
@@ -310,12 +329,19 @@ const Team = () => {
   }
 
   // --- FIXED LOGIC: Use the 'order' field from roles array for proper ordering ---
-  // 1. Flatten all members into a single array
-  const allMembers = Object.values(vtcData.departments).flat();
+  // 1. Flatten all members into a single array and normalize steam IDs
+  const allMembers = Object.values(vtcData.departments).flat().map(m => ({
+    ...m,
+    // keep original fields and ensure we carry all steam id variants when present
+    steamID: m.steamID ?? m.steamId ?? null,
+    steamID64: m.steamID64 ?? m.steamId64 ?? null,
+    steam_id: m.steam_id ?? null,
+  }));
 
   // 2. Create a map of role names to their order values
   const roleOrderMap = new Map();
   allMembers.forEach(member => {
+    
     if (member.roles && member.roles.length > 0) {
       // Use the first role's order value (primary role)
       const primaryRole = member.roles[0];
@@ -587,7 +613,7 @@ const Team = () => {
               >
                 <CloseIcon />
               </IconButton>
-              {/* Large player name header */}
+              
               <Typography
                 variant="h2"
                 component="div"
@@ -604,14 +630,25 @@ const Team = () => {
                   textShadow: '0 2px 12px rgba(0,0,0,0.08)',
                 }}
               >
-                {selectedMember.username}
+                {playerDetails?.username ? (
+                  playerDetails.username
+                ):(
+                  selectedMember.username
+                )}
               </Typography>
-              {/* <MemberAvatar
-                src={`https://truckersmp.com/avatar/${selectedMember.steamId64}`}
-                alt={selectedMember.username}
-              /> */}
+              {playerDetails?.data?.avatar ? (
+                <MemberAvatar
+                  src={playerDetails.data.avatar}
+                  alt={playerDetails?.username || selectedMember.username}
+                />
+              ):(
+                <MemberAvatar
+                  src={selectedMember.avatar ?? playerDetails?.data?.avatar}
+                  alt={selectedMember.username}
+                />
+              )}
               <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, flexWrap: 'wrap' }}>
-                {selectedMember.roles.map((role) => (
+                {(playerDetails?.roles ?? selectedMember.roles).map((role) => (
                   <RoleBadge
                     key={role.id}
                     label={role.name}
@@ -636,7 +673,7 @@ const Team = () => {
                       </ListItemIcon>
                       <ListItemText
                         primary="User ID"
-                        secondary={selectedMember.userId}
+                        secondary={playerDetails?.userId || selectedMember.userId}
                         primaryTypographyProps={{ fontWeight: 600 }}
                       />
                     </ListItem>
@@ -646,7 +683,7 @@ const Team = () => {
                       </ListItemIcon>
                       <ListItemText
                         primary="Join Date"
-                        secondary={formatDate(selectedMember.joinDate)}
+                        secondary={formatDate(playerDetails?.joinDate || selectedMember.joinDate)}
                         primaryTypographyProps={{ fontWeight: 600 }}
                       />
                     </ListItem>
@@ -656,15 +693,83 @@ const Team = () => {
                       </ListItemIcon>
                       <ListItemText
                         primary="Steam ID"
-                        secondary={selectedMember.steamId64}
+                        secondary={playerDetails?.steamID || playerDetails?.steam?.steamid || selectedMember.steamID || selectedMember.steamId64}
                         primaryTypographyProps={{ fontWeight: 600 }}
                       />
                     </ListItem>
                   </List>
                 </Grid>
 
-                {/* Player Statistics */}
-              
+                {/* Player Statistics from TruckersHub */}
+                {playerDetails && playerDetails.data.statistics && (
+                  <Grid item xs={12} md={6}>
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                      Driver Statistics
+                    </Typography>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} sm={6}>
+                        <Paper variant="outlined" sx={{ p: 2 }}>
+                          <Typography variant="caption" color="text.secondary">THP Total</Typography>
+                          <Typography variant="h6">{(playerDetails.data.statistics.THP?.total || 0).toLocaleString()}</Typography>
+                        </Paper>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Paper variant="outlined" sx={{ p: 2 }}>
+                          <Typography variant="caption" color="text.secondary">Rating Avg</Typography>
+                          <Typography variant="h6">{Number(playerDetails.data.statistics.rating?.avg || 0).toFixed(2)}</Typography>
+                        </Paper>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Paper variant="outlined" sx={{ p: 2 }}>
+                          <Typography variant="caption" color="text.secondary">Distance Total</Typography>
+                          <Typography variant="h6">{(playerDetails.data.statistics.distance?.total || 0).toLocaleString()} km</Typography>
+                        </Paper>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Paper variant="outlined" sx={{ p: 2 }}>
+                          <Typography variant="caption" color="text.secondary">Income Total</Typography>
+                          <Typography variant="h6">${(playerDetails.data.statistics.income?.total || 0).toLocaleString()}</Typography>
+                        </Paper>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Paper variant="outlined" sx={{ p: 2 }}>
+                          <Typography variant="caption" color="text.secondary">Revenue Total</Typography>
+                          <Typography variant="h6">${(playerDetails.data.statistics.revenue?.total || 0).toLocaleString()}</Typography>
+                        </Paper>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Paper variant="outlined" sx={{ p: 2 }}>
+                          <Typography variant="caption" color="text.secondary">Jobs</Typography>
+                          <Typography variant="h6">{playerDetails.data.statistics.jobs || 0}</Typography>
+                        </Paper>
+                      </Grid>
+                      {playerDetails.data.statistics.speed && (
+                        <Grid item xs={12} sm={6}>
+                          <Paper variant="outlined" sx={{ p: 2 }}>
+                            <Typography variant="caption" color="text.secondary">Avg Speed</Typography>
+                            <Typography variant="h6">{Number(playerDetails.data.statistics.speed.avg || 0).toFixed(2)} km/h</Typography>
+                          </Paper>
+                        </Grid>
+                      )}
+                      {playerDetails.data.statistics.fuelBurned && (
+                        <Grid item xs={12} sm={6}>
+                          <Paper variant="outlined" sx={{ p: 2 }}>
+                            <Typography variant="caption" color="text.secondary">Fuel Burned</Typography>
+                            <Typography variant="h6">{(playerDetails.data.statistics.fuelBurned.total || 0).toLocaleString()} L</Typography>
+                          </Paper>
+                        </Grid>
+                      )}
+                      {playerDetails.level && (
+                        <Grid item xs={12} sm={6}>
+                          <Paper variant="outlined" sx={{ p: 2 }}>
+                            <Typography variant="caption" color="text.secondary">Level</Typography>
+                            <Typography variant="h6">{playerDetails.level}</Typography>
+                          </Paper>
+                        </Grid>
+                      )}
+                    </Grid>
+                  </Grid>
+                )}
 
                 {/* Additional Details */}
                 {playerDetails.last_seen && (
@@ -708,7 +813,7 @@ const Team = () => {
                 View TruckersMP Profile
               </Button>
               <Button
-                href={`https://steamcommunity.com/profiles/${selectedMember.steamId64}`}
+                href={`https://steamcommunity.com/profiles/${playerDetails?.steamID || playerDetails?.steam?.steamid || selectedMember.steamID ||  selectedMember.steamId64}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 startIcon={<PersonIcon />}

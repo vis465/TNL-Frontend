@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Container,
   Paper,
@@ -15,12 +15,13 @@ import axiosInstance from '../utils/axios';
 
 const Login = () => {
   const [formData, setFormData] = useState({
-    username: '',
+    identifier: '',
     password: '',
   });
   const [error, setError] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const handleChange = (e) => {
     setFormData({
@@ -29,15 +30,24 @@ const Login = () => {
     });
   };
 
+
+  // Check for error from URL params
+  React.useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam === 'steam_auth_failed') {
+      setError('Steam authentication failed. Please try again.');
+    }
+  }, [searchParams]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     try {
-      console.log('Attempting login with:', { username: formData.username });
-      const response = await axiosInstance.post('/auth/login', {
-        username: formData.username,
-        password: formData.password
-      });
+      console.log('Attempting login with:', { identifier: formData.identifier });
+      const payload = formData.identifier.includes('@')
+        ? { email: formData.identifier, password: formData.password }
+        : { username: formData.identifier, password: formData.password };
+      const response = await axiosInstance.post('/auth/login', payload);
 
       console.log('Login response:', response.data);
       const { token, user } = response.data;
@@ -50,7 +60,7 @@ const Login = () => {
       login(user, token);
       
       // Navigate to home page
-      navigate('/');
+      navigate('/dashboard');
     } catch (error) {
       console.error('Login error:', error);
       const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
@@ -73,9 +83,9 @@ const Login = () => {
           <form onSubmit={handleSubmit}>
             <TextField
               fullWidth
-              label="Username"
-              name="username"
-              value={formData.username}
+              label="Email or Username"
+              name="identifier"
+              value={formData.identifier}
               onChange={handleChange}
               margin="normal"
               required
@@ -100,6 +110,7 @@ const Login = () => {
               Login
             </Button>
           </form>
+          
           
         </Paper>
       </Box>
