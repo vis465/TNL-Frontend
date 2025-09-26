@@ -40,3 +40,9 @@ axiosInstance.interceptors.response.use(
 );
 
 export default axiosInstance; 
+
+// Helper: fetch ETS2 map data (cached server-side for 3 days)
+export async function fetchEts2Map() {
+  const { data } = await axiosInstance.get('/mapdata/ets2');
+  return data;
+}

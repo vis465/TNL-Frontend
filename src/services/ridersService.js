@@ -32,6 +32,10 @@ const ridersService = {
   getStats: async (riderId) => {
     const { data } = await api.get(`/riders/${riderId}/stats`);
     return data;
+  },
+  search: async (q, limit = 10) => {
+    const { data } = await api.get(`/riders/search/q`, { params: { q, limit } });
+    return data?.items || [];
   }
 };
 

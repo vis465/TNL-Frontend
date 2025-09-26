@@ -44,7 +44,8 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import ToggleOnIcon from '@mui/icons-material/ToggleOn';
 import ToggleOffIcon from '@mui/icons-material/ToggleOff';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import axiosInstance from '../utils/axios';
+import axiosInstance, { fetchEts2Map } from '../utils/axios';
+import Autocomplete from '@mui/material/Autocomplete';
 import { normalizeName } from '../utils/normalizeName';
 
 const AdminChallenges = () => {
@@ -81,8 +82,25 @@ const AdminChallenges = () => {
     endDate: ''
   });
 
+  const [mapData, setMapData] = useState({ cities: [] });
+  const [cityOptions, setCityOptions] = useState([]);
+  const [companyOptionsByCity, setCompanyOptionsByCity] = useState({});
+
   useEffect(() => {
     fetchChallenges();
+    (async () => {
+      try {
+        const md = await fetchEts2Map();
+        const cities = md?.mapData?.cities || [];
+        setMapData({ cities });
+        setCityOptions(cities.map(c => c.name).filter(Boolean).sort());
+        const byCity = {};
+        for (const c of cities) {
+          byCity[c.name] = (c.companies||[]).map(co => co.name).filter(Boolean).sort();
+        }
+        setCompanyOptionsByCity(byCity);
+      } catch (_) {}
+    })();
   }, []);
 
   const fetchChallenges = async () => {
@@ -560,40 +578,48 @@ const AdminChallenges = () => {
             <Divider />
             <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 800 }}>Route</Typography>
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                label="Start City (leave blank for Any)"
-                value={formData.startCity}
-                onChange={handleInputChange('startCity')}
+              <Autocomplete
+                freeSolo
+                options={cityOptions}
+                value={formData.startCity || ''}
+                onInputChange={(_, v) => setFormData({ ...formData, startCity: v })}
+                renderInput={(params) => (
+                  <TextField {...params} label="Start City (leave blank for Any)" placeholder="e.g., Berlin" helperText="Leave empty to allow any city" />
+                )}
                 fullWidth
-                placeholder="e.g., Berlin"
-                helperText="Leave empty to allow any city"
               />
-              <TextField
-                label="Start Company (leave blank for Any)"
-                value={formData.startCompany}
-                onChange={handleInputChange('startCompany')}
+              <Autocomplete
+                freeSolo
+                options={companyOptionsByCity[formData.startCity] || []}
+                value={formData.startCompany || ''}
+                onInputChange={(_, v) => setFormData({ ...formData, startCompany: v })}
+                renderInput={(params) => (
+                  <TextField {...params} label="Start Company (leave blank for Any)" placeholder="e.g., Tradeaux" helperText="Leave empty to allow any company" />
+                )}
                 fullWidth
-                placeholder="e.g., Tradeaux"
-                helperText="Leave empty to allow any company"
               />
             </Box>
             
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                label="End City (leave blank for Any)"
-                value={formData.endCity}
-                onChange={handleInputChange('endCity')}
+              <Autocomplete
+                freeSolo
+                options={cityOptions}
+                value={formData.endCity || ''}
+                onInputChange={(_, v) => setFormData({ ...formData, endCity: v })}
+                renderInput={(params) => (
+                  <TextField {...params} label="End City (leave blank for Any)" placeholder="e.g., Paris" helperText="Leave empty to allow any city" />
+                )}
                 fullWidth
-                placeholder="e.g., Paris"
-                helperText="Leave empty to allow any city"
               />
-              <TextField
-                label="End Company (leave blank for Any)"
-                value={formData.endCompany}
-                onChange={handleInputChange('endCompany')}
+              <Autocomplete
+                freeSolo
+                options={companyOptionsByCity[formData.endCity] || []}
+                value={formData.endCompany || ''}
+                onInputChange={(_, v) => setFormData({ ...formData, endCompany: v })}
+                renderInput={(params) => (
+                  <TextField {...params} label="End Company (leave blank for Any)" placeholder="e.g., Lisette Logistics" helperText="Leave empty to allow any company" />
+                )}
                 fullWidth
-                placeholder="e.g., Lisette Logistics"
-                helperText="Leave empty to allow any company"
               />
             </Box>
             <Divider />

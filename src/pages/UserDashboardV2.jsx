@@ -413,6 +413,11 @@ export default function UserDashboard() {
         {contracts.active?.length > 0 && (
           <>
             <Typography variant="h6" sx={{ mb: 1 }}>Active Contracts</Typography>
+            <a href="/contracts/me" style={{ textDecoration: 'none' }}>
+              <Button variant="contained" color="primary" size="small" sx={{ mb: 2 }}>
+                View Progress
+              </Button>
+            </a>
             <Grid container spacing={2} sx={{ mb: 3 }}>
               {contracts.active.map(c => {
                 const tpl = c.templateId || {};

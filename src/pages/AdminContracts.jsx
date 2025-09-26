@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { listTemplates, createTemplate, updateTemplate, deleteTemplate } from '../services/contractsService';
 import { Grid, Card, CardContent, CardActions, Typography, Button, TextField, Stack, IconButton, Chip, Divider, Alert } from '@mui/material';
+import Autocomplete from '@mui/material/Autocomplete';
+import { fetchEts2Map } from '../utils/axios';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 const emptyTemplate = {
@@ -14,6 +16,8 @@ export default function AdminContracts() {
   const [editingId, setEditingId] = useState(null);
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
+  const [cityOptions, setCityOptions] = useState([]);
+  const [companyOptionsByCity, setCompanyOptionsByCity] = useState({});
 
   const load = async () => {
     try {
@@ -23,6 +27,19 @@ export default function AdminContracts() {
   };
 
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const md = await fetchEts2Map();
+        const cities = md?.mapData?.cities || [];
+        setCityOptions(cities.map(c => c.name).filter(Boolean).sort());
+        const byCity = {};
+        for (const c of cities) byCity[c.name] = (c.companies||[]).map(co => co.name).filter(Boolean).sort();
+        setCompanyOptionsByCity(byCity);
+      } catch (_) {}
+    })();
+  }, []);
 
   const setTask = (idx, patch) => {
     const tasks = [...form.tasks];
@@ -102,12 +119,35 @@ export default function AdminContracts() {
                     <Grid container spacing={1}>
                       {criteriaFields.map(([key, label]) => (
                         <Grid item xs={12} sm={6} key={key}>
-                          <TextField label={label} value={(t.criteria||{})[key] || ''} onChange={e=>{
-                            const criteria = { ...(t.criteria||{}), [key]: e.target.value };
-                            const numKeys = ['minDistance','maxDamagePct','maxTopSpeedKmh','minRevenue','minAvgSpeedKmh','maxAvgSpeedKmh','maxTruckDamagePercent','maxTrailerDamagePercent'];
-                            if (numKeys.includes(key)) criteria[key] = e.target.value === '' ? '' : Number(e.target.value);
-                            setTask(idx, { criteria });
-                          }} size="small" fullWidth />
+                          {key === 'sourceCity' || key === 'destinationCity' ? (
+                            <Autocomplete freeSolo options={cityOptions} value={(t.criteria||{})[key] || ''}
+                              onInputChange={(_, v) => {
+                                const criteria = { ...(t.criteria||{}), [key]: v };
+                                setTask(idx, { criteria });
+                              }}
+                              renderInput={(params) => (<TextField {...params} label={label} size="small" fullWidth />)} />
+                          ) : key === 'sourceCompany' ? (
+                            <Autocomplete freeSolo options={companyOptionsByCity[(t.criteria||{}).sourceCity || ''] || []} value={(t.criteria||{})[key] || ''}
+                              onInputChange={(_, v) => {
+                                const criteria = { ...(t.criteria||{}), [key]: v };
+                                setTask(idx, { criteria });
+                              }}
+                              renderInput={(params) => (<TextField {...params} label={label} size="small" fullWidth />)} />
+                          ) : key === 'destinationCompany' ? (
+                            <Autocomplete freeSolo options={companyOptionsByCity[(t.criteria||{}).destinationCity || ''] || []} value={(t.criteria||{})[key] || ''}
+                              onInputChange={(_, v) => {
+                                const criteria = { ...(t.criteria||{}), [key]: v };
+                                setTask(idx, { criteria });
+                              }}
+                              renderInput={(params) => (<TextField {...params} label={label} size="small" fullWidth />)} />
+                          ) : (
+                            <TextField label={label} value={(t.criteria||{})[key] || ''} onChange={e=>{
+                              const criteria = { ...(t.criteria||{}), [key]: e.target.value };
+                              const numKeys = ['minDistance','maxDamagePct','maxTopSpeedKmh','minRevenue','minAvgSpeedKmh','maxAvgSpeedKmh','maxTruckDamagePercent','maxTrailerDamagePercent'];
+                              if (numKeys.includes(key)) criteria[key] = e.target.value === '' ? '' : Number(e.target.value);
+                              setTask(idx, { criteria });
+                            }} size="small" fullWidth />
+                          )}
                         </Grid>
                       ))}
                     </Grid>

@@ -15,4 +15,9 @@ export async function bankBonus(amount, riderIds, reason, idempotencyKey) {
   return data;
 }
 
+export async function searchRiders(q, limit = 10) {
+  const { data } = await axiosInstance.get('/riders/search/q', { params: { q, limit } });
+  return data?.items || [];
+}
+
 
