@@ -202,7 +202,7 @@ const Navbar = () => {
         // { label: 'License', path: '/riders/licence', icon: <DirectionsCar /> },
         { label: 'VTC Jobs ', path: '/jobs', icon: <Speed /> },
         { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
-        { label: 'Contact', path: '/contact', icon: <Event /> },
+        
         { label: 'Events', path: '/events', icon: <Event /> },
       ];
     } else if (isEventTeam) {
@@ -211,7 +211,7 @@ const Navbar = () => {
         { label: 'VTC Jobs', path: '/jobs', icon: <Speed /> },
         { label: 'Events', path: '/events', icon: <Event /> },
         { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
-        { label: 'Contact', path: '/contact', icon: <Event /> },
+        
         
       ];
     } else if (isHR) {
@@ -220,7 +220,7 @@ const Navbar = () => {
         { label: 'Events', path: '/events', icon: <Event /> },
         { label: 'VTC Jobs', path: '/jobs', icon: <Speed /> },
         { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
-        { label: 'Contact', path: '/contact', icon: <Event /> },
+        
         
       ];
     } else {

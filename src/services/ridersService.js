@@ -28,6 +28,10 @@ const ridersService = {
   register: async (payload) => {
     const { data } = await api.post('/riders/register', payload);
     return data;
+  },
+  getStats: async (riderId) => {
+    const { data } = await api.get(`/riders/${riderId}/stats`);
+    return data;
   }
 };
 

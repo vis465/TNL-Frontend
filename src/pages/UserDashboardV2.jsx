@@ -55,7 +55,7 @@ export default function UserDashboard() {
       try {
         const { data } = await axiosInstance.get('/me/dashboard');
         setData(data);
-        console.log(data)
+        ////console.log(data)
       } catch (e) {
         setError('Failed to load dashboard');
       }
@@ -116,6 +116,12 @@ export default function UserDashboard() {
     }
   });
   const revenueData = Array.from(monthlyMap.values()).map(m => ({ month: m.label, revenue: m.revenue, distance: m.distance }));
+  
+  // Debug logging for charts
+  //console.log('Chart Data Debug:');
+  //console.log('Latest Jobs:', jobsForCharts.length);
+  //console.log('Revenue Data:', revenueData);
+  
 
   const weekdayOrder = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const weeklyAgg = new Map(weekdayOrder.map(d => [d, { jobs: 0, distance: 0 }]));
@@ -129,7 +135,24 @@ export default function UserDashboard() {
     cur.distance += Number(j.distanceDriven || 0);
     weeklyAgg.set(label, cur);
   });
-  const weeklyData = weekdayOrder.map(day => ({ day, jobs: (weeklyAgg.get(day) || {}).jobs || 0, distance: (weeklyAgg.get(day) || {}).distance || 0 }));
+  const weeklyData = weekdayOrder.map(day => ({ 
+    day, 
+    jobs: (weeklyAgg.get(day) || {}).jobs || 0, 
+    distance: (weeklyAgg.get(day) || {}).distance || 0 
+  }));
+  //console.log('Weekly Data:', weeklyData);
+  // Add fallback data if no jobs exist for better chart visualization
+  const hasData = jobsForCharts.length > 0;
+  const fallbackRevenueData = [
+    { month: 'Jan', revenue: 100, distance: 1000 },
+    { month: 'Feb', revenue: 0, distance: 0 },
+    { month: 'Mar', revenue: 0, distance: 0 },
+    { month: 'Apr', revenue: 0, distance: 0 },
+    { month: 'May', revenue: 0, distance: 0 },
+    { month: 'Jun',  revenue: 100, distance: 1000 }
+  ];
+  
+  const finalRevenueData = hasData ? revenueData : fallbackRevenueData;
 
   // Job distribution by distance buckets
   let local = 0, regional = 0, longhaul = 0;
@@ -669,8 +692,26 @@ export default function UserDashboard() {
                   </Stack>
                 </Stack>
                 <Box sx={{ width: '100%', height: 300 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={revenueData}>
+                  {!hasData && (
+                    <Box sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      height: '100%',
+                      flexDirection: 'column',
+                      color: 'text.secondary'
+                    }}>
+                      <Typography variant="body2" color="text.secondary">
+                        No job data available for trend analysis
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Complete some deliveries to see your revenue and distance trends
+                      </Typography>
+                    </Box>
+                  )}
+                  {hasData && (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={finalRevenueData}>
                       <defs>
                         <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
@@ -688,7 +729,8 @@ export default function UserDashboard() {
                       <Area type="monotone" dataKey="revenue" stroke="#3B82F6" fillOpacity={1} fill="url(#revenueGradient)" strokeWidth={3} />
                       <Area type="monotone" dataKey="distance" stroke="#10B981" fillOpacity={1} fill="url(#distanceGradient)" strokeWidth={3} />
                     </AreaChart>
-                  </ResponsiveContainer>
+                    </ResponsiveContainer>
+                  )}
                 </Box>
               </CardContent>
             </Card>
@@ -696,17 +738,50 @@ export default function UserDashboard() {
           <Grid item xs={12} lg={6}>
             <Card variant="outlined">
               <CardContent>
-                <Typography variant="h6" sx={{ mb: 2 }}>Weekly Activity</Typography>
+                <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+                  <Typography variant="h6">Weekly Activity</Typography>
+                  <Stack direction="row" spacing={3}>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Box sx={{ width: 10, height: 10, borderRadius: 1, bgcolor: '#3B82F6' }} />
+                      <Typography variant="caption">Jobs</Typography>
+                    </Stack>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Box sx={{ width: 10, height: 10, borderRadius: 1, bgcolor: '#10B981' }} />
+                      <Typography variant="caption">Distance (km)</Typography>
+                    </Stack>
+                  </Stack>
+                </Stack>
                 <Box sx={{ width: '100%', height: 300 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={weeklyData}>
+                  {!hasData && (
+                    <Box sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      height: '100%',
+                      flexDirection: 'column',
+                      color: 'text.secondary'
+                    }}>
+                      <Typography variant="body2" color="text.secondary">
+                        No job data available for weekly analysis
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Complete some deliveries to see your weekly activity patterns
+                      </Typography>
+                    </Box>
+                  )}
+                  {hasData && (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={weeklyData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                       <XAxis dataKey="day" stroke="#64748B" tickLine={false} axisLine={{ stroke: '#E2E8F0' }} />
-                      <YAxis stroke="#64748B" tickLine={false} axisLine={{ stroke: '#E2E8F0' }} />
+                      <YAxis yAxisId="left" stroke="#64748B" tickLine={false} axisLine={{ stroke: '#E2E8F0' }} />
+                      <YAxis yAxisId="right" orientation="right" stroke="#64748B" tickLine={false} axisLine={{ stroke: '#E2E8F0' }} />
                       <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E2E8F0', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
-                      <Bar dataKey="jobs" fill="#3B82F6" radius={[6, 6, 0, 0]} />
+                      <Bar yAxisId="left" dataKey="jobs" fill="#3B82F6" radius={[6, 6, 0, 0]} />
+                      <Bar yAxisId="right" dataKey="distance" fill="#10B981" radius={[6, 6, 0, 0]} />
                     </BarChart>
-                  </ResponsiveContainer>
+                    </ResponsiveContainer>
+                  )}
                 </Box>
               </CardContent>
             </Card>

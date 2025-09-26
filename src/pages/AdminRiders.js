@@ -73,6 +73,7 @@ export default function AdminRiders() {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
   const [riders, setRiders] = useState([]);
+  const [riderStats, setRiderStats] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState(initialForm);
@@ -86,12 +87,32 @@ export default function AdminRiders() {
   const [dlcFilter, setDlcFilter] = useState('');
 
   const isAdmin = useMemo(() => ['admin','eventteam','hrteam'].includes(user?.role), [user]);
+  const loadRiderStats = async (riders) => {
+    const stats = {};
+    for (const rider of riders) {
+      try {
+        const data = await ridersService.getStats(rider._id);
+        stats[rider._id] = data;
+      } catch (e) {
+        console.warn(`Failed to load stats for rider ${rider._id}:`, e);
+        stats[rider._id] = {
+          totalKm: rider.totalKm || 0,
+          totalRevenue: rider.totalRevenue || 0,
+          totalJobs: rider.totalJobs || 0,
+          avgPerJob: 0
+        };
+      }
+    }
+    setRiderStats(stats);
+  };
+
   const load = async () => {
     setLoading(true);
     setError('');
     try {
       const data = await ridersService.list();
       setRiders(data);
+      await loadRiderStats(data);
     } catch (e) {
       setError(e?.response?.data?.message || 'Failed to load riders');
     } finally {
@@ -103,12 +124,21 @@ export default function AdminRiders() {
     load();
   }, []);
   const totals = useMemo(() => {
-    const totalKm = riders.reduce((acc, r) => acc + (Number(r.totalKm) || 0), 0);
-    const totalRevenue = riders.reduce((acc, r) => acc + (Number(r.totalRevenue) || 0), 0);
-    const totalJobs = riders.reduce((acc, r) => acc + (Number(r.totalJobs) || 0), 0);
+    const totalKm = riders.reduce((acc, r) => {
+      const stats = riderStats[r._id];
+      return acc + (stats ? Number(stats.totalKm) || 0 : Number(r.totalKm) || 0);
+    }, 0);
+    const totalRevenue = riders.reduce((acc, r) => {
+      const stats = riderStats[r._id];
+      return acc + (stats ? Number(stats.totalRevenue) || 0 : Number(r.totalRevenue) || 0);
+    }, 0);
+    const totalJobs = riders.reduce((acc, r) => {
+      const stats = riderStats[r._id];
+      return acc + (stats ? Number(stats.totalJobs) || 0 : Number(r.totalJobs) || 0);
+    }, 0);
     const activeCount = riders.filter(r => r.active).length;
     return { totalKm, totalRevenue, totalJobs, activeCount };
-  }, [riders]);
+  }, [riders, riderStats]);
 
   const filtered = useMemo(() => {
     let result = riders;
@@ -240,15 +270,27 @@ export default function AdminRiders() {
           <Typography variant="h4" fontWeight={700} color="primary">
             Riders Management
           </Typography>
-          <Button
-            variant="contained"
-            size="large"
-            startIcon={<AddIcon />}
-            onClick={() => handleOpenModal()}
-            sx={{ px: 3 }}
-          >
-            Add Rider
-          </Button>
+          <Stack direction="row" spacing={2}>
+            <Button
+              variant="outlined"
+              size="large"
+              startIcon={<SyncIcon />}
+              onClick={() => loadRiderStats(riders)}
+              disabled={loading}
+              sx={{ px: 3 }}
+            >
+              Refresh Stats
+            </Button>
+            <Button
+              variant="contained"
+              size="large"
+              startIcon={<AddIcon />}
+              onClick={() => handleOpenModal()}
+              sx={{ px: 3 }}
+            >
+              Add Rider
+            </Button>
+          </Stack>
         </Stack>
 
         {/* Stats Cards */}
@@ -335,7 +377,7 @@ export default function AdminRiders() {
               <TextField
                 select
                 fullWidth
-                label="Game"
+                
                 value={gameFilter}
                 onChange={(e) => { setGameFilter(e.target.value); setDlcFilter(''); }}
                 SelectProps={{ native: true }}
@@ -344,32 +386,7 @@ export default function AdminRiders() {
                 <option value="ets2">ETS2</option>
                 <option value="ats">ATS</option>
               </TextField>
-              <TextField
-                select
-                fullWidth
-                label="DLC"
-                value={dlcFilter}
-                onChange={(e) => setDlcFilter(e.target.value)}
-                SelectProps={{ native: true }}
-              >
-                <option value="">All DLCs</option>
-                {gameFilter === 'ets2' && (
-                  [
-                    'Going East!','Scandinavia','Vive la France!','Italia','Beyond the Baltic Sea','Road to the Black Sea','Iberia','West Balkans','Heart of Russia (if released)',
-                    'Heavy Cargo Pack','Special Transport','High Power Cargo Pack','Cabin Accessories','Wheel Tuning Pack','Krone Trailer Pack','FH Tuning Pack','Mighty Griffin Tuning Pack'
-                  ].map((d) => (
-                    <option key={d} value={`ets2::${d}`}>{d}</option>
-                  ))
-                )}
-                {gameFilter === 'ats' && (
-                  [
-                    'New Mexico','Oregon','Washington','Utah','Idaho','Colorado','Wyoming','Montana','Texas','Oklahoma','Kansas','Nebraska','Arkansas',
-                    'Heavy Cargo Pack','Special Transport','Cabin Accessories','Wheel Tuning Pack'
-                  ].map((d) => (
-                    <option key={d} value={`ats::${d}`}>{d}</option>
-                  ))
-                )}
-              </TextField>
+             
             </Stack>
           </Grid>
 
@@ -468,17 +485,29 @@ export default function AdminRiders() {
                   </TableCell>
                   <TableCell align="right">
                     <Typography fontWeight={600}>
-                      {Number(rider.totalKm || 0).toLocaleString()}
+                      {(() => {
+                        const stats = riderStats[rider._id];
+                        const km = stats ? Number(stats.totalKm) || 0 : Number(rider.totalKm) || 0;
+                        return km.toLocaleString();
+                      })()}
                     </Typography>
                   </TableCell>
                   <TableCell align="right">
                     <Typography fontWeight={600}>
-                      ${Number(rider.totalRevenue || 0).toLocaleString()}
+                    ₹ {" "}{(() => {
+                        const stats = riderStats[rider._id];
+                        const revenue = stats ? Number(stats.totalRevenue) || 0 : Number(rider.totalRevenue) || 0;
+                        return revenue.toLocaleString();
+                      })()}
                     </Typography>
                   </TableCell>
                   <TableCell align="right">
                     <Typography fontWeight={600}>
-                      {Number(rider.totalJobs || 0).toLocaleString()}
+                      {(() => {
+                        const stats = riderStats[rider._id];
+                        const jobs = stats ? Number(stats.totalJobs) || 0 : Number(rider.totalJobs) || 0;
+                        return jobs.toLocaleString();
+                      })()}
                     </Typography>
                   </TableCell>
                   <TableCell>
