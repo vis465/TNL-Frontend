@@ -696,7 +696,7 @@ export default function UserDashboard() {
                 {rider?.dlcsOwned?.ets2?.length > 0 && (
                   <Box sx={{ mt: 2 }}>
                     <Typography variant="subtitle2"  gutterBottom>
-                      ETS2 DLCs
+                      ETS2 DLCs (Beta)
                     </Typography>
                     <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
                       {rider.dlcsOwned.ets2.map((dlc, index) => (
