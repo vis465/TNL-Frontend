@@ -159,6 +159,92 @@ export default function AdminBank() {
           </Box>
         </Paper>
 
+        {/* Job Deductions Summary */}
+        <Paper elevation={0} sx={{ mb: 4, border: '1px solid #e0e0e0', borderRadius: 3 }}>
+          <Box sx={{ p: 4 }}>
+            <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
+              <Payment sx={{ color: '#ff9800' }} />
+              <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                Job Deductions Summary
+              </Typography>
+            </Stack>
+            
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 3 }}>
+              {(() => {
+                const jobDeductions = tx.filter(t => t.source?.kind === 'job_deductions');
+                const totalDeductions = jobDeductions.reduce((sum, t) => sum + (t.amount || 0), 0);
+                const totalJobs = jobDeductions.length;
+                const avgDeduction = totalJobs > 0 ? totalDeductions / totalJobs : 0;
+                
+                const deductionBreakdown = jobDeductions.reduce((acc, t) => {
+                  if (t.deductionDetails) {
+                    acc.cargoDamage += t.deductionDetails.cargoDamage || 0;
+                    acc.autoPark += t.deductionDetails.autoPark || 0;
+                    acc.speedViolation += t.deductionDetails.speedViolation || 0;
+                    acc.fixedTax += t.deductionDetails.fixedTax || 0;
+                  }
+                  return acc;
+                }, { cargoDamage: 0, autoPark: 0, speedViolation: 0, fixedTax: 0 });
+
+                return (
+                  <>
+                    <Box sx={{ textAlign: 'center', p: 2, borderRadius: 2 }}>
+                      <Typography variant="h4" sx={{ fontWeight: 600, color: '#ff9800' }}>
+                        {totalDeductions.toLocaleString()}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: '#666' }}>
+                        Total Deducted
+                      </Typography>
+                    </Box>
+                    
+                    <Box sx={{ textAlign: 'center', p: 2,  borderRadius: 2 }}>
+                      <Typography variant="h4" sx={{ fontWeight: 600, color: '#9c27b0' }}>
+                        {totalJobs}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: '#666' }}>
+                        Jobs Processed
+                      </Typography>
+                    </Box>
+                    
+                    <Box sx={{ textAlign: 'center', p: 2,  borderRadius: 2 }}>
+                      <Typography variant="h4" sx={{ fontWeight: 600, color: '#4caf50' }}>
+                        {Math.round(avgDeduction)}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: '#666' }}>
+                        Avg per Job
+                      </Typography>
+                    </Box>
+                    
+                    <Box sx={{ p: 2, borderRadius: 2 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                        Deduction Breakdown
+                      </Typography>
+                      <Stack spacing={0.5}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography variant="caption">Cargo Damage:</Typography>
+                          <Typography variant="caption" sx={{ fontWeight: 600 }}>{deductionBreakdown.cargoDamage}</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography variant="caption">Auto-Park:</Typography>
+                          <Typography variant="caption" sx={{ fontWeight: 600 }}>{deductionBreakdown.autoPark}</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography variant="caption">Speed Violation:</Typography>
+                          <Typography variant="caption" sx={{ fontWeight: 600 }}>{deductionBreakdown.speedViolation}</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography variant="caption">Fixed Tax:</Typography>
+                          <Typography variant="caption" sx={{ fontWeight: 600 }}>{deductionBreakdown.fixedTax}</Typography>
+                        </Box>
+                      </Stack>
+                    </Box>
+                  </>
+                );
+              })()}
+            </Box>
+          </Box>
+        </Paper>
+
         {/* Bonus Payout Section */}
         <Paper elevation={0} sx={{ mb: 4, border: '1px solid #e0e0e0', borderRadius: 3 }}>
           <Box sx={{ p: 4 }}>
@@ -330,6 +416,9 @@ export default function AdminBank() {
                     <TableCell sx={{ fontWeight: 600, color: '#666', borderBottom: '2px solid #e0e0e0' }}>
                       Description
                     </TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: '#666', borderBottom: '2px solid #e0e0e0' }}>
+                      Deduction Details
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -381,22 +470,62 @@ export default function AdminBank() {
                       <TableCell>
                         <Box>
                           <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                            {row.riderName || 'Unknown'}
+                            {row.riderInfo?.name || row.riderName || 'Unknown'}
                           </Typography>
                           <Typography variant="caption" sx={{ color: '#666' }}>
-                            ID: {row.riderEmployeeId || 'N/A'}
+                            ID: {row.riderInfo?.employeeId || row.riderEmployeeId || 'N/A'}
                           </Typography>
                         </Box>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" sx={{ color: '#666' }}>
-                          {row.source?.kind || '-'}
-                        </Typography>
+                        <Chip
+                          label={row.source?.kind || '-'}
+                          size="small"
+                          sx={{
+                            bgcolor: row.source?.kind === 'job_deductions' ? '#ff9800' : '#e0e0e0',
+                            color: row.source?.kind === 'job_deductions' ? 'white' : '#666',
+                            fontWeight: 600
+                          }}
+                        />
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2">
                           {row.title}
                         </Typography>
+                        {row.jobContext && (
+                          <Typography variant="caption" sx={{ color: '#666', display: 'block' }}>
+                            Revenue: €{row.jobContext.revenue?.toLocaleString() || 0} | 
+                            Server: {row.jobContext.server || 'Unknown'} | 
+                            Speed: {row.jobContext.topSpeedKmh || 0} km/h
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {row.deductionDetails ? (
+                          <Box>
+                            <Typography variant="caption" sx={{ color: '#666', display: 'block' }}>
+                              Base: {row.deductionDetails.baseTokens} → Final: {row.deductionDetails.finalTokens}
+                            </Typography>
+                            <Box sx={{ mt: 0.5 }}>
+                              {row.deductionDetails.cargoDamage > 0 && (
+                                <Chip label={`Cargo: ${row.deductionDetails.cargoDamage}`} size="small" sx={{ mr: 0.5, mb: 0.5, fontSize: '0.7rem' }} />
+                              )}
+                              {row.deductionDetails.autoPark > 0 && (
+                                <Chip label={`Auto: ${row.deductionDetails.autoPark}`} size="small" sx={{ mr: 0.5, mb: 0.5, fontSize: '0.7rem' }} />
+                              )}
+                              {row.deductionDetails.speedViolation > 0 && (
+                                <Chip label={`Speed: ${row.deductionDetails.speedViolation}`} size="small" sx={{ mr: 0.5, mb: 0.5, fontSize: '0.7rem' }} />
+                              )}
+                              {row.deductionDetails.fixedTax > 0 && (
+                                <Chip label={`Tax: ${row.deductionDetails.fixedTax}`} size="small" sx={{ mr: 0.5, mb: 0.5, fontSize: '0.7rem' }} />
+                              )}
+                            </Box>
+                          </Box>
+                        ) : (
+                          <Typography variant="body2" sx={{ color: '#999' }}>
+                            -
+                          </Typography>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}

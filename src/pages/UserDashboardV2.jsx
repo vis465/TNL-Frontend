@@ -61,6 +61,7 @@ export default function UserDashboard() {
   const [contracts, setContracts] = useState({ active: [], history: [] });
   const [wallet, setWallet] = useState({ balance: 0, transactions: [] });
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [showAllTransactions, setShowAllTransactions] = useState(false);
   
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -465,25 +466,6 @@ export default function UserDashboard() {
               </CardContent>
             </Card>
           </Grid>
-
-          <Grid item xs={12} md={3}>
-            <Card variant="outlined">
-              <CardContent>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">Avg per Job</Typography>
-                    <Typography variant="h4" fontWeight={700} sx={{ mt: 0.5 }}>
-                    ₹{Math.round((totals?.totalRevenue || 0) / (totals?.totalJobs || 1))}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">revenue per delivery</Typography>
-                  </Box>
-                  <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'secondary.light', color: 'secondary.main' }}>
-                    <TrendingUpIcon />
-                  </Box>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
         </Grid>
 
         {/* Active Contracts */}
@@ -524,38 +506,6 @@ export default function UserDashboard() {
             </Grid>
           </>
         )}
-
-        {/* Recent Wallet Transactions */}
-        <Typography variant="h6" sx={{ mb: 1 }}>Recent Transactions</Typography>
-        <Card variant="outlined" sx={{ mb: 3 }}>
-          <CardContent>
-            <Grid container spacing={1}>
-              {(wallet.transactions || []).slice(0, 10).map(tx => (
-                <Grid item xs={12} key={tx._id}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Chip size="small" label={tx.type} color={tx.type === 'credit' ? 'success' : 'default'} />
-                      <Typography variant="body2">{tx.title || (tx.type === 'credit' ? 'Credit' : 'Debit')}</Typography>
-                    </Stack>
-                    <Stack direction="row" spacing={2} alignItems="center">
-                      <Typography variant="body2">{new Date(tx.createdAt).toLocaleString()}</Typography>
-                      <Typography variant="subtitle2" color={tx.type === 'credit' ? 'success.main' : 'text.primary'}>
-                        {tx.type === 'credit' ? '+' : '-'}{tx.amount}
-                      </Typography>
-                      <Chip size="small" variant="outlined" label={`Balance: ${tx.balanceAfter}`} />
-                    </Stack>
-                  </Stack>
-                </Grid>
-              ))}
-              {(!wallet.transactions || wallet.transactions.length === 0) && (
-                <Grid item xs={12}>
-                  <Typography variant="body2" color="text.secondary">No transactions yet.</Typography>
-                </Grid>
-              )}
-            </Grid>
-          </CardContent>
-        </Card>
-
         {/* Attendance */}
         <Grid container spacing={3} sx={{ mb: 3 }}>
           <Grid item xs={12} lg={4}>
