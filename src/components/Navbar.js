@@ -242,6 +242,7 @@ const Navbar = () => {
         // { label: 'License', path: '/riders/licence', icon: <DirectionsCar /> },
         { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
         { label: 'Contact', path: '/contact', icon: <Event /> },
+        { label: 'login', path: '/login', icon: <Event /> },
       ];
     }
   };

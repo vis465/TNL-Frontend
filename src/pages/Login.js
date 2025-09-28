@@ -31,13 +31,22 @@ const Login = () => {
   };
 
 
-  // Check for error from URL params
+  // Check for error from URL params and handle Steam login
   React.useEffect(() => {
     const errorParam = searchParams.get('error');
+    const token = searchParams.get('token');
+    const steamLogin = searchParams.get('steam_login');
+    
     if (errorParam === 'steam_auth_failed') {
       setError('Steam authentication failed. Please try again.');
+    } else if (token && steamLogin === 'true') {
+      // Handle Steam login
+      localStorage.setItem('token', token);
+      // Get user data from token (you might want to decode JWT or make an API call)
+      // For now, we'll navigate to dashboard and let the auth context handle it
+      navigate('/dashboard');
     }
-  }, [searchParams]);
+  }, [searchParams, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
