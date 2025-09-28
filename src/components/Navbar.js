@@ -14,6 +14,15 @@ import {
   Avatar,
   Tooltip,
   Fade,
+  useMediaQuery,
+  SwipeableDrawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Divider,
+  Badge,
 } from '@mui/material';
 import { 
   AccountCircle, 
@@ -28,11 +37,16 @@ import {
   EmojiEvents,
   Brightness4,
   Brightness7,
-  
   Event,
   AdminPanelSettings,
   MenuIcon,
   Menu as MenuMui,
+  Close,
+  Home,
+  Work,
+  ContactMail,
+  Login,
+  AttachMoney,
 } from '@mui/icons-material';
 import EventIcon from '@mui/icons-material/Event';
 import { useAuth } from '../contexts/AuthContext';
@@ -149,10 +163,12 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
   const [mobileMenuAnchor, setMobileMenuAnchor] = useState(null);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const theme = useTheme();
   const { isDarkMode, toggleTheme } = useContext(ThemeContext);
   const [walletBalance, setWalletBalance] = useState(null);
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   useEffect(() => {
     const handleScroll = () => {
@@ -182,6 +198,10 @@ const Navbar = () => {
     setMobileMenuAnchor(event.currentTarget);
   };
 
+  const handleMobileDrawerToggle = () => {
+    setMobileDrawerOpen(!mobileDrawerOpen);
+  };
+
   const handleClose = () => {
     setAnchorEl(null);
   };
@@ -190,10 +210,15 @@ const Navbar = () => {
     setMobileMenuAnchor(null);
   };
 
+  const handleMobileDrawerClose = () => {
+    setMobileDrawerOpen(false);
+  };
+
   const handleLogout = () => {
     logout();
     handleClose();
     handleMobileClose();
+    handleMobileDrawerClose();
     navigate('/login');
   };
 
@@ -201,48 +226,53 @@ const Navbar = () => {
   const isEventTeam = user?.role === 'eventteam' || isAdmin;
   const isHR = user?.role === 'hrteam' || isAdmin;
 
-  // Navigation items based on user role
+  // Navigation items based on user role and authentication status
   const getNavItems = () => {
+    // If user is not authenticated, show public navigation
+    if (!isAuthenticated) {
+      return [
+        { label: 'Home', path: '/', icon: <Home />, shortLabel: 'Home' },
+        { label: 'Our Team', path: '/team', icon: <PersonAdd />, shortLabel: 'Team' },
+        { label: 'Events', path: '/events', icon: <Event />, shortLabel: 'Events' },
+        { label: 'Apply', path: '/apply', icon: <Work />, shortLabel: 'Apply' },
+        { label: 'VTC Jobs', path: '/jobs', icon: <Speed />, shortLabel: 'Jobs' },
+        { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined />, shortLabel: 'Servers' },
+        { label: 'Contact', path: '/contact', icon: <ContactMail />, shortLabel: 'Contact' },
+        { label: 'Login', path: '/login', icon: <Login />, shortLabel: 'Login' },
+      ];
+    }
+
+    // For authenticated users, show role-based navigation
     if (isAdmin) {
       return [
-        { label: 'Admin', path: '/admin', icon: <Dashboard /> },
-        { label: 'Users', path: '/admin/users', icon: <PeopleIcon /> },
-        // { label: 'License', path: '/riders/licence', icon: <DirectionsCar /> },
-        { label: 'VTC Jobs ', path: '/jobs', icon: <Speed /> },
-        { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
-        
-        { label: 'Events', path: '/events', icon: <Event /> },
+        { label: 'Admin', path: '/admin', icon: <Dashboard />, shortLabel: 'Admin' },
+        { label: 'Users', path: '/admin/users', icon: <PeopleIcon />, shortLabel: 'Users' },
+        { label: 'VTC Jobs', path: '/jobs', icon: <Speed />, shortLabel: 'Jobs' },
+        { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined />, shortLabel: 'Servers' },
+        { label: 'Events', path: '/events', icon: <Event />, shortLabel: 'Events' },
       ];
     } else if (isEventTeam) {
       return [
-        { label: 'Admin', path: '/admin', icon: <Dashboard /> },
-        { label: 'VTC Jobs', path: '/jobs', icon: <Speed /> },
-        { label: 'Events', path: '/events', icon: <Event /> },
-        { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
-        
-        
+        { label: 'Admin', path: '/admin', icon: <Dashboard />, shortLabel: 'Admin' },
+        { label: 'VTC Jobs', path: '/jobs', icon: <Speed />, shortLabel: 'Jobs' },
+        { label: 'Events', path: '/events', icon: <Event />, shortLabel: 'Events' },
+        { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined />, shortLabel: 'Servers' },
       ];
     } else if (isHR) {
       return [
-        { label: 'Admin', path: '/admin', icon: <Dashboard /> },
-        { label: 'Events', path: '/events', icon: <Event /> },
-        { label: 'VTC Jobs', path: '/jobs', icon: <Speed /> },
-        { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
-        
-        
+        { label: 'Admin', path: '/admin', icon: <Dashboard />, shortLabel: 'Admin' },
+        { label: 'Events', path: '/events', icon: <Event />, shortLabel: 'Events' },
+        { label: 'VTC Jobs', path: '/jobs', icon: <Speed />, shortLabel: 'Jobs' },
+        { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined />, shortLabel: 'Servers' },
       ];
     } else {
+      // For authenticated regular users (riders)
       return [
-        { label: 'Our Team', path: '/team', icon: <PersonAdd /> },
-        { label: 'Events', path: '/events', icon: <Event /> },
-        // { label: 'Special Events', path: '/special-events', icon: <EventIcon /> },
-        // { label: 'Attendance', path: '/attendance', icon: <PeopleIcon /> },
-        { label: 'Apply', path: '/apply', icon: <Dashboard /> },
-        { label: 'VTC Jobs', path: '/jobs', icon: <Speed /> },
-        // { label: 'License', path: '/riders/licence', icon: <DirectionsCar /> },
-        { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined /> },
-        { label: 'Contact', path: '/contact', icon: <Event /> },
-        { label: 'login', path: '/login', icon: <Event /> },
+        { label: 'Home', path: '/', icon: <Home />, shortLabel: 'Home' },
+        { label: 'Our Team', path: '/team', icon: <PersonAdd />, shortLabel: 'Team' },
+        { label: 'Events', path: '/events', icon: <Event />, shortLabel: 'Events' },
+        { label: 'VTC Jobs', path: '/jobs', icon: <Speed />, shortLabel: 'Jobs' },
+        { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined />, shortLabel: 'Servers' },
       ];
     }
   };
@@ -294,12 +324,11 @@ const Navbar = () => {
             ))}
             {walletBalance != null && (
               <NavButton component={RouterLink} to="/contracts/me">
-                Tokens: {walletBalance}
+                <AttachMoney sx={{ mr: 1 }} />
+                {walletBalance}
               </NavButton>
             )}
             
-            {/* Theme Toggle */}
-          
             {/* User Menu for Desktop */}
             {isAuthenticated && (
               <Tooltip title="Account">
@@ -321,13 +350,16 @@ const Navbar = () => {
           </Box>
 
           {/* Mobile Menu Button */}
-          <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
+          <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center' }}>
+            {walletBalance != null && (
+              <Badge badgeContent={walletBalance} color="primary" sx={{ mr: 1 }}>
+                <AttachMoney color="inherit" />
+              </Badge>
+            )}
             <IconButton
               size="large"
               aria-label="menu"
-              aria-controls="mobile-menu"
-              aria-haspopup="true"
-              onClick={handleMobileMenu}
+              onClick={handleMobileDrawerToggle}
               color="inherit"
             >
               <MenuMui />
@@ -363,61 +395,129 @@ const Navbar = () => {
             </MenuItem>
           </Menu>
 
-          {/* Mobile Menu */}
-          <Menu
-            id="mobile-menu"
-            anchorEl={mobileMenuAnchor}
-            anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'right',
-            }}
-            keepMounted
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
-            open={Boolean(mobileMenuAnchor)}
-            onClose={handleMobileClose}
-            TransitionComponent={Fade}
+          {/* Mobile Drawer */}
+          <SwipeableDrawer
+            anchor="right"
+            open={mobileDrawerOpen}
+            onClose={handleMobileDrawerClose}
+            onOpen={handleMobileDrawerToggle}
             sx={{
               display: { xs: 'block', md: 'none' },
+              '& .MuiDrawer-paper': {
+                width: 280,
+                boxSizing: 'border-box',
+              },
             }}
           >
-            {/* Navigation Items */}
-            {navItems.map((item) => (
-              <MenuItem 
-                key={item.path}
-                component={RouterLink} 
-                to={item.path} 
-                onClick={handleMobileClose}
-              >
-                {item.icon}
-                <Typography sx={{ ml: 1 }}>{item.label}</Typography>
-              </MenuItem>
-            ))}
+            <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="h6" fontWeight={700}>
+                Menu
+              </Typography>
+              <IconButton onClick={handleMobileDrawerClose}>
+                <Close />
+              </IconButton>
+            </Box>
+            <Divider />
             
-            {/* Theme Toggle */}
-          
-            
-            {/* Authentication */}
-            {isAuthenticated ? (
+            {/* User Info */}
+            {isAuthenticated && (
               <>
-                <MenuItem onClick={handleMobileClose}>
-                  <AccountCircle sx={{ mr: 1 }} />
-                  Profile
-                </MenuItem>
-                <MenuItem onClick={handleLogout}>
-                  <Logout sx={{ mr: 1 }} />
-                  Logout
-                </MenuItem>
+                <Box sx={{ p: 2, bgcolor: 'action.hover' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Avatar sx={{ width: 48, height: 48 }}>
+                      {user?.name?.[0]?.toUpperCase() || <AccountCircle />}
+                    </Avatar>
+                    <Box>
+                      <Typography variant="subtitle1" fontWeight={600}>
+                        {user?.name || user?.username}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {user?.role}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+                <Divider />
               </>
-            ) : (
-              <MenuItem component={RouterLink} to="/login" onClick={handleMobileClose}>
-                <AccountCircle sx={{ mr: 1 }} />
-                Login
-              </MenuItem>
             )}
-          </Menu>
+
+            {/* Navigation Items */}
+            <List>
+              {navItems.map((item) => (
+                <ListItem key={item.path} disablePadding>
+                  <ListItemButton 
+                    component={RouterLink} 
+                    to={item.path} 
+                    onClick={handleMobileDrawerClose}
+                    sx={{ py: 1.5 }}
+                  >
+                    <ListItemIcon>
+                      {item.icon}
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary={item.label}
+                      primaryTypographyProps={{ fontWeight: 500 }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+              
+              {/* Wallet Balance */}
+              {walletBalance != null && (
+                <ListItem disablePadding>
+                  <ListItemButton 
+                    component={RouterLink} 
+                    to="/contracts/me" 
+                    onClick={handleMobileDrawerClose}
+                    sx={{ py: 1.5 }}
+                  >
+                    <ListItemIcon>
+                      <AttachMoney />
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary={`Tokens: ${walletBalance}`}
+                      primaryTypographyProps={{ fontWeight: 500 }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              )}
+            </List>
+            
+            <Divider />
+            
+            {/* Authentication - Only show for authenticated users */}
+            {isAuthenticated && (
+              <List>
+                <ListItem disablePadding>
+                  <ListItemButton 
+                    component={RouterLink} 
+                    to="/dashboard" 
+                    onClick={handleMobileDrawerClose}
+                    sx={{ py: 1.5 }}
+                  >
+                    <ListItemIcon>
+                      <AccountCircle />
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary="Profile"
+                      primaryTypographyProps={{ fontWeight: 500 }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+                <ListItem disablePadding>
+                  <ListItemButton onClick={handleLogout} sx={{ py: 1.5 }}>
+                    <ListItemIcon>
+                      <Logout />
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary="Logout"
+                      primaryTypographyProps={{ fontWeight: 500 }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              </List>
+            )}
+          </SwipeableDrawer>
         </Toolbar>
       </Container>
     </StyledAppBar>

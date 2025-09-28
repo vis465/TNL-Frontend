@@ -23,7 +23,12 @@ import {
   ListItem,
   ListItemButton,
   ListItemIcon,
-  ListItemText
+  ListItemText,
+  useMediaQuery,
+  useTheme,
+  SwipeableDrawer,
+  AppBar,
+  Toolbar,
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
@@ -39,6 +44,8 @@ import TrackChangesOutlinedIcon from '@mui/icons-material/TrackChangesOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import Event from '@mui/icons-material/Event';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import MenuIcon from '@mui/icons-material/Menu';
+import Close from '@mui/icons-material/Close';
 import { myContracts } from '../services/contractsService';
 import { getMyWallet } from '../services/walletService';
 
@@ -53,6 +60,10 @@ export default function UserDashboard() {
   const [attendanceSubmitMsg, setAttendanceSubmitMsg] = useState('');
   const [contracts, setContracts] = useState({ active: [], history: [] });
   const [wallet, setWallet] = useState({ balance: 0, transactions: [] });
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   // Real API call
   useEffect(() => {
@@ -114,6 +125,14 @@ export default function UserDashboard() {
       setAttendanceSubmitLoading(false);
       setTimeout(() => setAttendanceSubmitMsg(''), 3000);
     }
+  };
+
+  const handleMobileDrawerToggle = () => {
+    setMobileDrawerOpen(!mobileDrawerOpen);
+  };
+
+  const handleMobileDrawerClose = () => {
+    setMobileDrawerOpen(false);
   };
 
   // Derived chart data from latestJobs
@@ -206,66 +225,124 @@ export default function UserDashboard() {
 
   const { user, rider, latestJobs = [], progress = [], completions = [], totals = { totalKm: 0, totalRevenue: 0, totalJobs: 0 }, attendance = { totalEventsAttended: 0, eventsAttended: [] }, achievements = [] } = data;
 
+  // Sidebar content component
+  const SidebarContent = () => (
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ p: 2 }}>
+        <Typography variant="subtitle1" fontWeight={700}>Dashboard</Typography>
+      </Box>
+      <List sx={{ flex: 1 }}>
+        <ListItem disablePadding>
+          <ListItemButton component={RouterLink} to="/dashboard" onClick={handleMobileDrawerClose}>
+            <ListItemIcon><DashboardOutlinedIcon /></ListItemIcon>
+            <ListItemText primary="Overview" />
+          </ListItemButton>
+        </ListItem>
+        <ListItem disablePadding>
+          <ListItemButton component={RouterLink} to="/challenges" onClick={handleMobileDrawerClose}>
+            <ListItemIcon><AssignmentTurnedInOutlinedIcon /></ListItemIcon>
+            <ListItemText primary="Challenges" />
+          </ListItemButton>
+        </ListItem>
+        <ListItem disablePadding>
+          <ListItemButton component={RouterLink} to="/leaderboard" onClick={handleMobileDrawerClose}>
+            <ListItemIcon><LeaderboardOutlinedIcon /></ListItemIcon>
+            <ListItemText primary="Leaderboards" />
+          </ListItemButton>
+        </ListItem>
+        <ListItem disablePadding>
+          <ListItemButton component={RouterLink} to="/contracts" onClick={handleMobileDrawerClose}>
+            <ListItemIcon><AssignmentIcon /></ListItemIcon>
+            <ListItemText primary="Contracts" />
+          </ListItemButton>
+        </ListItem>
+      </List>
+    </Box>
+  );
+
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex' }}>
-      {/* Sidebar for rider dashboard (dummy links) */}
-      <Drawer variant="permanent" sx={{
-        width: 220,
-        flexShrink: 0,
-        '& .MuiDrawer-paper': { width: 220, boxSizing: 'border-box' }
-      }}>
-        <Box sx={{ p: 2 }}>
-          <Typography variant="subtitle1" fontWeight={700}>Dashboard</Typography>
-        </Box>
-        <List>
-          <ListItem disablePadding>
-            <ListItemButton component={RouterLink} to="/dashboard">
-              <ListItemIcon><DashboardOutlinedIcon /></ListItemIcon>
-              <ListItemText primary="Overview" />
-            </ListItemButton>
-          </ListItem>
-          <ListItem disablePadding>
-            <ListItemButton component={RouterLink} to="/challenges">
-              <ListItemIcon><AssignmentTurnedInOutlinedIcon /></ListItemIcon>
-              <ListItemText primary="Challenges" />
-            </ListItemButton>
-          </ListItem>
-          <ListItem disablePadding>
-            <ListItemButton component={RouterLink} to="/leaderboard">
-              <ListItemIcon><LeaderboardOutlinedIcon /></ListItemIcon>
-              <ListItemText primary="Leaderboards" />
-            </ListItemButton>
-          </ListItem>
-          <ListItem disablePadding>
-            <ListItemButton component={RouterLink} to="/contracts">
-              <ListItemIcon><AssignmentIcon /></ListItemIcon>
-              <ListItemText primary="Contracts" />
-            </ListItemButton>
-          </ListItem>
-          <ListItem disablePadding>
-            {/* <ListItemButton component={RouterLink} to="/dashboard#achievements">
-              <ListItemIcon><AssignmentTurnedInOutlinedIcon /></ListItemIcon>
-              <ListItemText primary="Achievements" />
-            </ListItemButton> */}
-          </ListItem>
-        </List>
+      {/* Desktop Sidebar */}
+      <Drawer 
+        variant="permanent" 
+        sx={{
+          display: { xs: 'none', md: 'block' },
+          width: 220,
+          flexShrink: 0,
+          '& .MuiDrawer-paper': { width: 220, boxSizing: 'border-box' }
+        }}
+      >
+        <SidebarContent />
       </Drawer>
+
+      {/* Mobile Drawer */}
+      <SwipeableDrawer
+        anchor="left"
+        open={mobileDrawerOpen}
+        onClose={handleMobileDrawerClose}
+        onOpen={handleMobileDrawerToggle}
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          '& .MuiDrawer-paper': {
+            width: 280,
+            boxSizing: 'border-box',
+          },
+        }}
+      >
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="h6" fontWeight={700}>
+            Dashboard Menu
+          </Typography>
+          <IconButton onClick={handleMobileDrawerClose}>
+            <Close />
+          </IconButton>
+        </Box>
+        <Divider />
+        <SidebarContent />
+      </SwipeableDrawer>
+
       <Box sx={{ flex: 1 }}>
+      {/* Mobile Header */}
+      {isMobile && (
+        <AppBar position="sticky" sx={{ display: { xs: 'block', md: 'none' } }}>
+          <Toolbar>
+            <IconButton
+              edge="start"
+              color="inherit"
+              aria-label="menu"
+              onClick={handleMobileDrawerToggle}
+              sx={{ mr: 2 }}
+            >
+              <MenuIcon />
+            </IconButton>
+            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+              Dashboard
+            </Typography>
+          </Toolbar>
+        </AppBar>
+      )}
+
       {/* Header */}
       <Box sx={{ position: 'sticky', top: 0, zIndex: 1, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
-        <Box sx={{ maxWidth: 1200, mx: 'auto', px: 3, py: 4 }}>
+        <Box sx={{ maxWidth: 1200, mx: 'auto', px: { xs: 2, md: 3 }, py: { xs: 2, md: 4 } }}>
           <Grid container alignItems="center" justifyContent="space-between" spacing={3}>
             <Grid item sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Stack direction="row" spacing={2} alignItems="center">
-                <Avatar sx={{ width: 100, height: 100, bgcolor: 'primary.main', fontSize: 28, fontWeight: 700 }} src={rider?.avatar}>
+                <Avatar sx={{ 
+                  width: { xs: 60, md: 100 }, 
+                  height: { xs: 60, md: 100 }, 
+                  bgcolor: 'primary.main', 
+                  fontSize: { xs: 20, md: 28 }, 
+                  fontWeight: 700 
+                }} src={rider?.avatar}>
                   
                 </Avatar>
                 <Box>
-                  <Typography variant="h4" fontWeight={700}>
+                  <Typography variant="h4" fontWeight={700} sx={{ fontSize: { xs: '1.5rem', md: '2.125rem' } }}>
                     Welcome back, {rider?.name || user?.username}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                    {rider?.tmpIngameName} • {rider?.role || 'Professional'}
+                    Role • {user?.role || 'Professional'}
                   </Typography>
                     <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 1, flexWrap: 'wrap' }}>
                     <Stack direction="row" spacing={1} alignItems="center">
@@ -299,7 +376,7 @@ export default function UserDashboard() {
         </Box>
       </Box>
 
-      <Box sx={{ maxWidth: 1200, mx: 'auto', px: 3, py: 4 }}>
+      <Box sx={{ maxWidth: 1200, mx: 'auto', px: { xs: 2, md: 3 }, py: { xs: 2, md: 4 } }}>
         {/* Metrics */}
         <Grid container spacing={3} sx={{ mb: 3 }}>
           <Grid item xs={12} md={3}>
