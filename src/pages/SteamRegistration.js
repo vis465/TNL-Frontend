@@ -158,7 +158,7 @@ const SteamRegistration = () => {
         email: formData.email,
         password: formData.password,
         vtcName: formData.vtcName,
-        steamID: steamData.steamId,
+        steamId: steamData.steamId, // Fixed: changed from steamID to steamId
         name: formData.name || steamData.steamProfile.personaName,
         tmpIngameName: formData.tmpIngameName || steamData.steamProfile.personaName,
         age: parseInt(formData.age) || null,
@@ -390,8 +390,7 @@ const SteamRegistration = () => {
               fullWidth
               label="In-Game Name"
               name="tmpIngameName"
-              
-              value={externalIds.truckersmp.username}
+              value={formData.tmpIngameName}
               onChange={handleChange}
               margin="normal"
               placeholder={steamData?.steamProfile?.personaName || ''}
