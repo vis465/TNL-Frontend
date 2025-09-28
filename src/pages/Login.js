@@ -36,9 +36,12 @@ const Login = () => {
     const errorParam = searchParams.get('error');
     const token = searchParams.get('token');
     const steamLogin = searchParams.get('steam_login');
+    const accountExists = searchParams.get('account_exists');
     
     if (errorParam === 'steam_auth_failed') {
       setError('Steam authentication failed. Please try again.');
+    } else if (accountExists === 'true') {
+      setError('Account already exists with this Steam ID. Please login with your credentials or contact admin for password reset.');
     } else if (token && steamLogin === 'true') {
       // Handle Steam login
       localStorage.setItem('token', token);
