@@ -351,7 +351,7 @@ export default function AdminBank() {
                           label={row.type}
                           size="small"
                           sx={{
-                            bgcolor: row.type === 'CREDIT' ? '#e8f5e8' : '#ffeaea',
+                            bgcolor: row.type === 'CREDIT' ? '#00ff00ff' : '#ff0202ff',
                             color: getTransactionColor(row.type),
                             fontWeight: 500,
                             minWidth: 70
