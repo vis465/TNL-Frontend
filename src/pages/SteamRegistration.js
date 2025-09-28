@@ -390,7 +390,8 @@ const SteamRegistration = () => {
               fullWidth
               label="In-Game Name"
               name="tmpIngameName"
-              value={formData.tmpIngameName}
+              value={externalIds.truckersmp.username}
+              disabled={!!externalIds.truckersmp} 
               onChange={handleChange}
               margin="normal"
               placeholder={steamData?.steamProfile?.personaName || ''}
@@ -400,6 +401,7 @@ const SteamRegistration = () => {
               label="TruckersHub ID"
               name="truckershubId"
               value={formData.truckershubId}
+              disabled={!!externalIds.truckershub}
               onChange={handleChange}
               margin="normal"
               helperText={externalIds.truckershub ? "Auto-populated from search" : "Enter your TruckersHub ID"}
@@ -409,6 +411,7 @@ const SteamRegistration = () => {
               label="TruckersMP ID"
               name="truckersmpId"
               value={formData.truckersmpId}
+              disabled={!!externalIds.truckersmp}
               onChange={handleChange}
               margin="normal"
               helperText={externalIds.truckersmp ? "Auto-populated from search" : "Enter your TruckersMP ID"}
