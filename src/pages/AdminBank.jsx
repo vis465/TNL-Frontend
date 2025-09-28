@@ -95,7 +95,7 @@ export default function AdminBank() {
   };
 
   const getTransactionColor = (type) => {
-    return type === 'CREDIT' ? '#2e7d32' : '#d32f2f';
+    return type === 'credit' ? '#2e7d32' : '#d32f2f';
   };
 
   return (
@@ -322,6 +322,9 @@ export default function AdminBank() {
                       Balance After
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600, color: '#666', borderBottom: '2px solid #e0e0e0' }}>
+                      Buyer/Payee
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: '#666', borderBottom: '2px solid #e0e0e0' }}>
                       Source
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600, color: '#666', borderBottom: '2px solid #e0e0e0' }}>
@@ -334,7 +337,7 @@ export default function AdminBank() {
                     <TableRow 
                       key={row._id}
                       sx={{ 
-                        '&:hover': { bgcolor: '#f8f9fa' },
+                        
                         borderBottom: index === tx.length - 1 ? 'none' : '1px solid #f0f0f0'
                       }}
                     >
@@ -351,9 +354,10 @@ export default function AdminBank() {
                           label={row.type}
                           size="small"
                           sx={{
-                            bgcolor: row.type === 'CREDIT' ? '#00ff00ff' : '#ff0202ff',
+                            // bgcolor: row.type === 'credit' ? '#5ce15cff' : '#e04646ff',
                             color: getTransactionColor(row.type),
-                            fontWeight: 500,
+                            fontWeight: 800,
+                            
                             minWidth: 70
                           }}
                         />
@@ -373,6 +377,16 @@ export default function AdminBank() {
                         <Typography variant="body2" sx={{ fontWeight: 500 }}>
                           {formatCurrency(row.balanceAfter)}
                         </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {row.riderName || 'Unknown'}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: '#666' }}>
+                            ID: {row.riderEmployeeId || 'N/A'}
+                          </Typography>
+                        </Box>
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2" sx={{ color: '#666' }}>
