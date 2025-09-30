@@ -2,7 +2,7 @@
 
 const API_CONFIG = {
     baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
-    timeout: 10000,
+    timeout: 30000, // Increased from 10s to 30s for complex queries
     headers: {
         'Content-Type': 'application/json'
     },
