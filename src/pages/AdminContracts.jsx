@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { listTemplates, createTemplate, updateTemplate, deleteTemplate } from '../services/contractsService';
-import { Grid, Card, CardContent, CardActions, Typography, Button, TextField, Stack, IconButton, Chip, Divider, Alert } from '@mui/material';
+import React, { useEffect, useMemo, useState } from 'react';
+import { listTemplates, createTemplate, updateTemplate, deleteTemplate, adminListContractInstances } from '../services/contractsService';
+import { Grid, Card, CardContent, CardActions, Typography, Button, TextField, Stack, IconButton, Chip, Divider, Alert, ToggleButton, ToggleButtonGroup, LinearProgress, Tooltip } from '@mui/material';
 import Autocomplete from '@mui/material/Autocomplete';
 import { fetchEts2Map } from '../utils/axios';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -18,6 +18,9 @@ export default function AdminContracts() {
   const [err, setErr] = useState('');
   const [cityOptions, setCityOptions] = useState([]);
   const [companyOptionsByCity, setCompanyOptionsByCity] = useState({});
+  const [instances, setInstances] = useState([]);
+  const [instancesLoading, setInstancesLoading] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('active');
 
   const load = async () => {
     try {
@@ -27,6 +30,17 @@ export default function AdminContracts() {
   };
 
   useEffect(() => { load(); }, []);
+
+  const loadInstances = async (status) => {
+    setInstancesLoading(true);
+    try {
+      const data = await adminListContractInstances(status);
+      setInstances(Array.isArray(data) ? data : []);
+    } catch(e) { /* surface errors in UI area */ }
+    finally { setInstancesLoading(false); }
+  };
+
+  useEffect(() => { loadInstances(statusFilter); }, [statusFilter]);
 
   useEffect(() => {
     (async () => {
@@ -194,6 +208,82 @@ export default function AdminContracts() {
                 </Stack>
               </Card>
             ))}
+          </CardContent>
+        </Card>
+      </Grid>
+
+      <Grid item xs={12}>
+        <Card>
+          <CardContent>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+              <Typography variant="h6">Contracts Progress (Admin)</Typography>
+              <ToggleButtonGroup
+                size="small"
+                exclusive
+                value={statusFilter}
+                onChange={(_, v) => { if (v) setStatusFilter(v); }}
+              >
+                <ToggleButton value="active">Active</ToggleButton>
+                <ToggleButton value="completed">Completed</ToggleButton>
+                <ToggleButton value="failed">Failed</ToggleButton>
+                <ToggleButton value="all">All</ToggleButton>
+              </ToggleButtonGroup>
+            </Stack>
+            {instancesLoading && <LinearProgress />}
+            {!instancesLoading && instances.length === 0 && (
+              <Alert severity="info">No contracts found for selected filter.</Alert>
+            )}
+
+            {!instancesLoading && instances.length > 0 && (
+              <Stack spacing={1}>
+                {instances.map((c) => {
+                  const tpl = c.templateId || {};
+                  const tasks = Array.isArray(tpl.tasks) ? tpl.tasks.slice().sort((a,b)=>a.order-b.order) : [];
+                  const progress = Array.isArray(c.progress) ? c.progress : [];
+                  const doneCount = progress.filter(p => p.status === 'done').length;
+                  const total = tasks.length || progress.length || 1;
+                  const pct = Math.round((doneCount / total) * 100);
+                  const riderName = c?.riderId?.tmpIngameName || c?.riderId?.name || c?.riderId?.steamName || c?.riderId?._id || 'Unknown Rider';
+                  return (
+                    <Card key={c._id} variant="outlined" sx={{ p: 1 }}>
+                      <Stack spacing={1}>
+                        <Stack direction="row" justifyContent="space-between" alignItems="center">
+                          <Stack>
+                            <Typography variant="subtitle1" fontWeight={700}>{tpl.title || 'Untitled Template'}</Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              Rider: {riderName} • Status: {c.status} • Deadline: {c.deadlineAt ? new Date(c.deadlineAt).toLocaleString() : '-'}
+                            </Typography>
+                          </Stack>
+                          <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 220 }}>
+                            <Typography variant="body2" sx={{ width: 40, textAlign: 'right' }}>{pct}%</Typography>
+                            <LinearProgress variant="determinate" value={pct} sx={{ flex: 1 }} />
+                          </Stack>
+                        </Stack>
+                        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
+                          {tasks.map((t) => {
+                            const p = progress.find(pr => pr.order === t.order);
+                            const status = p?.status || 'pending';
+                            const label = `#${t.order} ${t.title || ''}`.trim();
+                            const color = status === 'done' ? 'success' : 'default';
+                            const tip = status === 'done' && p?.matchedAt ? `Completed at ${new Date(p.matchedAt).toLocaleString()}` : (status);
+                            return (
+                              <Tooltip key={t.order} title={tip}>
+                                <Chip label={label} color={color} variant={status === 'done' ? 'filled' : 'outlined'} />
+                              </Tooltip>
+                            );
+                          })}
+                          {tasks.length === 0 && (
+                            progress.map((p) => (
+                              <Chip key={p.order} label={`#${p.order} ${p.status}`} color={p.status === 'done' ? 'success' : 'default'} variant={p.status === 'done' ? 'filled' : 'outlined'} />
+                            ))
+                          )}
+                        </Stack>
+                      </Stack>
+                    </Card>
+                  );
+                })}
+              </Stack>
+            )}
           </CardContent>
         </Card>
       </Grid>

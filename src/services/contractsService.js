@@ -31,3 +31,10 @@ export async function deleteTemplate(id) {
   return data;
 }
 
+// Admin list contract instances with progress
+export async function adminListContractInstances(status) {
+  const qs = status ? `?status=${encodeURIComponent(status)}` : '';
+  const { data } = await axiosInstance.get(`/contracts/admin/instances${qs}`);
+  return data;
+}
+
