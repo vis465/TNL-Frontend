@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import tokenImage from '../img/panam.jpg';
+
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import axiosInstance from '../utils/axios';
 import {
@@ -15,7 +17,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
+  DialogActions,  
   Pagination,
   IconButton,
   Drawer,
@@ -48,6 +50,8 @@ import MenuIcon from '@mui/icons-material/Menu';
 import Close from '@mui/icons-material/Close';
 import { myContracts } from '../services/contractsService';
 import { getMyWallet } from '../services/walletService';
+import CurrencyCard from '../components/CurrencyCard';
+
 
 export default function UserDashboard() {
   const [data, setData] = useState(null);
@@ -65,6 +69,7 @@ export default function UserDashboard() {
   
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const tokenImgUrl = tokenImage;
 
   // Real API call
   useEffect(() => {
@@ -381,34 +386,8 @@ export default function UserDashboard() {
         {/* Metrics */}
         <Grid container spacing={3} sx={{ mb: 3 }}>
           <Grid item xs={12} md={3}>
-            <Card variant="outlined">
-              <CardContent>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">Total Balance</Typography>
-                    <Typography
-                      variant="h2"
-                      fontWeight={700}
-                      sx={{
-                        mt: 0.5,
-                        color:
-                          Number(data?.wallet?.balance) < 0
-                            ? 'error.main'
-                            : undefined
-                      }}
-                    >
-                      {typeof data?.wallet?.balance === 'number'
-                        ? Number(data.wallet.balance).toLocaleString()
-                        : 0}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">tokens</Typography>
-                  </Box>
-                  <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'primary.light', color: 'primary.main' }}>
-                    <AttachMoneyOutlinedIcon />
-                  </Box>
-                </Stack>
-              </CardContent>
-            </Card>
+        
+            <CurrencyCard data={data} />
           </Grid>
           <Grid item xs={12} md={3}>
             <Card variant="outlined">
