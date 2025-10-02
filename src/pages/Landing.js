@@ -686,12 +686,7 @@ console.log(datatorender)
       logo: "https://static.truckersmp.com/images/vtc/logo/75200.1729511385.png",
       
     },
-    {
-      id: 4,
-      name: "Marking Events",
-      logo: "https://static.truckersmp.com/images/vtc/logo/79440.1743743055.png",
-      
-    }
+    
   ];
   
   // Rules and requirements from the documents
