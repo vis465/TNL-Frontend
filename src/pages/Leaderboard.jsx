@@ -739,6 +739,88 @@ export default function Leaderboard() {
             </Grid>
 
             {/* Right Column - Event Attendees (removed as it's now full width above) */}
+             <Grid item xs={12}>
+              <Fade in={!loading} timeout={1000}>
+                <Card sx={{ 
+                  backdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: 4,
+                  overflow: 'hidden'
+                }}>
+                  <CardContent sx={{ p: 0 }}>
+                    <Box>
+                      <Stack direction="row" alignItems="center" spacing={2} sx={{ p: 4 }}>
+                        <EmojiEvents sx={{ fontSize: 32 }} />
+                        <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                          Top Event Attendees
+                        </Typography>
+                      </Stack>
+                    </Box>
+                    <Box sx={{ p: 3 }}>
+                      <Stack spacing={2}>
+                        {attendance.slice(0, 5).map((m, idx) => (
+                          <Stack key={m._id || idx} direction="row" alignItems="center" justifyContent="space-between"
+                            sx={{
+                              p: 2,
+                              borderRadius: 3,
+                              backgroundColor: idx < 3 ? alpha('#FF6B6B', 0.05) : 'transparent',
+                              border: idx < 3 ? '1px solid rgba(255, 107, 107, 0.2)' : 'none',
+                              transition: 'all 0.2s ease-in-out',
+                              '&:hover': {
+                                backgroundColor: alpha('#4ECDC4', 0.1),
+                                transform: 'translateX(8px)'
+                              }
+                            }}
+                          >
+                            <Stack direction="row" alignItems="center" spacing={2}>
+                              <Typography 
+                                sx={{ 
+                                  width: 32, 
+                                  height: 32,
+                                  borderRadius: '50%',
+                                  backgroundColor: idx < 3 ? '#FF6B6B' : '#4ECDC4',
+                                  color: 'white',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontWeight: 700
+                                }}
+                              >
+                                {idx + 1}
+                              </Typography>
+                              <Avatar sx={{ 
+                                width: 40, 
+                                height: 40,
+                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                fontWeight: 600
+                              }}>
+                                {(m.username || '?')[0]}
+                              </Avatar>
+                              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                {m.username || 'Unknown'}
+                              </Typography>
+                              {idx < 3 && <Star sx={{ color: '#FFD700', fontSize: 20 }} />}
+                            </Stack>
+                            <Chip 
+                              size="medium" 
+                              label={`${m.totalEventsAttended || 0} events`}
+                              sx={{
+                                color: 'white',
+                                fontWeight: 600
+                              }}
+                            />
+                          </Stack>
+                        ))}
+                      </Stack>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Fade>
+            </Grid>
+
+            {/* Location Analytics - Full Width */}
+           
+
           </Grid>
         )}
       </Box>
