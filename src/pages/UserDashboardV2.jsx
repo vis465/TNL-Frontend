@@ -885,23 +885,30 @@ export default function UserDashboard() {
                     </Stack>
                   </Grid>
                 </Grid>
+                  <Grid container spacing={2}>
+
                 {rider?.dlcsOwned?.ets2?.length > 0 && (
                   <Box sx={{ mt: 2 }}>
                     <Typography variant="subtitle2"  gutterBottom>
                       ETS2 DLCs
                     </Typography>
-                    <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                      {rider.dlcsOwned.ets2.map((dlcId, index) => (
-                        <Chip 
-                          key={index}
-                          size="small" 
-                          label={getDLCName('ets2', dlcId)} 
-                          color="info"
-                          variant="outlined"
-                          title={getDLCName('ets2', dlcId)}
-                        />
-                      ))}
-                    </Stack>
+                    
+    <Grid item xs={12} md={6}>
+      <Typography variant="subtitle2" gutterBottom>
+        Map Expansions
+      </Typography>
+      <Stack direction="row" spacing={1} flexWrap="wrap">
+        {mapDLCs.map((dlcId, index) => (
+          <Chip
+            key={index}
+            size="small"
+            label={getDLCName('ets2', dlcId)}
+            color="primary"
+            variant="outlined"
+          />
+        ))}
+      </Stack>
+    </Grid>
                   </Box>
                 )}
                 {rider?.dlcsOwned?.ats?.length > 0 && (
@@ -909,20 +916,25 @@ export default function UserDashboard() {
                     <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                       ATS DLCs
                     </Typography>
-                    <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                      {rider.dlcsOwned.ats.map((dlcId, index) => (
-                        <Chip 
-                          key={index}
-                          size="small" 
-                          label={getDLCName('ats', dlcId)} 
-                          color="info"
-                          variant="outlined"
-                          title={getDLCName('ats', dlcId)}
-                        />
-                      ))}
-                    </Stack>
+                    <Grid item xs={12} md={6}>
+      <Typography variant="subtitle2" gutterBottom>
+        Paint Jobs
+      </Typography>
+      <Stack direction="row" spacing={1} flexWrap="wrap">
+        {paintDLCs.map((dlcId, index) => (
+          <Chip
+            key={index}
+            size="small"
+            label={getDLCName('ets2', dlcId)}
+            color="secondary"
+            variant="outlined"
+          />
+        ))}
+      </Stack>
+    </Grid>
                   </Box>
                 )}
+                </Grid>
                 {rider?.gamesOwned?.length > 0 && (
                   <Box sx={{ mt: 2 }}>
                     <Typography variant="subtitle2" color="text.secondary" gutterBottom>
