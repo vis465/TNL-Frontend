@@ -53,6 +53,187 @@ import { getMyWallet } from '../services/walletService';
 import CurrencyCard from '../components/CurrencyCard';
 
 
+// DLC mapping data
+const DLC_MAPPING = {
+  ets2: {
+    227310: " Going East!",
+    304212: " Scandinavia",
+    388478: " Rocket League Promo",
+    531130: " Vive la France !",
+    558244: " Italia",
+    925580: " Beyond the Baltic Sea",
+    1056760: " Road to the Black Sea",
+    1209460: " Iberia",
+    1650650: " DAF XG/XG+",
+    2004210: " West Balkans",
+    2371170: " MAN TGX",
+    2604420: " Greece",
+    2611740: " DAF XD",
+    2932420: " Renault Trucks E-Tech T",
+    3035040: " Scania S BEV",
+    3323350: " Volvo FH Series 5",
+    3323360: " Volvo FH Series 6",
+    3354860: " Iveco S-Way",
+    3796990: " Iceland",
+    3335300: " Greek Mythology Pack",
+    3034950: " Kässbohrer Trailer Pack",
+    3034940: " Kögel Trailer Pack",
+    2833100: " Schmitz Cargobull Trailer Pack",
+    2780810: " Nordic Horizons",
+    2780800: " JCB Equipment Pack",
+    2579670: " Modern Lines Paint Jobs Pack",
+    2569750: " Tirsan Trailer Pack",
+    2455690: " Wielton Trailer Pack",
+    2193220: " Feldbinder Trailer Pack",
+    1967650: " Street Art Paint Jobs Pack",
+    1967640: " Renault Trucks T Tuning Pack",
+    1918370: " Ukrainian Paint Jobs Pack",
+    1704460: " Volvo Construction Equipment",
+    1536500: " Heart of Russia",
+    1456860: " Farm Machinery",
+    1415700: " Super Stripes Paint Jobs Pack",
+    1299530: " FH Tuning Pack",
+    1209461: " HS-Schoch Tuning Pack",
+    1159030: " Bulgarian Paint Jobs Pack",
+    1117140: " Goodyear Tyres Pack",
+    1068290: " Pink Ribbon Charity Pack",
+    1056761: " Actros Tuning Pack",
+    980592: " Lithuanian Paint Jobs Pack",
+    980591: " Latvian Paint Jobs Pack",
+    980590: " Estonian Paint Jobs Pack",
+    933610: " Krone Trailer Pack",
+    925650: " Space Paint Jobs Pack",
+    909640: " Dutch Paint Jobs Pack",
+    876980: " Portuguese Paint Jobs Pack",
+    558245: " Special Transport",
+    558243: " Valentine's Paint Jobs Pack",
+    558242: " Australian Paint Jobs Pack",
+    558241: " Romanian Paint Jobs Pack",
+    558240: " Dragon Truck Design Pack",
+    540721: " Belgian Paint Jobs Pack",
+    540720: " Finnish Paint Jobs Pack",
+    531131: " Heavy Cargo Pack",
+    526950: " Lunar New Year Pack",
+    461249: " XF Tuning Pack",
+    461248: " Pirate Paint Jobs Pack",
+    461247: " Chinese Paint Jobs Pack",
+    461246: " Swiss Paint Jobs Pack",
+    461245: " South Korean Paint Jobs Pack",
+    461244: " Mighty Griffin Tuning Pack",
+    461243: " Austrian Paint Jobs Pack",
+    461242: " Window Flags",
+    461241: " Spanish Paint Jobs Pack",
+    461240: " Slovak Paint Jobs Pack",
+    388479: " Hungarian Paint Jobs Pack",
+    388477: " Schwarzmüller Trailer Pack",
+    388476: " Italian Paint Jobs Pack",
+    388475: " Wheel Tuning Pack",
+    388474: " Turkish Paint Jobs Pack",
+    388473: " PC Gamer DLC",
+    388472: " Japanese Paint Jobs Pack",
+    388471: " Michelin Fan Pack",
+    388470: " Cabin Accessories",
+    347213: " Russian Paint Jobs Pack",
+    347212: " Viking Legends",
+    347211: " Swedish Paint Jobs Pack",
+    347210: " Danish Paint Jobs Pack",
+    347190: " Norwegian Paint Jobs Pack",
+    318521: " Raven Truck Design Pack",
+    318520: " Christmas Paint Jobs Pack",
+    318511: " Czech Paint Jobs Pack",
+    318510: " French Paint Jobs Pack",
+    318500: " German Paint Jobs Pack",
+    304214: " High Power Cargo Pack",
+    304213: " Canadian Paint Jobs Pack",
+    304211: " USA Paint Jobs Pack",
+    304210: " Fantasy Paint Jobs Pack",
+    304140: " Brazilian Paint Jobs Pack",
+    304020: " Polish Paint Jobs Pack",
+    301180: " Flip Paint Designs",
+    297793: " Scottish Paint Jobs Pack",
+    297792: " Irish Paint Jobs Pack",
+    297791: " UK Paint Jobs Pack",
+    297790: " Metallic Paint Jobs Pack",
+    292320: " Force of Nature Paint Jobs Pack",
+    266931: " Prehistoric Paint Jobs Pack",
+    266930: " Ice Cold Paint Jobs Pack",
+    258460: " Halloween Paint Jobs Pack"
+  },
+
+  ats: {
+    684630: "New Mexico",
+    800370: "Oregon",
+    1015160: "Washington",
+    1076080: "Forest Machinery",
+    1104880: "Utah",
+    1149810: "International LoneStar",
+    1162160: "Pink Ribbon Charity Pack",
+    1209470: "Idaho",
+    1209471: "Colorado",
+    1236650: "Mack Anthem®",
+    1415690: "Freightliner Cascadia® (3r/4th Generation)",
+    1415691: "Western Star® 49X",
+    1415692: "Wyoming",
+    1465750: "Texas",
+    1477840: "Cabin Accessories",
+    1621740: "Goodyear Tires Pack",
+    1662380: "Volvo Construction Equipment",
+    1708620: "International LT®",
+    1784890: "Retrowave Paint Jobs Pack",
+    1811080: "Montana",
+    1915840: "International 9900i",
+    1967690: "Lode King & Prestige Trailers Pack",
+    2093200: "Western Star® 57X",
+    2187930: "Wild West Paint Jobs Pack",
+    2209650: "Oklahoma",
+    2257950: "Western Star® 5700XE",
+    2298430: "Kansas",
+    2386480: "Volvo VNL",
+    2386530: "W900 Tuning Pack",
+    2543810: "Nebraska",
+    2585150: "Arkansas",
+    2638630: "Farm Machinery",
+    2675870: "Michelin Fan Pack",
+    2720080: "Kenworth T680 2022",
+    2730870: "Missouri",
+    2910160: "Sports Paint Jobs Pack",
+    2926440: "JCB Equipment Pack",
+    3012580: "Louisiana",
+    3025440: "Iowa",
+    3146090: "Mack Pinnacle",
+    3272290: "Freightliner Cascadia® (The Fifth Generation)",
+    3486960: "Illinois",
+    3749870: "South Dakota",
+    3793190: "RAM & Dodge Car Pack",
+    3793200: "FORD Car Pack",
+    3872930: "KRONE Agriculture Equipment",
+    432710: "Steampunk Paint Jobs Pack",
+    450550: "Wheel Tuning Pack",
+    463740: "Arizona",
+    520550: "Steering Creations Pack",
+    541260: "Peterbilt 389",
+    546260: "Halloween Paint Jobs Pack",
+    561620: "Dragon Truck Design Pack",
+    566890: "Christmas Paint Jobs Pack",
+    588600: "Valentine's Paint Jobs Pack",
+    620610: "Heavy Cargo Pack",
+    951650: "Classic Stripes Paint Jobs Pack",
+    962750: "Special Transport",
+    1116310: "Space Paint Jobs Pack",
+    421070: "Kenworth T680",
+    421080: "Peterbilt 579",
+    421081: "Volvo VNL 2014",
+    421090: "Nevada",
+    422310: "Kenworth W900"
+  }
+};
+
+
+// Helper function to get DLC name by ID
+const getDLCName = (game, dlcId) => {
+  return DLC_MAPPING[game]?.[dlcId] || `Unknown DLC (${dlcId})`;
+};
+
 export default function UserDashboard() {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
@@ -707,16 +888,17 @@ export default function UserDashboard() {
                 {rider?.dlcsOwned?.ets2?.length > 0 && (
                   <Box sx={{ mt: 2 }}>
                     <Typography variant="subtitle2"  gutterBottom>
-                      ETS2 DLCs (Beta)
+                      ETS2 DLCs
                     </Typography>
                     <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                      {rider.dlcsOwned.ets2.map((dlc, index) => (
+                      {rider.dlcsOwned.ets2.map((dlcId, index) => (
                         <Chip 
                           key={index}
                           size="small" 
-                          label={dlc} 
-                           color="info"
-                              variant="outlined"
+                          label={getDLCName('ets2', dlcId)} 
+                          color="info"
+                          variant="outlined"
+                          title={getDLCName('ets2', dlcId)}
                         />
                       ))}
                     </Stack>
@@ -724,17 +906,18 @@ export default function UserDashboard() {
                 )}
                 {rider?.dlcsOwned?.ats?.length > 0 && (
                   <Box sx={{ mt: 2 }}>
-                    <Typography variant="subtitle2" color gutterBottom>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                       ATS DLCs
                     </Typography>
                     <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                      {rider.dlcsOwned.ats.map((dlc, index) => (
+                      {rider.dlcsOwned.ats.map((dlcId, index) => (
                         <Chip 
                           key={index}
                           size="small" 
-                          label={dlc} 
-                           color="info"
-                              variant="outlined"
+                          label={getDLCName('ats', dlcId)} 
+                          color="info"
+                          variant="outlined"
+                          title={getDLCName('ats', dlcId)}
                         />
                       ))}
                     </Stack>
