@@ -8,9 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
+ 
 
   const checkAuth = async () => {
     try {
@@ -83,9 +81,7 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
   };
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
+
 
   return (
     <AuthContext.Provider

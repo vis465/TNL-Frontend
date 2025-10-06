@@ -48,10 +48,7 @@ const AuthProvider = ({ children }) => {
     };
 
     // Add useEffect to check auth on app load
-    useEffect(() => {
-        checkAuth();
-    }, []);
-
+  
     return (
         <AuthContext.Provider value={{ user, login, logout, checkAuth }}>
             {children}
