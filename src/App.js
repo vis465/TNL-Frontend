@@ -73,6 +73,7 @@ import ContractsMarketplace from './pages/ContractsMarketplace';
 import MyContracts from './pages/MyContracts';
 import AdminBank from './pages/AdminBank';
 import AdminContracts from './pages/AdminContracts';
+import PageMaintenance from './pages/pagemaintanance';
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -81,7 +82,7 @@ export const ThemeContext = createContext({
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(true);
-
+  const [maintain,setmaintain]=useState(true)
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
   };
@@ -223,6 +224,21 @@ function App() {
     [isDarkMode]
   );
 
+  if (maintain) {
+    return (
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Router>
+          <Routes>
+            <Route path="*" element={<PageMaintenance />} />
+          </Routes>
+        </Router>
+        <SpeedInsights />
+        <Analytics />
+      </ThemeProvider>
+    );
+  }
+
   return (
     <ThemeContext.Provider value={{ isDarkMode, toggleTheme }}>
       <ThemeProvider theme={theme}>
@@ -234,12 +250,14 @@ function App() {
               flexDirection: 'column',
               minHeight: '100vh'
             }}>
+
               <RedirectBasedOnHost />
               <Navbar />
               <Box component="main" sx={{ flexGrow: 1 }}>
                 <Routes>
                   {/* Public routes */}
                   <Route path="/player" element={<PlayerProfile playerId={5304347} />} />
+                  <Route path="/maintain" element={<PageMaintenance />} />
                   <Route path="/" element={<Landing />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
@@ -307,6 +325,7 @@ function App() {
       </ThemeProvider>
     </ThemeContext.Provider>
   );
+
 }
 
 export default App; 
