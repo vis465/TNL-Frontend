@@ -121,6 +121,11 @@ const Login = () => {
             >
               Login
             </Button>
+            <Box sx={{ mt: 2, textAlign: 'center' }}>
+              <Link href="/forgot-password" underline="hover">
+                Forgot your password?
+              </Link>
+            </Box>
           </form>
           
           

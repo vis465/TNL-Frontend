@@ -74,6 +74,8 @@ import MyContracts from './pages/MyContracts';
 import AdminBank from './pages/AdminBank';
 import AdminContracts from './pages/AdminContracts';
 import PageMaintenance from './pages/pagemaintanance';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -261,6 +263,8 @@ function App() {
                   <Route path="/" element={<Landing />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/register/steam" element={<SteamRegistration />} />
                   <Route path="/auth/steam/callback" element={<SteamCallback />} />
                   <Route path="/servers" element={<Servers />} />
