@@ -8,7 +8,9 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
- 
+  useEffect(() => {
+    checkAuth();
+  }, []);
 
   const checkAuth = async () => {
     try {
@@ -80,8 +82,34 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setIsAuthenticated(false);
   };
-
-
+  if (loading) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        background: '#f5f6fa'
+      }}>
+        <div style={{
+          border: '6px solid #e0e0e0',
+          borderTop: '6px solid #3498db',
+          borderRadius: '50%',
+          width: '48px',
+          height: '48px',
+          animation: 'spin 1s linear infinite'
+        }} />
+        <style>
+          {`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}
+        </style>
+      </div>
+    );
+  }
 
   return (
     <AuthContext.Provider

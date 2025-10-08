@@ -82,7 +82,7 @@ export const ThemeContext = createContext({
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(true);
-  const [maintain,setmaintain]=useState(true)
+  const [maintain,setmaintain]=useState(false)
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
   };
