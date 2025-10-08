@@ -883,7 +883,7 @@ export default function UserDashboard() {
               <CardContent>
                 <Typography variant="h6" sx={{ mb: 2 }}>Recently Attended</Typography>
                 <Stack spacing={1.5}>
-                  {(attendance?.eventsAttended || []).slice(0, 6).map((e) => (
+                  {(attendance?.eventsAttended || []).slice(0, 1).map((e) => (
                     <Stack key={e.id} direction="row" alignItems="center" justifyContent="space-between" sx={{ p: 1.5, borderRadius: 1, bgcolor: 'action.hover' }}>
                       <Box sx={{ minWidth: 0 }}>
                         <Typography variant="body1" fontWeight={600} noWrap>{e.title || 'Event'}</Typography>

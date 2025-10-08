@@ -296,7 +296,7 @@ function App() {
                   </Route>
                   
                   {/* Role-based admin area: shared dashboard, gated subroutes */}
-                  <Route element={<PrivateRoute allowedRoles={["admin","eventteam","hrteam"]} />}>
+                  <Route element={<PrivateRoute allowedRoles={["admin","eventteam","hrteam",'financeteam']} />}>
                     <Route path="/admin" element={<AdminDashboard />} />
                     {/* Admin only */}
                     <Route path="/admin/users" element={<PrivateRoute allowedRoles={["admin"]}><AdminUsers /></PrivateRoute>} />

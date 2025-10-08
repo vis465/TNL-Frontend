@@ -225,6 +225,7 @@ const Navbar = () => {
   const isAdmin = user?.role === 'admin';
   const isEventTeam = user?.role === 'eventteam' || isAdmin;
   const isHR = user?.role === 'hrteam' || isAdmin;
+  const isFinanceTeam = user?.role === 'financeteam' || isAdmin;
 
   // Navigation items based on user role and authentication status
   const getNavItems = () => {
@@ -261,6 +262,14 @@ const Navbar = () => {
     } else if (isHR) {
       return [
         { label: 'Admin', path: '/admin', icon: <Dashboard />, shortLabel: 'Admin' },
+        { label: 'Events', path: '/events', icon: <Event />, shortLabel: 'Events' },
+        { label: 'VTC Jobs', path: '/jobs', icon: <Speed />, shortLabel: 'Jobs' },
+        { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined />, shortLabel: 'Servers' },
+      ];
+    }
+    else if (isFinanceTeam) {
+      return [
+        { label: 'Admin', path: '/admin', icon: <Dashboard />, shortLabel: 'Admin' },  
         { label: 'Events', path: '/events', icon: <Event />, shortLabel: 'Events' },
         { label: 'VTC Jobs', path: '/jobs', icon: <Speed />, shortLabel: 'Jobs' },
         { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined />, shortLabel: 'Servers' },
