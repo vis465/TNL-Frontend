@@ -58,7 +58,7 @@ const AdminDashboard = () => {
       color: 'secondary',
       href: '/admin/challenges',
       features: ['Create Challenges', 'Track Progress', 'View Leaderboards', 'Manage Rewards'],
-      allowedRoles: ['admin', 'eventteam', 'hrteam']
+      allowedRoles: ['admin', 'eventteam', 'hrteam', 'financeteam']
     },
     {
       title: 'Contracts',
@@ -67,7 +67,7 @@ const AdminDashboard = () => {
       color: 'secondary',
       href: '/admin/contracts',
       features: ['Templates', 'Tasks', 'Constraints', 'Deadlines'],
-      allowedRoles: ['admin', 'hrteam']
+      allowedRoles: ['admin', 'hrteam','financeteam']
     },
     {
       title: 'Attendance Management',
