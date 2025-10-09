@@ -47,6 +47,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import axiosInstance, { fetchEts2Map } from '../utils/axios';
 import Autocomplete from '@mui/material/Autocomplete';
 import { normalizeName } from '../utils/normalizeName';
+import { fetchCargos } from '../services/cargoService';
 
 const AdminChallenges = () => {
   const [challenges, setChallenges] = useState([]);
@@ -85,6 +86,7 @@ const AdminChallenges = () => {
   const [mapData, setMapData] = useState({ cities: [] });
   const [cityOptions, setCityOptions] = useState([]);
   const [companyOptionsByCity, setCompanyOptionsByCity] = useState({});
+  const [cargoOptions, setCargoOptions] = useState([]);
 
   useEffect(() => {
     fetchChallenges();
@@ -99,6 +101,10 @@ const AdminChallenges = () => {
           byCity[c.name] = (c.companies||[]).map(co => co.name).filter(Boolean).sort();
         }
         setCompanyOptionsByCity(byCity);
+        
+        // Load cargo options
+        const cargos = await fetchCargos();
+        setCargoOptions(cargos);
       } catch (_) {}
     })();
   }, []);
@@ -647,14 +653,21 @@ const AdminChallenges = () => {
               />
             </Box>
             
-            <TextField
-              label="Cargo"
+            <Autocomplete
+              freeSolo
+              options={cargoOptions}
               value={formData.cargo}
-              onChange={handleInputChange('cargo')}
-              fullWidth
-              required
-              placeholder="e.g., Wood Bark"
-              helperText="Exact cargo name; we normalize for matching"
+              onInputChange={(_, v) => setFormData({ ...formData, cargo: v })}
+              renderInput={(params) => (
+                <TextField 
+                  {...params} 
+                  label="Cargo" 
+                  fullWidth 
+                  required
+                  placeholder="e.g., Wood Bark"
+                  helperText="Select from available cargo or type custom name"
+                />
+              )}
             />
             
             <TextField

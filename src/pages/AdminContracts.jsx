@@ -3,6 +3,7 @@ import { listTemplates, createTemplate, updateTemplate, deleteTemplate, adminLis
 import { Grid, Card, CardContent, CardActions, Typography, Button, TextField, Stack, IconButton, Chip, Divider, Alert, ToggleButton, ToggleButtonGroup, LinearProgress, Tooltip } from '@mui/material';
 import Autocomplete from '@mui/material/Autocomplete';
 import { fetchEts2Map } from '../utils/axios';
+import { fetchCargos } from '../services/cargoService';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 const emptyTemplate = {
@@ -18,6 +19,7 @@ export default function AdminContracts() {
   const [err, setErr] = useState('');
   const [cityOptions, setCityOptions] = useState([]);
   const [companyOptionsByCity, setCompanyOptionsByCity] = useState({});
+  const [cargoOptions, setCargoOptions] = useState([]);
   const [instances, setInstances] = useState([]);
   const [instancesLoading, setInstancesLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('active');
@@ -51,6 +53,10 @@ export default function AdminContracts() {
         const byCity = {};
         for (const c of cities) byCity[c.name] = (c.companies||[]).map(co => co.name).filter(Boolean).sort();
         setCompanyOptionsByCity(byCity);
+        
+        // Load cargo options
+        const cargos = await fetchCargos();
+        setCargoOptions(cargos);
       } catch (_) {}
     })();
   }, []);
@@ -149,6 +155,13 @@ export default function AdminContracts() {
                               renderInput={(params) => (<TextField {...params} label={label} size="small" fullWidth />)} />
                           ) : key === 'destinationCompany' ? (
                             <Autocomplete freeSolo options={companyOptionsByCity[(t.criteria||{}).destinationCity || ''] || []} value={(t.criteria||{})[key] || ''}
+                              onInputChange={(_, v) => {
+                                const criteria = { ...(t.criteria||{}), [key]: v };
+                                setTask(idx, { criteria });
+                              }}
+                              renderInput={(params) => (<TextField {...params} label={label} size="small" fullWidth />)} />
+                          ) : key === 'cargoName' ? (
+                            <Autocomplete freeSolo options={cargoOptions} value={(t.criteria||{})[key] || ''}
                               onInputChange={(_, v) => {
                                 const criteria = { ...(t.criteria||{}), [key]: v };
                                 setTask(idx, { criteria });
