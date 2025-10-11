@@ -688,8 +688,9 @@ console.log(datatorender)
     },
     {
     id:5,
-    name: "Nextgen CC and media group"
-    logo:"https://i.postimg.cc/5ttXzFGn/Nenx-Gen-LOGO.png"}
+    name: "Nextgen CC and media group",
+    logo:"https://i.postimg.cc/5ttXzFGn/Nenx-Gen-LOGO.png",
+    }
     
   ];
   
