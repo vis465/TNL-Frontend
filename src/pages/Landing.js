@@ -686,6 +686,10 @@ console.log(datatorender)
       logo: "https://static.truckersmp.com/images/vtc/logo/75200.1729511385.png",
       
     },
+    {
+    id:5,
+    name: "Nextgen CC and media group"
+    logo:"https://i.postimg.cc/5ttXzFGn/Nenx-Gen-LOGO.png"
     
   ];
   
