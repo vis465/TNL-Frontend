@@ -9,6 +9,7 @@ import {
   Container,
   Typography,
   Button,
+
   Grid,
   Card,
   CardContent,
@@ -56,9 +57,41 @@ import {
   Palette as PaletteIcon,
   PersonAdd as PersonAddIcon,
   Schedule as ScheduleIcon,
+  LocalShipping,
   DirectionsCar as DirectionsCarIcon,
 } from '@mui/icons-material';
 import FullScreenVideoPlayer from '../components/FullScreenVideoPlayer';
+import { leaderboardService } from '../services/leaderboardService';
+
+// Add CSS animations for space effects
+const spaceAnimations = `
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+  
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+  
+  @keyframes glow {
+    0%, 100% { box-shadow: 0 0 20px #00d4ff, 0 0 40px #ff00ff; }
+    50% { box-shadow: 0 0 40px #00d4ff, 0 0 80px #ff00ff, 0 0 120px #ffff00; }
+  }
+  
+  @keyframes trailGlow {
+    0% { stroke-dashoffset: 1000; }
+    100% { stroke-dashoffset: 0; }
+  }
+`;
+
+// Inject the CSS
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = spaceAnimations;
+  document.head.appendChild(style);
+}
 
 // Enhanced styled components
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -130,28 +163,7 @@ const GradientText = styled(Typography)(({ theme }) => ({
   fontWeight: 'bold',
 }));
 
-const ParallaxSection = styled(Box)(({ theme }) => ({
-  position: 'relative',
-  overflow: 'hidden',
-  padding: theme.spacing(12, 0),
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    opacity: 0.9,
-    zIndex: 0,
-    transform: 'scale(1.1)',
-    transition: 'transform 0.5s ease',
-  },
-  '&:hover::before': {
-    transform: 'scale(1)',
-  },
-}));
+
 
 const SectionTitle = styled(Typography)(({ theme }) => ({
   position: 'relative',
@@ -243,17 +255,17 @@ const TruckAnimation = () => {
 
   return (
     <Box ref={containerRef} sx={{ height: 200, position: 'relative', overflow: 'hidden', my: 8 }}>
-      <motion.div 
-        style={{ 
-          x: truckX, 
-          y: '50%', 
+      <motion.div
+        style={{
+          x: truckX,
+          y: '50%',
           rotate: truckRotate,
           opacity,
           scale,
         }}
         className="absolute"
       >
-        <Box sx={{ 
+        <Box sx={{
           position: 'relative',
           filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.2))',
         }}>
@@ -276,7 +288,7 @@ const TruckAnimation = () => {
           </svg>
         </Box>
       </motion.div>
-      <Box sx={{ 
+      <Box sx={{
         position: 'absolute',
         bottom: 40,
         left: 0,
@@ -291,7 +303,7 @@ const TruckAnimation = () => {
 };
 
 // Enhanced Event Card component
-const EventCard = ({ event ,notours}) => {
+const EventCard = ({ event, notours }) => {
   const theme = useTheme();
 
   // Normalize fields
@@ -303,105 +315,105 @@ const EventCard = ({ event ,notours}) => {
   const featured = event.featured === true || event.featured === "true"; // adjust as needed
   const attendances = event.attendances || {};
   const externalLink = event.externalLink || event.external_link || null;
-const truckersmpId=event.truckersmpId
+  const truckersmpId = event.truckersmpId
 
   const route = `${departure} → ${arrival}`;
 
   return (
     <StyledCard>
-  <Box sx={{ position: 'relative' }}>
-    <CardMedia
-      component="img"
-      height="200"
-      image={banner}
-      alt={title}
-      sx={{
-        position: 'relative',
-        '&::after': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background:
-            'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.7))',
-        },
-      }}
-    />
-    {featured && (
-      <Box
+      <Box sx={{ position: 'relative' }}>
+        <CardMedia
+          component="img"
+          height="200"
+          image={banner}
+          alt={title}
+          sx={{
+            position: 'relative',
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background:
+                'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.7))',
+            },
+          }}
+        />
+        {featured && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 16,
+              right: 16,
+              bgcolor: 'yellow',
+              color: 'white',
+              px: 2,
+              py: 0.5,
+              borderRadius: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+            }}
+          >
+            <StarIcon sx={{ fontSize: 16 }} />
+            <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
+              Featured
+            </Typography>
+          </Box>
+        )}
+      </Box>
+
+      <CardContent
+        className="card-content"
         sx={{
-          position: 'absolute',
-          top: 16,
-          right: 16,
-          bgcolor: 'yellow',
-          color: 'white',
-          px: 2,
-          py: 0.5,
-          borderRadius: '20px',
+          transition: 'transform 0.3s ease',
           display: 'flex',
-          alignItems: 'center',
-          gap: 0.5,
+          flexDirection: 'column',
+          gap: 2,
         }}
       >
-        <StarIcon sx={{ fontSize: 16 }} />
-        <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
-          Featured
+        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+          {title}
         </Typography>
-      </Box>
-    )}
-  </Box>
 
-  <CardContent
-    className="card-content"
-    sx={{
-      transition: 'transform 0.3s ease',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 2,
-    }}
-  >
-    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-      {title}
-    </Typography>
+        <Stack spacing={1}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
+            <MapPinIcon sx={{ fontSize: 20 }} />
+            <Typography variant="body2">{route}</Typography>
+          </Box>
 
-    <Stack spacing={1}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
-        <MapPinIcon sx={{ fontSize: 20 }} />
-        <Typography variant="body2">{route}</Typography>
-      </Box>
+          {attendances?.confirmed !== undefined && (
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              Confirmed: {attendances.confirmed}, Unsure: {attendances.unsure}, VTCs: {attendances.vtcs}
+            </Typography>
+          )}
+        </Stack>
 
-      {attendances?.confirmed !== undefined && (
-        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          Confirmed: {attendances.confirmed}, Unsure: {attendances.unsure}, VTCs: {attendances.vtcs}
-        </Typography>
-      )}
-    </Stack>
+        {!notours && (
+          <StyledButton
+            variant="outlined"
+            size="large"
+            href={`events/${truckersmpId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            sx={{
+              alignSelf: 'start',
+              borderColor: 'yellow',
+              color: 'yellow',
+              px: 4,
+              py: 1.5,
+              fontSize: '1.05rem',
+              textTransform: 'none',
 
-    {!notours && (
-      <StyledButton
-        variant="outlined"
-        size="large"
-        href={`events/${truckersmpId}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        sx={{
-          alignSelf: 'start',
-          borderColor: 'yellow',
-          color: 'yellow',
-          px: 4,
-          py: 1.5,
-          fontSize: '1.05rem',
-          textTransform: 'none',
-          
-        }}
-      >
-        See Details
-      </StyledButton>
-    )}
-  </CardContent>
-</StyledCard>
+            }}
+          >
+            See Details
+          </StyledButton>
+        )}
+      </CardContent>
+    </StyledCard>
 
   );
 };
@@ -409,14 +421,14 @@ const truckersmpId=event.truckersmpId
 // Enhanced Partner Card component
 const PartnerCard = ({ name, logo, description }) => {
   const theme = useTheme();
-    
-      
-    
-    const [loading, setLoading] = useState(true);
-  
+
+
+
+  const [loading, setLoading] = useState(true);
+
   return (
     <StyledCard>
-      <CardContent sx={{ 
+      <CardContent sx={{
         p: 4,
         display: 'flex',
         flexDirection: 'column',
@@ -460,17 +472,17 @@ const PartnerCard = ({ name, logo, description }) => {
 // Rules Card Component
 const RulesCard = ({ title, items, icon: IconComponent }) => {
   const theme = useTheme();
-  
+
   return (
     <FeatureCard elevation={3}>
-      <IconComponent 
-        className="feature-icon" 
-        sx={{ 
-          fontSize: 50, 
-          color: 'yellow', 
+      <IconComponent
+        className="feature-icon"
+        sx={{
+          fontSize: 50,
+          color: 'yellow',
           mb: 2,
-          transition: 'all 0.3s ease' 
-        }} 
+          transition: 'all 0.3s ease'
+        }}
       />
       <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', textAlign: 'center' }}>
         {title}
@@ -481,9 +493,9 @@ const RulesCard = ({ title, items, icon: IconComponent }) => {
             <ListItemIcon sx={{ minWidth: 30 }}>
               <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} />
             </ListItemIcon>
-            <ListItemText 
-              primary={item} 
-              primaryTypographyProps={{ 
+            <ListItemText
+              primary={item}
+              primaryTypographyProps={{
                 variant: 'body2',
                 sx: { fontSize: '0.85rem' }
               }}
@@ -502,10 +514,12 @@ const Landing = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [isScrolled, setIsScrolled] = useState(false);
   const { scrollYProgress } = useScroll();
-   const [events, setEvents] = useState([]);
-   const[datatorender,setdatatorender]=useState([])
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+  const [events, setEvents] = useState([]);
+  const [datatorender, setdatatorender] = useState([])
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [leaderboardStats, setLeaderboardStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
   // References for scroll navigation
   const aboutRef = useRef(null);
   const rulesRef = useRef(null);
@@ -514,36 +528,44 @@ const Landing = () => {
   const partnersRef = useRef(null);
   useEffect(() => {
     fetchEvents();
-    fetchextEvents(); 
+    fetchextEvents();
+    fetchLeaderboardStats();
   }, []);
- const fetchextEvents = async () => {
+  const fetchextEvents = async () => {
     try {
       setLoading(true);
-     const response = await axiosInstance.get("/events/attending");
+      const response = await axiosInstance.get("/events/attending");
 
+      const currentWaypoint = Math.min(10, Math.floor(leaderboardStats.totals.totalDistance / 1000000));
+      const progressPercent = (currentWaypoint / 10) * 100;
+      const getTruckPosition = (progress) => {
+        const x = 5 + (progress * 0.9);
+        const y = 50 + Math.sin(progress / 10 * Math.PI * 2) * 20;
+        return { x, y };
+      };
 
-// Set only the first 5 events
-setdatatorender(response.data.slice(0, 5));
-// Assuming API response is an array
+      // Set only the first 5 events
+      setdatatorender(response.data.slice(0, 5));
+      // Assuming API response is an array
       setError(null);
     } catch (err) {
       console.error("Error details:", err);
       setError("Failed to fetch attending events. Please try again later.");
     } finally {
       setLoading(false);
-      
+
     }
   };
 
-  
+
   const fetchEvents = async () => {
     try {
-      
+
       const response = await axiosInstance.get('/events');
       const eventsData = response.data.response || response.data;
       console.log(eventsData)
-      
-      
+
+
       if (!Array.isArray(eventsData)) {
         console.error('Events data is not an array:', eventsData);
         setError('Invalid data format received from server');
@@ -551,13 +573,26 @@ setdatatorender(response.data.slice(0, 5));
       }
 
       const filteredEvents = eventsData.filter(event => event.status !== 'Completed');
-      
+
       setEvents(filteredEvents);
     } catch (error) {
       console.error('Error fetching events:', error);
       setError('Error fetching events. Please try again later.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchLeaderboardStats = async () => {
+    try {
+      setStatsLoading(true);
+      const stats = await leaderboardService.getGlobalStats();
+      setLeaderboardStats(stats);
+      console.log(stats)
+    } catch (error) {
+      console.error('Error fetching leaderboard stats:', error);
+    } finally {
+      setStatsLoading(false);
     }
   };
 
@@ -575,11 +610,11 @@ setdatatorender(response.data.slice(0, 5));
         return 'default';
     }
   };
-console.log(datatorender)
+  console.log(datatorender)
   const categorizeEvents = () => {
     const now = new Date();
-    
-  
+
+
     const categorized = {
       upcoming: events.filter(event => {
         try {
@@ -594,8 +629,8 @@ console.log(datatorender)
       live: events.filter(event => {
         try {
           const startDate = new Date(event.startDate);
-          
-          
+
+
         } catch (error) {
           console.error('Error processing live event:', event.title, error);
           return false;
@@ -612,15 +647,15 @@ console.log(datatorender)
         }
       })
     };
-  
+
     console.log('Categorized events:', categorized);
     return categorized;
   };
   const { upcoming, live, past } = categorizeEvents();
-  
+
   // Sample data for events
- 
-  
+
+
   const externalEvents = [
     {
       id: 1,
@@ -647,53 +682,53 @@ console.log(datatorender)
       featured: false
     }
   ];
-  
+
   // Sample data for partners
   const partners = [
     {
       id: 1,
       name: "Indian Truckers",
       logo: "https://static.truckersmp.com/images/vtc/logo/19885.1712066123.png",
-      
+
     },
     {
       id: 2,
       name: "Indian Carriers",
       logo: "https://static.truckersmp.com/images/vtc/logo/64218.1724950052.png",
-     
+
     },
     {
       id: 3,
       name: "Indian Group",
       logo: "https://static.truckersmp.com/images/vtc/logo/76045.1749322103.png",
-      
+
     },
     {
       id: 4,
       name: "Lumo haul",
       logo: "https://static.truckersmp.com/images/vtc/logo/79072.1747716542.png",
-      
+
     },
     {
       id: 4,
       name: "Super Events",
       logo: "https://static.truckersmp.com/images/vtc/logo/72897.1741616015.png",
-     
+
     },
     {
       id: 4,
       name: "Aura",
       logo: "https://static.truckersmp.com/images/vtc/logo/75200.1729511385.png",
-      
+
     },
     {
-    id:5,
-    name: "Nextgen CC and media group",
-    logo:"https://i.postimg.cc/5ttXzFGn/Nenx-Gen-LOGO.png",
+      id: 5,
+      name: "Nextgen CC and media group",
+      logo: "https://i.postimg.cc/5ttXzFGn/Nenx-Gen-LOGO.png",
     }
-    
+
   ];
-  
+
   // Rules and requirements from the documents
   const rules = [
     {
@@ -757,7 +792,7 @@ console.log(datatorender)
       icon: RuleIcon
     }
   ];
-  
+
   const requirements = [
     {
       title: "Game Requirements",
@@ -800,29 +835,60 @@ console.log(datatorender)
       icon: ScheduleIcon
     }
   ];
-  
+
   // Handle scroll events
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
     };
-    
+
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-  
+
   const scrollToSection = (ref) => {
     ref.current?.scrollIntoView({ behavior: 'smooth' });
   };
-  
-  // Stats
-  const stats = [
-    { value: 100, title: "Active Drivers", icon: UsersIcon },
-    { value: 12000, title: "Completed Jobs", icon: TruckIcon },
-    { value: 100, title: "Events Held", icon: CalendarIcon },
-    { value: 15, title: "Partner Companies", icon: AwardIcon }
-  ];
-  
+
+  // Stats - will be populated with real data from leaderboard
+  const getStats = () => {
+    if (!leaderboardStats) {
+      return [
+        { value: 100, title: "Active Drivers", icon: UsersIcon },
+        { value: 12000, title: "Completed Jobs", icon: TruckIcon },
+        { value: 100, title: "Events Held", icon: CalendarIcon },
+        { value: 15, title: "Partner Companies", icon: AwardIcon }
+      ];
+    }
+
+    return [
+      {
+        value: leaderboardService.formatNumber(leaderboardStats.totals.totalJobs),
+        title: "Jobs Completed",
+        icon: TruckIcon,
+        subtitle: "Across all drivers"
+      },
+      {
+        value: leaderboardService.formatDistance(leaderboardStats.totals.totalDistance),
+        title: "Distance Covered",
+        icon: MapPinIcon,
+        subtitle: "Miles of deliveries"
+      },
+      {
+        value: leaderboardService.formatRevenue(leaderboardStats.totals.totalRevenue),
+        title: "Revenue Generated",
+        icon: AwardIcon,
+        subtitle: "Economic impact"
+      },
+      {
+        value: leaderboardService.formatNumber(leaderboardStats.totals.totalPoints),
+        title: "Points Earned",
+        icon: StarIcon,
+        subtitle: "Community achievements"
+      }
+    ];
+  };
+
   // Enhanced features data
   const features = [
     {
@@ -850,7 +916,7 @@ console.log(datatorender)
   return (
     <Box sx={{ minHeight: '100vh', overflowX: 'hidden', bgcolor: 'background.default' }}>
       {/* Enhanced Navigation */}
-    
+
 
       {/* Enhanced Hero Section */}
       <Box
@@ -860,7 +926,7 @@ console.log(datatorender)
           display: 'flex',
           alignItems: 'center',
           overflow: 'hidden',
-          bg:bgimg
+          bg: bgimg
         }}
       >
         {/* Animated background elements */}
@@ -902,7 +968,7 @@ console.log(datatorender)
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.8 }}
                   variant="overline"
-                  sx={{ 
+                  sx={{
                     color: 'yellow',
                     fontSize: '1rem',
                     fontWeight: 600,
@@ -913,14 +979,14 @@ console.log(datatorender)
                 >
                   PROFESSIONAL VIRTUAL TRUCKING
                 </Typography>
-                
+
                 <Typography
                   component={motion.h1}
                   initial={{ opacity: 0, x: -30 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.8, delay: 0.2 }}
                   variant="h1"
-                  sx={{ 
+                  sx={{
                     color: 'white',
                     fontWeight: 800,
                     mb: 3,
@@ -934,14 +1000,14 @@ console.log(datatorender)
                     LOGISTICS
                   </Box>
                 </Typography>
-                
+
                 <Typography
                   component={motion.p}
                   initial={{ opacity: 0, x: -30 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.8, delay: 0.4 }}
                   variant="h6"
-                  sx={{ 
+                  sx={{
                     color: 'grey.300',
                     mb: 6,
                     fontSize: { xs: '1.1rem', md: '1.4rem' },
@@ -949,16 +1015,16 @@ console.log(datatorender)
                     maxWidth: 600,
                   }}
                 >
-                  Experience the future of virtual transportation with India's premier logistics company. 
+                  Experience the future of virtual transportation with India's premier logistics company.
                   Join our community of professional drivers and embark on an extraordinary journey.
                 </Typography>
-                
+
                 <Box
                   component={motion.div}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.6 }}
-                  sx={{ 
+                  sx={{
                     display: 'flex',
                     gap: 3,
                     justifyContent: { xs: 'center', md: 'flex-start' },
@@ -970,13 +1036,13 @@ console.log(datatorender)
                     variant="contained"
                     size="large"
                     onClick={() => scrollToSection(aboutRef)}
-                    sx={{ 
+                    sx={{
                       bgcolor: 'yellow',
                       color: 'black',
                       px: 4,
                       py: 1.5,
                       fontSize: '1.1rem',
-                      '&:hover': { 
+                      '&:hover': {
                         bgcolor: 'primary.dark',
                         transform: 'translateY(-3px)',
                         boxShadow: '0 10px 30px rgba(25, 118, 210, 0.4)',
@@ -987,24 +1053,24 @@ console.log(datatorender)
                     Explore More
                   </StyledButton>
                   <a href='/apply'>
-                  <StyledButton
-                    variant="outlined"
-                    size="large"
-                    sx={{ 
-                      borderColor: 'yellow',
-                      color: 'yellow',
-                      px: 4,
-                      py: 1.5,
-                      fontSize: '1.1rem',
-                      '&:hover': { 
+                    <StyledButton
+                      variant="outlined"
+                      size="large"
+                      sx={{
                         borderColor: 'yellow',
-                        bgcolor: alpha(theme.palette.primary.main, 0.1),
-                        transform: 'translateY(-3px)',
-                      },
-                    }}
-                  >
-                    Want to Join Us?
-                  </StyledButton>
+                        color: 'yellow',
+                        px: 4,
+                        py: 1.5,
+                        fontSize: '1.1rem',
+                        '&:hover': {
+                          borderColor: 'yellow',
+                          bgcolor: alpha(theme.palette.primary.main, 0.1),
+                          transform: 'translateY(-3px)',
+                        },
+                      }}
+                    >
+                      Want to Join Us?
+                    </StyledButton>
                   </a>
                 </Box>
 
@@ -1031,14 +1097,14 @@ console.log(datatorender)
                 </Box>
               </Box>
             </Grid>
-            
+
             <Grid item xs={12} md={4}>
               <Box
                 component={motion.div}
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 1, delay: 0.4 }}
-                sx={{ 
+                sx={{
                   textAlign: 'center',
                   position: 'relative',
                 }}
@@ -1054,25 +1120,25 @@ console.log(datatorender)
                     borderRadius: '50%',
                     display: 'flex',
                     alignItems: 'center',
-                   
+
                   }}
                 >
-                 <img src={logo} />
+                  <img src={logo} />
                 </Box>
               </Box>
             </Grid>
           </Grid>
         </Container>
-        
+
         {/* Scroll indicator */}
         <Box
           component={motion.div}
           animate={{ y: [0, 10, 0] }}
           transition={{ duration: 2, repeat: Infinity }}
-          sx={{ 
-            position: 'absolute', 
-            bottom: 30, 
-            left: '50%', 
+          sx={{
+            position: 'absolute',
+            bottom: 30,
+            left: '50%',
             transform: 'translateX(-50%)',
             zIndex: 2,
             color: 'yellow',
@@ -1106,7 +1172,7 @@ console.log(datatorender)
                     Welcome to TAMILNADU LOGISTICS
                   </Typography>
                 </Box>
-                
+
                 <Grid container spacing={4} alignItems="center">
                   <Grid item xs={12} md={6}>
                     <Typography variant="h5" sx={{ mb: 3, color: 'yellow', fontWeight: 'bold' }}>
@@ -1122,7 +1188,7 @@ console.log(datatorender)
                       🖤 Give us your support today and forever. We humbly request you to accept it.
                     </Typography>
                   </Grid>
-                  
+
                   <Grid item xs={12} md={6}>
                     <Typography variant="h5" sx={{ mb: 3, color: 'secondary.main', fontWeight: 'bold' }}>
                       தமிழ்
@@ -1147,30 +1213,442 @@ console.log(datatorender)
       {/* Stats Section */}
       <Box sx={{ py: 8, color: 'white' }}>
         <Container maxWidth="lg">
-          <Grid container spacing={4}>
-            {stats.map((stat, index) => (
-              <Grid item xs={6} md={3} key={index}>
+          {statsLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+              <Typography variant="h6" sx={{ opacity: 0.8 }}>
+                Loading performance data...
+              </Typography>
+            </Box>
+          ) : (
+            <Grid container spacing={4}>
+              {getStats().map((stat, index) => (
+                <Grid item xs={6} md={3} key={index}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    viewport={{ once: true }}
+                  >
+                    <Box sx={{ textAlign: 'center' }}>
+                      <stat.icon sx={{ fontSize: 40, mb: 2, opacity: 0.8 }} />
+                      <Typography variant="h3" sx={{ fontWeight: 'bold', mb: 1 }}>
+                        {stat.value}
+                      </Typography>
+                      <Typography variant="h6" sx={{ opacity: 0.9, mb: 1 }}>
+                        {stat.title}
+                      </Typography>
+                      {stat.subtitle && (
+                        <Typography variant="body2" sx={{ opacity: 0.7, fontSize: '0.9rem' }}>
+                          {stat.subtitle}
+                        </Typography>
+                      )}
+                    </Box>
+                  </motion.div>
+                </Grid>
+              ))}
+            </Grid>
+          )}
+        </Container>
+      </Box>
+
+      {/* Trail of Stardust Section */}
+
+
+      {/* Explorer's Map Section */}
+      {leaderboardStats && leaderboardStats.totals.totalDistance > 0 && (
+        <>
+          {leaderboardStats && leaderboardStats.totals.totalDistance > 0 && (
+             <Box sx={{
+               minHeight: '100vh',
+               width: '100vw',
+               py: 8,
+               bgcolor: 'background.default',
+               position: 'relative',
+               overflow: 'hidden'
+             }}>
+
+              <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1, height: '100%' }}>
+                <motion.div
+                  initial={{ opacity: 0, y: 50 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 1, ease: "easeOut" }}
+                  viewport={{ once: true }}
+                >
+                  <Box sx={{ textAlign: 'center', mb: 6 }}>
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      whileInView={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.8, delay: 0.2 }}
+                      viewport={{ once: true }}
+                    >
+                      <Typography variant="h2" sx={{
+                        fontWeight: 900,
+                        mb: 3,
+                        background: "#ffff00",
+                        backgroundClip: 'text',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        fontSize: { xs: '2.8rem', md: '4.5rem' },
+                        
+                        letterSpacing: '0.02em'
+                      }}>
+                        Global Distance Tracker
+                      </Typography>
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.8, delay: 0.4 }}
+                      viewport={{ once: true }}
+                    >
+                      <Typography
+                        variant="h5"
+                        sx={{
+                          color: '#ffff00',
+                          mb: 2,
+                          fontWeight: 600,
+                          textShadow: '0 0 20px rgba(255,255,0, 0.3)',
+                          fontSize: { xs: '1.2rem', md: '1.5rem' },
+                        }}
+                      >
+                        Our riders travelled {(leaderboardStats.totals.totalDistance).toFixed(0)} km and
+                        circling the globe {(leaderboardStats.totals.totalDistance / 40075).toFixed(0)} times!
+                      </Typography>
+
+                      <Typography variant="body1" sx={{
+                        color: 'rgba(255, 255, 255, 0.7)',
+                        maxWidth: '600px',
+                        mx: 'auto',
+                        fontSize: '1.1rem',
+                        lineHeight: 1.6
+                      }}>
+                        Track our global journey as we connect cities and countries through virtual logistics
+                      </Typography>
+                    </motion.div>
+                  </Box>
+
+                  {/* Progress Bar Section */}
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    whileInView={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 1, delay: 0.6 }}
+                    viewport={{ once: true }}
+                  >
+                    <Box sx={{
+                      position: 'relative',
+                      width: "100%",
+                      py: 4,
+                    }}>
+                      {/* Progress Bar Container */}
+                      <Box sx={{
+                        position: 'relative',
+                        width: '100%',
+                        height: '12px',
+                        background: 'rgba(76, 175, 80, 0.1)',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(76, 175, 80, 0.3)',
+                        overflow: 'hidden',
+                      }}>
+                        {/* Progress Fill */}
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{
+                            width: `${Math.min(
+                              100,
+                              (leaderboardStats.totals.totalDistance / (40075 * 500)) * 100
+                            )}%`,
+                          }}
+                          transition={{ duration: 2, ease: 'easeOut' }}
+                          style={{
+                            height: '100%',
+                            background:
+                              'linear-gradient(90deg, #4caf50 0%, #2196f3 50%, #ff9800 100%)',
+                            borderRadius: '6px',
+                            boxShadow: '0 0 15px rgba(76, 175, 80, 0.6)',
+                            position: 'relative',
+                          }}
+                        />
+
+
+
+                      </Box>
+
+                      {/* Small Truck on Progress Bar */}
+                      <motion.div
+                        animate={{
+                          y: [-4, 4, -4],
+                          rotate: [0, 1, 0, -1, 0]
+                        }}
+                        transition={{
+                          duration: 2.5,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }}
+                        style={{
+                          position: 'absolute',
+                          left: `${(leaderboardStats.totals.totalDistance / 40075) * 100}%`,
+                          top: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          zIndex: 10,
+                        }}
+                      >
+                        <Box sx={{ position: 'relative' }}>
+                          {/* Small truck container */}
+                          <Box sx={{
+                            width: { xs: 50, md: 60 },
+                            height: { xs: 35, md: 40 },
+                            background: 'linear-gradient(135deg, #ff6600 0%, #ff3300 100%)',
+                            borderRadius: '10px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: '0 0 25px rgba(255, 102, 0, 0.7), 0 6px 12px rgba(0, 0, 0, 0.3)',
+                            border: '2px solid #ffff00',
+                            position: 'relative',
+                          }}>
+                            {/* Small truck icon */}
+                            <LocalShipping sx={{
+                              fontSize: { xs: 24, md: 28 },
+                              color: '#fff',
+                              opacity: 0.95,
+                              filter: 'drop-shadow(0 0 6px rgba(0, 0, 0, 0.5))'
+                            }} />
+
+                            {/* Small exhaust effect */}
+                            <Box sx={{
+                              position: 'absolute',
+                              left: '-18px',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              width: '25px',
+                              height: '25px',
+                              zIndex: -1,
+                            }}>
+                              {[...Array(3)].map((_, i) => (
+                                <motion.div
+                                  key={i}
+                                  initial={{ opacity: 0.8, x: 0, scale: 1 }}
+                                  animate={{ opacity: 0, x: -25, scale: 0.3 }}
+                                  transition={{
+                                    duration: 0.8,
+                                    repeat: Infinity,
+                                    delay: i * 0.3,
+                                    ease: "easeOut"
+                                  }}
+                                  style={{
+                                    position: 'absolute',
+                                    left: 0,
+                                    top: '50%',
+                                    width: '10px',
+                                    height: '10px',
+                                    background: `radial-gradient(circle, ${i % 2 === 0 ? '#4caf50' : '#ff9800'} 0%, transparent 70%)`,
+                                    borderRadius: '50%',
+                                  }}
+                                />
+                              ))}
+                            </Box>
+                          </Box>
+                        </Box>
+                      </motion.div>
+
+                      {/* Distance scale below progress bar */}
+                      <Box sx={{
+                        mt: 4,
+                        position: 'relative',
+                        height: '60px', // Add fixed height to contain the absolute positioned elements
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        px: 2,
+                      }}>
+                        {[100, 200, 300, 400, 500].map((milestone) => {
+                          const milestonePercent = (milestone / 500) * 100; // scale to progress bar
+                          return (
+                            <motion.div
+                              key={milestone}
+                              initial={{ opacity: 0, y: 20 }}
+                              whileInView={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.5, delay: milestone * 0.1 }}
+                              viewport={{ once: true }}
+                            >
+                              <Box sx={{
+                                textAlign: 'center',
+                                position: 'absolute',
+                                left: `${milestonePercent}%`,
+                                top: '0px', // Position at the top of the container
+                                transform: 'translateX(-50%)',
+                                marginBottom: 6
+                              }}>
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    color:
+                                      leaderboardStats.totals.totalDistance >= milestone * 40075
+                                        ? '#4caf50'
+                                        : '#666',
+                                    fontWeight: 'bold',
+                                    fontSize: { xs: '0.9rem', md: '1.1rem' },
+                                    textShadow:
+                                      leaderboardStats.totals.totalDistance >= milestone * 40075
+                                        ? '0 0 15px #4caf50'
+                                        : 'none',
+                                    display: 'block',
+                                    mb: 0.5,
+                                  }}
+                                >
+                                  {milestone}x
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    display: 'block',
+                                    color: '#888',
+                                    fontSize: { xs: '0.7rem', md: '0.8rem' },
+                                    fontWeight: 500,
+                                  }}
+                                >
+                                  Earth
+                                </Typography>
+                              </Box>
+                            </motion.div>
+                          );
+                        })}
+
+
+                      </Box>
+
+                      {/* Current stats below progress bar */}
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8, delay: 0.8 }}
+                        viewport={{ once: true }}
+                      >
+                        <Box sx={{
+                          mt: 6, // Increased margin to provide more space from milestone markers
+                          textAlign: 'center',
+                          background: 'rgba(76, 175, 80, 0.05)',
+                          border: '1px solid rgba(76, 175, 80, 0.2)',
+                          borderRadius: 2,
+                          padding: 3,
+                          backdropFilter: 'blur(10px)',
+                        }}>
+                          <Typography variant="body2" sx={{
+                            color: '#4caf50',
+                            fontWeight: 'bold',
+                            fontSize: '1rem',
+                            mb: 1,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.1em'
+                          }}>
+                            Global Journey Status
+                          </Typography>
+                          <Typography
+                            variant="body1"
+                            sx={{
+                              color: '#aaa',
+                              fontSize: '1rem',
+                              fontWeight: 500,
+                            }}
+                          >
+                            Next milestone:{' '}
+                            {(Math.floor(leaderboardStats.totals.totalDistance / 40075) + 10)}x
+                            {' '}around Earth
+                          </Typography>
+
+
+                        </Box>
+                      </motion.div>
+                    </Box>
+                  </motion.div>
+                </motion.div>
+              </Container>
+
+            </Box>
+          )}
+        </>
+      )}
+
+      {/* Top Performers Section */}
+      {leaderboardStats && leaderboardStats.drivers && leaderboardStats.drivers.length > 0 && (
+        <Box sx={{ py: 12, bgcolor: 'background.default' }}>
+          <Container maxWidth="lg">
+            <SectionTitle variant="h3" component="h2" align="center" sx={{ mb: 8 }}>
+              Top Performers
+            </SectionTitle>
+
+            <Grid container spacing={4}>
+              <Grid item xs={12} md={6}>
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  transition={{ duration: 0.5 }}
                   viewport={{ once: true }}
                 >
-                  <Box sx={{ textAlign: 'center' }}>
-                    <stat.icon sx={{ fontSize: 40, mb: 2, opacity: 0.8 }} />
-                    <Typography variant="h3" sx={{ fontWeight: 'bold', mb: 1 }}>
-                      {stat.value}+
-                    </Typography>
-                    <Typography variant="h6" sx={{ opacity: 0.9 }}>
-                      {stat.title}
-                    </Typography>
-                  </Box>
+                  <FeatureCard elevation={3} sx={{ p: 4 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                      <TruckIcon sx={{ fontSize: 40, color: 'yellow', mr: 2 }} />
+                      <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                        Top by Distance
+                      </Typography>
+                    </Box>
+                    <List>
+                      {leaderboardStats.drivers.slice(0, 5).map((driver, index) => (
+                        <ListItem key={index} sx={{ px: 0, py: 1 }}>
+                          <ListItemIcon sx={{ minWidth: 40 }}>
+                            <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'yellow' }}>
+                              #{index + 1}
+                            </Typography>
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={driver.username}
+                            secondary={`${leaderboardService.formatDistance(driver.totalDistance)} • ${driver.totalJobs} jobs`}
+                            primaryTypographyProps={{ fontWeight: 'bold' }}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </FeatureCard>
                 </motion.div>
               </Grid>
-            ))}
-          </Grid>
-        </Container>
-      </Box>
+
+              <Grid item xs={12} md={6}>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1 }}
+                  viewport={{ once: true }}
+                >
+                  <FeatureCard elevation={3} sx={{ p: 4 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                      <AwardIcon sx={{ fontSize: 40, color: 'yellow', mr: 2 }} />
+                      <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                        Top by Revenue
+                      </Typography>
+                    </Box>
+                    <List>
+                      {leaderboardStats.driversByRevenue.slice(0, 5).map((driver, index) => (
+                        <ListItem key={index} sx={{ px: 0, py: 1 }}>
+                          <ListItemIcon sx={{ minWidth: 40 }}>
+                            <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'yellow' }}>
+                              #{index + 1}
+                            </Typography>
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={driver.username}
+                            secondary={`${leaderboardService.formatRevenue(driver.totalRevenue)} • ${driver.totalJobs} jobs`}
+                            primaryTypographyProps={{ fontWeight: 'bold' }}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </FeatureCard>
+                </motion.div>
+              </Grid>
+            </Grid>
+          </Container>
+        </Box>
+      )}
 
       {/* Features Section */}
       <Box sx={{ py: 12 }}>
@@ -1202,7 +1680,7 @@ console.log(datatorender)
           </Grid>
         </Container>
       </Box>
-<FullScreenVideoPlayer />
+      <FullScreenVideoPlayer />
       {/* Rules Section */}
       <Box ref={rulesRef} sx={{ py: 12, bgcolor: 'background.default' }}>
         <Container maxWidth="lg">
@@ -1263,7 +1741,7 @@ console.log(datatorender)
           <SectionTitle variant="h3" component="h2" align="center">
             Events
           </SectionTitle>
-          
+
           {/* Our Events */}
           <Box sx={{ mb: 8 }}>
             <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold', color: 'yellow' }}>
@@ -1288,7 +1766,7 @@ console.log(datatorender)
           {/* External Events */}
           <Box>
             <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold', color: 'yellow' }}>
-             Upcoming events we attend
+              Upcoming events we attend
             </Typography>
             <Grid container spacing={4}>
               {datatorender.map((event, index) => (
@@ -1299,7 +1777,7 @@ console.log(datatorender)
                     transition={{ duration: 0.5, delay: index * 0.1 }}
                     viewport={{ once: true }}
                   >
-                    <EventCard event={event} notours={true}/>
+                    <EventCard event={event} notours={true} />
                   </motion.div>
                 </Grid>
               ))}
@@ -1309,9 +1787,9 @@ console.log(datatorender)
       </Box>
 
       {/* Partners Section */}
-      <Box 
+      <Box
         ref={partnersRef}
-        sx={{ 
+        sx={{
           py: 12,
           bgcolor: 'background.paper',
           position: 'relative',
@@ -1340,19 +1818,19 @@ console.log(datatorender)
       </Box>
 
       {/* Enhanced Call to Action Section */}
-      <Box sx={{ 
-        py: 16, 
+      <Box sx={{
+        py: 16,
         bgcolor: '#0f1419',
         color: 'white',
         position: 'relative',
         overflow: 'hidden',
       }}>
         {/* Animated background pattern */}
-        <Box sx={{ 
-          position: 'absolute', 
-          top: 0, 
-          left: 0, 
-          right: 0, 
+        <Box sx={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
           bottom: 0,
           opacity: 0.1,
           backgroundImage: `
@@ -1362,7 +1840,7 @@ console.log(datatorender)
           `,
           animation: 'float 8s ease-in-out infinite',
         }} />
-        
+
         <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -1373,11 +1851,11 @@ console.log(datatorender)
             <Grid container spacing={8} alignItems="center">
               <Grid item xs={12} md={6}>
                 <Box>
-                  <Typography 
-                    variant="overline" 
-                    sx={{ 
-                      color: 'yellow', 
-                      fontSize: '1rem', 
+                  <Typography
+                    variant="overline"
+                    sx={{
+                      color: 'yellow',
+                      fontSize: '1rem',
                       fontWeight: 600,
                       letterSpacing: 2,
                       mb: 2,
@@ -1386,11 +1864,11 @@ console.log(datatorender)
                   >
                     JOIN THE ELITE
                   </Typography>
-                  
-                  <Typography 
-                    variant="h2" 
-                    sx={{ 
-                      mb: 3, 
+
+                  <Typography
+                    variant="h2"
+                    sx={{
+                      mb: 3,
                       fontWeight: 800,
                       fontSize: { xs: '2.5rem', md: '3.5rem' },
                       lineHeight: 1.2,
@@ -1401,23 +1879,23 @@ console.log(datatorender)
                       Elite Team?
                     </Box>
                   </Typography>
-                  
-                  <Typography 
-                    variant="h6" 
-                    sx={{ 
-                      mb: 6, 
+
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      mb: 6,
                       color: 'grey.300',
                       lineHeight: 1.6,
                       fontSize: { xs: '1.1rem', md: '1.3rem' },
                     }}
                   >
-                    Become part of the TAMILNADU LOGISTICS family and experience 
-                    professional virtual trucking like never before. Join thousands 
+                    Become part of the TAMILNADU LOGISTICS family and experience
+                    professional virtual trucking like never before. Join thousands
                     of drivers who trust us for their virtual career.
                   </Typography>
-                  
-                  <Stack 
-                    direction={{ xs: 'column', sm: 'row' }} 
+
+                  <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
                     spacing={3}
                     sx={{ mb: 4 }}
                   >
@@ -1428,14 +1906,14 @@ console.log(datatorender)
                       <StyledButton
                         variant="contained"
                         size="large"
-                        sx={{ 
+                        sx={{
                           bgcolor: 'yellow',
                           color: 'black',
                           px: 4,
                           py: 2,
                           fontSize: '1.1rem',
                           minWidth: 180,
-                          '&:hover': { 
+                          '&:hover': {
                             bgcolor: 'primary.dark',
                             boxShadow: '0 12px 40px rgba(25, 118, 210, 0.4)',
                           },
@@ -1445,7 +1923,7 @@ console.log(datatorender)
                         Apply Now
                       </StyledButton>
                     </motion.div>
-                    
+
                     <motion.div
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
@@ -1453,14 +1931,14 @@ console.log(datatorender)
                       <StyledButton
                         variant="outlined"
                         size="large"
-                        sx={{ 
+                        sx={{
                           borderColor: 'yellow',
                           color: 'yellow',
                           px: 4,
                           py: 2,
                           fontSize: '1.1rem',
                           minWidth: 180,
-                          '&:hover': { 
+                          '&:hover': {
                             borderColor: 'yellow',
                             bgcolor: alpha(theme.palette.primary.main, 0.1),
                             boxShadow: '0 8px 30px rgba(25, 118, 210, 0.2)',
@@ -1492,24 +1970,24 @@ console.log(datatorender)
                   </Box>
                 </Box>
               </Grid>
-              
+
               <Grid item xs={12} md={6}>
                 <Box sx={{ position: 'relative', textAlign: 'center' }}>
                   {/* Feature cards */}
                   <Stack spacing={3}>
                     {[
-                      { 
-                        icon: <CheckCircleIcon sx={{ color: 'success.main' }} />, 
+                      {
+                        icon: <CheckCircleIcon sx={{ color: 'success.main' }} />,
                         title: 'Instant Approval',
                         desc: 'Get approved within 24 hours'
                       },
-                      { 
-                        icon: <StarIcon sx={{ color: 'warning.main' }} />, 
+                      {
+                        icon: <StarIcon sx={{ color: 'warning.main' }} />,
                         title: 'Premium Benefits',
                         desc: 'Exclusive events and rewards'
                       },
-                      { 
-                        icon: <SupportIcon sx={{ color: 'info.main' }} />, 
+                      {
+                        icon: <SupportIcon sx={{ color: 'info.main' }} />,
                         title: 'Expert Support',
                         desc: 'Professional guidance always'
                       },
@@ -1557,7 +2035,7 @@ console.log(datatorender)
       </Box>
 
       {/* Enhanced Footer */}
-     
+
     </Box>
   );
 };

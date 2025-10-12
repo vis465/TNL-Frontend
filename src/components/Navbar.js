@@ -236,7 +236,7 @@ const Navbar = () => {
         { label: 'Our Team', path: '/team', icon: <PersonAdd />, shortLabel: 'Team' },
         { label: 'Events', path: '/events', icon: <Event />, shortLabel: 'Events' },
         { label: 'Apply', path: '/apply', icon: <Work />, shortLabel: 'Apply' },
-        { label: 'VTC Jobs', path: '/jobs', icon: <Speed />, shortLabel: 'Jobs' },
+        // { label: 'VTC Jobs', path: '/jobs', icon: <Speed />, shortLabel: 'Jobs' },
         { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined />, shortLabel: 'Servers' },
         { label: 'Contact', path: '/contact', icon: <ContactMail />, shortLabel: 'Contact' },
         { label: 'Login', path: '/login', icon: <Login />, shortLabel: 'Login' },
