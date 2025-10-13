@@ -302,8 +302,7 @@ function App() {
                   {/* Role-based admin area: shared dashboard, gated subroutes */}
                   <Route element={<PrivateRoute allowedRoles={["admin","eventteam","hrteam",'financeteam']} />}>
                     <Route path="/admin" element={<AdminDashboard />} />
-                    {/* Admin only */}
-                    <Route path="/admin/users" element={<PrivateRoute allowedRoles={["admin"]}><AdminUsers /></PrivateRoute>} />
+                    
                     {/* Admin + Event team */}
                     <Route path="/admin/jobs" element={<PrivateRoute allowedRoles={["admin","eventteam"]}><AdminJobs /></PrivateRoute>} />
                     <Route path="/admin/events" element={<PrivateRoute allowedRoles={["admin","eventteam"]}><EventManagement /></PrivateRoute>} />
@@ -311,6 +310,7 @@ function App() {
                     <Route path="/admin/challenges" element={<PrivateRoute allowedRoles={["admin","eventteam","hrteam"]}><AdminChallenges /></PrivateRoute>} />
                     <Route path="/admin/challenges/:id" element={<PrivateRoute allowedRoles={["admin","eventteam","hrteam"]}><ChallengeDetails /></PrivateRoute>} />
                     {/* Admin + HR team */}
+                    <Route path="/admin/users" element={<PrivateRoute allowedRoles={["admin","hrteam"]}><AdminUsers /></PrivateRoute>} />
                     <Route path="/admin/attendance" element={<PrivateRoute allowedRoles={["admin","hrteam"]}><HRDashboard /></PrivateRoute>} />
                     <Route path="/admin/riders" element={<PrivateRoute allowedRoles={["admin","eventteam","hrteam"]}><AdminRiders /></PrivateRoute>} />
                     <Route path="/admin/achievements" element={<PrivateRoute allowedRoles={["admin","hrteam"]}><AdminAchievements /></PrivateRoute>} />

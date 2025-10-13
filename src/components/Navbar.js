@@ -247,7 +247,10 @@ const Navbar = () => {
     if (isAdmin) {
       return [
         { label: 'Admin', path: '/admin', icon: <Dashboard />, shortLabel: 'Admin' },
-        { label: 'Users', path: '/admin/users', icon: <PeopleIcon />, shortLabel: 'Users' },
+        { label: 'User Management', path: '/admin/users', icon: <PeopleIcon />, shortLabel: 'Users' },
+        { label: 'User data ', path: '/admin/riders', icon: <PeopleIcon />, shortLabel: 'Users' },
+         
+        { label: 'Events', path: '/events', icon: <Event />, shortLabel: 'Events' },
         { label: 'VTC Jobs', path: '/jobs', icon: <Speed />, shortLabel: 'Jobs' },
         { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined />, shortLabel: 'Servers' },
         { label: 'Events', path: '/events', icon: <Event />, shortLabel: 'Events' },
@@ -263,6 +266,8 @@ const Navbar = () => {
       return [
         { label: 'Admin', path: '/admin', icon: <Dashboard />, shortLabel: 'Admin' },
         { label: 'Events', path: '/events', icon: <Event />, shortLabel: 'Events' },
+        { label: 'User Management', path: '/admin/users', icon: <PeopleIcon />, shortLabel: 'Users' },
+        { label: 'User data ', path: '/admin/riders', icon: <PeopleIcon />, shortLabel: 'Users' },
         { label: 'VTC Jobs', path: '/jobs', icon: <Speed />, shortLabel: 'Jobs' },
         { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined />, shortLabel: 'Servers' },
       ];

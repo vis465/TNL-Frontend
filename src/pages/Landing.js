@@ -1468,7 +1468,7 @@ const Landing = () => {
                               key={milestone}
                               initial={{ opacity: 0, y: 20 }}
                               whileInView={{ opacity: 1, y: 0 }}
-                              transition={{ duration: 0.5, delay: milestone * 0.1 }}
+                             
                               viewport={{ once: true }}
                             >
                               <Box sx={{
@@ -1763,26 +1763,7 @@ const Landing = () => {
             </Grid>
           </Box>
 
-          {/* External Events */}
-          <Box>
-            <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold', color: 'yellow' }}>
-              Upcoming events we attend
-            </Typography>
-            <Grid container spacing={4}>
-              {datatorender.map((event, index) => (
-                <Grid item xs={12} md={4} key={event.id}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
-                    viewport={{ once: true }}
-                  >
-                    <EventCard event={event} notours={true} />
-                  </motion.div>
-                </Grid>
-              ))}
-            </Grid>
-          </Box>
+         
         </Container>
       </Box>
 
