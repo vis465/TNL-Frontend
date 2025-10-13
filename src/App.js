@@ -307,10 +307,10 @@ function App() {
                     <Route path="/admin/jobs" element={<PrivateRoute allowedRoles={["admin","eventteam"]}><AdminJobs /></PrivateRoute>} />
                     <Route path="/admin/events" element={<PrivateRoute allowedRoles={["admin","eventteam"]}><EventManagement /></PrivateRoute>} />
                     <Route path="/admin/analytics" element={<PrivateRoute allowedRoles={["admin","eventteam"]}><AnalyticsDashboard /></PrivateRoute>} />
-                    <Route path="/admin/challenges" element={<PrivateRoute allowedRoles={["admin","eventteam","hrteam"]}><AdminChallenges /></PrivateRoute>} />
-                    <Route path="/admin/challenges/:id" element={<PrivateRoute allowedRoles={["admin","eventteam","hrteam"]}><ChallengeDetails /></PrivateRoute>} />
                     {/* Admin + HR team */}
                     <Route path="/admin/users" element={<PrivateRoute allowedRoles={["admin","hrteam"]}><AdminUsers /></PrivateRoute>} />
+                    <Route path="/admin/challenges" element={<PrivateRoute allowedRoles={["admin","eventteam","hrteam","financeteam"]}><AdminChallenges /></PrivateRoute>} />
+                    <Route path="/admin/challenges/:id" element={<PrivateRoute allowedRoles={["admin","eventteam","hrteam","financeteam"]}><ChallengeDetails /></PrivateRoute>} />
                     <Route path="/admin/attendance" element={<PrivateRoute allowedRoles={["admin","hrteam"]}><HRDashboard /></PrivateRoute>} />
                     <Route path="/admin/riders" element={<PrivateRoute allowedRoles={["admin","eventteam","hrteam"]}><AdminRiders /></PrivateRoute>} />
                     <Route path="/admin/achievements" element={<PrivateRoute allowedRoles={["admin","hrteam"]}><AdminAchievements /></PrivateRoute>} />
