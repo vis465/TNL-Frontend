@@ -17,7 +17,33 @@ import {
   Chip,
   IconButton,
   InputAdornment,
-  Autocomplete
+  Autocomplete,
+  Pagination,
+  CircularProgress,
+  Grid,
+  Card,
+  CardContent,
+  CardActions,
+  Tabs,
+  Tab,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Tooltip,
+  Badge,
+  LinearProgress,
+  Fade,
+  Collapse,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Avatar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
 import { 
   AccountBalance, 
@@ -27,13 +53,40 @@ import {
   Refresh,
   AttachMoney,
   People,
-  Description
+  Description,
+  Add,
+  Remove,
+  FilterList,
+  Search,
+  Download,
+  Visibility,
+  TrendingDown,
+  AccountBalanceWallet,
+  MonetizationOn,
+  Assessment,
+  Speed,
+  Warning,
+  CheckCircle,
+  Cancel,
+  ExpandMore,
+  ExpandLess,
+  BarChart,
+  PieChart,
+  ShowChart,
+  Timeline,
+  Receipt,
+  LocalShipping,
+  Gavel,
+  Speed as SpeedIcon,
+  Park,
+  Build
 } from '@mui/icons-material';
-import { getBankBalance, getBankTransactions, bankBonus, searchRiders } from '../services/bankService';
+import { getBankBalance, getBankTransactions, bankBonus, bankDeduct, searchRiders } from '../services/bankService';
 
 export default function AdminBank() {
   const [balance, setBalance] = useState(0);
   const [tx, setTx] = useState([]);
+  const [allTransactions, setAllTransactions] = useState([]); // Store all transactions for metrics
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
   const [riderIds, setRiderIds] = useState('');
@@ -43,15 +96,44 @@ export default function AdminBank() {
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // Deduction state
+  const [deductAmount, setDeductAmount] = useState('');
+  const [deductReason, setDeductReason] = useState('');
+  const [deductRiderIds, setDeductRiderIds] = useState('');
+  const [selectedDeductRiders, setSelectedDeductRiders] = useState([]);
+  const [deductRiderQuery, setDeductRiderQuery] = useState('');
+  const [deductRiderOptions, setDeductRiderOptions] = useState([]);
+  const [deductLoading, setDeductLoading] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [transactionsPerPage] = useState(20);
+  
+  // New UI state
+  const [activeTab, setActiveTab] = useState(0);
+  const [expandedCards, setExpandedCards] = useState({});
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
 
-  const refresh = async () => {
+  const refresh = async (page = currentPage) => {
     try {
       setLoading(true);
       setErr(''); setMsg('');
+      
+      // Load balance
       const b = await getBankBalance();
       setBalance(b.balance || 0);
-      const t = await getBankTransactions(100);
+      
+      // Load paginated transactions for display
+      const t = await getBankTransactions(page, transactionsPerPage);
       setTx(t.items || []);
+      setTotalPages(Math.ceil((t.total || t.items?.length || 0) / transactionsPerPage));
+      
+      // Load all transactions for metrics (first page with large limit)
+      const allT = await getBankTransactions(1, 10000); // Load all transactions
+      setAllTransactions(allT.items || []);
     } catch (e) { 
       setErr(e.message || 'Failed to load bank data'); 
     } finally {
@@ -59,7 +141,48 @@ export default function AdminBank() {
     }
   };
 
+  // Helper functions
+  const toggleCardExpansion = (cardId) => {
+    setExpandedCards(prev => ({
+      ...prev,
+      [cardId]: !prev[cardId]
+    }));
+  };
+
+  // Note: Filtering is now handled by the backend API
+  // Client-side filtering removed to fix pagination issues
+
+  const getFinancialMetrics = () => {
+    // Use all transactions from all pages, not just current page
+    const jobDeductions = allTransactions.filter(t => t.source?.kind === 'job_deductions');
+    const adminDeductions = allTransactions.filter(t => t.source?.kind === 'admin_deduction');
+    const credits = allTransactions.filter(t => t.type === 'credit');
+    
+    const totalDeductions = jobDeductions.reduce((sum, t) => sum + (t.amount || 0), 0);
+    const totalCredits = credits.reduce((sum, t) => sum + (t.amount || 0), 0);
+    const totalAdminDeductions = adminDeductions.reduce((sum, t) => sum + Math.abs(t.amount || 0), 0);
+    
+    return {
+      totalDeductions,
+      totalCredits,
+      totalAdminDeductions,
+      jobCount: jobDeductions.length,
+      creditCount: credits.length,
+      adminDeductionCount: adminDeductions.length
+    };
+  };
+
+  const openTransactionDialog = (transaction) => {
+    setSelectedTransaction(transaction);
+    setTransactionDialogOpen(true);
+  };
+
   useEffect(() => { refresh(); }, []);
+
+  const handlePageChange = (event, page) => {
+    setCurrentPage(page);
+    refresh(page);
+  };
 
   const onBonus = async () => {
     if (!amount || isNaN(Number(amount))) {
@@ -85,6 +208,50 @@ export default function AdminBank() {
     }
   };
 
+  const onDeduct = async () => {
+    if (!deductAmount || isNaN(Number(deductAmount))) {
+      setErr('Please enter a valid amount');
+      return;
+    }
+    
+    const idsTyped = deductRiderIds.trim() ? deductRiderIds.split(',').map(s => s.trim()) : [];
+    const idsSelected = selectedDeductRiders.map(r => r._id);
+    const allIds = [...new Set([...idsTyped, ...idsSelected])];
+    
+    if (allIds.length === 0) {
+      setErr('Please select at least one rider');
+      return;
+    }
+    
+    setDeductLoading(true);
+    setErr(''); setMsg('');
+    try {
+      const res = await bankDeduct(Number(deductAmount), allIds, deductReason, `ui-deduct-${Date.now()}`);
+      
+      if (res.failedDeductions && res.failedDeductions.length > 0) {
+        const failedNames = res.failedDeductions.map(f => f.name).join(', ');
+        setMsg(`Successfully deducted from ${res.deducted} riders. Failed: ${failedNames}`);
+      } else {
+        setMsg(`Successfully deducted $${Number(deductAmount).toLocaleString()} from ${res.deducted} riders. Total: $${res.totalDeducted.toLocaleString()}`);
+      }
+      
+      setDeductAmount(''); 
+      setDeductReason(''); 
+      setDeductRiderIds(''); 
+      setSelectedDeductRiders([]);
+      await refresh();
+    } catch (e) { 
+      if (e.response?.data?.insufficientRiders) {
+        const insufficientNames = e.response.data.insufficientRiders.map(r => `${r.name} (${r.currentBalance}/${r.required})`).join(', ');
+        setErr(`Insufficient funds: ${insufficientNames}`);
+      } else {
+        setErr(e.message || 'Deduction failed'); 
+      }
+    } finally {
+      setDeductLoading(false);
+    }
+  };
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -98,442 +265,711 @@ export default function AdminBank() {
     return type === 'credit' ? '#2e7d32' : '#d32f2f';
   };
 
+  const metrics = getFinancialMetrics();
+
   return (
     <Box sx={{ minHeight: '100vh' }}>
-      <Container maxWidth="xl" sx={{ py: 4 }}>
-        {/* Header */}
+      <Container maxWidth="xl" sx={{ py: 3 }}>
+        {/* Modern Header */}
         <Box sx={{ mb: 4 }}>
-          <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-            <AccountBalance sx={{ fontSize: 40, color: '#1976d2' }} />
-            <Box>
-              <Typography variant="h4" sx={{ fontWeight: 300}}>
-              TNL  Bank Administration
-              </Typography>
-              <Typography variant="subtitle1" sx={{ color: '#666' }}>
-                Financial Management Dashboard
-              </Typography>
-            </Box>
-          </Stack>
-        </Box>
-
-        {/* Alerts */}
-        {err && (
-          <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
-            {err}
-          </Alert>
-        )}
-        {msg && (
-          <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>
-            {msg}
-          </Alert>
-        )}
-
-        {/* Balance Card */}
-        <Paper elevation={0} sx={{ mb: 4, border: '1px solid #e0e0e0', borderRadius: 3 }}>
-          <Box sx={{ p: 4 }}>
-            <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
+            <Stack direction="row" alignItems="center" spacing={3}>
+              <Box sx={{ 
+                p: 2, 
+                borderRadius: 3, 
+                  background: 'linear-gradient(135deg, #4facfe 0%,rgb(219, 207, 30) 100%)',
+                boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)'
+              }}>
+                <AccountBalance sx={{ fontSize: 32, color: 'white' }} />
+              </Box>
               <Box>
-                <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-                  <TrendingUp sx={{ color: '#1976d2' }} />
-                  <Typography variant="h6" sx={{ color: '#666', fontWeight: 400 }}>
-                    Current Balance
-                  </Typography>
-                </Stack>
-                <Typography variant="h2" sx={{ fontWeight: 200, color: 'white' }}>
-                  {formatCurrency(balance)}
+                <Typography variant="h3" sx={{ fontWeight: 900, color: 'white', mb: 0.5 }}>
+                  TNL Bank Control
+                </Typography>
+                <Typography variant="h6" sx={{ color: '#718096', fontWeight: 400 }}>
+                  Financial Management & Analytics Dashboard
                 </Typography>
               </Box>
-              <IconButton 
-                onClick={refresh} 
+            </Stack>
+            
+            <Stack direction="row" spacing={2}>
+              <Button
+                variant="outlined"
+                startIcon={<Download />}
+                sx={{ borderRadius: 2, textTransform: 'none' }}
+              >
+                Export Data
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<Refresh />}
+                onClick={refresh}
                 disabled={loading}
                 sx={{ 
-                  
-                  
-                  width: 48,
-                  height: 48
+                  borderRadius: 2, 
+                  textTransform: 'none',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                  }
                 }}
               >
-                <Refresh />
-              </IconButton>
+                Refresh
+              </Button>
             </Stack>
-          </Box>
-        </Paper>
+          </Stack>
 
-        {/* Job Deductions Summary */}
-        <Paper elevation={0} sx={{ mb: 4, border: '1px solid #e0e0e0', borderRadius: 3 }}>
-          <Box sx={{ p: 4 }}>
-            <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
-              <Payment sx={{ color: '#ff9800' }} />
-              <Typography variant="h6" sx={{ fontWeight: 500 }}>
-                Job Deductions Summary
-              </Typography>
-            </Stack>
-            
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 3 }}>
-              {(() => {
-                const jobDeductions = tx.filter(t => t.source?.kind === 'job_deductions');
-                const totalDeductions = jobDeductions.reduce((sum, t) => sum + (t.amount || 0), 0);
-                const totalJobs = jobDeductions.length;
-                const avgDeduction = totalJobs > 0 ? totalDeductions / totalJobs : 0;
-                
-                const deductionBreakdown = jobDeductions.reduce((acc, t) => {
-                  if (t.deductionDetails) {
-                    acc.cargoDamage += t.deductionDetails.cargoDamage || 0;
-                    acc.autoPark += t.deductionDetails.autoPark || 0;
-                    acc.speedViolation += t.deductionDetails.speedViolation || 0;
-                    acc.fixedTax += t.deductionDetails.fixedTax || 0;
+          {/* Alerts */}
+          <Fade in={!!err || !!msg}>
+            <Box>
+              {err && (
+                <Alert 
+                  severity="error" 
+                  sx={{ mb: 2, borderRadius: 2, boxShadow: '0 4px 12px rgba(244, 67, 54, 0.15)' }}
+                  action={
+                    <IconButton size="small" onClick={() => setErr('')}>
+                      <Cancel />
+                    </IconButton>
                   }
-                  return acc;
-                }, { cargoDamage: 0, autoPark: 0, speedViolation: 0, fixedTax: 0 });
-
-                return (
-                  <>
-                    <Box sx={{ textAlign: 'center', p: 2, borderRadius: 2 }}>
-                      <Typography variant="h4" sx={{ fontWeight: 600, color: '#ff9800' }}>
-                        {totalDeductions.toLocaleString()}
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: '#666' }}>
-                        Total Deducted
-                      </Typography>
-                    </Box>
-                    
-                    <Box sx={{ textAlign: 'center', p: 2,  borderRadius: 2 }}>
-                      <Typography variant="h4" sx={{ fontWeight: 600, color: '#9c27b0' }}>
-                        {totalJobs}
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: '#666' }}>
-                        Jobs Processed
-                      </Typography>
-                    </Box>
-                    
-                    <Box sx={{ textAlign: 'center', p: 2,  borderRadius: 2 }}>
-                      <Typography variant="h4" sx={{ fontWeight: 600, color: '#4caf50' }}>
-                        {Math.round(avgDeduction)}
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: '#666' }}>
-                        Avg per Job
-                      </Typography>
-                    </Box>
-                    
-                    <Box sx={{ p: 2, borderRadius: 2 }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                        Deduction Breakdown
-                      </Typography>
-                      <Stack spacing={0.5}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <Typography variant="caption">Cargo Damage:</Typography>
-                          <Typography variant="caption" sx={{ fontWeight: 600 }}>{deductionBreakdown.cargoDamage}</Typography>
-                        </Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <Typography variant="caption">Auto-Park:</Typography>
-                          <Typography variant="caption" sx={{ fontWeight: 600 }}>{deductionBreakdown.autoPark}</Typography>
-                        </Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <Typography variant="caption">Speed Violation:</Typography>
-                          <Typography variant="caption" sx={{ fontWeight: 600 }}>{deductionBreakdown.speedViolation}</Typography>
-                        </Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <Typography variant="caption">Fixed Tax:</Typography>
-                          <Typography variant="caption" sx={{ fontWeight: 600 }}>{deductionBreakdown.fixedTax}</Typography>
-                        </Box>
-                      </Stack>
-                    </Box>
-                  </>
-                );
-              })()}
-            </Box>
-          </Box>
-        </Paper>
-
-        {/* Bonus Payout Section */}
-        <Paper elevation={0} sx={{ mb: 4, border: '1px solid #e0e0e0', borderRadius: 3 }}>
-          <Box sx={{ p: 4 }}>
-            <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
-              <Payment sx={{ color: '#1976d2' }} />
-              <Typography variant="h6" sx={{  fontWeight: 500 }}>
-                Bonus Payout
-              </Typography>
-            </Stack>
-            
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3}>
-                <TextField
-                  label="Amount"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  type="number"
-                  sx={{ minWidth: 200 }}
-                  InputProps={{
-                    startAdornment: <InputAdornment position="start"><AttachMoney sx={{ fontSize: 20 }} /></InputAdornment>,
-                  }}
-                />
-                <TextField
-                  label="Reason"
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  sx={{ flex: 1 }}
-                  InputProps={{
-                    startAdornment: <InputAdornment position="start"><Description sx={{ fontSize: 20 }} /></InputAdornment>,
-                  }}
-                />
-              </Stack>
-              
-              <TextField
-                label="Rider IDs (comma-separated, optional)"
-                value={riderIds}
-                onChange={(e) => setRiderIds(e.target.value)}
-                fullWidth
-                multiline
-                rows={2}
-                InputProps={{
-                  startAdornment: <InputAdornment position="start"><People sx={{ fontSize: 20 }} /></InputAdornment>,
-                }}
-              />
-              
-              <Autocomplete
-                multiple
-                options={riderOptions}
-                getOptionLabel={(option) => `${option.name || option.username || option.employeeID} (${option.employeeID || option._id})`}
-                value={selectedRiders}
-                onChange={(_, newValue) => setSelectedRiders(newValue)}
-                onInputChange={async (_, query) => {
-                  setRiderQuery(query);
-                  if (query && query.length >= 2) {
-                    try {
-                      const riders = await searchRiders(query);
-                      setRiderOptions(riders);
-                    } catch (e) {
-                      setRiderOptions([]);
-                    }
-                  } else {
-                    setRiderOptions([]);
-                  }
-                }}
-                renderTags={(value, getTagProps) =>
-                  value.map((option, index) => (
-                    <Chip
-                      {...getTagProps({ index })}
-                      key={option._id}
-                      label={option.name || option.username || option.employeeID}
-                      size="small"
-                      sx={{ 
-                        bgcolor: '#e3f2fd', 
-                        color: '#1976d2',
-                        '& .MuiChip-deleteIcon': { color: '#1976d2' }
-                      }}
-                    />
-                  ))
-                }
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Search Riders (name, username, employee ID)"
-                    placeholder="Type to search riders..."
-                    InputProps={{
-                      ...params.InputProps,
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <People sx={{ fontSize: 20 }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                )}
-                sx={{ 
-                  '& .MuiOutlinedInput-root': {
-                    minHeight: '56px'
-                  }
-                }}
-              />
-
-              {selectedRiders.length > 0 && (
-                <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
-                  {selectedRiders.map((r) => (
-                    <Chip
-                      key={r._id}
-                      label={`${r.name || r.username || r.employeeID} (${r.employeeID || r._id})`}
-                      onDelete={() => setSelectedRiders(selectedRiders.filter(x => x._id !== r._id))}
-                      sx={{ mb: 1 }}
-                    />
-                  ))}
-                </Stack>
-              )}
-              
-              <Box>
-                <Button
-                  variant="contained"
-                  onClick={onBonus}
-                  disabled={loading}
-                  size="large"
-                  sx={{
-                    px: 4,
-                    py: 1.5,
-                    borderRadius: 2,
-                    textTransform: 'none',
-                    fontSize: '1rem',
-                    fontWeight: 500
-                  }}
                 >
-                  {loading ? 'Processing...' : 'Process Payout'}
-                </Button>
-              </Box>
+                  {err}
+                </Alert>
+              )}
+              {msg && (
+                <Alert 
+                  severity="success" 
+                  sx={{ mb: 2, borderRadius: 2, boxShadow: '0 4px 12px rgba(76, 175, 80, 0.15)' }}
+                  action={
+                    <IconButton size="small" onClick={() => setMsg('')}>
+                      <CheckCircle />
+                    </IconButton>
+                  }
+                >
+                  {msg}
+                </Alert>
+              )}
             </Box>
-          </Box>
-        </Paper>
+          </Fade>
+        </Box>
 
-        {/* Transactions Table */}
-        <Paper elevation={0} sx={{ border: '1px solid #e0e0e0', borderRadius: 3 }}>
-          <Box sx={{ p: 4 }}>
-            <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
-              <History sx={{ color: '#1976d2' }} />
-              <Typography variant="h6" sx={{  fontWeight: 500 }}>
-                Transaction History
-              </Typography>
-            </Stack>
-            
-            <Box sx={{ overflow: 'auto' }}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 600, color: '#666', borderBottom: '2px solid #e0e0e0' }}>
-                      Date & Time
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: '#666', borderBottom: '2px solid #e0e0e0' }}>
-                      Type
-                    </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '2px solid #e0e0e0' }}>
-                      Amount
-                    </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '2px solid #e0e0e0' }}>
-                      Balance After
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: '#666', borderBottom: '2px solid #e0e0e0' }}>
-                      Buyer/Payee
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: '#666', borderBottom: '2px solid #e0e0e0' }}>
-                      Source
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: '#666', borderBottom: '2px solid #e0e0e0' }}>
-                      Description
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: '#666', borderBottom: '2px solid #e0e0e0' }}>
-                      Deduction Details
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {tx.map((row, index) => (
-                    <TableRow 
-                      key={row._id}
-                      sx={{ 
-                        
-                        borderBottom: index === tx.length - 1 ? 'none' : '1px solid #f0f0f0'
-                      }}
-                    >
-                      <TableCell sx={{ py: 3 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          {new Date(row.createdAt).toLocaleDateString()}
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: '#666' }}>
-                          {new Date(row.createdAt).toLocaleTimeString()}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={row.type}
-                          size="small"
-                          sx={{
-                            // bgcolor: row.type === 'credit' ? '#5ce15cff' : '#e04646ff',
-                            color: getTransactionColor(row.type),
-                            fontWeight: 800,
-                            
-                            minWidth: 70
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography 
-                          variant="body2" 
-                          sx={{ 
-                            fontWeight: 600,
-                            color: getTransactionColor(row.type)
-                          }}
-                        >
-                          {formatCurrency(Math.abs(row.amount))}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          {formatCurrency(row.balanceAfter)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Box>
-                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                            {row.riderInfo?.name || row.riderName || 'Unknown'}
-                          </Typography>
-                          <Typography variant="caption" sx={{ color: '#666' }}>
-                            ID: {row.riderInfo?.employeeId || row.riderEmployeeId || 'N/A'}
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={row.source?.kind || '-'}
-                          size="small"
-                          sx={{
-                            bgcolor: row.source?.kind === 'job_deductions' ? '#ff9800' : '#e0e0e0',
-                            color: row.source?.kind === 'job_deductions' ? 'white' : '#666',
-                            fontWeight: 600
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">
-                          {row.title}
-                        </Typography>
-                        {row.jobContext && (
-                          <Typography variant="caption" sx={{ color: '#666', display: 'block' }}>
-                            Revenue: €{row.jobContext.revenue?.toLocaleString() || 0} | 
-                            Server: {row.jobContext.server || 'Unknown'} | 
-                            Speed: {row.jobContext.topSpeedKmh || 0} km/h
-                          </Typography>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {row.deductionDetails ? (
-                          <Box>
-                            <Typography variant="caption" sx={{ color: '#666', display: 'block' }}>
-                              Base: {row.deductionDetails.baseTokens} → Final: {row.deductionDetails.finalTokens}
-                            </Typography>
-                            <Box sx={{ mt: 0.5 }}>
-                              {row.deductionDetails.cargoDamage > 0 && (
-                                <Chip label={`Cargo: ${row.deductionDetails.cargoDamage}`} size="small" sx={{ mr: 0.5, mb: 0.5, fontSize: '0.7rem' }} />
-                              )}
-                              {row.deductionDetails.autoPark > 0 && (
-                                <Chip label={`Auto: ${row.deductionDetails.autoPark}`} size="small" sx={{ mr: 0.5, mb: 0.5, fontSize: '0.7rem' }} />
-                              )}
-                              {row.deductionDetails.speedViolation > 0 && (
-                                <Chip label={`Speed: ${row.deductionDetails.speedViolation}`} size="small" sx={{ mr: 0.5, mb: 0.5, fontSize: '0.7rem' }} />
-                              )}
-                              {row.deductionDetails.fixedTax > 0 && (
-                                <Chip label={`Tax: ${row.deductionDetails.fixedTax}`} size="small" sx={{ mr: 0.5, mb: 0.5, fontSize: '0.7rem' }} />
-                              )}
-                            </Box>
-                          </Box>
-                        ) : (
-                          <Typography variant="body2" sx={{ color: '#999' }}>
-                            -
-                          </Typography>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Box>
+        {/* Key Metrics Cards */}
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} md={3}>
+            <Card sx={{ 
+              height: '100%', 
+              borderRadius: 3, 
+              background: 'linear-gradient(135deg, #4facfe 0%,rgb(219, 207, 30) 100%)',
+              color: 'white',
+              boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <Box sx={{ position: 'absolute', top: -20, right: -20, opacity: 0.1 }}>
+                <AccountBalance sx={{ fontSize: 120 }} />
+              </Box>
+              <CardContent sx={{ position: 'relative', zIndex: 1 }}>
+                <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 500, opacity: 0.9 }}>
+                    Total Balance
+                  </Typography>
+                  <TrendingUp sx={{ fontSize: 28 }} />
+                </Stack>
+                <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
+                  {formatCurrency(balance)}
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                  Current available funds
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} md={3}>
+            <Card sx={{ 
+              height: '100%', 
+              borderRadius: 3, 
+              background: 'linear-gradient(135deg, #4facfe 0%,rgb(219, 207, 30) 100%)',
+              color: 'white',
+              boxShadow: '0 8px 32px rgba(240, 147, 251, 0.3)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <Box sx={{ position: 'absolute', top: -20, right: -20, opacity: 0.1 }}>
+                <TrendingDown sx={{ fontSize: 120 }} />
+              </Box>
+              <CardContent sx={{ position: 'relative', zIndex: 1 }}>
+                <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 500, opacity: 0.9 }}>
+                    Job Deductions
+                  </Typography>
+                  <LocalShipping sx={{ fontSize: 28 }} />
+                </Stack>
+                <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
+                  {formatCurrency(metrics.totalDeductions)}
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                  {metrics.jobCount} jobs processed
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} md={3}>
+            <Card sx={{ 
+              height: '100%', 
+              borderRadius: 3, 
+              background: 'linear-gradient(135deg, #4facfe 0%,rgb(219, 207, 30) 100%)',
+              color: 'white',
+              boxShadow: '0 8px 32px rgba(79, 172, 254, 0.3)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <Box sx={{ position: 'absolute', top: -20, right: -20, opacity: 0.1 }}>
+                <MonetizationOn sx={{ fontSize: 120 }} />
+              </Box>
+              <CardContent sx={{ position: 'relative', zIndex: 1 }}>
+                <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 500, opacity: 0.9 }}>
+                    Total Credits
+                  </Typography>
+                  <TrendingUp sx={{ fontSize: 28 }} />
+                </Stack>
+                <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
+                  {formatCurrency(metrics.totalCredits)}
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                  {metrics.creditCount} transactions
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} md={3}>
+            <Card sx={{ 
+              height: '100%', 
+              borderRadius: 3, 
+                background: 'linear-gradient(135deg, #4facfe 0%,rgb(219, 207, 30) 100%)',
+              color: 'white',
+              boxShadow: '0 8px 32px rgba(67, 233, 123, 0.3)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <Box sx={{ position: 'absolute', top: -20, right: -20, opacity: 0.1 }}>
+                <Gavel sx={{ fontSize: 120 }} />
+              </Box>
+              <CardContent sx={{ position: 'relative', zIndex: 1 }}>
+                <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 500, opacity: 0.9 }}>
+                    Admin Deductions
+                  </Typography>
+                  <Gavel sx={{ fontSize: 28 }} />
+                </Stack>
+                <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
+                  {formatCurrency(metrics.totalAdminDeductions)}
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                  {metrics.adminDeductionCount} manual deductions
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        {/* Main Content Tabs */}
+        <Card sx={{ borderRadius: 3, boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)' }}>
+          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <Tabs 
+              value={activeTab} 
+              onChange={(e, newValue) => setActiveTab(newValue)}
+              sx={{ px: 3 }}
+            >
+              <Tab 
+                label="Transaction Management" 
+                icon={<Receipt />} 
+                iconPosition="start"
+                sx={{ textTransform: 'none', fontWeight: 500 }}
+              />
+              <Tab 
+                label="Quick Actions" 
+                icon={<Add />} 
+                iconPosition="start"
+                sx={{ textTransform: 'none', fontWeight: 500 }}
+              />
+              <Tab 
+                label="Analytics" 
+                icon={<Assessment />} 
+                iconPosition="start"
+                sx={{ textTransform: 'none', fontWeight: 500 }}
+              />
+            </Tabs>
           </Box>
-        </Paper>
+
+          <CardContent sx={{ p: 0 }}>
+            {/* Transaction Management Tab */}
+            {activeTab === 0 && (
+              <Box sx={{ p: 3 }}>
+                {/* Transaction List Header */}
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#666' }}>
+                    Recent Transactions ({tx.length} of {allTransactions.length} total)
+                  </Typography>
+                </Box>
+
+                {/* Transactions List */}
+                {loading ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+                    <CircularProgress size={60} />
+                  </Box>
+                ) : (
+                  <Box>
+                    {tx.map((transaction, index) => (
+                      <Card 
+                        key={transaction._id}
+                        sx={{ 
+                          mb: 2, 
+                          borderRadius: 2, 
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease-in-out',
+                          '&:hover': {
+                            boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)',
+                            transform: 'translateY(-2px)'
+                          }
+                        }}
+                        onClick={() => openTransactionDialog(transaction)}
+                      >
+                        <CardContent sx={{ p: 3 }}>
+                          <Stack direction="row" alignItems="center" justifyContent="space-between">
+                            <Stack direction="row" alignItems="center" spacing={3}>
+                              <Avatar sx={{ 
+                                bgcolor: transaction.type === 'credit' ? '#4caf50' : '#f44336',
+                                width: 48,
+                                height: 48
+                              }}>
+                                {transaction.type === 'credit' ? <Add /> : <Remove />}
+                              </Avatar>
+                              <Box>
+                                <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+                                  {transaction.title}
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: '#666', mb: 1 }}>
+                                  {transaction.riderInfo?.name || transaction.riderName || 'Unknown Rider'}
+                                </Typography>
+                                <Stack direction="row" spacing={1}>
+                                  <Chip 
+                                    label={transaction.type} 
+                                    size="small" 
+                                    color={transaction.type === 'credit' ? 'success' : 'error'}
+                                    sx={{ fontWeight: 600 }}
+                                  />
+                                  <Chip 
+                                    label={transaction.source?.kind || 'Unknown'} 
+                                    size="small" 
+                                    variant="outlined"
+                                  />
+                                </Stack>
+                              </Box>
+                            </Stack>
+                            
+                            <Box sx={{ textAlign: 'right' }}>
+                              <Typography 
+                                variant="h5" 
+                                sx={{ 
+                                  fontWeight: 700,
+                                  color: transaction.type === 'credit' ? '#4caf50' : '#f44336'
+                                }}
+                              >
+                                {transaction.type === 'credit' ? '+' : '-'}{formatCurrency(Math.abs(transaction.amount))}
+                              </Typography>
+                              <Typography variant="body2" sx={{ color: '#666' }}>
+                                {new Date(transaction.createdAt).toLocaleDateString()}
+                              </Typography>
+                            </Box>
+                          </Stack>
+                        </CardContent>
+                      </Card>
+                    ))}
+                    
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                        <Pagination
+                          count={totalPages}
+                          page={currentPage}
+                          onChange={handlePageChange}
+                          color="primary"
+                          size="large"
+                        />
+                      </Box>
+                    )}
+                  </Box>
+                )}
+              </Box>
+            )}
+
+            {/* Quick Actions Tab */}
+            {activeTab === 1 && (
+              <Box sx={{ p: 3 }}>
+                <Grid container spacing={3}>
+                  {/* Bonus Payout */}
+                  <Grid item xs={12} md={6}>
+                    <Card sx={{ height: '100%', borderRadius: 2 }}>
+                      <CardContent>
+                        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
+                          <Box sx={{ 
+                            p: 1.5, 
+                            borderRadius: 2, 
+                            bgcolor: '#e3f2fd',
+                            color: '#1976d2'
+                          }}>
+                            <Add />
+                          </Box>
+                          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                            Bonus Payout
+                          </Typography>
+                        </Stack>
+                        
+                        <Stack spacing={3}>
+                          <TextField
+                            label="Amount"
+                            value={amount}
+                            onChange={(e) => setAmount(e.target.value)}
+                            type="number"
+                            InputProps={{
+                              startAdornment: <InputAdornment position="start"><AttachMoney /></InputAdornment>,
+                            }}
+                          />
+                          <TextField
+                            label="Reason"
+                            value={reason}
+                            onChange={(e) => setReason(e.target.value)}
+                            InputProps={{
+                              startAdornment: <InputAdornment position="start"><Description /></InputAdornment>,
+                            }}
+                          />
+                          <Autocomplete
+                            multiple
+                            options={riderOptions}
+                            getOptionLabel={(option) => `${option.name || option.username || option.employeeID} (${option.employeeID || option._id})`}
+                            value={selectedRiders}
+                            onChange={(_, newValue) => setSelectedRiders(newValue)}
+                            onInputChange={async (_, query) => {
+                              setRiderQuery(query);
+                              if (query && query.length >= 2) {
+                                try {
+                                  const riders = await searchRiders(query);
+                                  setRiderOptions(riders);
+                                } catch (e) {
+                                  setRiderOptions([]);
+                                }
+                              } else {
+                                setRiderOptions([]);
+                              }
+                            }}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                label="Select Riders"
+                                placeholder="Search riders..."
+                                InputProps={{
+                                  ...params.InputProps,
+                                  startAdornment: <InputAdornment position="start"><People /></InputAdornment>,
+                                }}
+                              />
+                            )}
+                          />
+                          <Button
+                            variant="contained"
+                            onClick={onBonus}
+                            disabled={loading}
+                            size="large"
+                            sx={{ 
+                              borderRadius: 2, 
+                              textTransform: 'none',
+                              py: 1.5,
+                              background: 'linear-gradient(135deg, #4caf50 0%, #45a049 100%)',
+                              '&:hover': {
+                                background: 'linear-gradient(135deg, #45a049 0%, #3d8b40 100%)',
+                              }
+                            }}
+                          >
+                            {loading ? 'Processing...' : 'Process Payout'}
+                          </Button>
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+
+                  {/* Money Deduction */}
+                  <Grid item xs={12} md={6}>
+                    <Card sx={{ height: '100%', borderRadius: 2 }}>
+                      <CardContent>
+                        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
+                          <Box sx={{ 
+                            p: 1.5, 
+                            borderRadius: 2, 
+                            bgcolor: '#ffebee',
+                            color: '#d32f2f'
+                          }}>
+                            <Remove />
+                          </Box>
+                          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                            Money Deduction
+                          </Typography>
+                        </Stack>
+                        
+                        <Stack spacing={3}>
+                          <TextField
+                            label="Amount to Deduct"
+                            value={deductAmount}
+                            onChange={(e) => setDeductAmount(e.target.value)}
+                            type="number"
+                            InputProps={{
+                              startAdornment: <InputAdornment position="start"><AttachMoney /></InputAdornment>,
+                            }}
+                          />
+                          <TextField
+                            label="Reason for Deduction"
+                            value={deductReason}
+                            onChange={(e) => setDeductReason(e.target.value)}
+                            InputProps={{
+                              startAdornment: <InputAdornment position="start"><Description /></InputAdornment>,
+                            }}
+                          />
+                          <Autocomplete
+                            multiple
+                            options={deductRiderOptions}
+                            getOptionLabel={(option) => `${option.name || option.username || option.employeeID} (${option.employeeID || option._id})`}
+                            value={selectedDeductRiders}
+                            onChange={(_, newValue) => setSelectedDeductRiders(newValue)}
+                            onInputChange={async (_, query) => {
+                              setDeductRiderQuery(query);
+                              if (query && query.length >= 2) {
+                                try {
+                                  const riders = await searchRiders(query);
+                                  setDeductRiderOptions(riders);
+                                } catch (e) {
+                                  setDeductRiderOptions([]);
+                                }
+                              } else {
+                                setDeductRiderOptions([]);
+                              }
+                            }}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                label="Select Riders"
+                                placeholder="Search riders..."
+                                InputProps={{
+                                  ...params.InputProps,
+                                  startAdornment: <InputAdornment position="start"><People /></InputAdornment>,
+                                }}
+                              />
+                            )}
+                          />
+                          <Button
+                            variant="contained"
+                            color="error"
+                            onClick={onDeduct}
+                            disabled={deductLoading}
+                            size="large"
+                            sx={{ 
+                              borderRadius: 2, 
+                              textTransform: 'none',
+                              py: 1.5
+                            }}
+                          >
+                            {deductLoading ? 'Processing...' : 'Process Deduction'}
+                          </Button>
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+              </Box>
+            )}
+
+            {/* Analytics Tab */}
+            {activeTab === 2 && (
+              <Box sx={{ p: 3 }}>
+                <Typography variant="h5" sx={{ fontWeight: 600, mb: 3 }}>
+                  Financial Analytics
+                </Typography>
+                
+                <Grid container spacing={3}>
+                  <Grid item xs={12} md={6}>
+                    <Card sx={{ borderRadius: 2 }}>
+                      <CardContent>
+                        <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                          Deduction Breakdown
+                        </Typography>
+                        {(() => {
+                          const jobDeductions = allTransactions.filter(t => t.source?.kind === 'job_deductions');
+                          const deductionBreakdown = jobDeductions.reduce((acc, t) => {
+                            if (t.deductionDetails) {
+                              acc.cargoDamage += t.deductionDetails.cargoDamage || 0;
+                              acc.autoPark += t.deductionDetails.autoPark || 0;
+                              acc.speedViolation += t.deductionDetails.speedViolation || 0;
+                              acc.fixedTax += t.deductionDetails.fixedTax || 0;
+                            }
+                            return acc;
+                          }, { cargoDamage: 0, autoPark: 0, speedViolation: 0, fixedTax: 0 });
+
+                          return (
+                            <Stack spacing={2}>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Stack direction="row" alignItems="center" spacing={1}>
+                                  <Build sx={{ color: '#ff9800', fontSize: 20 }} />
+                                  <Typography variant="body2">Cargo Damage</Typography>
+                                </Stack>
+                                <Typography variant="h6" sx={{ fontWeight: 600, color: '#ff9800' }}>
+                                  {deductionBreakdown.cargoDamage}
+                                </Typography>
+                              </Box>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Stack direction="row" alignItems="center" spacing={1}>
+                                  <Park sx={{ color: '#9c27b0', fontSize: 20 }} />
+                                  <Typography variant="body2">Auto-Park</Typography>
+                                </Stack>
+                                <Typography variant="h6" sx={{ fontWeight: 600, color: '#9c27b0' }}>
+                                  {deductionBreakdown.autoPark}
+                                </Typography>
+                              </Box>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Stack direction="row" alignItems="center" spacing={1}>
+                                  <SpeedIcon sx={{ color: '#f44336', fontSize: 20 }} />
+                                  <Typography variant="body2">Speed Violation</Typography>
+                                </Stack>
+                                <Typography variant="h6" sx={{ fontWeight: 600, color: '#f44336' }}>
+                                  {deductionBreakdown.speedViolation}
+                                </Typography>
+                              </Box>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Stack direction="row" alignItems="center" spacing={1}>
+                                  <Receipt sx={{ color: '#4caf50', fontSize: 20 }} />
+                                  <Typography variant="body2">Fixed Tax</Typography>
+                                </Stack>
+                                <Typography variant="h6" sx={{ fontWeight: 600, color: '#4caf50' }}>
+                                  {deductionBreakdown.fixedTax}
+                                </Typography>
+                              </Box>
+                            </Stack>
+                          );
+                        })()}
+                      </CardContent>
+                    </Card>
+                  </Grid>
+
+                  <Grid item xs={12} md={6}>
+                    <Card sx={{ borderRadius: 2 }}>
+                      <CardContent>
+                        <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                          Transaction Summary
+                        </Typography>
+                        <Stack spacing={2}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Typography variant="body2">Total Transactions</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                              {allTransactions.length}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Typography variant="body2">Job Deductions</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: '#f44336' }}>
+                              {metrics.jobCount}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Typography variant="body2">Credits</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: '#4caf50' }}>
+                              {metrics.creditCount}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Typography variant="body2">Admin Actions</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: '#ff9800' }}>
+                              {metrics.adminDeductionCount}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+              </Box>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Transaction Detail Dialog */}
+        <Dialog 
+          open={transactionDialogOpen} 
+          onClose={() => setTransactionDialogOpen(false)}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>
+            <Stack direction="row" alignItems="center" spacing={2}>
+              <Receipt />
+              <Typography variant="h6">Transaction Details</Typography>
+            </Stack>
+          </DialogTitle>
+          <DialogContent>
+            {selectedTransaction && (
+              <Stack spacing={3}>
+                <Box>
+                  <Typography variant="subtitle2" sx={{ color: '#666', mb: 1 }}>Description</Typography>
+                  <Typography variant="body1">{selectedTransaction.title}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" sx={{ color: '#666', mb: 1 }}>Amount</Typography>
+                  <Typography 
+                    variant="h5" 
+                    sx={{ 
+                      fontWeight: 600,
+                      color: selectedTransaction.type === 'credit' ? '#4caf50' : '#f44336'
+                    }}
+                  >
+                    {selectedTransaction.type === 'credit' ? '+' : '-'}{formatCurrency(Math.abs(selectedTransaction.amount))}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" sx={{ color: '#666', mb: 1 }}>Rider</Typography>
+                  <Typography variant="body1">
+                    {selectedTransaction.riderInfo?.name || selectedTransaction.riderName || 'Unknown'}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" sx={{ color: '#666', mb: 1 }}>Date & Time</Typography>
+                  <Typography variant="body1">
+                    {new Date(selectedTransaction.createdAt).toLocaleString()}
+                  </Typography>
+                </Box>
+                {selectedTransaction.deductionDetails && (
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ color: '#666', mb: 1 }}>Deduction Details</Typography>
+                    <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
+                      {selectedTransaction.deductionDetails.cargoDamage > 0 && (
+                        <Chip label={`Cargo: ${selectedTransaction.deductionDetails.cargoDamage}`} size="small" />
+                      )}
+                      {selectedTransaction.deductionDetails.autoPark > 0 && (
+                        <Chip label={`Auto: ${selectedTransaction.deductionDetails.autoPark}`} size="small" />
+                      )}
+                      {selectedTransaction.deductionDetails.speedViolation > 0 && (
+                        <Chip label={`Speed: ${selectedTransaction.deductionDetails.speedViolation}`} size="small" />
+                      )}
+                      {selectedTransaction.deductionDetails.fixedTax > 0 && (
+                        <Chip label={`Tax: ${selectedTransaction.deductionDetails.fixedTax}`} size="small" />
+                      )}
+                    </Stack>
+                  </Box>
+                )}
+              </Stack>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setTransactionDialogOpen(false)}>Close</Button>
+          </DialogActions>
+        </Dialog>
       </Container>
     </Box>
   );

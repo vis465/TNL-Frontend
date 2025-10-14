@@ -12,6 +12,9 @@ import {
   useTheme,
   IconButton,
   Tooltip,
+  AppBar,
+  Toolbar,
+  MenuIcon,
 } from '@mui/material';
 import {
   EmojiEvents,
@@ -22,10 +25,13 @@ import {
   Assignment,
   Timeline,
   Assessment,
+  Menu as MenuMui,
 } from '@mui/icons-material';
+import AdminSidebar from '../components/AdminSidebar';
 
 const AdminDashboard = () => {
   const [user, setUser] = useState(null);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -40,6 +46,14 @@ const AdminDashboard = () => {
       }
     }
   }, []);
+
+  const handleMobileDrawerToggle = () => {
+    setMobileDrawerOpen(!mobileDrawerOpen);
+  };
+
+  const handleMobileDrawerClose = () => {
+    setMobileDrawerOpen(false);
+  };
 
   const managementCards = [
     {
@@ -117,11 +131,39 @@ const AdminDashboard = () => {
   ];
 
   return (
-    <Container maxWidth="xl" sx={{
-      px: { xs: 1, sm: 2, md: 3 },
-      pt: { xs: 8, sm: 9 },
-      pb: 3
-    }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex' }}>
+      <AdminSidebar 
+        mobileDrawerOpen={mobileDrawerOpen}
+        handleMobileDrawerClose={handleMobileDrawerClose}
+        user={user}
+      />
+
+      <Box sx={{ flex: 1 }}>
+        {/* Mobile Header */}
+        {isMobile && (
+          <AppBar position="sticky" sx={{ display: { xs: 'block', md: 'none' } }}>
+            <Toolbar>
+              <IconButton
+                color="inherit"
+                aria-label="open drawer"
+                edge="start"
+                onClick={handleMobileDrawerToggle}
+                sx={{ mr: 2 }}
+              >
+                <MenuMui />
+              </IconButton>
+              <Typography variant="h6" noWrap component="div">
+                Admin Dashboard
+              </Typography>
+            </Toolbar>
+          </AppBar>
+        )}
+
+        <Container maxWidth="xl" sx={{
+          px: { xs: 1, sm: 2, md: 3 },
+          pt: { xs: 8, sm: 9 },
+          pb: 3
+        }}>
       {/* Header */}
       <Box sx={{
         display: 'flex',
@@ -249,7 +291,9 @@ const AdminDashboard = () => {
 
       {/* Quick Stats or Additional Info */}
 
-    </Container>
+        </Container>
+      </Box>
+    </Box>
   );
 };
 

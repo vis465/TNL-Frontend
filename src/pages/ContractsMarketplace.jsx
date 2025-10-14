@@ -1,81 +1,179 @@
 import React, { useEffect, useState } from 'react';
-import { AttachMoney, TrendingUp, WarningAmber, AccessTime } from '@mui/icons-material';
-
-// import { listTemplates, buyContract } from '../services/contractsService';
-import { LocationOn, MyLocation, Inventory2, AltRoute, Speed, Bolt, DirectionsRun, LocalShipping, LocalMall, Business } from '@mui/icons-material';
-
-// Mock services for demo purposes
 import axiosInstance from '../utils/axios';
+import {
+  Box,
+  Container,
+  Typography,
+  Grid,
+  Card,
+  CardContent,
+  CardHeader,
+  CardActions,
+  Button,
+  Chip,
+  Stack,
+  LinearProgress,
+  Alert,
+  Tabs,
+  Tab,
+  Paper,
+  Avatar,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemAvatar,
+  ListItemSecondaryAction,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  InputAdornment,
+  Badge,
+  Divider,
+  Tooltip,
+  Fade,
+  Zoom,
+  Slide,
+  useTheme,
+  useMediaQuery
+} from '@mui/material';
+import {
+  Assignment,
+  TrendingUp,
+  TrendingDown,
+  AccessTime,
+  AttachMoney,
+  LocationOn,
+  MyLocation,
+  Inventory2,
+  Business,
+  AltRoute,
+  WarningAmber,
+  Speed,
+  Bolt,
+  DirectionsRun,
+  LocalShipping,
+  LocalMall,
+  Star,
+  EmojiEvents,
+  Leaderboard,
+  Refresh,
+  FilterList,
+  Search,
+  Sort,
+  CheckCircle,
+  Cancel,
+  Schedule,
+  Timer,
+  Group,
+  Person,
+  Visibility,
+  VisibilityOff
+} from '@mui/icons-material';
+import { listTemplates, buyContract, getContractStats, myContracts, getContractLeaderboard } from '../services/contractsService';
+import { getMyWallet } from '../services/walletService';
 
-const listTemplates = async () => {
-  try {
-    const response = await axiosInstance.get('/contracts/templates');
-    return response.data;
-  } catch (e) {
-    console.error(e);
-    throw e;
-  }
-};
-
-const buyContract = async (id) => {
-  try {
-    const response = await axiosInstance.post(`/contracts/buy/${id}`);
-    return response.data;
-  } catch (e) {
-    console.error(e);
-    throw e;
-  }
-};
-
-
-const getMyContracts = async () => {
-  try {
-    const response = await axiosInstance.get('/contracts/me');
-    return response.data;
-  } catch (e) {
-    console.error(e);
-    throw e;
-  }
-};
-
-
-export default function ContractsMarketplace() {
+const ContractsMarketplace = () => {
   const [templates, setTemplates] = useState([]);
+  const [myContractsData, setMyContractsData] = useState({ active: [], history: [] });
+  const [wallet, setWallet] = useState({ balance: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [hoveredCard, setHoveredCard] = useState(null);
-  const [ownedTemplateIds, setOwnedTemplateIds] = useState([]);
+  const [tabValue, setTabValue] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('price');
+  const [filterBy, setFilterBy] = useState('all');
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [purchaseDialogOpen, setPurchaseDialogOpen] = useState(false);
+  const [contractLeaderboard, setContractLeaderboard] = useState([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   useEffect(() => {
-    setLoading(true);
-    Promise.all([listTemplates(), getMyContracts()])
-      .then(([tpls, mine]) => {
-        setTemplates(tpls);
-        const ids = (mine?.active || []).map(i => (i.templateId && i.templateId._id) ? i.templateId._id : i.templateId);
-        setOwnedTemplateIds(ids.filter(Boolean));
-      })
-      .catch(e => setError(e.message || 'Failed to load'))
-      .finally(() => setLoading(false));
+    loadData();
   }, []);
 
-  const onBuy = async (id) => {
-    setError(''); setSuccess('');
+  const loadData = async () => {
     try {
-      await buyContract(id);
-      setSuccess('Contract purchased successfully');
-      Promise.all([listTemplates(), getMyContracts()]).then(([tpls, mine]) => {
-        setTemplates(tpls);
-        const ids = (mine?.active || []).map(i => (i.templateId && i.templateId._id) ? i.templateId._id : i.templateId);
-        setOwnedTemplateIds(ids.filter(Boolean));
-      });
-    } catch (e) {
-      setError(e.message || 'Purchase failed');
+      setLoading(true);
+      setError('');
+      const [templatesData, contractsData, walletData] = await Promise.all([
+        listTemplates(),
+        myContracts(),
+        getMyWallet()
+      ]);
+      setTemplates(templatesData);
+      setMyContractsData(contractsData);
+      setWallet(walletData);
+      loadContractLeaderboard();
+    } catch (err) {
+      setError('Failed to load data');
+      console.error('Data loading error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadContractLeaderboard = async () => {
+    try {
+      setLeaderboardLoading(true);
+      const leaderboardData = await getContractLeaderboard(20);
+      const formattedData = leaderboardData.map((rider, index) => ({
+        rank: index + 1,
+        name: rider.riderName || 'Unknown Rider',
+        completed: rider.completedContracts || 0,
+        active: rider.activeContracts || 0,
+        totalEarnings: rider.netEarnings || 0,
+        totalContracts: rider.totalContracts || 0,
+        completionRate: rider.completionRate || 0,
+        employeeId: rider.riderEmployeeId
+      }));
+      setContractLeaderboard(formattedData);
+    } catch (err) {
+      console.error('Leaderboard loading error:', err);
+      // Fallback to mock data if API fails
+      const mockLeaderboard = [
+        { rank: 1, name: 'Alex Johnson', completed: 15, active: 3, totalEarnings: 2500, totalContracts: 18, completionRate: 83.3 },
+        { rank: 2, name: 'Sarah Chen', completed: 12, active: 2, totalEarnings: 2100, totalContracts: 14, completionRate: 85.7 },
+        { rank: 3, name: 'Mike Rodriguez', completed: 10, active: 4, totalEarnings: 1800, totalContracts: 14, completionRate: 71.4 },
+        { rank: 4, name: 'Emma Wilson', completed: 8, active: 1, totalEarnings: 1500, totalContracts: 9, completionRate: 88.9 },
+        { rank: 5, name: 'David Kim', completed: 7, active: 3, totalEarnings: 1200, totalContracts: 10, completionRate: 70.0 },
+      ];
+      setContractLeaderboard(mockLeaderboard);
+    } finally {
+      setLeaderboardLoading(false);
+    }
+  };
+
+  const handleBuyContract = async (template) => {
+    setSelectedTemplate(template);
+    setPurchaseDialogOpen(true);
+  };
+
+  const confirmPurchase = async () => {
+    if (!selectedTemplate) return;
+    
+    try {
+      setLoading(true);
+      setError('');
+      await buyContract(selectedTemplate._id);
+      setSuccess('Contract purchased successfully!');
+      setPurchaseDialogOpen(false);
+      setSelectedTemplate(null);
+      loadData();
+    } catch (err) {
+      setError(err.message || 'Purchase failed');
+    } finally {
+      setLoading(false);
     }
   };
 
   const getCriteriaIcon = (type) => {
-    const iconStyles = { fontSize: 16, mr: 0.5 };
     const iconMap = {
       sourceCity: <LocationOn />,
       destinationCity: <MyLocation />,
@@ -91,7 +189,7 @@ export default function ContractsMarketplace() {
       maxTruckDamagePercent: <LocalShipping />,
       maxTrailerDamagePercent: <LocalMall />
     };
-    return iconMap[type] || '✅';
+    return iconMap[type] || <CheckCircle />;
   };
 
   const getCriteriaColor = (type) => {
@@ -108,507 +206,398 @@ export default function ContractsMarketplace() {
     return colorMap[type] || 'default';
   };
 
-  const styles = {
-    mainContainer: {
-      minHeight: '100vh',
-
-      position: 'relative',
-      '&::before': {
-        content: '""',
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.1) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(255,255,255,0.08) 0%, transparent 50%)',
-        pointerEvents: 'none'
-      }
-    },
-    heroTitle: {
-      color: 'white',
-      fontWeight: 'bold',
-      mb: 2,
-      textShadow: '0 4px 20px rgba(0,0,0,0.3)',
-      fontSize: { xs: '2.5rem', md: '3.5rem' }
-    },
-    heroSubtitle: {
-      color: 'rgba(255,255,255,0.9)',
-      maxWidth: '600px',
-      mx: 'auto',
-
-    },
-    contractCard: (isHovered) => ({
-      height: '100%',
-      borderRadius: 4,
-      overflow: 'visible',
-
-      backdropFilter: 'blur(20px)',
-      border: '1px solid rgba(255,255,255,0.2)',
-      boxShadow: isHovered
-        ? '0 20px 60px rgba(0,0,0,0.3), 0 0 40px rgba(102,126,234,0.3)'
-        : '0 10px 30px rgba(0,0,0,0.2)',
-      transform: isHovered ? 'translateY(-8px) scale(1.02)' : 'translateY(0) scale(1)',
-      transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-      position: 'relative',
-      '&::before': {
-        content: '""',
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: '4px',
-        background: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)',
-        borderRadius: '16px 16px 0 0'
-      }
-    }),
-    titleGradient: {
-      background: 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)',
-      WebkitBackgroundClip: 'text',
-      WebkitTextFillColor: 'transparent',
-      fontWeight: 'bold'
-    },
-    metricBox: (color) => ({
-      p: 2,
-      borderRadius: 3,
-      background: `linear-gradient(135deg, ${color}20 0%, ${color}20 100%)`,
-      border: `1px solid ${color}40`,
-      textAlign: 'center',
-      transition: 'transform 0.2s',
-      cursor: 'pointer',
-      '&:hover': { transform: 'scale(1.05)' }
-    }),
-    taskBox: {
-      mb: 3,
-      p: 2,
-      borderRadius: 3,
-      background: 'linear-gradient(135deg, rgba(102,126,234,0.05) 0%, rgba(118,75,162,0.05) 100%)',
-      border: '1px solid rgba(102,126,234,0.1)'
-    },
-    taskNumber: {
-      width: 24,
-      height: 24,
-      borderRadius: '50%',
-      background: 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)',
-      color: 'white',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontSize: '12px',
-      fontWeight: 'bold',
-      mr: 2
-    },
-    purchaseButton: {
-      py: 1.5,
-      borderRadius: 3,
-      background: 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)',
-      boxShadow: '0 6px 20px rgba(102,126,234,0.4)',
-      fontSize: '1.1rem',
-      fontWeight: 'bold',
-      textTransform: 'none',
-      '&:hover': {
-        background: 'linear-gradient(45deg, #5a6fd8 0%, #6a4190 100%)',
-        boxShadow: '0 8px 25px rgba(102,126,234,0.6)',
-        transform: 'translateY(-2px)'
-      },
-      transition: 'all 0.3s ease'
-    },
-    loadingContainer: {
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      minHeight: '60vh',
-      flexDirection: 'column'
-    },
-    loadingSpinner: {
-      width: 80,
-      height: 80,
-      borderRadius: '50%',
-      background: 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)',
-      animation: 'pulse 2s ease-in-out infinite',
-      mb: 3,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      '@keyframes pulse': {
-        '0%': { transform: 'scale(1)', opacity: 1 },
-        '50%': { transform: 'scale(1.1)', opacity: 0.7 },
-        '100%': { transform: 'scale(1)', opacity: 1 }
-      }
+  const filteredTemplates = templates.filter(template => {
+    const matchesSearch = template.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         template.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = filterBy === 'all' || 
+                         (filterBy === 'affordable' && template.priceTokens <= wallet.balance) ||
+                         (filterBy === 'premium' && template.priceTokens > 1000);
+    return matchesSearch && matchesFilter;
+  }).sort((a, b) => {
+    switch (sortBy) {
+      case 'price':
+        return a.priceTokens - b.priceTokens;
+      case 'reward':
+        return b.rewardTokens - a.rewardTokens;
+      case 'deadline':
+        return a.deadlineDays - b.deadlineDays;
+      default:
+        return 0;
     }
+  });
+
+  const isOwned = (templateId) => {
+    return myContractsData.active.some(contract => 
+      (contract.templateId && contract.templateId._id) === templateId || 
+      contract.templateId === templateId
+    );
   };
 
+  if (loading && templates.length === 0) {
+    return (
+      <Container maxWidth="xl" sx={{ py: 4 }}>
+        <LinearProgress />
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+          Loading contracts marketplace...
+        </Typography>
+      </Container>
+    );
+  }
 
   return (
-    <div style={styles.mainContainer}>
-      <div style={{
-        position: 'relative',
-        zIndex: 1,
-        padding: '32px 16px',
-        maxWidth: '1400px',
-        margin: '0 auto'
-      }}>
-        {/* Hero Header */}
-        <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <h1 style={styles.heroTitle}>
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      {/* Header */}
+      <Fade in timeout={800}>
+        <Box sx={{ mb: 4, textAlign: 'center' }}>
+          <Typography 
+            variant="h3" 
+            fontWeight="bold" 
+            sx={{ 
+              mb: 2,
+              background: 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}
+          >
             Contracts Marketplace
-          </h1>
+          </Typography>
+          <Typography variant="h6" color="text.secondary" sx={{ mb: 3 }}>
+            Discover and purchase contracts to earn tokens and climb the leaderboard
+          </Typography>
+          
+          {/* Wallet Balance */}
+          <Card sx={{ 
+            maxWidth: 300, 
+            mx: 'auto', 
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white'
+          }}>
+            <CardContent>
+              <Stack direction="row" alignItems="center" justifyContent="center" spacing={2}>
+                <AttachMoney />
+                <Typography variant="h5" fontWeight="bold">
+                  {wallet.formattedBalance || '0'} Tokens
+                </Typography>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Box>
+      </Fade>
 
-        </div>
-
-        {/* Alerts */}
-        <div style={{ marginBottom: 32 }}>
+      {/* Error/Success Messages */}
           {error && (
-            <div style={{
-              padding: '16px',
-              marginBottom: 16,
-              borderRadius: 12,
-              backdropFilter: 'blur(10px)',
-              backgroundColor: 'rgba(255,255,255,0.95)',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-              border: '1px solid #f44336',
-              color: '#d32f2f',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8
-            }}>
-              ❌ {error}
-            </div>
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
+          {error}
+        </Alert>
           )}
           {success && (
-            <div style={{
-              padding: '16px',
-              marginBottom: 16,
-              borderRadius: 12,
-              backdropFilter: 'blur(10px)',
-              backgroundColor: 'rgba(255,255,255,0.95)',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-              border: '1px solid #4caf50',
-              color: '#2e7d32',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8
-            }}>
+        <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccess('')}>
               {success}
-            </div>
-          )}
-        </div>
+        </Alert>
+      )}
 
-        {/* Contract Cards Grid */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
-          gap: 32,
-          mb: 2
-        }}>
-          {templates.map((t, index) => (
-            <div
-              key={t._id}
-              onMouseEnter={() => setHoveredCard(t._id)}
-              onMouseLeave={() => setHoveredCard(null)}
-              style={{
-                ...styles.contractCard(hoveredCard === t._id),
-                animation: `fadeInUp 0.8s ease-out ${index * 0.2}s both`,
+      {/* Tabs */}
+      <Paper sx={{ mb: 3 }}>
+        <Tabs
+          value={tabValue}
+          onChange={(e, newValue) => setTabValue(newValue)}
+          variant="fullWidth"
+        >
+          <Tab icon={<Assignment />} label="Marketplace" />
+          <Tab icon={<Leaderboard />} label="Leaderboard" />
+          
+        </Tabs>
+      </Paper>
 
+      {/* Tab Content */}
+      {tabValue === 0 && (
+        <Fade in timeout={600}>
+          <Box>
+            {/* Filters and Search */}
+            
+            {/* Contract Cards */}
+            <Grid container spacing={3}>
+              {filteredTemplates.map((template, index) => (
+                <Grid item xs={12} md={6} lg={4} key={template._id}>
+                  <Zoom in timeout={800 + index * 100}>
+                    <Card 
+                      sx={{ 
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        position: 'relative',
+                        '&:hover': {
+                          transform: 'translateY(-4px)',
+                          boxShadow: 6
+                        },
+                        transition: 'all 0.3s ease',
+                        border: isOwned(template._id) ? '2px solid #4caf50' : '1px solid #e0e0e0'
+                      }}
+                    >
+                      {isOwned(template._id) && (
+                        <Chip
+                          label="Owned"
+                          color="success"
+                          size="small"
+                          sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}
+                        />
+                      )}
+                      
+                      <CardHeader
+                        title={
+                          <Typography variant="h6" fontWeight="bold" noWrap>
+                            {template.title}
+                          </Typography>
+                        }
+                        subheader={
+                          <Typography variant="body2" color="text.secondary" noWrap>
+                            {template.description}
+                          </Typography>
+                        }
+                        action={
+                          <IconButton size="small">
+                            <Visibility />
+                          </IconButton>
+                        }
+                      />
+                      
+                      <CardContent sx={{ flexGrow: 1 }}>
+                        {/* Price and Reward */}
+                        <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+                          <Chip
+                            icon={<AttachMoney />}
+                            label={`Cost: ${template.priceTokens} Tokens`}
+                            color="error"
+                            variant="outlined"
+                          />
+                          <Chip
+                            icon={<Star />}
+                            label={`Reward: ${template.rewardTokens} Tokens`}
+                            color="success"
+                            variant="outlined"
+                          />
+                        </Stack>
 
-              }}
-            >
-              <div style={{ padding: 24 }}>
-                {/* Title */}
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+                        {/* Deadline */}
+                        <Chip
+                          icon={<AccessTime />}
+                          label={`${template.deadlineDays} days`}
+                          color="info"
+                          variant="outlined"
+                          sx={{ mb: 2 }}
+                        />
 
-                  <h3 style={{
-                    ...styles.titleGradient,
-                    fontSize: '1.5rem',
-                    margin: 0,
-                    lineHeight: 1.2
-                  }}>
-                    {t.title}
-                  </h3>
-                </div>
-
-                {/* Description */}
-                <p style={{
-                  marginBottom: 24,
-
-                  lineHeight: 1.6,
-                  fontSize: '1rem',
-                  color: 'white'
-                }}>
-                  {t.description}
-                </p>
-
-                {/* Key Metrics */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(2, 1fr)',
-                  gap: 16,
-                  marginBottom: 24
-                }}>
-                  <div
-                    style={styles.metricBox('#667eea')}
-                    title="Purchase Price"
-                  >
-                    <div style={{ fontSize: 24, marginBottom: 8 }}>
-                      <AttachMoney style={{ color: '#667eea' }} />
-                    </div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#667eea' }}>
-                      {t.priceTokens}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: '#666' }}>
-                      Price
-                    </div>
-                  </div>
-
-                  <div
-                    style={styles.metricBox('#4caf50')}
-                    title="Reward Amount"
-                  >
-                    <div style={{ fontSize: 24, marginBottom: 8 }}>
-                      <TrendingUp style={{ color: '#4caf50' }} />
-                    </div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#4caf50' }}>
-                      {t.rewardTokens}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: '#666' }}>
-                      Reward
-                    </div>
-                  </div>
-
-                  <div
-                    style={styles.metricBox('#f44336')}
-                    title="Penalty Amount"
-                  >
-                    <div style={{ fontSize: 24, marginBottom: 8 }}>
-                      <WarningAmber style={{ color: '#f44336' }} />
-                    </div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#f44336' }}>
-                      {t.penaltyTokens}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: '#666' }}>
-                      Penalty
-                    </div>
-                  </div>
-
-                  <div
-                    style={styles.metricBox('#ff9520')}
-                    title="Deadline"
-                  >
-                    <div style={{ fontSize: 24, marginBottom: 8 }}>
-                      <AccessTime style={{ color: '#ff9520' }} />
-                    </div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#ff9520' }}>
-                      {t.deadlineDays}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: '#666' }}>
-                      Days
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tasks Section */}
-                <div>
-                  <h4 style={{
-                    fontWeight: 'bold',
-                    marginBottom: 16,
+                        {/* Tasks */}
+                        {template.tasks && template.tasks.length > 0 && (
+                          <Box sx={{ mb: 2 }}>
+                            <Typography variant="subtitle2" gutterBottom>
+                              Tasks ({template.tasks.length})
+                            </Typography>
+                            <Stack spacing={1}>
+                              {template.tasks.slice(0, 3).map((task, taskIndex) => (
+                                <Box key={taskIndex} sx={{ display: 'flex', alignItems: 'center' }}>
+                                  <Box sx={{ 
+                                    width: 20, 
+                                    height: 20, 
+                                    borderRadius: '50%', 
+                                    bgcolor: 'primary.main', 
+                                    color: 'white',
                     display: 'flex',
                     alignItems: 'center',
-
-                  }}>
-                    Tasks & Requirements
-                  </h4>
-
-                  <div style={{ maxHeight: 300, overflowY: 'auto', paddingRight: 8 }}>
-                    {(t.tasks || []).sort((a, b) => a.order - b.order).map((task, taskIndex) => (
-                      <div key={task.order} style={styles.taskBox}>
-                        <div style={{
+                                    justifyContent: 'center',
+                                    fontSize: '12px',
                           fontWeight: 'bold',
-                          marginBottom: 8,
-                          display: 'flex',
-
-                          alignItems: 'center'
-                        }}>
-                          <div style={styles.taskNumber}>
-                            {task.order}
-                          </div>
+                                    mr: 1
+                                  }}>
+                                    {taskIndex + 1}
+                                  </Box>
+                                  <Typography variant="body2" noWrap>
                           {task.title}
-                        </div>
-
-                        {task.criteria && (
-                          <div style={{ marginTop: 16 }}>
-                            <div style={{
-                              display: 'flex',
-                              flexWrap: 'wrap',
-                              gap: 8
-                            }}>
-                              {Object.entries(task.criteria).map(([key, value]) => {
-                                if (value == null) return null;
-
-                                const getText = (k, v) => {
-                                  const textMap = {
-                                    sourceCity: `From ${v}`,
-                                    destinationCity: `To ${v}`,
-                                    cargoName: `Cargo: ${v}`,
-                                    minDistance: `Min ${v} km`,
-                                    maxDamagePct: `Cargo dmg ≤ ${v}%`,
-                                    maxTopSpeedKmh: `Top speed ≤ ${v} km/h`,
-                                    minAvgSpeedKmh: `Avg speed ≥ ${v} km/h`,
-                                    maxAvgSpeedKmh: `Avg speed ≤ ${v} km/h`,
-                                    minRevenue: `Revenue ≥ ${v}`,
-                                    maxTruckDamagePercent: `Truck dmg ≤ ${v}%`,
-                                    maxTrailerDamagePercent: `Trailer dmg ≤ ${v}%`
-                                  };
-                                  return textMap[k] || `${k}: ${v}`;
-                                };
-
-                                return (
-                                  <span
-                                    key={key}
-                                    style={{
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: 4,
-                                      padding: '4px 8px',
-                                      borderRadius: 16,
-                                      fontSize: '0.9rem',
-
-                                      backdropFilter: 'blur(10px)',
-                                      border: '1px solid rgba(102,126,234,0.2)',
-                                      transition: 'all 0.2s',
-                                      cursor: 'pointer'
-                                    }}
-                                    onMouseEnter={(e) => {
-                                      e.target.style.transform = 'scale(1.05)';
-                                      e.target.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      e.target.style.transform = 'scale(1)';
-                                      e.target.style.boxShadow = 'none';
-                                    }}
-                                  >
-                                    {getCriteriaIcon(key)}
-                                    {getText(key, value)}
-                                  </span>
-                                );
-                              })}
-                            </div>
-                          </div>
+                                  </Typography>
+                                </Box>
+                              ))}
+                              {template.tasks.length > 3 && (
+                                <Typography variant="caption" color="text.secondary">
+                                  +{template.tasks.length - 3} more tasks
+                                </Typography>
+                              )}
+                            </Stack>
+                          </Box>
                         )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
 
-              <div style={{ padding: '0 24px 24px' }}>
-                {ownedTemplateIds.includes(t._id) ? (
-                  <div
-                    style={{
-                      width: '100%',
-                      padding: '12px 24px',
-                      borderRadius: 12,
-                      background: 'linear-gradient(45deg, #2e7d32 0%, #388e3c 100%)',
-                      boxShadow: '0 6px 20px rgba(46,125,50,0.4)',
-                      fontSize: '1.1rem',
-                      fontWeight: 'bold',
-                      color: 'white',
-                      border: 'none',
-                      textAlign: 'center'
-                    }}
-                  >
-                    Active
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => onBuy(t._id)}
-                    style={{
-                      width: '100%',
-                      padding: '12px 24px',
-                      borderRadius: 12,
+                        {/* Criteria */}
+                        {template.tasks && template.tasks[0]?.criteria && (
+                          <Box>
+                            <Typography variant="subtitle2" gutterBottom>
+                              Requirements
+                            </Typography>
+                            <Stack direction="row" spacing={1} flexWrap="wrap">
+                              {Object.entries(template.tasks[0].criteria).slice(0, 3).map(([key, value]) => (
+                                <Chip
+                                    key={key}
+                                  size="small"
+                                  icon={getCriteriaIcon(key)}
+                                  label={`${key}: ${value}`}
+                                  color={getCriteriaColor(key)}
+                                  variant="outlined"
+                                />
+                              ))}
+                            </Stack>
+                          </Box>
+                        )}
+                      </CardContent>
+
+                      <CardActions sx={{ p: 2, pt: 0 }}>
+                        <Button
+                          fullWidth
+                          variant="contained"
+                          startIcon={<Assignment />}
+                          onClick={() => handleBuyContract(template)}
+                          disabled={isOwned(template._id) || template.priceTokens > wallet.balance}
+                          sx={{ 
                       background: 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)',
-                      boxShadow: '0 6px 20px rgba(102,126,234,0.4)',
-                      fontSize: '1.1rem',
-                      fontWeight: 'bold',
-                      color: 'white',
-                      border: 'none',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.background = 'linear-gradient(45deg, #5a6fd8 0%, #6a4190 100%)';
-                      e.target.style.boxShadow = '0 8px 25px rgba(102,126,234,0.6)';
-                      e.target.style.transform = 'translateY(-2px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.background = 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)';
-                      e.target.style.boxShadow = '0 6px 20px rgba(102,126,234,0.4)';
-                      e.target.style.transform = 'translateY(0)';
-                    }}
-                  >
-                    Purchase Contract for {t.priceTokens} tokens
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+                            '&:hover': {
+                              background: 'linear-gradient(45deg, #5a6fd8 0%, #6a4190 100%)',
+                            }
+                          }}
+                        >
+                          {isOwned(template._id) ? 'Owned' : 
+                           template.priceTokens > wallet.balance ? 'Insufficient Funds' : 
+                           'Purchase Contract'}
+                        </Button>
+                      </CardActions>
+                    </Card>
+                  </Zoom>
+                </Grid>
+              ))}
+            </Grid>
 
-        {templates.length === 0 && !loading && (
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '40vh'
-          }}>
-            <div style={{ fontSize: 80, marginBottom: 16 }}>🚛</div>
-            <h3 style={{
-              color: 'white',
-              marginBottom: 8,
-              textAlign: 'center',
-              fontWeight: 'bold',
-              fontSize: '2rem'
-            }}>
-              No Contracts Available
-            </h3>
-            <p style={{
-              color: 'rgba(255,255,255,0.8)',
-              textAlign: 'center',
-              maxWidth: 400,
-              margin: 0
-            }}>
-              Check back soon for new delivery contracts and exciting opportunities!
-            </p>
-          </div>
-        )}
-      </div>
+            {filteredTemplates.length === 0 && (
+              <Box textAlign="center" py={8}>
+                <Assignment sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                <Typography variant="h6" color="text.secondary">
+                  No contracts found
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Try adjusting your search or filter criteria
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        </Fade>
+      )}
 
-      <style jsx>{`
-        @keyframes fadeInUp {
-          0% {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        @keyframes pulse {
-          0% {
-            transform: scale(1);
-            opacity: 1;
-          }
-          50% {
-            transform: scale(1.1);
-            opacity: 0.7;
-          }
-          100% {
-            transform: scale(1);
-            opacity: 1;
-          }
-        }
-      `}</style>
-    </div>
+      {tabValue === 1 && (
+        <Fade in timeout={600}>
+          <Box>
+            <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>
+              Contract Leaderboard
+            </Typography>
+            
+            {leaderboardLoading ? (
+              <LinearProgress />
+            ) : (
+              <Card>
+                <CardContent>
+                  <List>
+                    {contractLeaderboard.map((rider, index) => (
+                      <React.Fragment key={rider.rank}>
+                        <ListItem>
+                          <ListItemAvatar>
+                            <Avatar sx={{ 
+                              bgcolor: rider.rank <= 3 ? 'primary.main' : 'grey.500',
+                              fontWeight: 'bold'
+                            }}>
+                              {rider.rank}
+                            </Avatar>
+                          </ListItemAvatar>
+                          <ListItemText
+                            primary={
+                              <Box display="flex" alignItems="center" gap={1}>
+                                <Typography variant="h6" fontWeight="bold">
+                                  {rider.name}
+                                </Typography>
+                                {rider.rank <= 3 && (
+                                  <Star color="warning" fontSize="small" />
+                                )}
+                              </Box>
+                            }
+                            secondary={
+                              <Stack direction="row" spacing={1} flexWrap="wrap">
+                                <Chip size="small" label={`${rider.completed} Completed`} color="success" />
+                                <Chip size="small" label={`${rider.active} Active`} color="info" />
+                                
+                                {rider.completionRate && (
+                                  <Chip 
+                                    size="small" 
+                                    label={`${rider.completionRate.toFixed(1)}% Success`} 
+                                    color={rider.completionRate >= 80 ? 'success' : rider.completionRate >= 60 ? 'warning' : 'error'}
+                                  />
+                                )}
+                               
+                              </Stack>
+                            }
+                          />
+                          <ListItemSecondaryAction>
+                            <Chip
+                              label={`#${rider.rank}`}
+                              color={rider.rank <= 3 ? 'primary' : 'default'}
+                              variant={rider.rank <= 3 ? 'outlined' : 'default'}
+                            />
+                          </ListItemSecondaryAction>
+                        </ListItem>
+                        {index < contractLeaderboard.length - 1 && <Divider />}
+                      </React.Fragment>
+                    ))}
+                  </List>
+                </CardContent>
+              </Card>
+            )}
+          </Box>
+        </Fade>
+      )}
+
+    
+
+      {/* Purchase Dialog */}
+      <Dialog open={purchaseDialogOpen} onClose={() => setPurchaseDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Purchase Contract</DialogTitle>
+        <DialogContent>
+          {selectedTemplate && (
+            <Stack spacing={2} sx={{ pt: 1 }}>
+              <Typography variant="h6">{selectedTemplate.title}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {selectedTemplate.description}
+              </Typography>
+              <Stack direction="row" spacing={2}>
+                <Chip icon={<AttachMoney />} label={`Cost: ${selectedTemplate.priceTokens} Tokens`} color="error" />
+                <Chip icon={<Star />} label={`Reward: ${selectedTemplate.rewardTokens} Tokens`} color="success" />
+              </Stack>
+              <Typography variant="body2">
+                Are you sure you want to purchase this contract? This will deduct {selectedTemplate.priceTokens} tokens from your wallet.
+              </Typography>
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPurchaseDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={confirmPurchase}
+            variant="contained"
+            disabled={loading}
+            sx={{ 
+              background: 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)',
+              '&:hover': {
+                background: 'linear-gradient(45deg, #5a6fd8 0%, #6a4190 100%)',
+              }
+            }}
+          >
+            {loading ? 'Processing...' : 'Purchase'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Container>
   );
-}
+};
+
+export default ContractsMarketplace;

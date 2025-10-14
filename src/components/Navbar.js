@@ -236,56 +236,26 @@ const Navbar = () => {
         { label: 'Our Team', path: '/team', icon: <PersonAdd />, shortLabel: 'Team' },
         { label: 'Events', path: '/events', icon: <Event />, shortLabel: 'Events' },
         { label: 'Apply', path: '/apply', icon: <Work />, shortLabel: 'Apply' },
-        // { label: 'VTC Jobs', path: '/jobs', icon: <Speed />, shortLabel: 'Jobs' },
         { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined />, shortLabel: 'Servers' },
         { label: 'Contact', path: '/contact', icon: <ContactMail />, shortLabel: 'Contact' },
         { label: 'Login', path: '/login', icon: <Login />, shortLabel: 'Login' },
       ];
     }
 
-    // For authenticated users, show role-based navigation
+    // For authenticated users, show minimal navigation with only admin access
     if (isAdmin) {
       return [
-        { label: 'Admin', path: '/admin', icon: <Dashboard />, shortLabel: 'Admin' },
-        { label: 'User Management', path: '/admin/users', icon: <PeopleIcon />, shortLabel: 'Users' },
-        { label: 'User data ', path: '/admin/riders', icon: <PeopleIcon />, shortLabel: 'Users' },
-         
-        { label: 'Events', path: '/events', icon: <Event />, shortLabel: 'Events' },
-        { label: 'VTC Jobs', path: '/jobs', icon: <Speed />, shortLabel: 'Jobs' },
-        { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined />, shortLabel: 'Servers' },
-        { label: 'Events', path: '/events', icon: <Event />, shortLabel: 'Events' },
+        { label: 'Admin', path: '/admin', icon: <AdminPanelSettings />, shortLabel: 'Admin' },
       ];
-    } else if (isEventTeam) {
+    } else if (isEventTeam || isHR || isFinanceTeam) {
       return [
-        { label: 'Admin', path: '/admin', icon: <Dashboard />, shortLabel: 'Admin' },
-        { label: 'VTC Jobs', path: '/jobs', icon: <Speed />, shortLabel: 'Jobs' },
-        { label: 'Events', path: '/events', icon: <Event />, shortLabel: 'Events' },
-        { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined />, shortLabel: 'Servers' },
-      ];
-    } else if (isHR) {
-      return [
-        { label: 'Admin', path: '/admin', icon: <Dashboard />, shortLabel: 'Admin' },
-        { label: 'Events', path: '/events', icon: <Event />, shortLabel: 'Events' },
-        { label: 'User Management', path: '/admin/users', icon: <PeopleIcon />, shortLabel: 'Users' },
-        { label: 'User data ', path: '/admin/riders', icon: <PeopleIcon />, shortLabel: 'Users' },
-        { label: 'VTC Jobs', path: '/jobs', icon: <Speed />, shortLabel: 'Jobs' },
-        { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined />, shortLabel: 'Servers' },
-      ];
-    }
-    else if (isFinanceTeam) {
-      return [
-        { label: 'Admin', path: '/admin', icon: <Dashboard />, shortLabel: 'Admin' },  
-        { label: 'Events', path: '/events', icon: <Event />, shortLabel: 'Events' },
-        { label: 'VTC Jobs', path: '/jobs', icon: <Speed />, shortLabel: 'Jobs' },
-        { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined />, shortLabel: 'Servers' },
+        { label: 'Admin', path: '/admin', icon: <AdminPanelSettings />, shortLabel: 'Admin' },
       ];
     } else {
-      // For authenticated regular users (riders)
+      // For authenticated regular users (riders) - minimal navigation
       return [
         { label: 'Home', path: '/', icon: <Home />, shortLabel: 'Home' },
-        { label: 'Our Team', path: '/team', icon: <PersonAdd />, shortLabel: 'Team' },
         { label: 'Events', path: '/events', icon: <Event />, shortLabel: 'Events' },
-        { label: 'VTC Jobs', path: '/jobs', icon: <Speed />, shortLabel: 'Jobs' },
         { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined />, shortLabel: 'Servers' },
       ];
     }
@@ -336,12 +306,6 @@ const Navbar = () => {
                 {item.label}
               </NavButton>
             ))}
-            {walletBalance != null && (
-              <NavButton component={RouterLink} to="/contracts/me">
-                <AttachMoney sx={{ mr: 1 }} />
-                {walletBalance}
-              </NavButton>
-            )}
             
             {/* User Menu for Desktop */}
             {isAuthenticated && (
@@ -365,11 +329,6 @@ const Navbar = () => {
 
           {/* Mobile Menu Button */}
           <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center' }}>
-            {walletBalance != null && (
-              <Badge badgeContent={walletBalance} color="primary" sx={{ mr: 1 }}>
-                <AttachMoney color="inherit" />
-              </Badge>
-            )}
             <IconButton
               size="large"
               aria-label="menu"
@@ -475,26 +434,6 @@ const Navbar = () => {
                   </ListItemButton>
                 </ListItem>
               ))}
-              
-              {/* Wallet Balance */}
-              {walletBalance != null && (
-                <ListItem disablePadding>
-                  <ListItemButton 
-                    component={RouterLink} 
-                    to="/contracts/me" 
-                    onClick={handleMobileDrawerClose}
-                    sx={{ py: 1.5 }}
-                  >
-                    <ListItemIcon>
-                      <AttachMoney />
-                    </ListItemIcon>
-                    <ListItemText 
-                      primary={`Tokens: ${walletBalance}`}
-                      primaryTypographyProps={{ fontWeight: 500 }}
-                    />
-                  </ListItemButton>
-                </ListItem>
-              )}
             </List>
             
             <Divider />

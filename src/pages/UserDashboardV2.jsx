@@ -31,6 +31,16 @@ import {
   SwipeableDrawer,
   AppBar,
   Toolbar,
+  Container,
+  Paper,
+  Fade,
+  Zoom,
+  Slide,
+  Badge,
+  LinearProgress,
+  Alert,
+  Tabs,
+  Tab
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
@@ -48,9 +58,19 @@ import Event from '@mui/icons-material/Event';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import MenuIcon from '@mui/icons-material/Menu';
 import Close from '@mui/icons-material/Close';
+import AccountBalanceWallet from '@mui/icons-material/AccountBalanceWallet';
+import Assignment from '@mui/icons-material/Assignment';
+import Star from '@mui/icons-material/Star';
+import Timeline from '@mui/icons-material/Timeline';
+import AdminPanelSettings from '@mui/icons-material/AdminPanelSettings';
+import PeopleIcon from '@mui/icons-material/People';
 import { myContracts } from '../services/contractsService';
 import { getMyWallet } from '../services/walletService';
 import CurrencyCard from '../components/CurrencyCard';
+import WalletTransactions from '../components/WalletTransactions';
+import ActiveContracts from '../components/ActiveContracts';
+import CompletedContracts from '../components/CompletedContracts';
+import AdminSidebar from '../components/AdminSidebar';
 
 
 // Steam App ID to DLC name mapping
@@ -610,81 +630,14 @@ export default function UserDashboard() {
 
   const { user, rider, latestJobs = [], progress = [], completions = [], totals = { totalKm: 0, totalRevenue: 0, totalJobs: 0 }, attendance = { totalEventsAttended: 0, eventsAttended: [] }, achievements = [] } = data;
 
-  // Sidebar content component
-  const SidebarContent = () => (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ p: 2 }}>
-        <Typography variant="subtitle1" fontWeight={700}>Dashboard</Typography>
-      </Box>
-      <List sx={{ flex: 1 }}>
-        <ListItem disablePadding>
-          <ListItemButton component={RouterLink} to="/dashboard" onClick={handleMobileDrawerClose}>
-            <ListItemIcon><DashboardOutlinedIcon /></ListItemIcon>
-            <ListItemText primary="Overview" />
-          </ListItemButton>
-        </ListItem>
-        <ListItem disablePadding>
-          <ListItemButton component={RouterLink} to="/challenges" onClick={handleMobileDrawerClose}>
-            <ListItemIcon><AssignmentTurnedInOutlinedIcon /></ListItemIcon>
-            <ListItemText primary="Challenges" />
-          </ListItemButton>
-        </ListItem>
-        <ListItem disablePadding>
-          <ListItemButton component={RouterLink} to="/leaderboard" onClick={handleMobileDrawerClose}>
-            <ListItemIcon><LeaderboardOutlinedIcon /></ListItemIcon>
-            <ListItemText primary="Leaderboards" />
-          </ListItemButton>
-        </ListItem>
-        <ListItem disablePadding>
-          <ListItemButton component={RouterLink} to="/contracts" onClick={handleMobileDrawerClose}>
-            <ListItemIcon><AssignmentIcon /></ListItemIcon>
-            <ListItemText primary="Contracts" />
-          </ListItemButton>
-        </ListItem>
-      </List>
-    </Box>
-  );
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex' }}>
-      {/* Desktop Sidebar */}
-      <Drawer 
-        variant="permanent" 
-        sx={{
-          display: { xs: 'none', md: 'block' },
-          width: 220,
-          flexShrink: 0,
-          '& .MuiDrawer-paper': { width: 220, boxSizing: 'border-box' }
-        }}
-      >
-        <SidebarContent />
-      </Drawer>
-
-      {/* Mobile Drawer */}
-      <SwipeableDrawer
-        anchor="left"
-        open={mobileDrawerOpen}
-        onClose={handleMobileDrawerClose}
-        onOpen={handleMobileDrawerToggle}
-        sx={{
-          display: { xs: 'block', md: 'none' },
-          '& .MuiDrawer-paper': {
-            width: 280,
-            boxSizing: 'border-box',
-          },
-        }}
-      >
-        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6" fontWeight={700}>
-            Dashboard Menu
-          </Typography>
-          <IconButton onClick={handleMobileDrawerClose}>
-            <Close />
-          </IconButton>
-        </Box>
-        <Divider />
-        <SidebarContent />
-      </SwipeableDrawer>
+      <AdminSidebar 
+        mobileDrawerOpen={mobileDrawerOpen}
+        handleMobileDrawerClose={handleMobileDrawerClose}
+        user={user}
+      />
 
       <Box sx={{ flex: 1 }}>
       {/* Mobile Header */}
@@ -761,109 +714,248 @@ export default function UserDashboard() {
         </Box>
       </Box>
 
-      <Box sx={{ maxWidth: 1200, mx: 'auto', px: { xs: 2, md: 3 }, py: { xs: 2, md: 4 } }}>
-        {/* Metrics */}
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid item xs={12} md={3}>
-        
-            <CurrencyCard data={data} />
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <Card variant="outlined">
-              <CardContent>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">Total Distance</Typography>
-                    <Typography variant="h4" fontWeight={700} sx={{ mt: 0.5 }}>
-                      {Number(totals?.totalKm || 0).toLocaleString()}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">kilometers driven</Typography>
-                  </Box>
-                  <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'primary.light', color: 'primary.main' }}>
-                    <PlaceOutlinedIcon />
-                  </Box>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} md={3}>
-            <Card variant="outlined">
-              <CardContent>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">Total Revenue</Typography>
-                    <Typography variant="h4" fontWeight={700} sx={{ mt: 0.5 }}>
-                    ₹{Number(totals?.totalRevenue || 0).toLocaleString()}
-                    </Typography>
-                   
-                  </Box>
-                  <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'success.light', color: 'success.main' }}>
-                    <AttachMoneyOutlinedIcon />
-                  </Box>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} md={3}>
-            <Card variant="outlined">
-              <CardContent>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">Total Jobs</Typography>
-                    <Typography variant="h4" fontWeight={700} sx={{ mt: 0.5 }}>
-                      {Number(totals?.totalJobs || 0).toLocaleString()}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">completed deliveries</Typography>
-                  </Box>
-                  <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'warning.light', color: 'warning.main' }}>
-                    <Inventory2OutlinedIcon />
-                  </Box>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-
-        {/* Active Contracts */}
-        {contracts.active?.length > 0 && (
-          <>
-            <Typography variant="h6" sx={{ mb: 1 }}>Active Contracts</Typography>
-            <a href="/contracts/me" style={{ textDecoration: 'none' }}>
-              <Button variant="contained" color="primary" size="small" sx={{ mb: 2 }}>
-                View Progress
-              </Button>
-            </a>
-            <Grid container spacing={2} sx={{ mb: 3 }}>
-              {contracts.active.map(c => {
-                const tpl = c.templateId || {};
-                const total = (c.progress || []).length || 1;
-                const done = (c.progress || []).filter(p => p.status === 'done').length;
-                const pct = Math.round((done / total) * 100);
-                return (
-                  <Grid item xs={12} md={6} key={c._id}>
-                    <Card variant="outlined">
-                      <CardContent>
-                        <Typography variant="subtitle1" fontWeight={700}>{tpl.title}</Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>{tpl.description}</Typography>
-                        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', mb: 1 }}>
-                          <Chip label={`Deadline: ${new Date(c.deadlineAt).toLocaleDateString()}`} />
-                          <Chip label={`Progress: ${done}/${total}`} />
-                        </Stack>
-                        <Box sx={{ mt: 1 }}>
-                          <Box sx={{ height: 8, bgcolor: 'divider', borderRadius: 4 }}>
-                            <Box sx={{ width: `${pct}%`, height: '100%', bgcolor: 'primary.main', borderRadius: 4 }} />
-                          </Box>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                );
-              })}
+      <Container maxWidth="xl" sx={{ py: { xs: 2, md: 4 } }}>
+        {/* Enhanced Stats Cards with Animations */}
+        <Fade in timeout={800}>
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} sm={6} md={3}>
+              <Zoom in timeout={1000}>
+                
+                <Card 
+                  variant="outlined" 
+                  sx={{ 
+                    height: '100%',
+                    background: 'linear-gradient(135deg, #4facfe 0%,rgb(219, 207, 30) 100%)',
+                    color: 'white',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: 6
+                    },
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  
+                  <CardContent>
+                    <Stack direction="row" alignItems="center" spacing={2}>
+                      <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)' }}>
+                        <AttachMoneyOutlinedIcon />
+                      </Avatar>
+                      <Box>
+                        <Typography variant="h4" fontWeight={700}>
+                          {Number(wallet?.balance || 0).toLocaleString()}
+                        </Typography>
+                        <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                          Total tokens
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </CardContent>
+                </Card>
+              </Zoom>
             </Grid>
-          </>
-        )}
+            <Grid item xs={12} sm={6} md={3}>
+              <Zoom in timeout={1000}>
+                
+                <Card 
+                  variant="outlined" 
+                  sx={{ 
+                    height: '100%',
+                    background: 'linear-gradient(135deg, #4facfe 0%,rgb(219, 207, 30) 100%)',
+                    color: 'white',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: 6
+                    },
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  
+                  <CardContent>
+                    <Stack direction="row" alignItems="center" spacing={2}>
+                      <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)' }}>
+                        <AttachMoneyOutlinedIcon />
+                      </Avatar>
+                      <Box>
+                        <Typography variant="h4" fontWeight={700}>
+                          {Number(totals?.totalJobs || 0).toLocaleString()}
+                        </Typography>
+                        <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                          Total Jobs
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </CardContent>
+                </Card>
+              </Zoom>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Zoom in timeout={1200}>
+                <Card 
+                  variant="outlined" 
+                  sx={{ 
+                    height: '100%',
+                    background: 'linear-gradient(135deg, #4facfe 0%,rgb(219, 207, 30) 100%)',
+                    color: 'white',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: 6
+                    },
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  <CardContent>
+                    <Stack direction="row" alignItems="center" spacing={2}>
+                      <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)' }}>
+                        <AttachMoneyOutlinedIcon />
+                      </Avatar>
+                      <Box>
+                        <Typography variant="h4" fontWeight={700}>
+                          ₹{Number(totals?.totalRevenue || 0).toLocaleString()}
+                        </Typography>
+                        <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                          Total Revenue
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </CardContent>
+                </Card>
+              </Zoom>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Zoom in timeout={1400}>
+                <Card 
+                  variant="outlined" 
+                  sx={{ 
+                    height: '100%',
+                    background: 'linear-gradient(135deg, #4facfe 0%,rgb(219, 207, 30) 100%)',
+                    color: 'white',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: 6
+                    },
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  <CardContent>
+                    <Stack direction="row" alignItems="center" spacing={2}>
+                      <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)' }}>
+                        <PlaceOutlinedIcon />
+                      </Avatar>
+                      <Box>
+                        <Typography variant="h4" fontWeight={700}>
+                          {Number(totals?.totalKm || 0).toLocaleString()} km
+                        </Typography>
+                        <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                          Distance Driven
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </CardContent>
+                </Card>
+              </Zoom>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Zoom in timeout={1600}>
+                <Card 
+                  variant="outlined" 
+                  sx={{ 
+                    height: '100%',
+                    background: 'linear-gradient(135deg, #4facfe 0%,rgb(219, 207, 30) 100%)',
+                    color: 'white',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: 6
+                    },
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  <CardContent>
+                    <Stack direction="row" alignItems="center" spacing={2}>
+                      <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)' }}>
+                        <EmojiEventsOutlinedIcon />
+                      </Avatar>
+                      <Box>
+                        <Typography variant="h4" fontWeight={700} >
+                          {attendance.totalEventsAttended || 0}
+                        </Typography>
+                        <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                          Events Attended
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </CardContent>
+                </Card>
+              </Zoom>
+            </Grid>
+          </Grid>
+        </Fade>
+
+        {/* Wallet Section */}
+        <Fade in timeout={1000}>
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Grid item xs={12}>
+              <WalletTransactions wallet={wallet} onRefresh={() => {
+                getMyWallet().then(w => setWallet({ balance: Number(w.balance || 0), transactions: Array.isArray(w.transactions) ? w.transactions : [] }));
+              }} />
+            </Grid>
+          </Grid>
+        </Fade>
+
+        {/* Contracts Section - Active and Completed Side by Side */}
+        <Fade in timeout={1200}>
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Grid item xs={12} lg={6}>
+              <ActiveContracts onRefresh={() => {
+                myContracts().then(res => setContracts(res));
+              }} />
+            </Grid>
+            <Grid item xs={12} lg={6}>
+              <CompletedContracts onRefresh={() => {
+                myContracts().then(res => setContracts(res));
+              }} />
+            </Grid>
+          </Grid>
+        </Fade>
+
+        {/* Additional Dashboard Content */}
+        <Fade in timeout={1200}>
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Grid item xs={12}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" sx={{ mb: 2 }}>Quick Actions</Typography>
+                  <Stack direction="row" spacing={2} flexWrap="wrap">
+                    <Button 
+                      variant='outlined'
+                      startIcon={<Assignment />}
+                      component={RouterLink}
+                      to="/contracts/me"
+                    >
+                      My Contracts
+                    </Button>
+                    <Button 
+                      variant="outlined" 
+                      startIcon={<AccountBalanceWallet />}
+                      component={RouterLink}
+                      to="/wallet"
+                    >
+                      Wallet Details
+                    </Button>
+                    <Button 
+                      variant="outlined" 
+                      startIcon={<Timeline />}
+                      component={RouterLink}
+                      to="/leaderboard"
+                    >
+                      Leaderboard
+                    </Button>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        </Fade>
+
         {/* Attendance */}
         <Grid container spacing={3} sx={{ mb: 3 }}>
           <Grid item xs={12} lg={4}>
@@ -1192,201 +1284,6 @@ export default function UserDashboard() {
           </DialogActions>
         </Dialog>
 
-        {/* Charts */}
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid item xs={12} lg={6}>
-            <Card variant="outlined">
-              <CardContent>
-                <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
-                  <Typography variant="h6">Revenue & Distance Trend</Typography>
-                  <Stack direction="row" spacing={3}>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Box sx={{ width: 10, height: 10, borderRadius: 1, bgcolor: '#3B82F6' }} />
-                      <Typography variant="caption">Revenue</Typography>
-                    </Stack>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Box sx={{ width: 10, height: 10, borderRadius: 1, bgcolor: '#10B981' }} />
-                      <Typography variant="caption">Distance</Typography>
-                    </Stack>
-                  </Stack>
-                </Stack>
-                <Box sx={{ width: '100%', height: 300 }}>
-                  {!hasData && (
-                    <Box sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center', 
-                      height: '100%',
-                      flexDirection: 'column',
-                      color: 'text.secondary'
-                    }}>
-                      <Typography variant="body2" color="text.secondary">
-                        No job data available for trend analysis
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Complete some deliveries to see your revenue and distance trends
-                      </Typography>
-                    </Box>
-                  )}
-                  {hasData && (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={finalRevenueData}>
-                      <defs>
-                        <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
-                        </linearGradient>
-                        <linearGradient id="distanceGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                      <XAxis dataKey="month" stroke="#64748B" tickLine={false} axisLine={{ stroke: '#E2E8F0' }} />
-                      <YAxis stroke="#64748B" tickLine={false} axisLine={{ stroke: '#E2E8F0' }} />
-                      <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E2E8F0', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
-                      <Area type="monotone" dataKey="revenue" stroke="#3B82F6" fillOpacity={1} fill="url(#revenueGradient)" strokeWidth={3} />
-                      <Area type="monotone" dataKey="distance" stroke="#10B981" fillOpacity={1} fill="url(#distanceGradient)" strokeWidth={3} />
-                    </AreaChart>
-                    </ResponsiveContainer>
-                  )}
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} lg={6}>
-            <Card variant="outlined">
-              <CardContent>
-                <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
-                  <Typography variant="h6">Weekly Activity</Typography>
-                  <Stack direction="row" spacing={3}>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Box sx={{ width: 10, height: 10, borderRadius: 1, bgcolor: '#3B82F6' }} />
-                      <Typography variant="caption">Jobs</Typography>
-                    </Stack>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Box sx={{ width: 10, height: 10, borderRadius: 1, bgcolor: '#10B981' }} />
-                      <Typography variant="caption">Distance (km)</Typography>
-                    </Stack>
-                  </Stack>
-                </Stack>
-                <Box sx={{ width: '100%', height: 300 }}>
-                  {!hasData && (
-                    <Box sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center', 
-                      height: '100%',
-                      flexDirection: 'column',
-                      color: 'text.secondary'
-                    }}>
-                      <Typography variant="body2" color="text.secondary">
-                        No job data available for weekly analysis
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Complete some deliveries to see your weekly activity patterns
-                      </Typography>
-                    </Box>
-                  )}
-                  {hasData && (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={weeklyData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                      <XAxis dataKey="day" stroke="#64748B" tickLine={false} axisLine={{ stroke: '#E2E8F0' }} />
-                      <YAxis yAxisId="left" stroke="#64748B" tickLine={false} axisLine={{ stroke: '#E2E8F0' }} />
-                      <YAxis yAxisId="right" orientation="right" stroke="#64748B" tickLine={false} axisLine={{ stroke: '#E2E8F0' }} />
-                      <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E2E8F0', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
-                      <Bar yAxisId="left" dataKey="jobs" fill="#3B82F6" radius={[6, 6, 0, 0]} />
-                      <Bar yAxisId="right" dataKey="distance" fill="#10B981" radius={[6, 6, 0, 0]} />
-                    </BarChart>
-                    </ResponsiveContainer>
-                  )}
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-
-        {/* Job distribution and latest jobs */}
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid item xs={12} lg={4}>
-            <Card variant="outlined">
-              <CardContent>
-                <Typography variant="h6" sx={{ mb: 2 }}>Job Distribution</Typography>
-                <Box sx={{ width: '100%', height: 250 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={jobTypeData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={5} dataKey="value">
-                        {jobTypeData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E2E8F0', borderRadius: 8 }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </Box>
-                <Stack spacing={1} sx={{ mt: 2 }}>
-                  {jobTypeData.map((item, index) => (
-                    <Stack key={index} direction="row" alignItems="center" justifyContent="space-between">
-                      <Stack direction="row" spacing={1.5} alignItems="center">
-                        <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: item.color }} />
-                        <Typography variant="body2" color="text.secondary">{item.name}</Typography>
-                      </Stack>
-                      <Typography variant="body2" fontWeight={700}>{item.value}%</Typography>
-                    </Stack>
-                  ))}
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} lg={8}>
-            <Card variant="outlined">
-              <CardContent>
-                <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
-                  <Typography variant="h6">Recent Deliveries</Typography>
-                    <LocalShippingOutlinedIcon color="disabled" fontSize="small" />
-                  
-                </Stack>
-                <Stack spacing={1.5}>
-              {latestJobs.slice(0, 5).map((job, index) => (
-                    <Stack key={job.jobID || index} direction="row" spacing={2} alignItems="center" sx={{ p: 1.5, borderRadius: 1, bgcolor: 'action.hover' }}>
-                      <Box sx={{ width: 40, height: 40, borderRadius: 1, bgcolor: 'primary.light', color: 'primary.main', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Inventory2OutlinedIcon fontSize="small" />
-                      </Box>
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography variant="subtitle1" fontWeight={600} noWrap>
-                          {job.source?.city?.name || 'Unknown'} → {job.destination?.city?.name || 'Unknown'}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" noWrap>
-                          {job.source?.company?.name || '-'} to {job.destination?.company?.name || '-'}
-                        </Typography>
-                        <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 0.5 }}>
-                          <Typography variant="caption" color="text.secondary">{job.distanceDriven || 0} km</Typography>
-                          <Divider orientation="vertical" flexItem />
-                          <Typography variant="caption" color="text.secondary">${job.revenue || job.income || 0}</Typography>
-                          <Divider orientation="vertical" flexItem />
-                          <Typography variant="caption" color="text.secondary">{new Date(job.deliveredTimestamp || job.createdAt).toLocaleDateString()}</Typography>
-                        </Stack>
-                      </Box>
-                      <Box textAlign="right">
-                        <Typography variant="subtitle2" color="success.main" fontWeight={700}>${job.revenue || job.income || 0}</Typography>
-                        <Typography variant="caption" color="text.secondary">Revenue</Typography>
-                      </Box>
-                    </Stack>
-              ))}
-              {latestJobs.length === 0 && (
-                    <Stack alignItems="center" justifyContent="center" sx={{ py: 6 }} spacing={1}>
-                      <Inventory2OutlinedIcon color="disabled" fontSize="large" />
-                  <Typography variant="body2" color="text.secondary">No recent deliveries</Typography>
-                    </Stack>
-                  )}
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-
         {/* Challenges */}
         <Grid container spacing={3}>
           <Grid item xs={12} lg={6}>
@@ -1453,7 +1350,7 @@ export default function UserDashboard() {
           </Grid>
          
         </Grid>
-      </Box>
+      </Container>
       </Box>
     </Box>
   );

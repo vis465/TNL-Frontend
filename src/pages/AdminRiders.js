@@ -28,6 +28,9 @@ import {
   TableHead,
   TableRow,
   TextField,
+  AppBar,
+  Toolbar,
+  
   Tooltip,
   Typography,
   useMediaQuery,
@@ -47,7 +50,9 @@ import {
   Person as PersonIcon,
   Search as SearchIcon,
   FilterList as FilterListIcon,
+  Menu as MenuMui,
 } from '@mui/icons-material';
+import AdminSidebar from '../components/AdminSidebar';
 
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
@@ -73,6 +78,8 @@ export default function AdminRiders() {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
   const [riders, setRiders] = useState([]);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [adminUser, setAdminUser] = useState(null);
   const [riderStats, setRiderStats] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -87,6 +94,14 @@ export default function AdminRiders() {
   const [dlcFilter, setDlcFilter] = useState('');
 
   const isAdmin = useMemo(() => ['admin','eventteam','hrteam'].includes(user?.role), [user]);
+
+  const handleMobileDrawerToggle = () => {
+    setMobileDrawerOpen(!mobileDrawerOpen);
+  };
+
+  const handleMobileDrawerClose = () => {
+    setMobileDrawerOpen(false);
+  };
   const loadRiderStats = async (riders) => {
     const stats = {};
     for (const rider of riders) {
@@ -122,6 +137,16 @@ export default function AdminRiders() {
 
   useEffect(() => {
     load();
+    
+    // Load admin user from localStorage
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setAdminUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error('Error parsing user from localStorage:', e);
+      }
+    }
   }, []);
   const totals = useMemo(() => {
     const totalKm = riders.reduce((acc, r) => {
@@ -263,7 +288,35 @@ export default function AdminRiders() {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex' }}>
+      <AdminSidebar 
+        mobileDrawerOpen={mobileDrawerOpen}
+        handleMobileDrawerClose={handleMobileDrawerClose}
+        user={adminUser}
+      />
+
+      <Box sx={{ flex: 1 }}>
+        {/* Mobile Header */}
+        {isMobile && (
+          <AppBar position="sticky" sx={{ display: { xs: 'block', md: 'none' } }}>
+            <Toolbar>
+              <IconButton
+                color="inherit"
+                aria-label="open drawer"
+                edge="start"
+                onClick={handleMobileDrawerToggle}
+                sx={{ mr: 2 }}
+              >
+                <MenuMui />
+              </IconButton>
+              <Typography variant="h6" noWrap component="div">
+                Rider Management
+              </Typography>
+            </Toolbar>
+          </AppBar>
+        )}
+
+        <Container maxWidth="xl" sx={{ py: 4 }}>
       {/* Header Section */}
       <Box sx={{ mb: 4 }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
@@ -737,6 +790,8 @@ export default function AdminRiders() {
           <AddIcon />
         </Fab>
       )}
-    </Container>
+        </Container>
+      </Box>
+    </Box>
   );
 }

@@ -76,6 +76,7 @@ import AdminContracts from './pages/AdminContracts';
 import PageMaintenance from './pages/pagemaintanance';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import Wallet from './pages/Wallet';
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -295,6 +296,7 @@ function App() {
                     <Route path="/attendance" element={<RiderAttendance />} />
                   <Route path="/contracts" element={<ContractsMarketplace />} />
                   <Route path="/contracts/me" element={<MyContracts />} />
+                  <Route path="/wallet" element={<Wallet />} />
                     {/* <Route path="/jobs/:id" element={<JobDetailsMUI />} /> */}
                     <Route path="/jobs/:id" element={<JobDetails />} />
                   </Route>

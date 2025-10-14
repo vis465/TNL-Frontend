@@ -28,19 +28,29 @@ import {
   MenuItem,
   Alert,
   Snackbar,
+  AppBar,
+  Toolbar,
+  useMediaQuery,
+  useTheme,
   Autocomplete
 } from '@mui/material';
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
   Edit as EditIcon,
-  Close as CloseIcon
+  Close as CloseIcon,
+  Menu as MenuMui,
 } from '@mui/icons-material';
+import AdminSidebar from '../components/AdminSidebar';
 import axiosInstance from '../utils/axios';
 import ridersService from '../services/ridersService';
 
 const AdminAchievements = () => {
   const [achievements, setAchievements] = useState([]);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [user, setUser] = useState(null);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [riders, setRiders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -60,8 +70,26 @@ const AdminAchievements = () => {
     search: ''
   });
 
+  const handleMobileDrawerToggle = () => {
+    setMobileDrawerOpen(!mobileDrawerOpen);
+  };
+
+  const handleMobileDrawerClose = () => {
+    setMobileDrawerOpen(false);
+  };
+
   useEffect(() => {
     fetchData();
+    
+    // Load user from localStorage
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error('Error parsing user from localStorage:', e);
+      }
+    }
   }, []);
 
   const fetchData = async () => {
@@ -150,7 +178,35 @@ const AdminAchievements = () => {
   });
 
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex' }}>
+      <AdminSidebar 
+        mobileDrawerOpen={mobileDrawerOpen}
+        handleMobileDrawerClose={handleMobileDrawerClose}
+        user={user}
+      />
+
+      <Box sx={{ flex: 1 }}>
+        {/* Mobile Header */}
+        {isMobile && (
+          <AppBar position="sticky" sx={{ display: { xs: 'block', md: 'none' } }}>
+            <Toolbar>
+              <IconButton
+                color="inherit"
+                aria-label="open drawer"
+                edge="start"
+                onClick={handleMobileDrawerToggle}
+                sx={{ mr: 2 }}
+              >
+                <MenuMui />
+              </IconButton>
+              <Typography variant="h6" noWrap component="div">
+                Achievement Management
+              </Typography>
+            </Toolbar>
+          </AppBar>
+        )}
+
+        <Container maxWidth="xl" sx={{ py: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
           Achievement Management
@@ -420,7 +476,9 @@ const AdminAchievements = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Container>
+        </Container>
+      </Box>
+    </Box>
   );
 };
 
