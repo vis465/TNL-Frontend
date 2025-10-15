@@ -228,22 +228,7 @@ const ActiveContracts = ({ onRefresh }) => {
                             />
                           </Stack>
                         </Box>
-                        <Box>
-                          <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
-                            <Typography variant="caption" color="text.secondary">
-                              Progress
-                            </Typography>
-                            <Typography variant="caption" fontWeight="bold">
-                              {contract.progressPercentage}%
-                            </Typography>
-                          </Box>
-                          <LinearProgress
-                            variant="determinate"
-                            value={contract.progressPercentage}
-                            color={getProgressColor(contract.progressPercentage)}
-                            sx={{ height: 6, borderRadius: 3 }}
-                          />
-                        </Box>
+                      
                       </Box>
                     }
                   />
