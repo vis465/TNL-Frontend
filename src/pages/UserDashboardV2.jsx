@@ -16,6 +16,7 @@ import {
   Divider,
   Dialog,
   DialogTitle,
+  TextField,
   DialogContent,
   DialogActions,  
   Pagination,
@@ -73,394 +74,17 @@ import CompletedContracts from '../components/CompletedContracts';
 import AdminSidebar from '../components/AdminSidebar';
 
 
-// Steam App ID to DLC name mapping
-const STEAM_DLC_MAPPING = {
-  // ETS2 DLCs
-  
-      "227310": " Going East!",
-      "304212": " Scandinavia",
-      "388478": " Rocket League Promo",
-      "531130": " Vive la France !",
-      "558244": " Italia",
-      "925580": " Beyond the Baltic Sea",
-      "1056760": " Road to the Black Sea",
-      "1209460": " Iberia",
-      "1650650": " DAF XG/XG+",
-      "2004210": " West Balkans",
-      "2371170": " MAN TGX",
-      "2604420": " Greece",
-      "2611740": " DAF XD",
-      "2932420": " Renault Trucks E-Tech T",
-      "3035040": " Scania S BEV",
-      "3323350": " Volvo FH Series 5",
-      "3323360": " Volvo FH Series 6",
-      "3354860": " Iveco S-Way",
-      "3796990": " Iceland",
-      "3335300": " Greek Mythology Pack",
-      "3034950": " Kässbohrer Trailer Pack",
-      "3034940": " Kögel Trailer Pack",
-      "2833100": " Schmitz Cargobull Trailer Pack",
-      "2780810": " Nordic Horizons",
-      "2780800": " JCB Equipment Pack",
-      "2579670": " Modern Lines Paint Jobs Pack",
-      "2569750": " Tirsan Trailer Pack",
-      "2455690": " Wielton Trailer Pack",
-      "2193220": " Feldbinder Trailer Pack",
-      "1967650": " Street Art Paint Jobs Pack",
-      "1967640": " Renault Trucks T Tuning Pack",
-      "1918370": " Ukrainian Paint Jobs Pack",
-      "1704460": " Volvo Construction Equipment",
-      "1536500": " Heart of Russia",
-      "1456860": " Farm Machinery",
-      "1415700": " Super Stripes Paint Jobs Pack",
-      "1299530": " FH Tuning Pack",
-      "1209461": " HS-Schoch Tuning Pack",
-      "1159030": " Bulgarian Paint Jobs Pack",
-      "1117140": " Goodyear Tyres Pack",
-      "1068290": " Pink Ribbon Charity Pack",
-      "1056761": " Actros Tuning Pack",
-      "980592": " Lithuanian Paint Jobs Pack",
-      "980591": " Latvian Paint Jobs Pack",
-      "980590": " Estonian Paint Jobs Pack",
-      "933610": " Krone Trailer Pack",
-      "925650": " Space Paint Jobs Pack",
-      "909640": " Dutch Paint Jobs Pack",
-      "876980": " Portuguese Paint Jobs Pack",
-      "558245": " Special Transport",
-      "558243": " Valentine's Paint Jobs Pack",
-      "558242": " Australian Paint Jobs Pack",
-      "558241": " Romanian Paint Jobs Pack",
-      "558240": " Dragon Truck Design Pack",
-      "540721": " Belgian Paint Jobs Pack",
-      "540720": " Finnish Paint Jobs Pack",
-      "531131": " Heavy Cargo Pack",
-      "526950": " Lunar New Year Pack",
-      "461249": " XF Tuning Pack",
-      "461248": " Pirate Paint Jobs Pack",
-      "461247": " Chinese Paint Jobs Pack",
-      "461246": " Swiss Paint Jobs Pack",
-      "461245": " South Korean Paint Jobs Pack",
-      "461244": " Mighty Griffin Tuning Pack",
-      "461243": " Austrian Paint Jobs Pack",
-      "461242": " Window Flags",
-      "461241": " Spanish Paint Jobs Pack",
-      "461240": " Slovak Paint Jobs Pack",
-      "388479": " Hungarian Paint Jobs Pack",
-      "388477": " Schwarzmüller Trailer Pack",
-      "388476": " Italian Paint Jobs Pack",
-      "388475": " Wheel Tuning Pack",
-      "388474": " Turkish Paint Jobs Pack",
-      "388473": " PC Gamer DLC",
-      "388472": " Japanese Paint Jobs Pack",
-      "388471": " Michelin Fan Pack",
-      "388470": " Cabin Accessories",
-      "347213": " Russian Paint Jobs Pack",
-      "347212": " Viking Legends",
-      "347211": " Swedish Paint Jobs Pack",
-      "347210": " Danish Paint Jobs Pack",
-      "347190": " Norwegian Paint Jobs Pack",
-      "318521": " Raven Truck Design Pack",
-      "318520": " Christmas Paint Jobs Pack",
-      "318511": " Czech Paint Jobs Pack",
-      "318510": " French Paint Jobs Pack",
-      "318500": " German Paint Jobs Pack",
-      "304214": " High Power Cargo Pack",
-      "304213": " Canadian Paint Jobs Pack",
-      "304211": " USA Paint Jobs Pack",
-      "304210": " Fantasy Paint Jobs Pack",
-      "304140": " Brazilian Paint Jobs Pack",
-      "304020": " Polish Paint Jobs Pack",
-      "301180": " Flip Paint Designs",
-      "297793": " Scottish Paint Jobs Pack",
-      "297792": " Irish Paint Jobs Pack",
-      "297791": " UK Paint Jobs Pack",
-      "297790": " Metallic Paint Jobs Pack",
-      "292320": " Force of Nature Paint Jobs Pack",
-      "266931": " Prehistoric Paint Jobs Pack",
-      "266930": " Ice Cold Paint Jobs Pack",
-      "258460": " Halloween Paint Jobs Pack",
-      "684630": "New Mexico",
-      "800370": "Oregon",
-      "1015160": "Washington",
-      "1076080": "Forest Machinery",
-      "1104880": "Utah",
-      "1149810": "International LoneStar",
-      "1162160": "Pink Ribbon Charity Pack",
-      "1209470": "Idaho",
-      "1209471": "Colorado",
-      "1236650": "Mack Anthem®",
-      "1415690": "Freightliner Cascadia® (3r/4th Generation)",
-      "1415691": "Western Star® 49X",
-      "1415692": "Wyoming",
-      "1465750": "Texas",
-      "1477840": "Cabin Accessories",
-      "1621740": "Goodyear Tires Pack",
-      "1662380": "Volvo Construction Equipment",
-      "1708620": "International LT®",
-      "1784890": "Retrowave Paint Jobs Pack",
-      "1811080": "Montana",
-      "1915840": "International 9900i",
-      "1967690": "Lode King & Prestige Trailers Pack",
-      "2093200": "Western Star® 57X",
-      "2187930": "Wild West Paint Jobs Pack",
-      "2209650": "Oklahoma",
-      "2257950": "Western Star® 5700XE",
-      "2298430": "Kansas",
-      "2386480": "Volvo VNL",
-      "2386530": "W900 Tuning Pack",
-      "2543810": "Nebraska",
-      "2585150": "Arkansas",
-      "2638630": "Farm Machinery",
-      "2675870": "Michelin Fan Pack",
-      "2720080": "Kenworth T680 2022",
-      "2730870": "Missouri",
-      "2910160": "Sports Paint Jobs Pack",
-      "2926440": "JCB Equipment Pack",
-      "3012580": "Louisiana",
-      "3025440": "Iowa",
-      "3146090": "Mack Pinnacle",
-      "3272290": "Freightliner Cascadia® (The Fifth Generation)",
-      "3486960": "Illinois",
-      "3749870": "South Dakota",
-      "3793190": "RAM & Dodge Car Pack",
-      "3793200": "FORD Car Pack",
-      "3872930": "KRONE Agriculture Equipment",
-      "432710": "Steampunk Paint Jobs Pack",
-      "450550": "Wheel Tuning Pack",
-      "463740": "Arizona",
-      "520550": "Steering Creations Pack",
-      "541260": "Peterbilt 389",
-      "546260": "Halloween Paint Jobs Pack",
-      "561620": "Dragon Truck Design Pack",
-      "566890": "Christmas Paint Jobs Pack",
-      "588600": "Valentine's Paint Jobs Pack",
-      "620610": "Heavy Cargo Pack",
-      "951650": "Classic Stripes Paint Jobs Pack",
-      "962750": "Special Transport",
-      "1116310": "Space Paint Jobs Pack",
-      "421070": "Kenworth T680",
-      "421080": "Peterbilt 579",
-      "421081": "Volvo VNL 2014",
-      "421090": "Nevada",
-      "422310": "Kenworth W900"
-};
-
-// DLC categorization for display
-const DLC_CATEGORIES = {
-  ets2: {
-    Maps: [
-      "Going East!",
-      "Scandinavia",
-      "Vive la France !",
-      "Italia",
-      "Beyond the Baltic Sea",
-      "Road to the Black Sea",
-      "Iberia",
-      "Heart of Russia",
-      "West Balkans",
-      "Greece",
-      "Iceland"
-    ],
-    PaintJobs: [
-      "Modern Lines Paint Jobs Pack",
-      "Street Art Paint Jobs Pack",
-      "Ukrainian Paint Jobs Pack",
-      "Super Stripes Paint Jobs Pack",
-      "Valentine's Paint Jobs Pack",
-      "Lunar New Year Pack",
-      "Christmas Paint Jobs Pack",
-      "Halloween Paint Jobs Pack",
-      "Ice Cold Paint Jobs Pack",
-      "Space Paint Jobs Pack",
-      "Pirate Paint Jobs Pack",
-      "Prehistoric Paint Jobs Pack",
-      "Viking Legends",
-      "Fantasy Paint Jobs Pack",
-      "Force of Nature Paint Jobs Pack",
-      "Flip Paint Designs",
-      "Metallic Paint Jobs Pack",
-      "German Paint Jobs Pack",
-      "Czech Paint Jobs Pack",
-      "Slovak Paint Jobs Pack",
-      "Polish Paint Jobs Pack",
-      "Swiss Paint Jobs Pack",
-      "Austrian Paint Jobs Pack",
-      "Hungarian Paint Jobs Pack",
-      "Norwegian Paint Jobs Pack",
-      "Swedish Paint Jobs Pack",
-      "Finnish Paint Jobs Pack",
-      "Danish Paint Jobs Pack",
-      "Estonian Paint Jobs Pack",
-      "Latvian Paint Jobs Pack",
-      "Lithuanian Paint Jobs Pack",
-      "Dutch Paint Jobs Pack",
-      "Spanish Paint Jobs Pack",
-      "Portuguese Paint Jobs Pack",
-      "French Paint Jobs Pack",
-      "Italian Paint Jobs Pack",
-      "Romanian Paint Jobs Pack",
-      "Bulgarian Paint Jobs Pack",
-      "UK Paint Jobs Pack",
-      "Irish Paint Jobs Pack",
-      "Scottish Paint Jobs Pack",
-      "Belgian Paint Jobs Pack",
-      "Turkish Paint Jobs Pack",
-      "Canadian Paint Jobs Pack",
-      "USA Paint Jobs Pack",
-      "Brazilian Paint Jobs Pack",
-      "Japanese Paint Jobs Pack",
-      "South Korean Paint Jobs Pack",
-      "Chinese Paint Jobs Pack",
-      "Australian Paint Jobs Pack",
-      "Russian Paint Jobs Pack"
-    ],
-    Tuning: [
-      "Mighty Griffin Tuning Pack",
-      "FH Tuning Pack",
-      "XF Tuning Pack",
-      "HS-Schoch Tuning Pack",
-      "Actros Tuning Pack",
-      "Renault Trucks T Tuning Pack",
-      "Wheel Tuning Pack"
-    ],
-    Trucks: [
-      "DAF XG/XG+",
-      "DAF XD",
-      "MAN TGX",
-      "Renault Trucks E-Tech T",
-      "Scania S BEV",
-      "Volvo FH Series 5",
-      "Volvo FH Series 6",
-      "Iveco S-Way"
-    ],
-    Trailers: [
-      "Kässbohrer Trailer Pack",
-      "Kögel Trailer Pack",
-      "Schmitz Cargobull Trailer Pack",
-      "Tirsan Trailer Pack",
-      "Wielton Trailer Pack",
-      "Feldbinder Trailer Pack",
-      "Krone Trailer Pack",
-      "Schwarzmüller Trailer Pack"
-    ],
-    Cargo: [
-      "Special Transport",
-      "Heavy Cargo Pack",
-      "High Power Cargo Pack",
-      "Volvo Construction Equipment",
-      "Farm Machinery"
-    ],
-    Other: [
-      "Cabin Accessories",
-      "Window Flags",
-      "Pink Ribbon Charity Pack",
-      "Michelin Fan Pack",
-      "Goodyear Tyres Pack",
-      "Dragon Truck Design Pack",
-      "Raven Truck Design Pack",
-      "Greek Mythology Pack",
-      "Nordic Horizons",
-      "PC Gamer DLC",
-      "Rocket League Promo"
-    ]
-  },
-
-  ats: {
-    Maps: [
-      "Arizona",
-      "Nevada",
-      "New Mexico",
-      "Oregon",
-      "Washington",
-      "Utah",
-      "Idaho",
-      "Colorado",
-      "Wyoming",
-      "Texas",
-      "Montana",
-      "Oklahoma",
-      "Kansas",
-      "Nebraska",
-      "Arkansas",
-      "Missouri",
-      "Louisiana",
-      "Iowa",
-      "Illinois",
-      "South Dakota"
-    ],
-    PaintJobs: [
-      "Retrowave Paint Jobs Pack",
-      "Wild West Paint Jobs Pack",
-      "Sports Paint Jobs Pack",
-      "Steampunk Paint Jobs Pack",
-      "Halloween Paint Jobs Pack",
-      "Dragon Truck Design Pack",
-      "Christmas Paint Jobs Pack",
-      "Valentine's Paint Jobs Pack",
-      "Classic Stripes Paint Jobs Pack",
-      "Space Paint Jobs Pack"
-    ],
-    Tuning: [
-      "Wheel Tuning Pack",
-      "Steering Creations Pack",
-      "W900 Tuning Pack"
-    ],
-    Trucks: [
-      "Kenworth T680",
-      "Peterbilt 579",
-      "Volvo VNL 2014",
-      "Kenworth W900",
-      "Peterbilt 389",
-      "International LoneStar",
-      "Mack Anthem®",
-      "Freightliner Cascadia® (3r/4th Generation)",
-      "Western Star® 49X",
-      "International LT®",
-      "International 9900i",
-      "Western Star® 57X",
-      "Western Star® 5700XE",
-      "Volvo VNL",
-      "Kenworth T680 2022",
-      "Mack Pinnacle",
-      "Freightliner Cascadia® (The Fifth Generation)"
-    ],
-    Trailers: [
-      "Lode King & Prestige Trailers Pack",
-      "KRONE Agriculture Equipment"
-    ],
-    Cargo: [
-      "Heavy Cargo Pack",
-      "Special Transport",
-      "Forest Machinery",
-      "Volvo Construction Equipment",
-      "Farm Machinery",
-      "JCB Equipment Pack"
-    ],
-    Other: [
-      "Cabin Accessories",
-      "Goodyear Tires Pack",
-      "Pink Ribbon Charity Pack",
-      "Michelin Fan Pack",
-      "RAM & Dodge Car Pack",
-      "FORD Car Pack"
-    ]
-  }
-};
-
-
-
-// Helper function to get DLC name by ID
-
-
 export default function UserDashboard() {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [attendanceOpen, setAttendanceOpen] = useState(false);
   const [attendancePage, setAttendancePage] = useState(1);
   const pageSize = 10;
+  const[jobid,Setjobid]=useState("0")
   const [activeAttendanceEvents, setActiveAttendanceEvents] = useState([]);
   const [attendanceSubmitLoading, setAttendanceSubmitLoading] = useState(false);
   const [attendanceSubmitMsg, setAttendanceSubmitMsg] = useState('');
+  const [jobmessage, setjobmessage] = useState('');
   const [contracts, setContracts] = useState({ active: [], history: [] });
   const [wallet, setWallet] = useState({ balance: 0, transactions: [] });
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
@@ -514,6 +138,33 @@ export default function UserDashboard() {
     })();
   }, []);
 
+  const handleJobsubmit = async (jobidParam) => {
+    try {
+      setjobmessage('');
+      const id = (jobidParam ?? jobid ?? '').toString().trim();
+      if (!id) {
+        setjobmessage('Please enter a JobId');
+        setTimeout(() => setjobmessage(''), 3000);
+        return;
+      }
+
+      const payload = {
+        jobIDs: [id]
+      };
+
+      const resp = await axiosInstance.post('/hook/manual-jobs', payload);
+      if (resp.status === 200 || resp.status === 201) {
+        setjobmessage('Jobs submitted for validation');
+        Setjobid(''); // clear input
+      } else {
+        setjobmessage(resp.data?.message || 'Failed to submit jobs');
+      }
+    } catch (e) {
+      setjobmessage(e?.response?.data?.message || 'Failed to submit jobs');
+    } finally {
+      setTimeout(() => setjobmessage(''), 3000);
+    }
+  };
   const handleMarkAttendance = async (eventId) => {
     try {
       setAttendanceSubmitLoading(true);
@@ -918,45 +569,77 @@ export default function UserDashboard() {
         </Fade>
 
         {/* Additional Dashboard Content */}
-        <Fade in timeout={1200}>
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={12}>
-              <Card variant="outlined">
-                <CardContent>
-                  <Typography variant="h6" sx={{ mb: 2 }}>Quick Actions</Typography>
-                  <Stack direction="row" spacing={2} flexWrap="wrap">
-                    <Button 
-                      variant='outlined'
-                      startIcon={<Assignment />}
-                      component={RouterLink}
-                      to="/contracts/me"
-                    >
-                      My Contracts
-                    </Button>
-                    <Button 
-                      variant="outlined" 
-                      startIcon={<AccountBalanceWallet />}
-                      component={RouterLink}
-                      to="/wallet"
-                    >
-                      Wallet Details
-                    </Button>
-                    <Button 
-                      variant="outlined" 
-                      startIcon={<Timeline />}
-                      component={RouterLink}
-                      to="/leaderboard"
-                    >
-                      Leaderboard
-                    </Button>
-                  </Stack>
-                </CardContent>
-              </Card>
+          <Fade in timeout={1200}>
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              <Grid item xs={12}>
+                <Card variant="outlined">
+            <CardContent>
+              <Typography variant="h6" sx={{ mb: 2 }}>Quick Actions</Typography>
+              <Stack direction="row" spacing={2} flexWrap="wrap">
+                <Button 
+                  variant='outlined'
+                  startIcon={<Assignment />}
+                  component={RouterLink}
+                  to="/contracts/me"
+                >
+                  My Contracts
+                </Button>
+                <Button 
+                  variant="outlined" 
+                  startIcon={<AccountBalanceWallet />}
+                  component={RouterLink}
+                  to="/wallet"
+                >
+                  Wallet Details
+                </Button>
+                <Button 
+                  variant="outlined" 
+                  startIcon={<Timeline />}
+                  component={RouterLink}
+                  to="/leaderboard"
+                >
+                  Leaderboard
+                </Button>
+              </Stack>
+            </CardContent>
+                </Card>
+              </Grid>
             </Grid>
-          </Grid>
-        </Fade>
+          </Fade>
 
-        {/* Attendance */}
+           <Fade in timeout={1200}>
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              <Grid item xs={12}>
+                <Card variant="outlined">
+                 <CardContent>
+                   {jobmessage && (
+                    <Chip size="small" color="info" variant="outlined" label={jobmessage} />
+                  )}
+            <Typography>Job not validated? Enter your JobId from Truckershub to validate</Typography>
+             <TextField
+              fullWidth
+              label="JobId"
+              name="JobId"
+              value={jobid}
+              onChange={(e) => Setjobid(e.target.value)}
+              margin="normal"
+              required
+            />
+            <Button
+                variant="outlined"
+                size="small"
+                onClick={() => handleJobsubmit(jobid)}
+              >
+                Submit
+              </Button>
+                </CardContent>
+                </Card>
+                 </Grid>
+                 
+            </Grid>
+          </Fade>
+
+          {/* Attendance */}
         <Grid container spacing={3} sx={{ mb: 3 }}>
           <Grid item xs={12} lg={4}>
             <Card variant="outlined">
