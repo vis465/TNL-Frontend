@@ -43,7 +43,7 @@ export default function Leaderboard() {
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
-      setLoading(false);
+      setLoading(true);
     }
   };
 
@@ -387,7 +387,7 @@ export default function Leaderboard() {
         <Stack alignItems="center" spacing={3}>
           <CircularProgress size={60} thickness={4} />
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Loading Dashboard...
+            Dashboard not available right now, please come back later
           </Typography>
         </Stack>
       </Backdrop>

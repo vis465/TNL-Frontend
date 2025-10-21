@@ -4,13 +4,15 @@ import axios from 'axios';
 import {
   Box, Card, CardContent, Typography, Grid, Chip, Avatar, Stack, Divider, LinearProgress
 } from '@mui/material';
+import { useSearchParams } from 'react-router-dom';
 
-export default function PlayerProfile({ playerId = "75", steamId }) {
+export default function PlayerProfile({ playerId = "75" }) {
   const [player, setPlayer] = useState(null);
   const [bans, setBans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('profile');
+  const steamId=useSearchParams()
 
   useEffect(() => {
     if (!playerId) return;
