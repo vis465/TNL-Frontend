@@ -19,6 +19,12 @@ import {
   Paper,
   alpha,
   Divider,
+  Fade,
+  Zoom,
+  Badge,
+  Avatar,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import { format, isPast, isFuture, isWithinInterval, addHours } from 'date-fns';
 import axiosInstance from '../utils/axios';
@@ -26,12 +32,20 @@ import Marquee from "react-fast-marquee";
 import placeholderimage from "../img/placeholder.jpg"
 import { styled, keyframes } from '@mui/material/styles';
 import RouteIcon from '@mui/icons-material/Route';
+import EventIcon from '@mui/icons-material/Event';
+import PeopleIcon from '@mui/icons-material/People';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import StarIcon from '@mui/icons-material/Star';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 
-// Animation keyframes
+// Enhanced Animation keyframes
 const fadeIn = keyframes`
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(30px);
   }
   to {
     opacity: 1;
@@ -39,25 +53,70 @@ const fadeIn = keyframes`
   }
 `;
 
-const subtleFloat = keyframes`
-  0% {
-    transform: translateY(0px);
+const slideInFromLeft = keyframes`
+  from {
+    opacity: 0;
+    transform: translateX(-50px);
   }
-  50% {
-    transform: translateY(-5px);
-  }
-  100% {
-    transform: translateY(0px);
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 `;
 
-// Styled components
+const slideInFromRight = keyframes`
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+`;
+
+const subtleFloat = keyframes`
+  0% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(1deg);
+  }
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+`;
+
+const pulse = keyframes`
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+`;
+
+const shimmer = keyframes`
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+`;
+
+// Enhanced Styled components
 const PageContainer = styled(Box)(({ theme }) => ({
   minHeight: '100vh',
-  background: theme.palette.mode === 'dark' ? '#121212' : '#f5f5f5',
+  background: theme.palette.mode === 'dark' 
+    ? 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%)'
+    : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #f1f3f4 100%)',
   position: 'relative',
   overflow: 'hidden',
-  paddingTop: '80px', // Space for fixed navbar
+  paddingTop: '80px',
   '&::before': {
     content: '""',
     position: 'absolute',
@@ -66,8 +125,21 @@ const PageContainer = styled(Box)(({ theme }) => ({
     right: 0,
     bottom: 0,
     background: theme.palette.mode === 'dark' 
-      ? 'linear-gradient(to bottom, rgba(18, 18, 18, 0.9), rgba(18, 18, 18, 0.95))' 
-      : 'linear-gradient(to bottom, rgba(245, 245, 245, 0.9), rgba(245, 245, 245, 0.95))',
+      ? 'radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.1) 0%, transparent 50%), radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.1) 0%, transparent 50%)'
+      : 'radial-gradient(circle at 20% 80%, rgba(33, 150, 243, 0.05) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(156, 39, 176, 0.05) 0%, transparent 50%), radial-gradient(circle at 40% 40%, rgba(76, 175, 80, 0.05) 0%, transparent 50%)',
+    zIndex: 0,
+  },
+  '&::after': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: theme.palette.mode === 'dark'
+      ? 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.02"%3E%3Ccircle cx="30" cy="30" r="1.5"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'
+      : 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23000000" fill-opacity="0.02"%3E%3Ccircle cx="30" cy="30" r="1.5"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+    animation: `${subtleFloat} 20s ease-in-out infinite`,
     zIndex: 0,
   },
 }));
@@ -76,64 +148,94 @@ const SubtleCircle = styled(Box)(({ theme }) => ({
   position: 'absolute',
   borderRadius: '50%',
   background: theme.palette.mode === 'dark' 
-    ? 'rgba(255, 255, 255, 0.03)' 
-    : 'rgba(0, 0, 0, 0.03)',
+    ? 'radial-gradient(circle, rgba(120, 119, 198, 0.1) 0%, transparent 70%)' 
+    : 'radial-gradient(circle, rgba(33, 150, 243, 0.08) 0%, transparent 70%)',
   zIndex: 0,
   '&:nth-of-type(1)': {
-    width: '300px',
-    height: '300px',
-    top: '10%',
-    left: '5%',
-    animation: `${subtleFloat} 20s ease-in-out infinite`,
+    width: '400px',
+    height: '400px',
+    top: '5%',
+    left: '3%',
+    animation: `${subtleFloat} 25s ease-in-out infinite`,
   },
   '&:nth-of-type(2)': {
+    width: '300px',
+    height: '300px',
+    top: '50%',
+    right: '3%',
+    animation: `${subtleFloat} 30s ease-in-out infinite 3s`,
+  },
+  '&:nth-of-type(3)': {
     width: '200px',
     height: '200px',
-    top: '60%',
-    right: '5%',
-    animation: `${subtleFloat} 25s ease-in-out infinite 2s`,
+    top: '70%',
+    left: '60%',
+    animation: `${subtleFloat} 20s ease-in-out infinite 1s`,
   },
 }));
 
 const PageTitle = styled(Typography)(({ theme }) => ({
   fontFamily: "'Montserrat', sans-serif",
-  fontWeight: 600,
+  fontWeight: 700,
   letterSpacing: '0.02em',
   color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
   marginBottom: theme.spacing(4),
   position: 'relative',
+  textShadow: theme.palette.mode === 'dark' 
+    ? '0 2px 4px rgba(0,0,0,0.3)' 
+    : '0 2px 4px rgba(0,0,0,0.1)',
+  animation: `${fadeIn} 0.8s ease-out`,
   '&::after': {
     content: '""',
     position: 'absolute',
-    bottom: '-10px',
+    bottom: '-15px',
     left: 0,
-    width: '40px',
-    height: '2px',
-    background: theme.palette.primary.main,
+    width: '60px',
+    height: '3px',
+    background: `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+    borderRadius: '2px',
+    animation: `${slideInFromLeft} 1s ease-out 0.5s both`,
   },
 }));
 
 const StyledTabs = styled(Tabs)(({ theme }) => ({
-  borderBottom: `1px solid ${theme.palette.mode === 'dark' 
+  borderBottom: `2px solid ${theme.palette.mode === 'dark' 
     ? 'rgba(255, 255, 255, 0.1)' 
     : 'rgba(0, 0, 0, 0.1)'}`,
   marginBottom: theme.spacing(4),
+  borderRadius: '12px 12px 0 0',
+  background: theme.palette.mode === 'dark' 
+    ? 'rgba(255, 255, 255, 0.02)' 
+    : 'rgba(0, 0, 0, 0.02)',
+  padding: theme.spacing(1),
   '& .MuiTabs-indicator': {
-    backgroundColor: theme.palette.primary.main,
-    height: '2px',
+    backgroundColor: `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+    height: '3px',
+    borderRadius: '2px',
+    boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.3)}`,
   },
   '& .MuiTab-root': {
     color: theme.palette.mode === 'dark' 
       ? 'rgba(255, 255, 255, 0.7)' 
       : 'rgba(0, 0, 0, 0.6)',
-    fontWeight: 500,
-    transition: 'all 0.3s ease',
+    fontWeight: 600,
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
     fontFamily: "'Montserrat', sans-serif",
+    borderRadius: '8px',
+    margin: theme.spacing(0.5),
+    minHeight: '48px',
     '&.Mui-selected': {
       color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+      background: theme.palette.mode === 'dark' 
+        ? 'rgba(255, 255, 255, 0.05)' 
+        : 'rgba(0, 0, 0, 0.05)',
     },
     '&:hover': {
       color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+      background: theme.palette.mode === 'dark' 
+        ? 'rgba(255, 255, 255, 0.03)' 
+        : 'rgba(0, 0, 0, 0.03)',
+      transform: 'translateY(-2px)',
     },
   },
 }));
@@ -142,33 +244,52 @@ const StyledCard = styled(Card)(({ theme }) => ({
   height: '100%',
   display: 'flex',
   flexDirection: 'column',
-  background: theme.palette.background.paper,
-  borderRadius: '8px',
+  background: theme.palette.mode === 'dark'
+    ? 'linear-gradient(145deg, #1e1e1e 0%, #2a2a2a 100%)'
+    : 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+  borderRadius: '16px',
   border: `1px solid ${theme.palette.mode === 'dark' 
-    ? 'rgba(255, 255, 255, 0.05)' 
-    : 'rgba(0, 0, 0, 0.05)'}`,
+    ? 'rgba(255, 255, 255, 0.08)' 
+    : 'rgba(0, 0, 0, 0.08)'}`,
   boxShadow: theme.palette.mode === 'dark'
-    ? '0 4px 20px rgba(0, 0, 0, 0.3)'
-    : '0 4px 20px rgba(0, 0, 0, 0.1)',
-  transition: 'all 0.3s ease',
-  animation: `${fadeIn} 0.5s ease-out`,
+    ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+    : '0 8px 32px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05)',
+  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+  animation: `${fadeIn} 0.6s ease-out`,
+  position: 'relative',
+  overflow: 'hidden',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '3px',
+    background: `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+    opacity: 0,
+    transition: 'opacity 0.3s ease',
+  },
   '&:hover': {
-    transform: 'translateY(-5px)',
+    transform: 'translateY(-8px) scale(1.02)',
     boxShadow: theme.palette.mode === 'dark'
-      ? '0 8px 25px rgba(0, 0, 0, 0.4)'
-      : '0 8px 25px rgba(0, 0, 0, 0.15)',
+      ? '0 20px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+      : '0 20px 40px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.1)',
     border: `1px solid ${theme.palette.mode === 'dark' 
-      ? 'rgba(255, 255, 255, 0.1)' 
-      : 'rgba(0, 0, 0, 0.1)'}`,
+      ? 'rgba(255, 255, 255, 0.15)' 
+      : 'rgba(0, 0, 0, 0.15)'}`,
+    '&::before': {
+      opacity: 1,
+    },
   },
 }));
 
 const StyledCardMedia = styled(CardMedia)(({ theme }) => ({
-  height: 180,
-  borderTopLeftRadius: '8px',
-  borderTopRightRadius: '8px',
+  height: 200,
+  borderTopLeftRadius: '16px',
+  borderTopRightRadius: '16px',
   position: 'relative',
   overflow: 'hidden',
+  transition: 'transform 0.4s ease',
   '&::after': {
     content: '""',
     position: 'absolute',
@@ -176,7 +297,14 @@ const StyledCardMedia = styled(CardMedia)(({ theme }) => ({
     left: 0,
     right: 0,
     bottom: 0,
-    background: 'linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.7) 100%)',
+    background: 'linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%)',
+    transition: 'opacity 0.3s ease',
+  },
+  '&:hover': {
+    transform: 'scale(1.05)',
+    '&::after': {
+      background: 'linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 100%)',
+    },
   },
 }));
 
@@ -267,8 +395,70 @@ const StyledButton = styled(Button)(({ theme }) => ({
 const ContentContainer = styled(Container)(({ theme }) => ({
   position: 'relative',
   zIndex: 1,
-  paddingTop: theme.spacing(4),
+  paddingTop: theme.spacing(6),
   paddingBottom: theme.spacing(8),
+}));
+
+// New styled components for enhanced design
+const HeroSection = styled(Box)(({ theme }) => ({
+  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+  color: 'white',
+  padding: theme.spacing(8, 0),
+  position: 'relative',
+  overflow: 'hidden',
+  marginBottom: theme.spacing(6),
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.1"%3E%3Ccircle cx="30" cy="30" r="2"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+    animation: `${subtleFloat} 20s ease-in-out infinite`,
+  },
+}));
+
+const StatsCard = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(3),
+  textAlign: 'center',
+  borderRadius: '16px',
+  background: theme.palette.mode === 'dark'
+    ? 'linear-gradient(145deg, #1e1e1e 0%, #2a2a2a 100%)'
+    : 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+  border: `1px solid ${theme.palette.mode === 'dark' 
+    ? 'rgba(255, 255, 255, 0.08)' 
+    : 'rgba(0, 0, 0, 0.08)'}`,
+  boxShadow: theme.palette.mode === 'dark'
+    ? '0 8px 32px rgba(0, 0, 0, 0.4)'
+    : '0 8px 32px rgba(0, 0, 0, 0.12)',
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    transform: 'translateY(-4px)',
+    boxShadow: theme.palette.mode === 'dark'
+      ? '0 16px 40px rgba(0, 0, 0, 0.5)'
+      : '0 16px 40px rgba(0, 0, 0, 0.2)',
+  },
+}));
+
+const SpecialEventCard = styled(Card)(({ theme }) => ({
+  display: 'flex',
+  flexDirection: 'column',
+  minHeight: 280,
+  borderRadius: '20px',
+  overflow: 'hidden',
+  position: 'relative',
+  background: theme.palette.mode === 'dark'
+    ? 'linear-gradient(145deg, #1e1e1e 0%, #2a2a2a 100%)'
+    : 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+  border: `3px solid #FFD700`,
+  boxShadow: '0 12px 40px rgba(255, 215, 0, 0.3)',
+  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+  '&:hover': {
+    transform: 'translateY(-8px) scale(1.02)',
+    boxShadow: '0 20px 60px rgba(255, 215, 0, 0.4)',
+    borderColor: '#FFC107',
+  },
 }));
 
 const formatDateTime = (date) => {
@@ -287,6 +477,24 @@ const Home = () => {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState(0);
   const theme = useTheme();
+
+  // Helper functions for statistics
+  const getTotalEvents = () => events.length;
+  const getTotalSpecialEvents = () => specialEvents.length;
+  const getTotalAttendees = () => {
+    return events.reduce((total, event) => total + (event.attendances?.confirmed || 0), 0);
+  };
+  const getUpcomingEvents = () => {
+    const now = new Date();
+    return events.filter(event => {
+      try {
+        const startDate = new Date(event.startDate);
+        return startDate > now;
+      } catch (error) {
+        return false;
+      }
+    });
+  };
 
   useEffect(() => {
     fetchEvents();
@@ -395,86 +603,120 @@ const Home = () => {
     setActiveTab(newValue);
   };
 
-  const renderEventCard = (event) => (
+  const renderEventCard = (event, index) => (
     <Grid item xs={12} sm={6} md={4} key={event._id || event.truckersmpId}>
-      <StyledCard>
-        {event.banner.length>1 && (
-          <StyledCardMedia
-            component="img"
-            image={event.banner }
-            alt={event.title}
-          />
-        )}
-        {event.banner.length<1 && (
-          <StyledCardMedia
-            component="img"
-            image={placeholderimage}
-            alt={event.title}
-          />
-        )}
-        
-        <StyledCardContent>
-          <Typography gutterBottom variant="h5" component="h2">
-            {event.title}
-          </Typography>
-          
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="body2">
-              <strong>Route:</strong> {event.route || 'Not specified'}
-            </Typography>
-            <Typography variant="body2">
-              <strong>Server:</strong> {event.server || 'Not specified'}
-            </Typography>
-            <Typography variant="body2">
-              <strong>Meetup Time:</strong> {event.startDate ? format(new Date(event.startDate), "dd-MMM-yyyy HH:mm") : 'Not specified'} UTC
-            </Typography>
-            <Typography variant="body2">
-              <strong>Departure Time:</strong> {event.endtime ? format(new Date(event.endtime), "dd-MMM-yyyy HH:mm") : 'Not specified'} UTC
-            </Typography>
+      <Fade in timeout={300 + index * 100}>
+        <StyledCard>
+          <Box sx={{ position: 'relative' }}>
+            {event.banner && event.banner.length > 1 ? (
+              <StyledCardMedia
+                component="img"
+                image={event.banner}
+                alt={event.title}
+              />
+            ) : (
+              <StyledCardMedia
+                component="img"
+                image={placeholderimage}
+                alt={event.title}
+              />
+            )}
             
-            
-            
-            
-          </Box>
-          <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-            <StyledChip
+            {/* Status Badge */}
+            <Chip
               label={event.status || 'Unknown'}
               color={getStatusColor(event.status)}
               size="small"
+              sx={{
+                position: 'absolute',
+                top: 16,
+                right: 16,
+                fontWeight: 600,
+                backdropFilter: 'blur(10px)',
+                background: 'rgba(255, 255, 255, 0.9)',
+                '& .MuiChip-label': {
+                  fontSize: '0.75rem',
+                }
+              }}
             />
-            {event.attendances && (
-              <StyledChip
-                label={`${event.attendances.confirmed} attending`}
-                color="info"
-                size="small"
-              />
-            )}
           </Box>
-        </StyledCardContent>
-        <CardActions sx={{ p: 2, pt: 0 }}>
-          <Stack direction="row" spacing={1} width="100%">
-            <StyledButton
-              variant="contained"
-              color="primary"
-              href={`/events/${event.truckersmpId}`}
-              fullWidth
-            >
-              View Details
-            </StyledButton>
-            {event.externalLink && (
-              <StyledButton
+          
+          <StyledCardContent>
+            <Typography gutterBottom variant="h5" component="h2" sx={{ 
+              fontWeight: 600, 
+              mb: 2,
+              fontFamily: "'Montserrat', sans-serif"
+            }}>
+              {event.title}
+            </Typography>
+            
+            <Stack spacing={1.5} sx={{ mb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <RouteIcon color="primary" sx={{ fontSize: 18 }} />
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Route:</strong> {event.route || 'Not specified'}
+                </Typography>
+              </Box>
+              
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <LocalShippingIcon color="primary" sx={{ fontSize: 18 }} />
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Server:</strong> {event.server || 'Not specified'}
+                </Typography>
+              </Box>
+              
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CalendarMonthIcon color="primary" sx={{ fontSize: 18 }} />
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Meetup:</strong> {event.startDate ? format(new Date(event.startDate), "dd-MMM HH:mm") : 'Not specified'} UTC
+                </Typography>
+              </Box>
+              
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <AccessTimeIcon color="primary" sx={{ fontSize: 18 }} />
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Departure:</strong> {event.endtime ? format(new Date(event.endtime), "dd-MMM HH:mm") : 'Not specified'} UTC
+                </Typography>
+              </Box>
+            </Stack>
+            
+            <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+              {event.attendances && (
+                <Chip
+                  icon={<PeopleIcon />}
+                  label={`${event.attendances.confirmed} attending`}
+                  color="info"
+                  size="small"
+                  sx={{ fontWeight: 600 }}
+                />
+              )}
+              
+            </Box>
+          </StyledCardContent>
+          
+          <CardActions sx={{ p: 2, pt: 0 }}>
+            <Stack direction="row" spacing={1} width="100%">
+              <Button
                 variant="outlined"
-                color="secondary"
-                href={`https://www.TruckersMP.com/events/${event.truckersmpId}`}
-                target="_blank"
-                rel="noopener noreferrer"
+                color="primary"
+                href={`/events/${event.truckersmpId}`}
+                fullWidth
+                sx={{
+                  borderRadius: 2,
+                  py: 1.5,
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  fontSize: '0.9rem',
+                 
+                }}
               >
-                TruckersMP
-              </StyledButton>
-            )}
-          </Stack>
-        </CardActions>
-      </StyledCard>
+                View Details
+              </Button>
+             
+            </Stack>
+          </CardActions>
+        </StyledCard>
+      </Fade>
     </Grid>
   );
 
@@ -521,321 +763,363 @@ const Home = () => {
 
   return (
     <PageContainer>
-      <Marquee
-      pauseOnHover="true">
-  To know about slot booking informations, please visit the specific event's page by clicking view details
-</Marquee>
+      
+      <SubtleCircle />
       <SubtleCircle />
       <SubtleCircle />
       
       <ContentContainer>
-       
-        <PageTitle variant="h3" component="h1" gutterBottom>
-          Convoys
-        </PageTitle>
+        {/* Hero Section */}
+      
+        {/* Statistics Dashboard */}
+      
         
         {/* Special Events Section */}
         {specialEvents?.length > 0 && (
-  <>
-    <Box sx={{ mb: 4 }}>
-      <Typography variant="h4" component="h2" gutterBottom sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: 1,
-        color: '#F57C00', // Deep orange-yellow
-        fontFamily: "'Montserrat', sans-serif",
-        fontWeight: 700,
-        textShadow: '0 2px 4px rgba(245, 124, 0, 0.2)'
-      }}>
-        <RouteIcon sx={{ color: '#FFD700', fontSize: 28 }} />
-        Special Events
-      </Typography>
-      <Typography variant="body1" color="text.secondary" sx={{ 
-        mb: 3, 
-        fontFamily: "'Montserrat', sans-serif",
-        fontSize: '1.1rem',
-        fontWeight: 500
-      }}>
-        Request-based slot allocation events
-      </Typography>
-      
-      <Stack spacing={3}>
-        {specialEvents.map((event) => (
-          <StyledCard 
-            key={event._id} 
-            sx={{ 
-              display: 'flex',
-              flexDirection: 'column',
-              minHeight: 220,
-              border: '3px solid',
-              borderColor: '#FFD700', // Gold border
-              borderRadius: 3,
-              overflow: 'hidden',
-              position: 'relative',
-              backgroundImage: event.banner && event.banner.length > 1 
-                ? `url(${event.banner})` 
-                : `url(${placeholderimage})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backdropFilter: 'blur(8px)',
-                backgroundColor: theme.palette.mode === 'dark' 
-                  ? 'rgba(0, 0, 0, 0.6)'
-                  : 'rgba(255, 255, 255, 0.85)',
-                zIndex: 1
-              },
-              '&::after': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '4px',
-                background: 'linear-gradient(90deg, #FFD700 0%, #FFC107 50%, #FF9800 100%)',
-                zIndex: 3
-              },
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 12px 40px rgba(255, 215, 0, 0.3)',
-                borderColor: '#FFC107',
-                '&::before': {
-                  backdropFilter: 'blur(6px)',
-                  backgroundColor: theme.palette.mode === 'dark' 
-                    ? 'rgba(0, 0, 0, 0.5)'
-                    : 'rgba(255, 255, 255, 0.8)',
-                }
-              },
-              transition: 'all 0.3s ease-in-out'
-            }}
-          >
-            {/* Special Badge Overlay */}
-            <Box sx={{
-              position: 'absolute',
-              top: 16,
-              right: 16,
-              background: 'linear-gradient(45deg, #FFD700 0%, #FFC107 100%)',
-              borderRadius: '20px',
-              px: 2,
-              py: 0.5,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-              zIndex: 4
-            }}>
-              <Typography variant="caption" sx={{ 
-                color: '#1A1A1A',
+          <Box sx={{ mb: 6 }}>
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="h4" component="h2" gutterBottom sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 1,
+                color: '#F57C00',
+                fontFamily: "'Montserrat', sans-serif",
                 fontWeight: 700,
-                fontSize: '0.75rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px'
+                textShadow: '0 2px 4px rgba(245, 124, 0, 0.2)',
+                animation: `${fadeIn} 0.8s ease-out`
               }}>
-                ⭐ SPECIAL
+                <StarIcon sx={{ color: '#FFD700', fontSize: 32 }} />
+                Special Events
+                <Chip 
+                  label={`${specialEvents.length} events`} 
+                  color="warning" 
+                  variant="outlined" 
+                  size="small"
+                  sx={{ ml: 2, fontWeight: 600 }}
+                />
+              </Typography>
+              <Typography variant="body1" color="text.secondary" sx={{ 
+                mb: 3, 
+                fontFamily: "'Montserrat', sans-serif",
+                fontSize: '1.1rem',
+                fontWeight: 500
+              }}>
+                Request-based slot allocation events with premium features
               </Typography>
             </Box>
-
-            {/* Content Section */}
-            <Box sx={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              flex: 1,
-              p: 3,
-              position: 'relative',
-              zIndex: 2
-            }}>
-              {/* Header */}
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="h5" component="h5" sx={{
-                  fontFamily: "'Montserrat', sans-serif",
-                  fontWeight: 700,
-                  color: theme.palette.mode === 'dark' ? '#FFD700' : '#E65100',
-                  mb: 1,
-                  fontSize: { xs: '1.3rem', md: '1.5rem' }
-                }}>
-                  {event.title}
-                </Typography>
-                
-                <Typography variant="body2" color="text.secondary" sx={{
-                  lineHeight: 1.6,
-                  mb: 2
-                }}>
-                  {event.description.slice(0, 100)}...
-                </Typography>
-              </Box>
-
-              {/* Event Details */}
-              <Box sx={{ 
-                display: 'flex', 
-                flexDirection: { xs: 'column', sm: 'row' },
-                gap: 2,
-                mb: 2,
-                flex: 1
-              }}>
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="body2" sx={{ 
-                    mb: 0.5,
-                    color: theme.palette.mode === 'dark' ? '#FFF8E1' : '#5D4037'
-                  }}>
-                    <Box component="span" sx={{ fontWeight: 600, color: '#F57C00' }}>
-                      🖥️ Server:
-                    </Box> {event.server || 'Not specified'}
-                  </Typography>
-                  
-                  <Typography variant="body2" sx={{ 
-                    mb: 0.5,
-                    color: theme.palette.mode === 'dark' ? '#FFF8E1' : '#5D4037'
-                  }}>
-                    <Box component="span" sx={{ fontWeight: 600, color: '#F57C00' }}>
-                      🕐 Meetup:
-                    </Box> {event.startDate ? format(new Date(event.startDate), "dd-MMM-yyyy HH:mm") : 'Not specified'} UTC
-                  </Typography>
-                  
-                  <Typography variant="body2" sx={{ 
-                    color: theme.palette.mode === 'dark' ? '#FFF8E1' : '#5D4037'
-                  }}>
-                    <Box component="span" sx={{ fontWeight: 600, color: '#F57C00' }}>
-                      🚚 Departure:
-                    </Box> {event.endtime ? format(new Date(event.endtime), "dd-MMM-yyyy HH:mm") : 'Not specified'} UTC
-                  </Typography>
-                </Box>
-
-                {/* Status & Routes Info */}
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 120 }}>
-                  <Chip
-                    label={event.status || 'Unknown'}
-                    color={getStatusColor(event.status)}
-                    size="small"
-                    sx={{ 
-                      fontWeight: 600,
-                      '& .MuiChip-label': {
-                        fontSize: '0.75rem'
-                      }
-                    }}
-                  />
-                  <Chip
-                    label={`${event.routes?.length || 0} Routes`}
-                    size="small"
-                    icon={<RouteIcon sx={{ fontSize: '16px !important' }} />}
-                    sx={{ 
-                      backgroundColor: '#FFE082',
-                      color: '#E65100',
-                      fontWeight: 600,
-                      '& .MuiChip-label': {
-                        fontSize: '0.75rem'
-                      }
-                    }}
-                  />
-                </Box>
-              </Box>
-
-              {/* Action Buttons */}
-              <Box sx={{ 
-                display: 'flex', 
-                gap: 1.5, 
-                mt: 'auto',
-                flexWrap: 'wrap'
-              }}>
-                <Button
-                  variant="contained"
-                  href={`/special-events/${event.truckersmpId}`}
-                  sx={{
-                    background: 'linear-gradient(45deg, #FFD700 0%, #FFC107 100%)',
-                    color: '#1A1A1A',
-                    fontWeight: 700,
-                    px: 3,
-                    py: 1,
-                    borderRadius: 2,
-                    textTransform: 'none',
-                    fontSize: '0.9rem',
-                    boxShadow: '0 4px 14px rgba(255, 215, 0, 0.4)',
-                    '&:hover': {
-                      background: 'linear-gradient(45deg, #FFC107 0%, #FF9800 100%)',
-                      boxShadow: '0 6px 20px rgba(255, 215, 0, 0.6)',
-                      transform: 'translateY(-1px)'
-                    }
-                  }}
-                >
-                  📋 View Details
-                </Button>
-                
-                {event.externalLink && (
-                  <Button
-                    variant="outlined"
-                    href={`https://www.TruckersMP.com/events/${event.truckersmpId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+      
+            <Stack spacing={3}>
+              {specialEvents.map((event, index) => (
+                <Fade in timeout={300 + index * 100} key={event._id}>
+                  <SpecialEventCard
                     sx={{
-                      borderColor: '#FFD700',
-                      color: theme.palette.mode === 'dark' ? '#FFD700' : '#F57C00',
-                      fontWeight: 600,
-                      px: 3,
-                      py: 1,
-                      borderRadius: 2,
-                      borderWidth: 2,
-                      textTransform: 'none',
-                      fontSize: '0.9rem',
+                      backgroundImage: event.banner && event.banner.length > 1 
+                        ? `url(${event.banner})` 
+                        : `url(${placeholderimage})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                      backgroundRepeat: 'no-repeat',
+                      '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backdropFilter: 'blur(8px)',
+                        backgroundColor: theme.palette.mode === 'dark' 
+                          ? 'rgba(0, 0, 0, 0.6)'
+                          : 'rgba(255, 255, 255, 0.85)',
+                        zIndex: 1
+                      },
+                      '&::after': {
+                        content: '""',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: '4px',
+                        background: 'linear-gradient(90deg, #FFD700 0%, #FFC107 50%, #FF9800 100%)',
+                        zIndex: 3
+                      },
                       '&:hover': {
-                        borderColor: '#FFC107',
-                        backgroundColor: 'rgba(255, 215, 0, 0.1)',
-                        borderWidth: 2
+                        '&::before': {
+                          backdropFilter: 'blur(6px)',
+                          backgroundColor: theme.palette.mode === 'dark' 
+                            ? 'rgba(0, 0, 0, 0.5)'
+                            : 'rgba(255, 255, 255, 0.8)',
+                        }
                       }
                     }}
                   >
-                    🌐 TruckersMP
-                  </Button>
-                )}
-              </Box>
-            </Box>
-          </StyledCard>
-        ))}
-      </Stack>
-    </Box>
-    
-    <Divider sx={{ 
-      my: 4, 
-      borderColor: '#FFD700',
-      '&::before, &::after': {
-        borderColor: '#FFD700'
-      }
-    }} />
-  </>
-)}
+                    {/* Special Badge Overlay */}
+                    <Box sx={{
+                      position: 'absolute',
+                      top: 16,
+                      right: 16,
+                      background: 'linear-gradient(45deg, #FFD700 0%, #FFC107 100%)',
+                      borderRadius: '20px',
+                      px: 2,
+                      py: 0.5,
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                      zIndex: 4
+                    }}>
+                      <Typography variant="caption" sx={{ 
+                        color: '#1A1A1A',
+                        fontWeight: 700,
+                        fontSize: '0.75rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px'
+                      }}>
+                        ⭐ SPECIAL
+                      </Typography>
+                    </Box>
+
+                    {/* Content Section */}
+                    <Box sx={{ 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      flex: 1,
+                      p: 3,
+                      position: 'relative',
+                      zIndex: 2
+                    }}>
+                      {/* Header */}
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="h5" component="h5" sx={{
+                          fontFamily: "'Montserrat', sans-serif",
+                          fontWeight: 700,
+                          color: theme.palette.mode === 'dark' ? '#FFD700' : '#E65100',
+                          mb: 1,
+                          fontSize: { xs: '1.3rem', md: '1.5rem' }
+                        }}>
+                          {event.title}
+                        </Typography>
+                        
+                        <Typography variant="body2" color="text.secondary" sx={{
+                          lineHeight: 1.6,
+                          mb: 2
+                        }}>
+                          {event.description?.slice(0, 100)}...
+                        </Typography>
+                      </Box>
+
+                      {/* Event Details */}
+                      <Box sx={{ 
+                        display: 'flex', 
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        gap: 2,
+                        mb: 2,
+                        flex: 1
+                      }}>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="body2" sx={{ 
+                            mb: 0.5,
+                            color: theme.palette.mode === 'dark' ? '#FFF8E1' : '#5D4037'
+                          }}>
+                            <Box component="span" sx={{ fontWeight: 600, color: '#F57C00' }}>
+                              🖥️ Server:
+                            </Box> {event.server || 'Not specified'}
+                          </Typography>
+                          
+                          <Typography variant="body2" sx={{ 
+                            mb: 0.5,
+                            color: theme.palette.mode === 'dark' ? '#FFF8E1' : '#5D4037'
+                          }}>
+                            <Box component="span" sx={{ fontWeight: 600, color: '#F57C00' }}>
+                              🕐 Meetup:
+                            </Box> {event.startDate ? format(new Date(event.startDate), "dd-MMM-yyyy HH:mm") : 'Not specified'} UTC
+                          </Typography>
+                          
+                          <Typography variant="body2" sx={{ 
+                            color: theme.palette.mode === 'dark' ? '#FFF8E1' : '#5D4037'
+                          }}>
+                            <Box component="span" sx={{ fontWeight: 600, color: '#F57C00' }}>
+                              🚚 Departure:
+                            </Box> {event.endtime ? format(new Date(event.endtime), "dd-MMM-yyyy HH:mm") : 'Not specified'} UTC
+                          </Typography>
+                        </Box>
+
+                        {/* Status & Routes Info */}
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 120 }}>
+                          <Chip
+                            label={event.status || 'Unknown'}
+                            color={getStatusColor(event.status)}
+                            size="small"
+                            sx={{ 
+                              fontWeight: 600,
+                              '& .MuiChip-label': {
+                                fontSize: '0.75rem'
+                              }
+                            }}
+                          />
+                          <Chip
+                            label={`${event.routes?.length || 0} Routes`}
+                            size="small"
+                            icon={<RouteIcon sx={{ fontSize: '16px !important' }} />}
+                            sx={{ 
+                              backgroundColor: '#FFE082',
+                              color: '#E65100',
+                              fontWeight: 600,
+                              '& .MuiChip-label': {
+                                fontSize: '0.75rem'
+                              }
+                            }}
+                          />
+                        </Box>
+                      </Box>
+
+                      {/* Action Buttons */}
+                      <Box sx={{ 
+                        display: 'flex', 
+                        gap: 1.5, 
+                        mt: 'auto',
+                        flexWrap: 'wrap'
+                      }}>
+                        <Button
+                          variant="contained"
+                          href={`/special-events/${event.truckersmpId}`}
+                          sx={{
+                            background: 'linear-gradient(45deg, #FFD700 0%, #FFC107 100%)',
+                            color: '#1A1A1A',
+                            fontWeight: 700,
+                            px: 3,
+                            py: 1,
+                            borderRadius: 2,
+                            textTransform: 'none',
+                            fontSize: '0.9rem',
+                            boxShadow: '0 4px 14px rgba(255, 215, 0, 0.4)',
+                            '&:hover': {
+                              background: 'linear-gradient(45deg, #FFC107 0%, #FF9800 100%)',
+                              boxShadow: '0 6px 20px rgba(255, 215, 0, 0.6)',
+                              transform: 'translateY(-1px)'
+                            }
+                          }}
+                        >
+                          📋 View Details
+                        </Button>
+                        
+                        {event.externalLink && (
+                          <Button
+                            variant="outlined"
+                            href={`https://www.TruckersMP.com/events/${event.truckersmpId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            sx={{
+                              borderColor: '#FFD700',
+                              color: theme.palette.mode === 'dark' ? '#FFD700' : '#F57C00',
+                              fontWeight: 600,
+                              px: 3,
+                              py: 1,
+                              borderRadius: 2,
+                              borderWidth: 2,
+                              textTransform: 'none',
+                              fontSize: '0.9rem',
+                              '&:hover': {
+                                borderColor: '#FFC107',
+                                backgroundColor: 'rgba(255, 215, 0, 0.1)',
+                                borderWidth: 2
+                              }
+                            }}
+                          >
+                            🌐 TruckersMP
+                          </Button>
+                        )}
+                      </Box>
+                    </Box>
+                  </SpecialEventCard>
+                </Fade>
+              ))}
+            </Stack>
+            
+            <Divider sx={{ 
+              my: 4, 
+              borderColor: '#FFD700',
+              '&::before, &::after': {
+                borderColor: '#FFD700'
+              }
+            }} />
+          </Box>
+        )}
         
+        {/* Main Events Section */}
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h4" component="h2" gutterBottom sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 1, 
+            mb: 3,
+            fontFamily: "'Montserrat', sans-serif",
+            fontWeight: 700,
+            animation: `${fadeIn} 0.8s ease-out`
+          }}>
+            <EventIcon color="primary" sx={{ fontSize: 32 }} />
+            Regular Events
+          </Typography>
+        </Box>
+
         <StyledTabs value={activeTab} onChange={handleTabChange}>
-          <Tab label={`Upcoming (${upcoming.length})`} />
-          <Tab label={`Live (${live.length})`} />
-          <Tab label={`Past (${past.length})`} />
+          <Tab 
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <EventIcon sx={{ fontSize: 18 }} />
+                Upcoming ({upcoming.length})
+              </Box>
+            } 
+          />
+          <Tab 
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <TrendingUpIcon sx={{ fontSize: 18 }} />
+                Live ({live.length})
+              </Box>
+            } 
+          />
+          <Tab 
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <AccessTimeIcon sx={{ fontSize: 18 }} />
+                Past ({past.length})
+              </Box>
+            } 
+          />
         </StyledTabs>
 
-        <Grid container spacing={3}>
+        <Grid container spacing={4}>
           {activeTab === 0 && upcoming.length > 0 ? (
-            upcoming.map(renderEventCard)
+            upcoming.map((event, index) => renderEventCard(event, index))
           ) : activeTab === 1 && live.length > 0 ? (
-            live.map(renderEventCard)
+            live.map((event, index) => renderEventCard(event, index))
           ) : activeTab === 2 && past.length > 0 ? (
-            past.map(renderEventCard)
+            past.map((event, index) => renderEventCard(event, index))
           ) : (
             <Grid item xs={12}>
-              <Paper 
-                sx={{ 
-                  p: 4, 
-                  textAlign: 'center',
-                  background: theme.palette.mode === 'dark' ? '#1e1e1e' : '#f5f5f5',
-                  borderRadius: '8px',
-                  border: `1px solid ${theme.palette.mode === 'dark' 
-                    ? 'rgba(255, 255, 255, 0.05)' 
-                    : 'rgba(0, 0, 0, 0.05)'}`,
-                  color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
-                }}
-              >
-                <Typography variant="h6" fontFamily="'Montserrat', sans-serif" sx={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
-                  No events found in this category
-                </Typography>
-              </Paper>
+              <Fade in timeout={500}>
+                <Paper 
+                  sx={{ 
+                    p: 6, 
+                    textAlign: 'center',
+                    background: theme.palette.mode === 'dark' 
+                      ? 'linear-gradient(145deg, #1e1e1e 0%, #2a2a2a 100%)'
+                      : 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+                    borderRadius: '16px',
+                    border: `1px solid ${theme.palette.mode === 'dark' 
+                      ? 'rgba(255, 255, 255, 0.08)' 
+                      : 'rgba(0, 0, 0, 0.08)'}`,
+                    boxShadow: theme.palette.mode === 'dark'
+                      ? '0 8px 32px rgba(0, 0, 0, 0.4)'
+                      : '0 8px 32px rgba(0, 0, 0, 0.12)',
+                  }}
+                >
+                  <EventIcon sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
+                  <Typography variant="h5" color="text.secondary" gutterBottom>
+                    No events found in this category
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary">
+                    Check back later for new events or try a different category
+                  </Typography>
+                </Paper>
+              </Fade>
             </Grid>
           )}
         </Grid>

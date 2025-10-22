@@ -29,8 +29,8 @@ export async function myContracts() {
           day: 'numeric'
         }) : null,
         daysRemaining: contract.deadline ? Math.ceil((new Date(contract.deadline) - new Date()) / (1000 * 60 * 60 * 24)) : null,
-        progressPercentage: contract.tasks ? 
-          Math.round((contract.tasks.filter(task => task.completed).length / contract.tasks.length) * 100) : 0,
+        progressPercentage: contract.progress ? 
+          Math.round((contract.progress.filter(task => task.status === 'done').length / contract.progress.length) * 100) : 0,
         statusColor: getContractStatusColor(contract.status),
         isExpired: contract.deadline ? new Date(contract.deadline) < new Date() : false
       })),
@@ -47,8 +47,8 @@ export async function myContracts() {
           day: 'numeric'
         }) : null,
         statusColor: getContractStatusColor(contract.status),
-        progressPercentage: contract.tasks ? 
-          Math.round((contract.tasks.filter(task => task.completed).length / contract.tasks.length) * 100) : 0
+        progressPercentage: contract.progress ? 
+          Math.round((contract.progress.filter(task => task.status === 'done').length / contract.progress.length) * 100) : 0
       }))
     };
 
