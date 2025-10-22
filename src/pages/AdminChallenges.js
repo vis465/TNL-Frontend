@@ -94,7 +94,9 @@ const AdminChallenges = () => {
     maxTopSpeedKmh: '',
     maxTruckDamagePercent: '',
     difficulty: 'medium',
-    endDate: ''
+    // Use datetime-local format for better UX, will convert to Unix on save
+    startAtLocal: '',
+    endAtLocal: ''
   });
 
   const [mapData, setMapData] = useState({ cities: [] });
@@ -134,6 +136,20 @@ const AdminChallenges = () => {
     })();
   }, []);
 
+  // Helper function to convert local datetime to Unix seconds
+  const localToUnixSeconds = (localDateTime) => {
+    if (!localDateTime) return '';
+    const date = new Date(localDateTime);
+    return Math.floor(date.getTime() / 1000);
+  };
+
+  // Helper function to convert Unix seconds to local datetime format
+  const unixToLocalDateTime = (unixSeconds) => {
+    if (!unixSeconds) return '';
+    const date = new Date(unixSeconds * 1000);
+    return date.toISOString().slice(0, 16); // Format: YYYY-MM-DDTHH:MM
+  };
+
   const fetchChallenges = async () => {
     try {
       setLoading(true);
@@ -155,8 +171,8 @@ const AdminChallenges = () => {
       setError('');
       
       // Validate form data
-      if (!formData.name || !formData.minDistance || !formData.cargo || !formData.endDate) {
-        setError('Required: name, minDistance, cargo, endDate');
+      if (!formData.name || !formData.minDistance || !formData.cargo || !formData.endAtLocal) {
+        setError('Required: name, minDistance, cargo, endAtLocal');
         return;
       }
 
@@ -170,8 +186,8 @@ const AdminChallenges = () => {
         return;
       }
 
-      // Validate endDate is in the future
-      const endDateTime = new Date(formData.endDate);
+      // Validate endAt is in the future
+      const endDateTime = new Date(formData.endAtLocal);
       if (endDateTime <= new Date()) {
         setError('End date must be in the future');
         return;
@@ -184,8 +200,14 @@ const AdminChallenges = () => {
         startCompany: formData.startCompany ? normalizeName(formData.startCompany) : '',
         endCity: formData.endCity ? normalizeName(formData.endCity) : '',
         endCompany: formData.endCompany ? normalizeName(formData.endCompany) : '',
-        cargo: normalizeName(formData.cargo)
+        cargo: normalizeName(formData.cargo),
+        // Convert local datetime to Unix seconds for backend
+        startAtUnix: localToUnixSeconds(formData.startAtLocal),
+        endAtUnix: localToUnixSeconds(formData.endAtLocal)
       };
+      // Remove local datetime fields from payload
+      delete normalizedData.startAtLocal;
+      delete normalizedData.endAtLocal;
       
       await axiosInstance.post('/challenges', normalizedData);
       setSuccess('Challenge created successfully');
@@ -205,8 +227,8 @@ const AdminChallenges = () => {
       setActionLoading(true);
       setError('');
       
-      if (!formData.name || !formData.minDistance || !formData.cargo || !formData.endDate) {
-        setError('Required: name, minDistance, cargo, endDate');
+      if (!formData.name || !formData.minDistance || !formData.cargo || !formData.endAtLocal) {
+        setError('Required: name, minDistance, cargo, endAtLocal');
         return;
       }
 
@@ -220,8 +242,8 @@ const AdminChallenges = () => {
         return;
       }
 
-      // Validate endDate is in the future
-      const endDateTime = new Date(formData.endDate);
+      // Validate endAt is in the future
+      const endDateTime = new Date(formData.endAtLocal);
       if (endDateTime <= new Date()) {
         setError('End date must be in the future');
         return;
@@ -234,8 +256,14 @@ const AdminChallenges = () => {
         startCompany: formData.startCompany ? normalizeName(formData.startCompany) : '',
         endCity: formData.endCity ? normalizeName(formData.endCity) : '',
         endCompany: formData.endCompany ? normalizeName(formData.endCompany) : '',
-        cargo: normalizeName(formData.cargo)
+        cargo: normalizeName(formData.cargo),
+        // Convert local datetime to Unix seconds for backend
+        startAtUnix: localToUnixSeconds(formData.startAtLocal),
+        endAtUnix: localToUnixSeconds(formData.endAtLocal)
       };
+      // Remove local datetime fields from payload
+      delete normalizedData.startAtLocal;
+      delete normalizedData.endAtLocal;
       
       await axiosInstance.put(`/challenges/${selectedChallenge._id}`, normalizedData);
       setSuccess('Challenge updated successfully');
@@ -307,7 +335,8 @@ const AdminChallenges = () => {
       maxTopSpeedKmh: challenge.maxTopSpeedKmh || '',
       maxTruckDamagePercent: challenge.maxTruckDamagePercent || '',
       difficulty: challenge.difficulty || 'medium',
-      endDate: challenge.endDateIST || ''
+      startAtLocal: challenge.startDate ? unixToLocalDateTime(Math.floor(new Date(challenge.startDate).getTime()/1000)) : '',
+      endAtLocal: challenge.endDate ? unixToLocalDateTime(Math.floor(new Date(challenge.endDate).getTime()/1000)) : ''
     });
     setEditDialogOpen(true);
   };
@@ -333,7 +362,9 @@ const AdminChallenges = () => {
       allowAutoPark: false,
       maxTopSpeedKmh: '',
       maxTruckDamagePercent: '',
-      difficulty: 'medium'
+      difficulty: 'medium',
+      startAtLocal: '',
+      endAtLocal: ''
     });
     setSelectedChallenge(null);
   };
@@ -731,18 +762,27 @@ const AdminChallenges = () => {
               placeholder="e.g., Special badge, Discord role, etc."
             />
             
-            <TextField
-              label="End Date & Time (IST)"
-              type="datetime-local"
-              value={formData.endDate}
-              onChange={handleInputChange('endDate')}
-              fullWidth
-              required
-              InputLabelProps={{
-                shrink: true,
-              }}
-              helperText="Challenge will automatically become inactive after this time"
-            />
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <TextField
+                label="Start Date & Time (optional)"
+                type="datetime-local"
+                value={formData.startAtLocal}
+                onChange={handleInputChange('startAtLocal')}
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+                helperText="When challenge becomes available"
+              />
+              <TextField
+                label="End Date & Time"
+                type="datetime-local"
+                value={formData.endAtLocal}
+                onChange={handleInputChange('endAtLocal')}
+                fullWidth
+                required
+                InputLabelProps={{ shrink: true }}
+                helperText="When challenge becomes unavailable"
+              />
+            </Box>
             
             <FormControl fullWidth>
               <InputLabel id="difficulty-label">Difficulty</InputLabel>
