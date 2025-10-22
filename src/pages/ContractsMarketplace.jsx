@@ -88,6 +88,7 @@ const ContractsMarketplace = () => {
   const [filterBy, setFilterBy] = useState('all');
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [purchaseDialogOpen, setPurchaseDialogOpen] = useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [contractLeaderboard, setContractLeaderboard] = useState([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
 
@@ -153,6 +154,11 @@ const ContractsMarketplace = () => {
   const handleBuyContract = async (template) => {
     setSelectedTemplate(template);
     setPurchaseDialogOpen(true);
+  };
+
+  const handleViewDetails = (template) => {
+    setSelectedTemplate(template);
+    setDetailsDialogOpen(true);
   };
 
   const confirmPurchase = async () => {
@@ -355,7 +361,7 @@ const ContractsMarketplace = () => {
                           </Typography>
                         }
                         action={
-                          <IconButton size="small">
+                          <IconButton size="small" onClick={() => handleViewDetails(template)}>
                             <Visibility />
                           </IconButton>
                         }
@@ -594,6 +600,177 @@ const ContractsMarketplace = () => {
           >
             {loading ? 'Processing...' : 'Purchase'}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Details Dialog */}
+      <Dialog open={detailsDialogOpen} onClose={() => setDetailsDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <Assignment />
+            <Typography variant="h6">Contract Details</Typography>
+          </Stack>
+        </DialogTitle>
+        <DialogContent>
+          {selectedTemplate && (
+            <Stack spacing={3} sx={{ pt: 1 }}>
+              {/* Header Info */}
+              <Box>
+                <Typography variant="h5" fontWeight="bold" gutterBottom>
+                  {selectedTemplate.title}
+                </Typography>
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+                  {selectedTemplate.description}
+                </Typography>
+                
+                {/* Pricing Info */}
+                <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
+                  <Chip
+                    icon={<AttachMoney />}
+                    label={`Cost: ${selectedTemplate.priceTokens} Tokens`}
+                    color="error"
+                    variant="outlined"
+                    size="large"
+                  />
+                  <Chip
+                    icon={<Star />}
+                    label={`Reward: ${selectedTemplate.rewardTokens} Tokens`}
+                    color="success"
+                    variant="outlined"
+                    size="large"
+                  />
+                  <Chip
+                    icon={<AccessTime />}
+                    label={`Deadline: ${selectedTemplate.deadlineDays} days`}
+                    color="info"
+                    variant="outlined"
+                    size="large"
+                  />
+                </Stack>
+              </Box>
+
+              {/* Tasks Section */}
+              {selectedTemplate.tasks && selectedTemplate.tasks.length > 0 && (
+                <Box>
+                  <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Assignment />
+                    Tasks ({selectedTemplate.tasks.length})
+                  </Typography>
+                  <Stack spacing={2}>
+                    {selectedTemplate.tasks.map((task, taskIndex) => (
+                      <Card key={taskIndex} variant="outlined" sx={{ p: 2 }}>
+                        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 1 }}>
+                          <Box sx={{ 
+                            width: 32, 
+                            height: 32, 
+                            borderRadius: '50%', 
+                            bgcolor: 'primary.main', 
+                            color: 'white',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '14px',
+                            fontWeight: 'bold'
+                          }}>
+                            {task.order || taskIndex + 1}
+                          </Box>
+                          <Typography variant="h6" fontWeight="bold">
+                            {task.title}
+                          </Typography>
+                        </Stack>
+                        
+                        {/* Task Criteria */}
+                        {task.criteria && Object.keys(task.criteria).length > 0 && (
+                          <Box>
+                            <Typography variant="subtitle2" gutterBottom color="text.secondary">
+                              Requirements:
+                            </Typography>
+                            <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+                              {Object.entries(task.criteria).map(([key, value]) => (
+                                <Chip
+                                  key={key}
+                                  size="small"
+                                  icon={getCriteriaIcon(key)}
+                                  label={`${key}: ${value}`}
+                                  color={getCriteriaColor(key)}
+                                  variant="outlined"
+                                />
+                              ))}
+                            </Stack>
+                          </Box>
+                        )}
+                      </Card>
+                    ))}
+                  </Stack>
+                </Box>
+              )}
+
+              {/* Availability Info */}
+              <Box>
+                <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Schedule />
+                  Availability
+                </Typography>
+                <Stack direction="row" spacing={2}>
+                  <Chip
+                    icon={<Timer />}
+                    label={`Start: ${selectedTemplate.startAt ? new Date(selectedTemplate.startAt).toLocaleString() : 'Immediate'}`}
+                    color="info"
+                    variant="outlined"
+                  />
+                  <Chip
+                    icon={<Timer />}
+                    label={`End: ${selectedTemplate.endAt ? new Date(selectedTemplate.endAt).toLocaleString() : 'No expiration'}`}
+                    color="warning"
+                    variant="outlined"
+                  />
+                </Stack>
+              </Box>
+
+              {/* Status */}
+              <Box>
+                <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CheckCircle />
+                  Status
+                </Typography>
+                <Stack direction="row" spacing={2}>
+                  <Chip
+                    label={selectedTemplate.active ? 'Active' : 'Inactive'}
+                    color={selectedTemplate.active ? 'success' : 'error'}
+                    variant="filled"
+                  />
+                  {isOwned(selectedTemplate._id) && (
+                    <Chip
+                      label="Owned"
+                      color="success"
+                      variant="outlined"
+                    />
+                  )}
+                </Stack>
+              </Box>
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDetailsDialogOpen(false)}>Close</Button>
+          {selectedTemplate && !isOwned(selectedTemplate._id) && selectedTemplate.priceTokens <= wallet.balance && (
+            <Button
+              onClick={() => {
+                setDetailsDialogOpen(false);
+                handleBuyContract(selectedTemplate);
+              }}
+              variant="contained"
+              startIcon={<Assignment />}
+              sx={{ 
+                background: 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)',
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #5a6fd8 0%, #6a4190 100%)',
+                }
+              }}
+            >
+              Purchase Contract
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
     </Container>

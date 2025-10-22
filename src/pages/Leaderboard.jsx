@@ -27,7 +27,7 @@ export default function Leaderboard() {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [attendance, setAttendance] = useState([]);
   const theme = useTheme();
 
@@ -43,7 +43,7 @@ export default function Leaderboard() {
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
-      setLoading(true);
+      setLoading(false);
     }
   };
 

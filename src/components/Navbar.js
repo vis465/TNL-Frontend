@@ -319,7 +319,7 @@ const Navbar = () => {
                   aria-haspopup="true"
                   color="inherit"
                 >
-                  <Avatar sx={{ width: 32, height: 32 }}>
+                  <Avatar sx={{ width: 32, height: 32 }} src={user?.riderId?.avatar}>
                     {user?.name?.[0]?.toUpperCase() || <AccountCircle />}
                   </Avatar>
                 </IconButton>
@@ -397,7 +397,7 @@ const Navbar = () => {
               <>
                 <Box sx={{ p: 2, bgcolor: 'action.hover' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Avatar sx={{ width: 48, height: 48 }}>
+                    <Avatar sx={{ width: 48, height: 48 }} src={user?.riderId?.avatar}>
                       {user?.name?.[0]?.toUpperCase() || <AccountCircle />}
                     </Avatar>
                     <Box>

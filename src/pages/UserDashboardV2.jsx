@@ -65,6 +65,7 @@ import Star from '@mui/icons-material/Star';
 import Timeline from '@mui/icons-material/Timeline';
 import AdminPanelSettings from '@mui/icons-material/AdminPanelSettings';
 import PeopleIcon from '@mui/icons-material/People';
+import VerifiedUser from '@mui/icons-material/VerifiedUser';
 import { myContracts } from '../services/contractsService';
 import { getMyWallet } from '../services/walletService';
 import CurrencyCard from '../components/CurrencyCard';
@@ -72,6 +73,7 @@ import WalletTransactions from '../components/WalletTransactions';
 import ActiveContracts from '../components/ActiveContracts';
 import CompletedContracts from '../components/CompletedContracts';
 import AdminSidebar from '../components/AdminSidebar';
+import LicenseCard from '../components/LicenseCard';
 
 
 export default function UserDashboard() {
@@ -1033,6 +1035,15 @@ export default function UserDashboard() {
           </Grid>
          
         </Grid>
+
+        {/* License Section */}
+        <Fade in timeout={1200}>
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Grid item xs={12}>
+              <LicenseCard userData={user} riderData={rider} />
+            </Grid>
+          </Grid>
+        </Fade>
       </Container>
       </Box>
     </Box>
