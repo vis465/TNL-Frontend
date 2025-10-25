@@ -236,7 +236,7 @@ export default function AdminJobs() {
             <Stack direction="row" spacing={1}>
               <Button size="small" variant="outlined" onClick={() => runImport(true)}>Dry Run</Button>
               <Button size="small" variant="contained" onClick={() => runImport(false)}>Run Import</Button>
-              <Button size="small" variant="contained" color="secondary" onClick={linkAll}>Link All</Button>
+             
               <Button size="small" onClick={fetchProgress}>Refresh</Button>
             </Stack>
           </Stack>
