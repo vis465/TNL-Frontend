@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Divider,
   Container,
@@ -47,10 +47,10 @@ import ToggleOnIcon from '@mui/icons-material/ToggleOn';
 import ToggleOffIcon from '@mui/icons-material/ToggleOff';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { Menu as MenuMui } from '@mui/icons-material';
-import axiosInstance, { fetchEts2Map } from '../utils/axios';
+import axiosInstance from '../utils/axios';
 import Autocomplete from '@mui/material/Autocomplete';
 import { normalizeName } from '../utils/normalizeName';
-import { fetchCargos } from '../services/cargoService';
+import { useExternalData } from '../contexts/ExternalDataContext';
 import AdminSidebar from '../components/AdminSidebar';
 
 const AdminChallenges = () => {
@@ -65,6 +65,9 @@ const AdminChallenges = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedChallenge, setSelectedChallenge] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  
+  // Use external data context
+  const { cityOptions, companyOptionsByCity, cargoOptions, loading: externalDataLoading, error: externalDataError } = useExternalData();
   
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -82,9 +85,13 @@ const AdminChallenges = () => {
     name: '',
     description: '',
     startCity: '',
+    startCityId: '',
     startCompany: '',
+    startCompanyId: '',
     endCity: '',
+    endCityId: '',
     endCompany: '',
+    endCompanyId: '',
     minDistance: '',
     requiredJobs: 1,
     cargo: '',
@@ -94,15 +101,12 @@ const AdminChallenges = () => {
     maxTopSpeedKmh: '',
     maxTruckDamagePercent: '',
     difficulty: 'medium',
-    // Use datetime-local format for better UX, will convert to Unix on save
+    mapImageUrl: '',
+    
     startAtLocal: '',
     endAtLocal: ''
   });
 
-  const [mapData, setMapData] = useState({ cities: [] });
-  const [cityOptions, setCityOptions] = useState([]);
-  const [companyOptionsByCity, setCompanyOptionsByCity] = useState({});
-  const [cargoOptions, setCargoOptions] = useState([]);
 
   useEffect(() => {
     fetchChallenges();
@@ -117,37 +121,23 @@ const AdminChallenges = () => {
       }
     }
     
-    (async () => {
-      try {
-        const md = await fetchEts2Map();
-        const cities = md?.mapData?.cities || [];
-        setMapData({ cities });
-        setCityOptions(cities.map(c => c.name).filter(Boolean).sort());
-        const byCity = {};
-        for (const c of cities) {
-          byCity[c.name] = (c.companies||[]).map(co => co.name).filter(Boolean).sort();
-        }
-        setCompanyOptionsByCity(byCity);
-        
-        // Load cargo options
-        const cargos = await fetchCargos();
-        setCargoOptions(cargos);
-      } catch (_) {}
-    })();
   }, []);
 
-  // Helper function to convert local datetime to Unix seconds
-  const localToUnixSeconds = (localDateTime) => {
-    if (!localDateTime) return '';
-    const date = new Date(localDateTime);
+  // Helper function to convert IST datetime to Unix seconds
+  const istToUnixSeconds = (istDateTime) => {
+    if (!istDateTime) return '';
+    // Create date in IST timezone (UTC+5:30)
+    const date = new Date(istDateTime + '+05:30');
     return Math.floor(date.getTime() / 1000);
   };
 
-  // Helper function to convert Unix seconds to local datetime format
-  const unixToLocalDateTime = (unixSeconds) => {
+  // Helper function to convert Unix seconds to IST datetime format
+  const unixToIstDateTime = (unixSeconds) => {
     if (!unixSeconds) return '';
     const date = new Date(unixSeconds * 1000);
-    return date.toISOString().slice(0, 16); // Format: YYYY-MM-DDTHH:MM
+    // Convert to IST (UTC+5:30)
+    const istDate = new Date(date.getTime() + (5.5 * 60 * 60 * 1000));
+    return istDate.toISOString().slice(0, 16); // Format: YYYY-MM-DDTHH:MM
   };
 
   const fetchChallenges = async () => {
@@ -193,17 +183,21 @@ const AdminChallenges = () => {
         return;
       }
 
-      // Normalize names before sending to backend
+      // Prepare data with both names and IDs for backend
       const normalizedData = {
         ...formData,
         startCity: formData.startCity ? normalizeName(formData.startCity) : '',
+        startCityId: formData.startCityId || '',
         startCompany: formData.startCompany ? normalizeName(formData.startCompany) : '',
+        startCompanyId: formData.startCompanyId || '',
         endCity: formData.endCity ? normalizeName(formData.endCity) : '',
+        endCityId: formData.endCityId || '',
         endCompany: formData.endCompany ? normalizeName(formData.endCompany) : '',
+        endCompanyId: formData.endCompanyId || '',
         cargo: normalizeName(formData.cargo),
         // Convert local datetime to Unix seconds for backend
-        startAtUnix: localToUnixSeconds(formData.startAtLocal),
-        endAtUnix: localToUnixSeconds(formData.endAtLocal)
+        startAtUnix: istToUnixSeconds(formData.startAtLocal),
+        endAtUnix: istToUnixSeconds(formData.endAtLocal)
       };
       // Remove local datetime fields from payload
       delete normalizedData.startAtLocal;
@@ -249,17 +243,21 @@ const AdminChallenges = () => {
         return;
       }
 
-      // Normalize names before sending to backend
+      // Prepare data with both names and IDs for backend
       const normalizedData = {
         ...formData,
         startCity: formData.startCity ? normalizeName(formData.startCity) : '',
+        startCityId: formData.startCityId || '',
         startCompany: formData.startCompany ? normalizeName(formData.startCompany) : '',
+        startCompanyId: formData.startCompanyId || '',
         endCity: formData.endCity ? normalizeName(formData.endCity) : '',
+        endCityId: formData.endCityId || '',
         endCompany: formData.endCompany ? normalizeName(formData.endCompany) : '',
+        endCompanyId: formData.endCompanyId || '',
         cargo: normalizeName(formData.cargo),
         // Convert local datetime to Unix seconds for backend
-        startAtUnix: localToUnixSeconds(formData.startAtLocal),
-        endAtUnix: localToUnixSeconds(formData.endAtLocal)
+        startAtUnix: istToUnixSeconds(formData.startAtLocal),
+        endAtUnix: istToUnixSeconds(formData.endAtLocal)
       };
       // Remove local datetime fields from payload
       delete normalizedData.startAtLocal;
@@ -323,9 +321,13 @@ const AdminChallenges = () => {
       name: challenge.name,
       description: challenge.description || '',
       startCity: challenge.startCity,
+      startCityId: challenge.startCityId || '',
       startCompany: challenge.startCompany,
+      startCompanyId: challenge.startCompanyId || '',
       endCity: challenge.endCity,
+      endCityId: challenge.endCityId || '',
       endCompany: challenge.endCompany,
+      endCompanyId: challenge.endCompanyId || '',
       minDistance: challenge.minDistance,
       requiredJobs: challenge.requiredJobs,
       cargo: challenge.cargo,
@@ -335,8 +337,9 @@ const AdminChallenges = () => {
       maxTopSpeedKmh: challenge.maxTopSpeedKmh || '',
       maxTruckDamagePercent: challenge.maxTruckDamagePercent || '',
       difficulty: challenge.difficulty || 'medium',
-      startAtLocal: challenge.startDate ? unixToLocalDateTime(Math.floor(new Date(challenge.startDate).getTime()/1000)) : '',
-      endAtLocal: challenge.endDate ? unixToLocalDateTime(Math.floor(new Date(challenge.endDate).getTime()/1000)) : ''
+      mapImageUrl: challenge.mapImageUrl || '',
+      startAtLocal: challenge.startDate ? unixToIstDateTime(Math.floor(new Date(challenge.startDate).getTime()/1000)) : '',
+      endAtLocal: challenge.endDate ? unixToIstDateTime(Math.floor(new Date(challenge.endDate).getTime()/1000)) : ''
     });
     setEditDialogOpen(true);
   };
@@ -351,9 +354,13 @@ const AdminChallenges = () => {
       name: '',
       description: '',
       startCity: '',
+      startCityId: '',
       startCompany: '',
+      startCompanyId: '',
       endCity: '',
+      endCityId: '',
       endCompany: '',
+      endCompanyId: '',
       minDistance: '',
       requiredJobs: 1,
       cargo: '',
@@ -363,6 +370,7 @@ const AdminChallenges = () => {
       maxTopSpeedKmh: '',
       maxTruckDamagePercent: '',
       difficulty: 'medium',
+      mapImageUrl: '',
       startAtLocal: '',
       endAtLocal: ''
     });
@@ -376,6 +384,11 @@ const AdminChallenges = () => {
     }));
   };
 
+  // Debounced update function for Autocomplete components
+  const updateFormData = useCallback((updates) => {
+    setFormData(prev => ({ ...prev, ...updates }));
+  }, []);
+
   const handleStatusChange = (event) => {
     setFormData(prev => ({
       ...prev,
@@ -383,7 +396,7 @@ const AdminChallenges = () => {
     }));
   };
 
-  if (loading) {
+  if (loading || externalDataLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
         <CircularProgress />
@@ -535,9 +548,33 @@ const AdminChallenges = () => {
                   <Grid item xs={12}>
                     <Box sx={{ p: 1.5, borderRadius: 2, border: '1px dashed', borderColor: 'divider' }}>
                       <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 800 }}>End Date (IST)</Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 700 }}>{challenge.endDateFormatted || 'Not set'}</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 700 }}>{new Date(challenge.endDate).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }  ) || 'Not set'}</Typography>
                     </Box>
                   </Grid>
+                  
+                  {challenge.mapImageUrl && (
+                    <Grid item xs={12}>
+                      <Box sx={{ p: 1.5, borderRadius: 2, border: '1px dashed', borderColor: 'divider' }}>
+                        <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 800 }}>Route Map</Typography>
+                        <Box
+                          component="img"
+                          src={challenge.mapImageUrl}
+                          alt="Challenge Route Map"
+                          sx={{
+                            maxWidth: '100%',
+                            maxHeight: '120px',
+                            objectFit: 'contain',
+                            borderRadius: 1,
+                            display: 'block',
+                            mt: 1
+                          }}
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                          }}
+                        />
+                      </Box>
+                    </Grid>
+                  )}
                 </Grid>
 
                 {challenge.stats && (
@@ -670,9 +707,15 @@ const AdminChallenges = () => {
             <Box sx={{ display: 'flex', gap: 2 }}>
               <Autocomplete
                 freeSolo
-                options={cityOptions}
+                options={cityOptions.map(city => city.name)}
                 value={formData.startCity || ''}
-                onInputChange={(_, v) => setFormData({ ...formData, startCity: v })}
+                onInputChange={(_, v) => {
+                  const selectedCity = cityOptions.find(city => city.name === v);
+                  updateFormData({ 
+                    startCity: v,
+                    startCityId: selectedCity ? selectedCity.id : ''
+                  });
+                }}
                 renderInput={(params) => (
                   <TextField {...params} label="Start City (leave blank for Any)" placeholder="e.g., Berlin" helperText="Leave empty to allow any city" />
                 )}
@@ -680,9 +723,16 @@ const AdminChallenges = () => {
               />
               <Autocomplete
                 freeSolo
-                options={companyOptionsByCity[formData.startCity] || []}
+                options={(companyOptionsByCity[formData.startCity] || []).map(company => company.name)}
                 value={formData.startCompany || ''}
-                onInputChange={(_, v) => setFormData({ ...formData, startCompany: v })}
+                onInputChange={(_, v) => {
+                  const companies = companyOptionsByCity[formData.startCity] || [];
+                  const selectedCompany = companies.find(company => company.name === v);
+                  updateFormData({ 
+                    startCompany: v,
+                    startCompanyId: selectedCompany ? selectedCompany.id : ''
+                  });
+                }}
                 renderInput={(params) => (
                   <TextField {...params} label="Start Company (leave blank for Any)" placeholder="e.g., Tradeaux" helperText="Leave empty to allow any company" />
                 )}
@@ -693,9 +743,15 @@ const AdminChallenges = () => {
             <Box sx={{ display: 'flex', gap: 2 }}>
               <Autocomplete
                 freeSolo
-                options={cityOptions}
+                options={cityOptions.map(city => city.name)}
                 value={formData.endCity || ''}
-                onInputChange={(_, v) => setFormData({ ...formData, endCity: v })}
+                onInputChange={(_, v) => {
+                  const selectedCity = cityOptions.find(city => city.name === v);
+                  updateFormData({ 
+                    endCity: v,
+                    endCityId: selectedCity ? selectedCity.id : ''
+                  });
+                }}
                 renderInput={(params) => (
                   <TextField {...params} label="End City (leave blank for Any)" placeholder="e.g., Paris" helperText="Leave empty to allow any city" />
                 )}
@@ -703,9 +759,16 @@ const AdminChallenges = () => {
               />
               <Autocomplete
                 freeSolo
-                options={companyOptionsByCity[formData.endCity] || []}
+                options={(companyOptionsByCity[formData.endCity] || []).map(company => company.name)}
                 value={formData.endCompany || ''}
-                onInputChange={(_, v) => setFormData({ ...formData, endCompany: v })}
+                onInputChange={(_, v) => {
+                  const companies = companyOptionsByCity[formData.endCity] || [];
+                  const selectedCompany = companies.find(company => company.name === v);
+                  updateFormData({ 
+                    endCompany: v,
+                    endCompanyId: selectedCompany ? selectedCompany.id : ''
+                  });
+                }}
                 renderInput={(params) => (
                   <TextField {...params} label="End Company (leave blank for Any)" placeholder="e.g., Lisette Logistics" helperText="Leave empty to allow any company" />
                 )}
@@ -741,7 +804,7 @@ const AdminChallenges = () => {
               freeSolo
               options={cargoOptions}
               value={formData.cargo}
-              onInputChange={(_, v) => setFormData({ ...formData, cargo: v })}
+              onInputChange={(_, v) => updateFormData({ cargo: v })}
               renderInput={(params) => (
                 <TextField 
                   {...params} 
@@ -762,25 +825,59 @@ const AdminChallenges = () => {
               placeholder="e.g., Special badge, Discord role, etc."
             />
             
+            <TextField
+              label="Map Image URL"
+              value={formData.mapImageUrl}
+              onChange={handleInputChange('mapImageUrl')}
+              fullWidth
+              placeholder="https://example.com/map-image.jpg"
+              helperText="Optional: URL to a map image for this challenge route"
+            />
+            
+            {formData.mapImageUrl && (
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+                  Map Preview:
+                </Typography>
+                <Box
+                  component="img"
+                  src={formData.mapImageUrl}
+                  alt="Challenge Map Preview"
+                  sx={{
+                    maxWidth: '100%',
+                    maxHeight: '200px',
+                    objectFit: 'contain',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 1,
+                    display: 'block'
+                  }}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+              </Box>
+            )}
+            
             <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField
-                label="Start Date & Time (optional)"
+                label="Start Date & Time (IST) - Optional"
                 type="datetime-local"
                 value={formData.startAtLocal}
                 onChange={handleInputChange('startAtLocal')}
                 fullWidth
                 InputLabelProps={{ shrink: true }}
-                helperText="When challenge becomes available"
+                helperText="When challenge becomes available (Indian Standard Time)"
               />
               <TextField
-                label="End Date & Time"
+                label="End Date & Time (IST)"
                 type="datetime-local"
                 value={formData.endAtLocal}
                 onChange={handleInputChange('endAtLocal')}
                 fullWidth
                 required
                 InputLabelProps={{ shrink: true }}
-                helperText="When challenge becomes unavailable"
+                helperText="When challenge becomes unavailable (Indian Standard Time)"
               />
             </Box>
             

@@ -2,8 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { listTemplates, createTemplate, updateTemplate, deleteTemplate, adminListContractInstances } from '../services/contractsService';
 import { Grid, Card, CardContent, CardActions, Typography, Button, TextField, Stack, IconButton, Chip, Divider, Alert, ToggleButton, ToggleButtonGroup, LinearProgress, Tooltip, Switch, FormControlLabel, Accordion, AccordionSummary, AccordionDetails, Box, Tabs, Tab } from '@mui/material';
 import Autocomplete from '@mui/material/Autocomplete';
-import { fetchEts2Map } from '../utils/axios';
-import { fetchCargos } from '../services/cargoService';
+import { useExternalData } from '../contexts/ExternalDataContext';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
@@ -21,13 +20,13 @@ export default function AdminContracts() {
   const [editingId, setEditingId] = useState(null);
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
-  const [cityOptions, setCityOptions] = useState([]);
-  const [companyOptionsByCity, setCompanyOptionsByCity] = useState({});
-  const [cargoOptions, setCargoOptions] = useState([]);
   const [instances, setInstances] = useState([]);
   const [instancesLoading, setInstancesLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('active');
   const [activeTab, setActiveTab] = useState(0);
+
+  // Use external data context
+  const { cityOptions, companyOptionsByCity, cargoOptions, loading: externalDataLoading, error: externalDataError } = useExternalData();
 
   const load = async () => {
     try {
@@ -49,22 +48,6 @@ export default function AdminContracts() {
 
   useEffect(() => { loadInstances(statusFilter); }, [statusFilter]);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const md = await fetchEts2Map();
-        const cities = md?.mapData?.cities || [];
-        setCityOptions(cities.map(c => c.name).filter(Boolean).sort());
-        const byCity = {};
-        for (const c of cities) byCity[c.name] = (c.companies||[]).map(co => co.name).filter(Boolean).sort();
-        setCompanyOptionsByCity(byCity);
-        
-        // Load cargo options
-        const cargos = await fetchCargos();
-        setCargoOptions(cargos);
-      } catch (_) {}
-    })();
-  }, []);
 
   const setTask = (idx, patch) => {
     const tasks = [...form.tasks];
@@ -75,28 +58,31 @@ export default function AdminContracts() {
   const addTask = () => setForm({ ...form, tasks: [...form.tasks, { order: form.tasks.length+1, title: '', criteria: {} }] });
   const removeTask = (idx) => setForm({ ...form, tasks: form.tasks.filter((_,i)=>i!==idx) });
 
-  // Helper function to convert local datetime to Unix seconds
-  const localToUnixSeconds = (localDateTime) => {
-    if (!localDateTime) return '';
-    const date = new Date(localDateTime);
+  // Helper function to convert IST datetime to Unix seconds
+  const istToUnixSeconds = (istDateTime) => {
+    if (!istDateTime) return '';
+    // Create date in IST timezone (UTC+5:30)
+    const date = new Date(istDateTime + '+05:30');
     return Math.floor(date.getTime() / 1000);
   };
 
-  // Helper function to convert Unix seconds to local datetime format
-  const unixToLocalDateTime = (unixSeconds) => {
+  // Helper function to convert Unix seconds to IST datetime format
+  const unixToIstDateTime = (unixSeconds) => {
     if (!unixSeconds) return '';
     const date = new Date(unixSeconds * 1000);
-    return date.toISOString().slice(0, 16); // Format: YYYY-MM-DDTHH:MM
+    // Convert to IST (UTC+5:30)
+    const istDate = new Date(date.getTime() + (5.5 * 60 * 60 * 1000));
+    return istDate.toISOString().slice(0, 16); // Format: YYYY-MM-DDTHH:MM
   };
 
   const save = async () => {
     setMsg(''); setErr('');
     try {
-      // Convert local datetime inputs to Unix seconds for backend
+      // Convert IST datetime inputs to Unix seconds for backend
       const payload = {
         ...form,
-        startAtUnix: localToUnixSeconds(form.startAtLocal),
-        endAtUnix: localToUnixSeconds(form.endAtLocal)
+        startAtUnix: istToUnixSeconds(form.startAtLocal),
+        endAtUnix: istToUnixSeconds(form.endAtLocal)
       };
       // Remove local datetime fields from payload
       delete payload.startAtLocal;
@@ -118,8 +104,8 @@ export default function AdminContracts() {
     setEditingId(tpl._id);
     setForm({
       title: tpl.title, slug: tpl.slug, description: tpl.description || '', priceTokens: tpl.priceTokens, rewardTokens: tpl.rewardTokens, penaltyTokens: tpl.penaltyTokens, deadlineDays: tpl.deadlineDays,
-      startAtLocal: tpl.startAt ? unixToLocalDateTime(Math.floor(new Date(tpl.startAt).getTime()/1000)) : '',
-      endAtLocal: tpl.endAt ? unixToLocalDateTime(Math.floor(new Date(tpl.endAt).getTime()/1000)) : '',
+      startAtLocal: tpl.startAt ? unixToIstDateTime(Math.floor(new Date(tpl.startAt).getTime()/1000)) : '',
+      endAtLocal: tpl.endAt ? unixToIstDateTime(Math.floor(new Date(tpl.endAt).getTime()/1000)) : '',
       expiresAt: tpl.expiresAt ? tpl.expiresAt.slice(0,10) : '', active: !!tpl.active,
       tasks: (tpl.tasks||[]).map(t => ({ order: t.order, title: t.title, criteria: t.criteria || {} }))
     });
@@ -215,23 +201,38 @@ export default function AdminContracts() {
                     {criteriaFields.map(([key, label]) => (
                       <Grid item xs={12} sm={6} key={key}>
                         {key === 'sourceCity' || key === 'destinationCity' ? (
-                          <Autocomplete freeSolo options={cityOptions} value={(t.criteria||{})[key] || ''}
+                          <Autocomplete freeSolo options={cityOptions.map(city => city.name)} value={(t.criteria||{})[key] || ''}
                             onInputChange={(_, v) => {
-                              const criteria = { ...(t.criteria||{}), [key]: v };
+                              const selectedCity = cityOptions.find(city => city.name === v);
+                              const criteria = { 
+                                ...(t.criteria||{}), 
+                                [key]: v,
+                                [`${key}Id`]: selectedCity ? selectedCity.id : ''
+                              };
                               setTask(idx, { criteria });
                             }}
                             renderInput={(params) => (<TextField {...params} label={label} size="small" fullWidth />)} />
                         ) : key === 'sourceCompany' ? (
-                          <Autocomplete freeSolo options={companyOptionsByCity[(t.criteria||{}).sourceCity || ''] || []} value={(t.criteria||{})[key] || ''}
+                          <Autocomplete freeSolo options={(companyOptionsByCity[(t.criteria||{}).sourceCity || ''] || []).map(company => company.name)} value={(t.criteria||{})[key] || ''}
                             onInputChange={(_, v) => {
-                              const criteria = { ...(t.criteria||{}), [key]: v };
+                              const selectedCompany = (companyOptionsByCity[(t.criteria||{}).sourceCity || ''] || []).find(company => company.name === v);
+                              const criteria = { 
+                                ...(t.criteria||{}), 
+                                [key]: v,
+                                [`${key}Id`]: selectedCompany ? selectedCompany.id : ''
+                              };
                               setTask(idx, { criteria });
                             }}
                             renderInput={(params) => (<TextField {...params} label={label} size="small" fullWidth />)} />
                         ) : key === 'destinationCompany' ? (
-                          <Autocomplete freeSolo options={companyOptionsByCity[(t.criteria||{}).destinationCity || ''] || []} value={(t.criteria||{})[key] || ''}
+                          <Autocomplete freeSolo options={(companyOptionsByCity[(t.criteria||{}).destinationCity || ''] || []).map(company => company.name)} value={(t.criteria||{})[key] || ''}
                             onInputChange={(_, v) => {
-                              const criteria = { ...(t.criteria||{}), [key]: v };
+                              const selectedCompany = (companyOptionsByCity[(t.criteria||{}).destinationCity || ''] || []).find(company => company.name === v);
+                              const criteria = { 
+                                ...(t.criteria||{}), 
+                                [key]: v,
+                                [`${key}Id`]: selectedCompany ? selectedCompany.id : ''
+                              };
                               setTask(idx, { criteria });
                             }}
                             renderInput={(params) => (<TextField {...params} label={label} size="small" fullWidth />)} />

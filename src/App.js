@@ -32,6 +32,7 @@ import Footer from './components/Footer';
 // import { setItemWithExpiry } from './config/localStorageWithExpiry';
 import { Analytics } from "@vercel/analytics/react"
 import { SpeedInsights } from "@vercel/speed-insights/react"
+import { ExternalDataProvider } from './contexts/ExternalDataContext';
 // Import Montserrat font
 import '@fontsource/montserrat/300.css';
 import '@fontsource/montserrat/400.css';
@@ -246,8 +247,9 @@ function App() {
     <ThemeContext.Provider value={{ isDarkMode, toggleTheme }}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <Router>
-          <MuiThemeProvider theme={theme}>
+        <ExternalDataProvider>
+          <Router>
+            <MuiThemeProvider theme={theme}>
             <Box sx={{ 
               display: 'flex', 
               flexDirection: 'column',
@@ -324,8 +326,9 @@ function App() {
               </Box>
               <Footer />
             </Box>
-          </MuiThemeProvider>
-        </Router>
+            </MuiThemeProvider>
+          </Router>
+        </ExternalDataProvider>
         <SpeedInsights />
         <Analytics />
       </ThemeProvider>

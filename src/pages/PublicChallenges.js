@@ -951,6 +951,33 @@ const PublicChallenges = () => {
                       </Typography>
                     </Box>
                   )}
+                  
+                  {/* Map Image */}
+                  {challenge.mapImageUrl && (
+                    <Box sx={{ mb: 3 }}>
+                      <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 800, letterSpacing: 1, display: 'block', mb: 1 }}>
+                        Route Map
+                      </Typography>
+                      <Box
+                        component="img"
+                        src={challenge.mapImageUrl}
+                        alt="Challenge Route Map"
+                        sx={{
+                          width: '100%',
+                          maxHeight: '300px',
+                          objectFit: 'contain',
+                          borderRadius: 2,
+                          border: '1px solid',
+                          borderColor: 'divider',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                        }}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    </Box>
+                  )}
+                  
                   {/* Route and Cargo tiles (same style as stats) */}
                   <Grid container spacing={1.5} sx={{ mb: 2.5 }}>
                     <Grid item xs={12} sm={6}>
