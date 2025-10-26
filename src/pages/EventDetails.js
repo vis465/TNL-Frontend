@@ -593,8 +593,8 @@ const EventDetails = () => {
                         mb: 2,
                       }}
                     >
-                      <AccessTimeIcon color="primary" />
-                      <Typography
+                      {/* <AccessTimeIcon color="primary" /> */}
+                      {/* <Typography
                         variant="h6"
                         sx={{
                           fontFamily: "Montserrat, sans-serif",
@@ -602,12 +602,12 @@ const EventDetails = () => {
                         }}
                       >
                         Event Schedule
-                      </Typography>
+                      </Typography> */}
                     </Box>
-                    <List>
+                    {/* <List>
                       <ListItem>
                         <ListItemText
-                          primary="Meetup Time (UTC)"
+                          primary="Meetup Time "
                           secondary={
                             event.startDate
                               ? format(
@@ -628,7 +628,7 @@ const EventDetails = () => {
                       {event.endtime && (
                         <ListItem>
                           <ListItemText
-                            primary="Departure Time (UTC)"
+                            primary="Departure Time "
                             secondary={
                               event.endtime
                                 ? format(
@@ -646,7 +646,7 @@ const EventDetails = () => {
                           />
                         </ListItem>
                       )}
-                    </List>
+                    </List> */}
                   </Grid>
 
                   <Grid item xs={12} sm={6}>
