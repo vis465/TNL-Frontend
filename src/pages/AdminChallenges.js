@@ -255,6 +255,7 @@ const AdminChallenges = () => {
         endCompany: formData.endCompany ? normalizeName(formData.endCompany) : '',
         endCompanyId: formData.endCompanyId || '',
         cargo: normalizeName(formData.cargo),
+        mapImageUrl: formData.mapImageUrl || '',
         // Convert local datetime to Unix seconds for backend
         startAtUnix: istToUnixSeconds(formData.startAtLocal),
         endAtUnix: istToUnixSeconds(formData.endAtLocal)
@@ -332,6 +333,7 @@ const AdminChallenges = () => {
       requiredJobs: challenge.requiredJobs,
       cargo: challenge.cargo,
       status: challenge.status,
+      mapImageUrl: challenge.mapImageUrl || '',
       rewards: challenge.rewards || '',
       allowAutoPark: Boolean(challenge.allowAutoPark),
       maxTopSpeedKmh: challenge.maxTopSpeedKmh || '',
