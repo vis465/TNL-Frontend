@@ -291,7 +291,7 @@ function App() {
                   <Route path="/rider/register" element={<RiderRegistration />} />
                   {/* Authenticated personal routes */}
                   <Route element={<PrivateRoute allowedRoles={["rider","admin","eventteam","hrteam","financeteam"]} />}>
-                    <Route path="/my-bookings" element={<MyBookings />} />
+                    
                     <Route path="/dashboard" element={<UserDashboardV2 />} />
                     <Route path="/profile" element={<UserDashboardV2 />} />
                     <Route path="/jobs" element={<RiderJobs />} />
@@ -318,7 +318,7 @@ function App() {
                     <Route path="/admin/attendance" element={<PrivateRoute allowedRoles={["admin","hrteam"]}><HRDashboard /></PrivateRoute>} />
                     <Route path="/admin/riders" element={<PrivateRoute allowedRoles={["admin","eventteam","hrteam"]}><AdminRiders /></PrivateRoute>} />
                     <Route path="/admin/achievements" element={<PrivateRoute allowedRoles={["admin","hrteam"]}><AdminAchievements /></PrivateRoute>} />
-                    <Route path="/admin/bank" element={<PrivateRoute allowedRoles={["admin"]}><AdminBank /></PrivateRoute>} />
+                    <Route path="/admin/bank" element={<PrivateRoute allowedRoles={["admin","financeteam"]}><AdminBank /></PrivateRoute>} />
                     <Route path="/admin/contracts" element={<PrivateRoute allowedRoles={["admin","eventteam",'financeteam']}><AdminContracts /></PrivateRoute>} />
                   </Route>
                   <Route path="*" element={<NotFoundPage />} />
