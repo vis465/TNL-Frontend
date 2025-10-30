@@ -180,7 +180,7 @@ const AdminSidebar = ({
               </>
             )}
 
-            {isAdmin && (
+            {isAdmin  || isFinanceTeam && (
               <>
                 <ListItem disablePadding>
                   <ListItemButton component={RouterLink} to="/admin/bank" onClick={handleMobileDrawerClose}>

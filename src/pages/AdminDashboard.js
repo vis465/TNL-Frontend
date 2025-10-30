@@ -117,7 +117,7 @@ const AdminDashboard = () => {
       color: 'success',
       href: '/admin/bank',
       features: ['Bank Balance', 'Transactions', 'Payout Bonuses'],
-      allowedRoles: ['admin']
+      allowedRoles: ['admin','financeteam']
     },
     {
       title: 'Achievement Management',
