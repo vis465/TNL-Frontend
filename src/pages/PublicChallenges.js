@@ -1229,26 +1229,38 @@ const PublicChallenges = () => {
             </Box>
           ) : firstCompleters.length > 0 ? (
             <Grid container spacing={2}>
-              {firstCompleters.map((challenge, index) => (
-                <Grid item xs={12} key={challenge.challengeId}>
-                  <Card sx={{ 
-                    borderRadius: 3, 
-                    overflow: 'hidden',
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: 'white',
-                    boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)'
-                  }}>
-                    <CardContent sx={{ p: 3 }}>
-                      {/* Challenge Header */}
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-                        <Box>
-                          <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
-                            🏆 {challenge.challengeName}
+              {firstCompleters.map((completion, index) => {
+                // Calculate time to complete
+                const firstJobTime = new Date(completion.firstJobTime);
+                const lastJobTime = new Date(completion.lastJobTime);
+                const completionTime = new Date(completion.completionTime);
+                const timeDiff = completionTime - firstJobTime;
+                const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const challenge = completion.challenge || {};
+                
+                return (
+                  <Grid item xs={12} sm={6} md={4} key={completion._id || completion.challengeId}>
+                    <Card sx={{ 
+                      borderRadius: 3, 
+                      overflow: 'hidden',
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      color: 'white',
+                      boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column'
+                    }}>
+                      <CardContent sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                        {/* Challenge Header */}
+                        <Box sx={{ mb: 2 }}>
+                          <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+                            🏆 {completion.challengeName || challenge.name}
                           </Typography>
-                          <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1 }}>
                             <Chip 
-                              label={challenge.challengeDifficulty?.toUpperCase() || 'MEDIUM'}
+                              label={completion.challengeDifficulty?.toUpperCase() || 'MEDIUM'}
                               size="small"
                               sx={{ 
                                 fontWeight: 600,
@@ -1257,103 +1269,103 @@ const PublicChallenges = () => {
                                 border: '1px solid rgba(255, 255, 255, 0.3)'
                               }}
                             />
-                            <Chip 
-                              label={`${challenge.totalCompleters} Total Completers`}
-                              size="small"
-                              sx={{ 
-                                fontWeight: 600,
-                                bgcolor: 'rgba(255, 255, 255, 0.2)',
-                                color: 'white',
-                                border: '1px solid rgba(255, 255, 255, 0.3)'
-                              }}
-                            />
-                            <Chip 
-                              label={challenge.challengeStatus === 'active' ? '🟢 Active' : '🔴 Completed'}
-                              size="small"
-                              sx={{ 
-                                fontWeight: 600,
-                                bgcolor: 'rgba(255, 255, 255, 0.2)',
-                                color: 'white',
-                                border: '1px solid rgba(255, 255, 255, 0.3)'
-                              }}
-                            />
+                            {challenge.startCity && challenge.endCity && (
+                              <Chip 
+                                label={`${challenge.startCity} → ${challenge.endCity}`}
+                                size="small"
+                                sx={{ 
+                                  fontWeight: 600,
+                                  bgcolor: 'rgba(255, 255, 255, 0.2)',
+                                  color: 'white',
+                                  border: '1px solid rgba(255, 255, 255, 0.3)'
+                                }}
+                              />
+                            )}
                           </Box>
+                          {challenge.cargo && (
+                            <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
+                              Cargo: {challenge.cargo}
+                            </Typography>
+                          )}
                         </Box>
-                        <Box sx={{ textAlign: 'right' }}>
-                          <Typography variant="h4" sx={{ fontWeight: 800, fontFamily: 'monospace' }}>
-                            #{index + 1}
-                          </Typography>
-                          <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                            Challenge
-                          </Typography>
-                        </Box>
-                      </Box>
-                      
-                      {/* Top 3 Completers */}
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        {challenge.completers.map((completer, completerIndex) => (
-                          <Box key={completer.driverId} sx={{ 
-                            display: 'flex', 
-                            justifyContent: 'space-between', 
+                        
+                        {/* First Completer Info */}
+                        <Box sx={{ 
+                          flexGrow: 1,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          p: 2,
+                          borderRadius: 2,
+                          bgcolor: 'rgba(255, 215, 0, 0.2)',
+                          backdropFilter: 'blur(10px)',
+                          border: '2px solid rgba(255, 215, 0, 0.5)',
+                          position: 'relative'
+                        }}>
+                          {/* First Place Badge */}
+                          <Box sx={{ 
+                            position: 'absolute', 
+                            top: -12, 
+                            left: 16,
+                            bgcolor: '#FFD700',
+                            color: 'white',
+                            borderRadius: '50%',
+                            width: 40,
+                            height: 40,
+                            display: 'flex',
                             alignItems: 'center',
-                            p: 2,
-                            borderRadius: 2,
-                            bgcolor: completerIndex === 0 ? 'rgba(255, 215, 0, 0.2)' : 'rgba(255, 255, 255, 0.1)',
-                            backdropFilter: 'blur(10px)',
-                            border: completerIndex === 0 ? '2px solid rgba(255, 215, 0, 0.5)' : '1px solid rgba(255, 255, 255, 0.2)',
-                            position: 'relative'
+                            justifyContent: 'center',
+                            fontWeight: 800,
+                            fontSize: '1.1rem',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
                           }}>
-                            {/* Position Badge */}
-                            <Box sx={{ 
-                              position: 'absolute', 
-                              top: -8, 
-                              left: 16,
-                              bgcolor: completerIndex === 0 ? '#FFD700' : completerIndex === 1 ? '#C0C0C0' : '#CD7F32',
-                              color: 'white',
-                              borderRadius: '50%',
-                              width: 32,
-                              height: 32,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontWeight: 800,
-                              fontSize: '0.9rem',
-                              boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
-                            }}>
-                              {completer.position}
-                            </Box>
-                            
-                            <Box sx={{ flex: 1, ml: 4 }}>
-                              <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
-                                {completer.driverUsername}
-                              </Typography>
-                              <Typography variant="body2" sx={{ opacity: 0.9, mb: 0.5 }}>
-                                Driver ID: {completer.driverId}
-                              </Typography>
-                              <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                                Distance: {Math.round(completer.totalDistance || 0)} km • {completer.completedJobs} jobs
-                              </Typography>
-                            </Box>
-                            
-                            <Box sx={{ textAlign: 'right' }}>
-                              <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                                Completed in
-                              </Typography>
-                              <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: 'monospace' }}>
-                                {completer.daysToComplete > 0 ? `${completer.daysToComplete} days` : 
-                                 completer.hoursToComplete > 0 ? `${completer.hoursToComplete} hours` : 'Same day'}
-                              </Typography>
-                              <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>
-                                {completer.completionTime ? new Date(completer.completionTime).toLocaleDateString() : 'Unknown'}
-                              </Typography>
-                            </Box>
+                            🥇
                           </Box>
-                        ))}
-                      </Box>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
+                          
+                          <Box sx={{ flex: 1, mt: 2 }}>
+                            <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+                              {completion.driverUsername}
+                            </Typography>
+                            <Typography variant="body2" sx={{ opacity: 0.9, mb: 0.5 }}>
+                              Driver ID: {completion.driverId}
+                            </Typography>
+                            <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
+                              Distance: {Math.round(completion.totalDistance || 0).toLocaleString()} km
+                            </Typography>
+                            <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
+                              Jobs: {completion.totalJobsCompleted} / {challenge.requiredJobs || completion.totalJobsCompleted}
+                            </Typography>
+                            {challenge.minDistance && (
+                              <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
+                                Min Distance: {challenge.minDistance} km
+                              </Typography>
+                            )}
+                          </Box>
+                          
+                          <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid rgba(255, 255, 255, 0.2)' }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                              Completed in
+                            </Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: 'monospace', mb: 0.5 }}>
+                              {days > 0 ? `${days} day${days > 1 ? 's' : ''}` : 
+                               hours > 0 ? `${hours} hour${hours > 1 ? 's' : ''}` : 'Same day'}
+                            </Typography>
+                            <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>
+                              {completion.completionTime ? new Date(completion.completionTime).toLocaleString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              }) : 'Unknown'}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                );
+              })}
             </Grid>
           ) : (
             <Paper sx={{ p: 4, textAlign: 'center' }}>
