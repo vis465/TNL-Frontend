@@ -202,7 +202,6 @@ const AdminChallenges = () => {
       // Remove local datetime fields from payload
       delete normalizedData.startAtLocal;
       delete normalizedData.endAtLocal;
-      
       await axiosInstance.post('/challenges', normalizedData);
       setSuccess('Challenge created successfully');
       setCreateDialogOpen(false);
@@ -243,9 +242,10 @@ const AdminChallenges = () => {
         return;
       }
 
-      // Prepare data with both names and IDs for backend
+      // Prepare data with both names and IDs for backend - explicitly include all fields
       const normalizedData = {
-        ...formData,
+        name: formData.name,
+        description: formData.description || '',
         startCity: formData.startCity ? normalizeName(formData.startCity) : '',
         startCityId: formData.startCityId || '',
         startCompany: formData.startCompany ? normalizeName(formData.startCompany) : '',
@@ -254,15 +254,20 @@ const AdminChallenges = () => {
         endCityId: formData.endCityId || '',
         endCompany: formData.endCompany ? normalizeName(formData.endCompany) : '',
         endCompanyId: formData.endCompanyId || '',
+        minDistance: formData.minDistance,
+        requiredJobs: formData.requiredJobs || 1,
         cargo: normalizeName(formData.cargo),
+        status: formData.status || 'active',
+        rewards: formData.rewards || '',
         mapImageUrl: formData.mapImageUrl || '',
+        maxTopSpeedKmh: formData.maxTopSpeedKmh || '',
+        maxTruckDamagePercent: formData.maxTruckDamagePercent || '',
+        allowAutoPark: Boolean(formData.allowAutoPark),
+        difficulty: formData.difficulty || 'medium',
         // Convert local datetime to Unix seconds for backend
         startAtUnix: istToUnixSeconds(formData.startAtLocal),
         endAtUnix: istToUnixSeconds(formData.endAtLocal)
       };
-      // Remove local datetime fields from payload
-      delete normalizedData.startAtLocal;
-      delete normalizedData.endAtLocal;
       
       await axiosInstance.put(`/challenges/${selectedChallenge._id}`, normalizedData);
       setSuccess('Challenge updated successfully');
