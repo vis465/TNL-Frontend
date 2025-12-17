@@ -705,8 +705,8 @@ const Landing = () => {
     },
     {
       id: 4,
-      name: "Lumo haul",
-      logo: "https://static.truckersmp.com/images/vtc/logo/79072.1747716542.png",
+      name: "沐光物流丨Muguang Logistics",
+      logo: "https://static.truckersmp.com/images/vtc/logo/79072.1764047724.png",
 
     },
     {
@@ -725,6 +725,11 @@ const Landing = () => {
       id: 5,
       name: "Nextgen CC and media group",
       logo: "https://i.postimg.cc/5ttXzFGn/Nenx-Gen-LOGO.png",
+    },
+    {
+      id: 6,
+      name: "ETS2MCG",
+      logo: "https://i.postimg.cc/RZqqxtCY/Square.png",
     }
 
   ];
