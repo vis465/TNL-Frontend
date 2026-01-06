@@ -602,6 +602,14 @@ export default function UserDashboard() {
                 >
                   Leaderboard
                 </Button>
+                {/* <Button 
+                  variant="outlined" 
+                  startIcon={<TrackChangesOutlinedIcon />}
+                  component={RouterLink}
+                  to="/goals"
+                >
+                  Personal Goals
+                </Button> */}
               </Stack>
             </CardContent>
                 </Card>

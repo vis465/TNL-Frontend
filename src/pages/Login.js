@@ -88,7 +88,10 @@ const Login = () => {
             Login
           </Typography>
           {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert 
+              severity={error.includes('pending approval') ? 'warning' : 'error'} 
+              sx={{ mb: 2 }}
+            >
               {error}
             </Alert>
           )}

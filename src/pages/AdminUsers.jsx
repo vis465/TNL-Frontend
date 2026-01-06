@@ -43,6 +43,13 @@ export default function AdminUsers() {
     fetchUsers();
   };
 
+  const deleteUser = async (id) => {
+    const confirmed = window.confirm('Are you sure you want to delete this user? This action cannot be undone.');
+    if (!confirmed) return;
+    await axiosInstance.delete(`/users/${id}`);
+    fetchUsers();
+  };
+
   return (
     <Box sx={{ maxWidth: 1200, mx: 'auto', px: 3, py: 4 }}>
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
@@ -89,15 +96,37 @@ export default function AdminUsers() {
                     <TableCell>{u.username}</TableCell>
                     <TableCell>{u.email}</TableCell>
                     <TableCell>
-                      <Chip size="small" label={u.role} color={u.role === 'admin' ? 'error' : (u.role === 'eventteam' ? 'secondary' : (u.role === 'hrteam' ? 'info' : 'default'))} variant="outlined" />
+                      <Chip
+                        size="small"
+                        label={u.role}
+                        color={u.role === 'admin'
+                          ? 'error'
+                          : (u.role === 'eventteam'
+                            ? 'secondary'
+                            : (u.role === 'hrteam' ? 'info' : 'default'))}
+                        variant="outlined"
+                      />
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={1}>
                         {['admin','eventteam','hrteam','rider'].filter(r => r !== u.role).map((r) => (
-                          <Button key={r} size="small" variant="outlined" onClick={() => updateRole(u._id, r)}>
+                          <Button
+                            key={r}
+                            size="small"
+                            variant="outlined"
+                            onClick={() => updateRole(u._id, r)}
+                          >
                             Set {r}
                           </Button>
                         ))}
+                        <Button
+                          size="small"
+                          color="error"
+                          variant="outlined"
+                          onClick={() => deleteUser(u._id)}
+                        >
+                          Delete
+                        </Button>
                       </Stack>
                     </TableCell>
                   </TableRow>

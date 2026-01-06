@@ -25,6 +25,7 @@ const Register = () => {
     vtcName: 'Tamilnadu Logistics',
   });
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
   // Check for error from URL params
@@ -49,11 +50,24 @@ const Register = () => {
 
     try {
       const response = await axiosInstance.post('/auth/register', formData);
-      const { token, user } = response.data;
+      const { token, user, message } = response.data;
       localStorage.setItem('token', token);
-      navigate('/');
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      // Show success message about pending approval
+      if (message && message.includes('pending approval')) {
+        setSuccess(message);
+        setError('');
+        // Show message for 5 seconds then navigate
+        setTimeout(() => {
+          navigate('/');
+        }, 5000);
+      } else {
+        navigate('/');
+      }
     } catch (error) {
       setError(error.response?.data?.message || 'Registration failed');
+      setSuccess('');
     } finally {
       setLoading(false);
     }
@@ -73,6 +87,14 @@ const Register = () => {
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
+          </Alert>
+        )}
+        {success && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            {success}
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              You will receive an email once your account is approved by HR/Admin.
+            </Typography>
           </Alert>
         )}
 

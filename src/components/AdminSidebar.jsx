@@ -151,7 +151,12 @@ const AdminSidebar = ({
                   </ListItemButton>
                 </ListItem>
                 
-              
+                <ListItem disablePadding>
+                  <ListItemButton component={RouterLink} to="/admin/user-approvals" onClick={handleMobileDrawerClose}>
+                    <ListItemIcon><People /></ListItemIcon>
+                    <ListItemText primary="User Approvals" />
+                  </ListItemButton>
+                </ListItem>
                 
                 <ListItem disablePadding>
                   <ListItemButton component={RouterLink} to="/admin/attendance" onClick={handleMobileDrawerClose}>

@@ -127,6 +127,15 @@ const AdminDashboard = () => {
       href: '/admin/achievements',
       features: ['Issue Achievements', 'Manage Awards', 'Track Recognition', 'Custom Badges'],
       allowedRoles: ['admin', 'hrteam']
+    },
+    {
+      title: 'User Approvals',
+      description: 'Review and approve pending user registrations. Approve or reject new user accounts.',
+      icon: <People sx={{ fontSize: 40, color: 'primary.main' }} />,
+      color: 'primary',
+      href: '/admin/user-approvals',
+      features: ['Pending Approvals', 'Approve Users', 'Reject Users', 'Email Notifications'],
+      allowedRoles: ['admin', 'hrteam']
     }
   ];
 

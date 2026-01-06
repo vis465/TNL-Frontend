@@ -78,6 +78,8 @@ import PageMaintenance from './pages/pagemaintanance';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Wallet from './pages/Wallet';
+import PersonalGoals from './pages/PersonalGoals';
+import AdminUserApprovals from './pages/AdminUserApprovals';
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -298,7 +300,8 @@ function App() {
                     <Route path="/attendance" element={<RiderAttendance />} />
                   <Route path="/contracts" element={<ContractsMarketplace />} />
                   <Route path="/contracts/me" element={<MyContracts />} />
-                  <Route path="/wallet" element={<Wallet />} />
+                    <Route path="/wallet" element={<Wallet />} />
+                    <Route path="/goals" element={<PersonalGoals />} />
                     {/* <Route path="/jobs/:id" element={<JobDetailsMUI />} /> */}
                     <Route path="/jobs/:id" element={<JobDetails />} />
                   </Route>
@@ -320,6 +323,7 @@ function App() {
                     <Route path="/admin/achievements" element={<PrivateRoute allowedRoles={["admin","hrteam"]}><AdminAchievements /></PrivateRoute>} />
                     <Route path="/admin/bank" element={<PrivateRoute allowedRoles={["admin","financeteam"]}><AdminBank /></PrivateRoute>} />
                     <Route path="/admin/contracts" element={<PrivateRoute allowedRoles={["admin","eventteam",'financeteam']}><AdminContracts /></PrivateRoute>} />
+                    <Route path="/admin/user-approvals" element={<PrivateRoute allowedRoles={["admin","hrteam"]}><AdminUserApprovals /></PrivateRoute>} />
                   </Route>
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>
