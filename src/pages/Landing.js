@@ -730,6 +730,11 @@ const Landing = () => {
       id: 6,
       name: "ETS2MCG",
       logo: "https://i.postimg.cc/RZqqxtCY/Square.png",
+    },
+    {
+      id: 6,
+      name: "TruckersHub",
+      logo: "https://i.postimg.cc/505d5yCJ/logo.png",
     }
 
   ];
