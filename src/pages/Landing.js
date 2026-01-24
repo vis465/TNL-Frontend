@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { motion, useScroll, useTransform, useAnimation, AnimatePresence } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import placeholderimg from "../img/placeholder.jpg"
 import axiosInstance from '../utils/axios';
 import bgimg from "../img/image.png"
@@ -14,22 +14,16 @@ import {
   Card,
   CardContent,
   CardMedia,
-  IconButton,
   useTheme,
   alpha,
   styled,
   useMediaQuery,
   Stack,
   Paper,
-  Divider,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Chip,
 } from '@mui/material';
 import {
   ChevronRight as ChevronRightIcon,
@@ -733,7 +727,7 @@ const Landing = () => {
     },
     {
       id: 6,
-      name: "TruckersHub",
+      name: "TruckersHub Community",
       logo: "https://i.postimg.cc/505d5yCJ/logo.png",
     }
 
