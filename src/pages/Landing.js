@@ -726,7 +726,7 @@ const Landing = () => {
       logo: "https://i.postimg.cc/RZqqxtCY/Square.png",
     },
     {
-      id: 6,
+      id: 7,
       name: "TruckersHub Community",
       logo: "https://i.postimg.cc/505d5yCJ/logo.png",
     }
