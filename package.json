@@ -42,7 +42,9 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "lint": "eslint src",
+  "lint:fix": "eslint src --fix"
   },
   "eslintConfig": {
     "extends": [
@@ -63,6 +65,12 @@
     ]
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "eslint": "^8.57.1",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "globals": "^17.1.0",
     "tailwindcss-animate": "^1.0.7"
   }
 }

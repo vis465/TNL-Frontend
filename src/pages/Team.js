@@ -238,7 +238,6 @@ const Team = () => {
       'Member': '#757575',
       'Owner': '#ff0000',
       'Co-Owner': '#ff6b35',
-      'Manager': '#ff9800',
       'Supervisor': '#ffc107',
       'Driver': '#4caf50',
       'Trainee': '#607d8b',

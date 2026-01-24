@@ -557,7 +557,7 @@ const Landing = () => {
 
       const response = await axiosInstance.get('/events');
       const eventsData = response.data.response || response.data;
-      console.log(eventsData)
+      
 
 
       if (!Array.isArray(eventsData)) {
@@ -582,7 +582,7 @@ const Landing = () => {
       setStatsLoading(true);
       const stats = await leaderboardService.getGlobalStats();
       setLeaderboardStats(stats);
-      console.log(stats)
+      //console.log(stats)
     } catch (error) {
       console.error('Error fetching leaderboard stats:', error);
     } finally {
@@ -604,7 +604,7 @@ const Landing = () => {
         return 'default';
     }
   };
-  console.log(datatorender)
+  //console.log(datatorender)
   const categorizeEvents = () => {
     const now = new Date();
 
@@ -613,7 +613,7 @@ const Landing = () => {
       upcoming: events.filter(event => {
         try {
           const startDate = new Date(event.startDate);
-          // console.log('Checking upcoming event:', event.title, startDate);
+          // //console.log('Checking upcoming event:', event.title, startDate);
           return startDate > now; // Future start date
         } catch (error) {
           // console.error('Error processing upcoming event:', event.title, error);
@@ -642,7 +642,7 @@ const Landing = () => {
       })
     };
 
-    console.log('Categorized events:', categorized);
+    // console.log('Categorized events:', categorized);
     return categorized;
   };
   const { upcoming, live, past } = categorizeEvents();
@@ -710,23 +710,23 @@ const Landing = () => {
 
     },
     {
-      id: 4,
+      id: 5,
       name: "Aura",
       logo: "https://static.truckersmp.com/images/vtc/logo/75200.1729511385.png",
 
     },
     {
-      id: 5,
+      id: 6,
       name: "Nextgen CC and media group",
       logo: "https://i.postimg.cc/5ttXzFGn/Nenx-Gen-LOGO.png",
     },
     {
-      id: 6,
+      id: 7,
       name: "ETS2MCG",
       logo: "https://i.postimg.cc/RZqqxtCY/Square.png",
     },
     {
-      id: 7,
+      id: 8,
       name: "TruckersHub Community",
       logo: "https://i.postimg.cc/505d5yCJ/logo.png",
     }

@@ -108,7 +108,7 @@ const toBase64 = async (url) => {
           });
           SetPlayerres(playerResponse)
         } else {
-         
+         console.log("else")
         }
       } catch (avatarError) {
         console.log('Could not fetch avatar, using fallback:', avatarError.message);

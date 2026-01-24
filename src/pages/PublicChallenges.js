@@ -383,7 +383,6 @@ const PublicChallenges = () => {
         <Box sx={{ 
           display: 'flex', 
           gap: 2, 
-          alignItems: 'center',
           flexDirection: { xs: 'column', sm: 'row' },
           alignItems: { xs: 'stretch', sm: 'center' }
         }}>

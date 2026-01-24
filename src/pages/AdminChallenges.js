@@ -344,7 +344,7 @@ const AdminChallenges = () => {
       maxTopSpeedKmh: challenge.maxTopSpeedKmh || '',
       maxTruckDamagePercent: challenge.maxTruckDamagePercent || '',
       difficulty: challenge.difficulty || 'medium',
-      mapImageUrl: challenge.mapImageUrl || '',
+      
       startAtLocal: challenge.startDate ? unixToIstDateTime(Math.floor(new Date(challenge.startDate).getTime()/1000)) : '',
       endAtLocal: challenge.endDate ? unixToIstDateTime(Math.floor(new Date(challenge.endDate).getTime()/1000)) : ''
     });
@@ -465,7 +465,7 @@ const AdminChallenges = () => {
               variant="outlined"
               startIcon={<RefreshIcon />}
               onClick={fetchChallenges}
-              sx={{ color: 'inherit', borderColor: 'rgba(255,255,255,0.6)',color:'black' }}
+              sx={{borderColor: 'rgba(255,255,255,0.6)',color:'black' }}
               disabled={loading}
             >
               Refresh

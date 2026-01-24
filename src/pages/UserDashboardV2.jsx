@@ -114,7 +114,9 @@ export default function UserDashboard() {
       try {
         const res = await myContracts();
         setContracts(res);
-      } catch(e) {}
+      } catch(e) {
+        console.log(e)
+      }
     })();
   }, []);
 
@@ -123,7 +125,9 @@ export default function UserDashboard() {
       try {
         const w = await getMyWallet();
         setWallet({ balance: Number(w.balance || 0), transactions: Array.isArray(w.transactions) ? w.transactions : [] });
-      } catch(e) {}
+      } catch(e) {
+        console.log(e)
+      }
     })();
   }, []);
 
