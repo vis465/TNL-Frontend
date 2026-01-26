@@ -292,8 +292,7 @@ function App() {
                     <Route path="/maintain" element={<PageMaintenance />} />
                     <Route path="/" element={<Landing />} />
                     <Route path="/login" element={<Login />} />
-                    <Route path="/register">
-                      <Route index element={<Navigate to="steam" replace />} />
+                    <Route path="/register" element={<SteamRegistration />} />
                       <Route path="steam" element={<SteamRegistration />} />
                     </Route>
 
