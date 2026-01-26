@@ -294,7 +294,7 @@ function App() {
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<SteamRegistration />} />
                       <Route path="steam" element={<SteamRegistration />} />
-                    </Route>
+                    
 
                     <Route
                       path="/forgot-password"
