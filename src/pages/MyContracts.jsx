@@ -77,7 +77,10 @@ export default function MyContracts() {
 
     const renderCriteria = (criteria) => {
       if (!criteria) return null;
-      const entries = Object.entries(criteria).filter(([, v]) => v !== '' && v != null);
+      // Filter out ID fields and empty values
+      const entries = Object.entries(criteria)
+        .filter(([k, v]) => !k.endsWith('Id') && v !== '' && v != null);
+      
       if (!entries.length) {
         return (
           <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
@@ -85,18 +88,52 @@ export default function MyContracts() {
           </Typography>
         );
       }
+
+      // Helper to convert camelCase to readable format
+      const formatLabel = (key) => {
+        return key
+          .replace(/([A-Z])/g, ' $1')
+          .replace(/^./, (str) => str.toUpperCase())
+          .trim();
+      };
+
       return (
-        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
+        <Grid container spacing={2}>
           {entries.map(([k, v]) => (
-            <Chip
-              key={k}
-              label={`${k}: ${v}`}
-              size="small"
-              variant="outlined"
-             
-            />
+            <Grid item xs={12} sm={6} md={4} key={k}>
+              <Box sx={{
+                p: 2,
+                border: '1px solid #e0e0e0',
+                borderRadius: 1.5,
+                bgcolor: '#fafafa',
+                transition: 'all 0.2s ease'
+              }}>
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    color: '#666', 
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.5,
+                    display: 'block',
+                    mb: 0.5
+                  }}
+                >
+                  {formatLabel(k)}
+                </Typography>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    color: '#1976d2',
+                    fontWeight: 500
+                  }}
+                >
+                  {v}
+                </Typography>
+              </Box>
+            </Grid>
           ))}
-        </Stack>
+        </Grid>
       );
     };
 
