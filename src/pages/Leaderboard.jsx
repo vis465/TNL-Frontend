@@ -263,11 +263,9 @@ export default function Leaderboard() {
                    rider?.totalDamage ? `${rider.totalDamage.toLocaleString()} damage` :
                    rider?.totalFuel ? `${rider.totalFuel.toLocaleString()} L` :
                    rider?.totalJobs ? `${rider.totalJobs} jobs` :
-                   '—'}
+                   ''}
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
-                  {rider?.totalJobs || 0} jobs completed
-                </Typography>
+                
               </Box>
             </Stack>
           </CardContent>
