@@ -1,0 +1,34 @@
+name: Vercel Deployment Discord Notify
+
+on:
+  push:
+    branches:
+      - main
+  deployment_status:
+
+jobs:
+  notify-start:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Notify Deployment Start
+        run: |
+          curl -H "Content-Type: application/json" \
+          -d "{
+            \"content\": \"🚀 **Deployment Started**\nRepo: ${{ github.repository }}\nBranch: ${{ github.ref_name }}\nCommit: ${{ github.event.head_commit.message }}\nAuthor: ${{ github.event.head_commit.author.name }}\"
+          }" \
+          ${{ secrets.REPO }}
+
+  notify-result:
+    if: github.event_name == 'deployment_status'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Notify Deployment Result
+        run: |
+          curl -H "Content-Type: application/json" \
+          -d "{
+            \"content\": \"📦 **Vercel Deployment**\nStatus: ${{ github.event.deployment_status.state }}\nURL: ${{ github.event.deployment_status.environment_url }}\"
+          }" \
+          ${{ secrets.REPO }}
