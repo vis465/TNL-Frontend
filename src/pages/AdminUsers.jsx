@@ -56,9 +56,7 @@ export default function AdminUsers() {
     <Box sx={{ maxWidth: 1200, mx: 'auto', px: 3, py: 4 }}>
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
         <Typography variant="h5" fontWeight={700}>Admin • Users & Roles</Typography>
-        <PrivateRoute allowedRoles={["admin", "hrteam"]}>
-          <Button variant="contained" onClick={() => navigate('/admin/create-user')}>Create User</Button>
-        </PrivateRoute>
+        <Button variant="contained" onClick={() => navigate('/admin/create-user')}>Create User</Button>
       </Stack>
 
       <Card variant="outlined" sx={{ mb: 3 }}>
