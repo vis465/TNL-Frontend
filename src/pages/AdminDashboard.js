@@ -72,7 +72,7 @@ const cardConfig = [
     to: '/admin/create-user',
     icon: PersonAdd,
     color: 'secondary',
-    roles: ['admin'],
+    roles: ['admin', 'hrteam'],
   },
   {
     group: 'People & HR',

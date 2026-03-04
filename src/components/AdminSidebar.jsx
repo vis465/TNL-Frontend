@@ -64,7 +64,7 @@ const eventsAndJobsItems = [
 // People & HR
 const peopleItems = [
   navItem("/admin/users", "User Management", <People />, ["admin", "hrteam"]),
-  navItem("/admin/create-user", "Create User", <PersonAdd />, ["admin"]),
+  navItem("/admin/create-user", "Create User", <PersonAdd />, ["admin", "hrteam"]),
   navItem("/admin/user-approvals", "User Approvals", <VerifiedUserOutlined />, ["admin", "hrteam"]),
   navItem("/admin/attendance", "Attendance Management", <Event />, ["admin", "hrteam"]),
   navItem("/admin/riders", "Riders", <Group />, ["admin", "eventteam", "hrteam"]),

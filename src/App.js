@@ -426,7 +426,7 @@ function App() {
                       <Route
                         path="create-user"
                         element={
-                          <PrivateRoute allowedRoles={["admin"]}>
+                          <PrivateRoute allowedRoles={["admin","hrteam"]}>
                             <AdminCreateUser />
                           </PrivateRoute>
                         }
