@@ -371,106 +371,68 @@ export default function UserDashboard() {
         </Box>
       </Box>
 
-      <Container maxWidth="xl" sx={{ py: { xs: 2, md: 4 } }}>
-        {/* Enhanced Stats Cards with Animations */}
+      <Container maxWidth="xl" sx={{ py: { xs: 1.5, md: 2 } }}>
+        {/* Key stats */}
         <Fade in timeout={800}>
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
-              <Zoom in timeout={1000}>
-                
-                <Card 
-                  variant="outlined" 
-                  sx={{ 
-                    height: '100%',
-                    background: 'linear-gradient(135deg, #4facfe 0%,rgb(219, 207, 30) 100%)',
-                    color: 'white',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: 6
-                    },
-                    transition: 'all 0.3s ease'
-                  }}
-                >
-                  
+          <Grid container spacing={2} sx={{ mb: 2 }}>
+            <Grid item xs={12} sm={6} md={3}>
+              <Zoom in timeout={900}>
+                <Card variant="outlined" sx={{ height: '100%', borderRadius: 3 }}>
                   <CardContent>
                     <Stack direction="row" alignItems="center" spacing={2}>
-                      <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)' }}>
-                        <AttachMoneyOutlinedIcon />
+                      <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.main' }}>
+                        <AccountBalanceWallet />
                       </Avatar>
                       <Box>
-                        <Typography variant="h4" fontWeight={700}>
+                        <Typography variant="overline" color="text.secondary">
+                          Token balance
+                        </Typography>
+                        <Typography variant="h5" fontWeight={700}>
                           {Number(wallet?.balance || 0).toLocaleString()}
                         </Typography>
-                        <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                          Total tokens
-                        </Typography>
                       </Box>
                     </Stack>
                   </CardContent>
                 </Card>
               </Zoom>
             </Grid>
+
             {/* <Grid item xs={12} sm={6} md={3}>
               <Zoom in timeout={1000}>
-                
-                <Card 
-                  variant="outlined" 
-                  sx={{ 
-                    height: '100%',
-                    background: 'linear-gradient(135deg, #4facfe 0%,rgb(219, 207, 30) 100%)',
-                    color: 'white',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: 6
-                    },
-                    transition: 'all 0.3s ease'
-                  }}
-                >
-                  
+                <Card variant="outlined" sx={{ height: '100%', borderRadius: 3 }}>
                   <CardContent>
                     <Stack direction="row" alignItems="center" spacing={2}>
-                      <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)' }}>
-                        <AttachMoneyOutlinedIcon />
+                      <Avatar sx={{ bgcolor: 'info.light', color: 'info.main' }}>
+                        <LocalShippingOutlinedIcon />
                       </Avatar>
                       <Box>
-                        <Typography variant="h4" fontWeight={700}>
+                        <Typography variant="overline" color="text.secondary">
+                          Total jobs
+                        </Typography>
+                        <Typography variant="h5" fontWeight={700}>
                           {Number(totals?.totalJobs || 0).toLocaleString()}
                         </Typography>
-                        <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                          Total Jobs
-                        </Typography>
                       </Box>
                     </Stack>
                   </CardContent>
                 </Card>
               </Zoom>
             </Grid>
+
             <Grid item xs={12} sm={6} md={3}>
-              <Zoom in timeout={1200}>
-                <Card 
-                  variant="outlined" 
-                  sx={{ 
-                    height: '100%',
-                    background: 'linear-gradient(135deg, #4facfe 0%,rgb(219, 207, 30) 100%)',
-                    color: 'white',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: 6
-                    },
-                    transition: 'all 0.3s ease'
-                  }}
-                >
+              <Zoom in timeout={1100}>
+                <Card variant="outlined" sx={{ height: '100%', borderRadius: 3 }}>
                   <CardContent>
                     <Stack direction="row" alignItems="center" spacing={2}>
-                      <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)' }}>
+                      <Avatar sx={{ bgcolor: 'success.light', color: 'success.main' }}>
                         <AttachMoneyOutlinedIcon />
                       </Avatar>
                       <Box>
-                        <Typography variant="h4" fontWeight={700}>
-                          ₹{Number(totals?.totalRevenue || 0).toLocaleString()}
+                        <Typography variant="overline" color="text.secondary">
+                          Total revenue
                         </Typography>
-                        <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                          Total Revenue
+                        <Typography variant="h5" fontWeight={700}>
+                          {Number(totals?.totalRevenue || 0).toLocaleString()}
                         </Typography>
                       </Box>
                     </Stack>
@@ -478,66 +440,22 @@ export default function UserDashboard() {
                 </Card>
               </Zoom>
             </Grid>
+
             <Grid item xs={12} sm={6} md={3}>
-              <Zoom in timeout={1400}>
-                <Card 
-                  variant="outlined" 
-                  sx={{ 
-                    height: '100%',
-                    background: 'linear-gradient(135deg, #4facfe 0%,rgb(219, 207, 30) 100%)',
-                    color: 'white',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: 6
-                    },
-                    transition: 'all 0.3s ease'
-                  }}
-                >
+              <Zoom in timeout={1200}>
+                <Card variant="outlined" sx={{ height: '100%', borderRadius: 3 }}>
                   <CardContent>
                     <Stack direction="row" alignItems="center" spacing={2}>
-                      <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)' }}>
+                      <Avatar sx={{ bgcolor: 'warning.light', color: 'warning.main' }}>
                         <PlaceOutlinedIcon />
                       </Avatar>
                       <Box>
-                        <Typography variant="h4" fontWeight={700}>
+                        <Typography variant="overline" color="text.secondary">
+                          Distance driven
+                        </Typography>
+                        <Typography variant="h5" fontWeight={700}>
                           {Number(totals?.totalKm || 0).toLocaleString()} km
                         </Typography>
-                        <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                          Distance Driven
-                        </Typography>
-                      </Box>
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </Zoom>
-            </Grid> */}
-            {/* <Grid item xs={12} sm={6} md={3}>
-              <Zoom in timeout={1600}>
-                <Card 
-                  variant="outlined" 
-                  sx={{ 
-                    height: '100%',
-                    background: 'linear-gradient(135deg, #4facfe 0%,rgb(219, 207, 30) 100%)',
-                    color: 'white',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: 6
-                    },
-                    transition: 'all 0.3s ease'
-                  }}
-                >
-                  <CardContent>
-                    <Stack direction="row" alignItems="center" spacing={2}>
-                      <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)' }}>
-                        <EmojiEventsOutlinedIcon />
-                      </Avatar>
-                      <Box>
-                        <Typography variant="h4" fontWeight={700} >
-                          {attendance.totalEventsAttended || 0}
-                        </Typography>
-                        <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                          Events Attended
-                        </Typography>
                       </Box>
                     </Stack>
                   </CardContent>
@@ -547,395 +465,456 @@ export default function UserDashboard() {
           </Grid>
         </Fade>
 
-        {/* Wallet Section */}
-        <Fade in timeout={1000}>
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={12}>
-              <WalletTransactions wallet={wallet} onRefresh={() => {
-                getMyWallet().then(w => setWallet({ balance: Number(w.balance || 0), transactions: Array.isArray(w.transactions) ? w.transactions : [] }));
-              }} />
-            </Grid>
-          </Grid>
-        </Fade>
-
-        {/* Contracts Section - Active and Completed Side by Side */}
-        <Fade in timeout={1200}>
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={12} lg={6}>
-              <ActiveContracts onRefresh={() => {
-                myContracts().then(res => setContracts(res));
-              }} />
-            </Grid>
-            <Grid item xs={12} lg={6}>
-              <CompletedContracts onRefresh={() => {
-                myContracts().then(res => setContracts(res));
-              }} />
-            </Grid>
-          </Grid>
-        </Fade>
-
-        {/* Additional Dashboard Content */}
-          <Fade in timeout={1200}>
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-              <Grid item xs={12}>
-                <Card variant="outlined">
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 2 }}>Quick Actions</Typography>
-              <Stack direction="row" spacing={2} flexWrap="wrap">
-                <Button 
-                  variant='outlined'
-                  startIcon={<Assignment />}
-                  component={RouterLink}
-                  to="/contracts/me"
-                >
-                  My Contracts
-                </Button>
-                <Button 
-                  variant="outlined" 
-                  startIcon={<AccountBalanceWallet />}
-                  component={RouterLink}
-                  to="/wallet"
-                >
-                  Wallet Details
-                </Button>
-                <Button 
-                  variant="outlined" 
-                  startIcon={<Timeline />}
-                  component={RouterLink}
-                  to="/leaderboard"
-                >
-                  Leaderboard
-                </Button>
-                {/* <Button 
-                  variant="outlined" 
-                  startIcon={<TrackChangesOutlinedIcon />}
-                  component={RouterLink}
-                  to="/goals"
-                >
-                  Personal Goals
-                </Button> */}
-              </Stack>
-            </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
-          </Fade>
-
-           <Fade in timeout={1200}>
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-              <Grid item xs={12}>
-                <Card variant="outlined">
-                 <CardContent>
-                   {jobmessage && (
-                    <Chip size="small" color="info" variant="outlined" label={jobmessage} />
-                  )}
-            <Typography>Job not validated? Enter your JobId from Truckershub to validate</Typography>
-             <TextField
-              fullWidth
-              label="JobId"
-              name="JobId"
-              value={jobid}
-              onChange={(e) => Setjobid(e.target.value)}
-              margin="normal"
-              required
-            />
-            <Button
-                variant="outlined"
-                size="small"
-                onClick={() => handleJobsubmit(jobid)}
-              >
-                Submit
-              </Button>
-                </CardContent>
-                </Card>
-                 </Grid>
-                 
-            </Grid>
-          </Fade>
-
-          {/* Attendance */}
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid item xs={12} lg={4}>
-            <Card variant="outlined">
-              <CardContent>
-                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-                  <Typography variant="h6">Event Attendance</Typography>
-                  <Chip size="small" color="primary" variant="outlined" label="TruckersMP" />
-                </Stack>
-                <Typography variant="h3" fontWeight={700}>{attendance?.totalEventsAttended || 0}</Typography>
-                <Typography variant="body2" color="text.secondary">total events attended</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} lg={8}>
-            <Card variant="outlined">
-              <CardContent>
-                <Typography variant="h6" sx={{ mb: 2 }}>Recently Attended</Typography>
-                <Stack spacing={1.5}>
-                  {(attendance?.eventsAttended || []).slice(0, 1).map((e) => (
-                    <Stack key={e.id} direction="row" alignItems="center" justifyContent="space-between" sx={{ p: 1.5, borderRadius: 1, bgcolor: 'action.hover' }}>
-                      <Box sx={{ minWidth: 0 }}>
-                        <Typography variant="body1" fontWeight={600} noWrap>{e.title || 'Event'}</Typography>
-                        <Typography variant="caption" color="text.secondary">{e.eventDate ? new Date(e.eventDate).toLocaleDateString() : '—'}{e.approvedAt ? ` • approved ${new Date(e.approvedAt).toLocaleDateString()}` : ''}</Typography>
-                      </Box>
-                      <Chip size="small" color="success" variant="outlined" label="Approved" />
-                    </Stack>
-                  ))}
-                  {((attendance?.eventsAttended || []).length || 0) === 0 && (
-                    <Typography variant="body2" color="text.secondary">No events recorded yet.</Typography>
-                  )}
-                </Stack>
-                {((attendance?.eventsAttended || []).length || 0) > 6 && (
-                  <Box sx={{ mt: 2 }}>
-                    <Button variant="contained" onClick={() => { setAttendanceOpen(true); setAttendancePage(1); }}>
-                      View all attended events
+        {/* Quick actions & manual validation — top */}
+        <Fade in timeout={900}>
+          <Grid container spacing={2} sx={{ mb: 2 }}>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" sx={{ mb: 2 }}>
+                    Quick actions
+                  </Typography>
+                  <Stack direction="row" spacing={1.5} flexWrap="wrap">
+                    <Button
+                      variant="outlined"
+                      startIcon={<Assignment />}
+                      component={RouterLink}
+                      to="/contracts/me"
+                    >
+                      Open contract hub
                     </Button>
-                  </Box>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12}>
-            <Card variant="outlined">
-              <CardContent>
-                <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
-                  <Typography variant="h6">Active Attendance</Typography>
-                  {attendanceSubmitMsg && (
-                    <Chip size="small" color="info" variant="outlined" label={attendanceSubmitMsg} />
+                    <Button
+                      variant="outlined"
+                      startIcon={<AccountBalanceWallet />}
+                      component={RouterLink}
+                      to="/wallet"
+                    >
+                      Wallet details
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<Timeline />}
+                      component={RouterLink}
+                      to="/leaderboard"
+                    >
+                      Leaderboard
+                    </Button>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" sx={{ mb: 1 }}>
+                    Manually validate a job
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    If a TruckersHub job was not auto-validated, you can submit its Job ID here.
+                  </Typography>
+                  {jobmessage && (
+                    <Chip
+                      size="small"
+                      color="info"
+                      variant="outlined"
+                      label={jobmessage}
+                      sx={{ mb: 1 }}
+                    />
                   )}
-                </Stack>
-                <Stack spacing={1.5}>
-                  {activeAttendanceEvents.map((ev) => (
-                    <Stack key={ev._id} direction="row" alignItems="center" justifyContent="space-between" sx={{ p: 1.5, borderRadius: 1, bgcolor: 'action.hover' }}>
-                      <Box sx={{ minWidth: 0 }}>
-                        <Typography variant="body1" fontWeight={600} noWrap>{ev.title}</Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {new Date(ev.eventDate).toLocaleString()} {ev.endDate ? `- ${new Date(ev.endDate).toLocaleString()}` : ''}
-                        </Typography>
-                      </Box>
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <Chip size="small" label={ev.isAttendanceOpen ? 'Open' : 'Closed'} color={ev.isAttendanceOpen ? 'success' : 'default'} />
-                        <Button
-                          variant="contained"
-                          size="small"
-                          disabled={attendanceSubmitLoading || !ev.isAttendanceOpen}
-                          onClick={() => handleMarkAttendance(ev._id)}
-                        >
-                          I was there
-                        </Button>
-                      </Stack>
-                    </Stack>
-                  ))}
-                  {activeAttendanceEvents.length === 0 && (
-                    <Typography variant="body2" color="text.secondary">No active attendance right now.</Typography>
-                  )}
-                </Stack>
-              </CardContent>
-            </Card>
+                  <TextField
+                    fullWidth
+                    label="Job ID"
+                    name="JobId"
+                    value={jobid}
+                    onChange={(e) => Setjobid(e.target.value)}
+                    margin="normal"
+                  />
+                  <Button variant="contained" size="small" onClick={() => handleJobsubmit(jobid)}>
+                    Submit for validation
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
           </Grid>
-        </Grid>
+        </Fade>
 
-        {/* Achievements */}
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid item xs={12}>
-            <Card variant="outlined">
-              <CardContent>
-                <Typography variant="h6" sx={{ mb: 2 }}>Achievements</Typography>
-                {achievements.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary">No achievements yet.</Typography>
-                ) : (
-                  <Grid container spacing={2}>
-                    {achievements.slice(0, 8).map((a, idx) => (
-                      <Grid item xs={12} sm={6} md={3} key={idx}>
-                        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ p: 1.5, borderRadius: 1, bgcolor: 'action.hover' }}>
-                          <Avatar src={a.logoUrl} alt={a.name} variant="rounded" sx={{ width: 40, height: 40 }} />
+        {/* Wallet & contracts */}
+        <Fade in timeout={1000}>
+          <Grid container spacing={2} sx={{ mb: 2 }}>
+            <Grid item xs={12} md={7}>
+              <WalletTransactions
+                wallet={wallet}
+                onRefresh={() => {
+                  getMyWallet().then((w) =>
+                    setWallet({
+                      balance: Number(w.balance || 0),
+                      transactions: Array.isArray(w.transactions) ? w.transactions : []
+                    })
+                  );
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} md={5}>
+              <Stack spacing={2}>
+                <ActiveContracts
+                  onRefresh={() => {
+                    myContracts().then((res) => setContracts(res));
+                  }}
+                />
+                <CompletedContracts
+                  onRefresh={() => {
+                    myContracts().then((res) => setContracts(res));
+                  }}
+                />
+              </Stack>
+            </Grid>
+          </Grid>
+        </Fade>
+
+        {/* Events & achievements */}
+        <Fade in timeout={1100}>
+          <Grid container spacing={2} sx={{ mb: 2 }}>
+            <Grid item xs={12} lg={7}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    sx={{ mb: 2 }}
+                  >
+                    <Box>
+                      <Typography variant="h6">Events & attendance</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Track TruckersMP events you&apos;ve joined and active attendance windows.
+                      </Typography>
+                    </Box>
+                    <Chip size="small" color="primary" variant="outlined" label="TruckersMP" />
+                  </Stack>
+
+                  <Grid container spacing={2} sx={{ mb: 2 }}>
+                    <Grid item xs={6} md={4}>
+                      <Typography variant="overline" color="text.secondary">
+                        Total events attended
+                      </Typography>
+                      <Typography variant="h4" fontWeight={700}>
+                        {attendance?.totalEventsAttended || 0}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+
+                  <Divider sx={{ my: 2 }} />
+
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                    Recently attended
+                  </Typography>
+                  <Stack spacing={1.25} sx={{ mb: 2 }}>
+                    {(attendance?.eventsAttended || []).slice(0, 3).map((e) => (
+                      <Stack
+                        key={e.id}
+                        direction="row"
+                        alignItems="center"
+                        justifyContent="space-between"
+                        sx={{ p: 1.25, borderRadius: 1, bgcolor: 'action.hover' }}
+                      >
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography variant="body2" fontWeight={600} noWrap>
+                            {e.title || 'Event'}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {e.eventDate
+                              ? new Date(e.eventDate).toLocaleDateString()
+                              : '—'}
+                            {e.approvedAt
+                              ? ` • approved ${new Date(e.approvedAt).toLocaleDateString()}`
+                              : ''}
+                          </Typography>
+                        </Box>
+                        <Chip size="small" color="success" variant="outlined" label="Approved" />
+                      </Stack>
+                    ))}
+                    {((attendance?.eventsAttended || []).length || 0) === 0 && (
+                      <Typography variant="body2" color="text.secondary">
+                        No events recorded yet.
+                      </Typography>
+                    )}
+                  </Stack>
+
+                  {((attendance?.eventsAttended || []).length || 0) > 6 && (
+                    <Box sx={{ mb: 2 }}>
+                      <Button
+                        variant="text"
+                        size="small"
+                        onClick={() => {
+                          setAttendanceOpen(true);
+                          setAttendancePage(1);
+                        }}
+                      >
+                        View all attended events
+                      </Button>
+                    </Box>
+                  )}
+
+                  <Divider sx={{ my: 2 }} />
+
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    sx={{ mb: 1 }}
+                  >
+                    <Typography variant="subtitle2">Active attendance</Typography>
+                    {attendanceSubmitMsg && (
+                      <Chip
+                        size="small"
+                        color="info"
+                        variant="outlined"
+                        label={attendanceSubmitMsg}
+                      />
+                    )}
+                  </Stack>
+                  <Stack spacing={1.25}>
+                    {activeAttendanceEvents.map((ev) => (
+                      <Stack
+                        key={ev._id}
+                        direction="row"
+                        alignItems="center"
+                        justifyContent="space-between"
+                        sx={{ p: 1.25, borderRadius: 1, bgcolor: 'action.hover' }}
+                      >
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography variant="body2" fontWeight={600} noWrap>
+                            {ev.title}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {new Date(ev.eventDate).toLocaleString()}{' '}
+                            {ev.endDate ? `- ${new Date(ev.endDate).toLocaleString()}` : ''}
+                          </Typography>
+                        </Box>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Chip
+                            size="small"
+                            label={ev.isAttendanceOpen ? 'Open' : 'Closed'}
+                            color={ev.isAttendanceOpen ? 'success' : 'default'}
+                          />
+                          <Button
+                            variant="contained"
+                            size="small"
+                            disabled={attendanceSubmitLoading || !ev.isAttendanceOpen}
+                            onClick={() => handleMarkAttendance(ev._id)}
+                          >
+                            I was there
+                          </Button>
+                        </Stack>
+                      </Stack>
+                    ))}
+                    {activeAttendanceEvents.length === 0 && (
+                      <Typography variant="body2" color="text.secondary">
+                        No active attendance right now.
+                      </Typography>
+                    )}
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} lg={5}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" sx={{ mb: 2 }}>
+                    Achievements
+                  </Typography>
+                  {achievements.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary">
+                      No achievements yet.
+                    </Typography>
+                  ) : (
+                    <Stack spacing={1.25}>
+                      {achievements.slice(0, 5).map((a, idx) => (
+                        <Stack
+                          key={idx}
+                          direction="row"
+                          spacing={1.5}
+                          alignItems="center"
+                          sx={{ p: 1.25, borderRadius: 1, bgcolor: 'action.hover' }}
+                        >
+                          <Avatar
+                            src={a.logoUrl}
+                            alt={a.name}
+                            variant="rounded"
+                            sx={{ width: 40, height: 40 }}
+                          />
                           <Box sx={{ minWidth: 0 }}>
-                            <Typography variant="body1" fontWeight={600} noWrap>{a.name}</Typography>
-                            <Typography variant="caption" color="text.secondary" noWrap>{a.description || ''}</Typography>
-                            <Typography variant="caption" color="text.secondary" display="block">{a.issuedOn ? new Date(a.issuedOn).toLocaleDateString() : ''}</Typography>
+                            <Typography variant="body2" fontWeight={600} noWrap>
+                              {a.name}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" noWrap>
+                              {a.description || ''}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              display="block"
+                            >
+                              {a.issuedOn
+                                ? new Date(a.issuedOn).toLocaleDateString()
+                                : ''}
+                            </Typography>
                           </Box>
                         </Stack>
-                      </Grid>
-                    ))}
-                  </Grid>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-
-        {/* Rider Profile Metadata */}
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid item xs={12}>
-            <Card variant="outlined">
-              <CardContent>
-                <Typography variant="h6" sx={{ mb: 2 }}>Profile Information</Typography>
-                <Grid container spacing={3}>
-                  <Grid item xs={12} md={6}>
-                    <Stack spacing={2}>
-                      <Box>
-                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                          Steam Information
-                        </Typography>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Chip 
-                            size="small" 
-                            label={rider?.steamID ? `Steam ID: ${rider.steamID}` : 'No Steam ID'} 
-                            color={rider?.steamID ? 'primary' : 'default'}
-                            variant="outlined"
-                          />
-                        </Stack>
-                      </Box>
-                      <Box>
-                        <Typography variant="subtitle2"  gutterBottom>
-                          TruckersMP Information
-                        </Typography>
-                        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                          <Chip 
-                            size="small" 
-                            label={rider?.truckersmpId ? `TruckersMP ID: ${rider.truckersmpId}` : 'No TruckersMP ID'} 
-                            color={rider?.truckersmpId ? 'secondary' : 'default'}
-                            variant="outlined"
-                          />
-                          <Chip 
-                            size="small" 
-                            label={rider?.truckershubId ? `TruckersHub ID: ${rider.truckershubId}` : 'No TruckersHub ID'} 
-                            color={rider?.truckershubId ? 'success' : 'default'}
-                            variant="outlined"
-                          />
-                        </Stack>
-                      </Box>
-                    </Stack>
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <Stack spacing={2}>
-                      <Box>
-                        <Typography variant="subtitle2"  gutterBottom>
-                          DLCs Owned
-                        </Typography>
-                        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                          {rider?.dlcsOwned?.ets2?.length > 0 ? (
-                            <Chip 
-                              size="small" 
-                              label={`ETS2 DLCs: ${rider.dlcsOwned.ets2.length}`} 
-                              color="info"
-                              
-                              variant="outlined"
-                              sx={{m:8}}
-                            />
-                          ) : (
-                            <Chip 
-                              size="small" 
-                              label="No ETS2 DLCs" 
-                              color="default"
-                              variant="outlined"
-                            />
-                          )}
-                          {rider?.dlcsOwned?.ats?.length > 0 ? (
-                            <Chip 
-                              size="small" 
-                              label={`ATS DLCs: ${rider.dlcsOwned.ats.length}`} 
-                              color="info"
-                              variant="outlined"
-                            />
-                          ) : (
-                            <Chip 
-                              size="small" 
-                              label="No ATS DLCs" 
-                              color="default"
-                              variant="outlined"
-                            />
-                          )}
-                        </Stack>
-                      </Box>
-                      <Box>
-                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                          Games Owned
-                        </Typography>
-                        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                          {rider?.gamesOwned?.length > 0 ? (
-                            <Chip 
-                              size="small" 
-                              label={`Games: ${rider.gamesOwned.length}`} 
-                              color="warning"
-                              variant="outlined"
-                            />
-                          ) : (
-                            <Chip 
-                              size="small" 
-                              label="No games listed" 
-                              color="default"
-                              variant="outlined"
-                            />
-                          )}
-                        </Stack>
-                      </Box>
-                    </Stack>
-                  </Grid>
-                </Grid>
-                  {/* <Grid container spacing={2}>
-
-               {rider?.dlcsOwned?.ets2?.length > 0 && (
-  <Box sx={{ mt: 2 }}>
-    <Typography variant="h6" gutterBottom>
-      ETS2 DLCs
-    </Typography>
-    <Stack direction="row" spacing={1} flexWrap="wrap">
-      {rider.dlcsOwned.ets2.map((appId, index) => (
-        <Chip
-          key={appId || index}
-          size="small"
-          label={STEAM_DLC_MAPPING[appId] || appId}
-          color="primary"
-          variant="outlined"
-        />
-      ))}
-    </Stack>
-  </Box>
-)}
-
-{rider?.dlcsOwned?.ats?.length > 0 && (
-  <Box sx={{ mt: 2 }}>
-    <Typography variant="h6" color="text.secondary" gutterBottom>
-      ATS DLCs
-    </Typography>
-    <Stack direction="row" spacing={1} flexWrap="wrap">
-      {rider.dlcsOwned.ats.map((appId, index) => (
-        <Chip
-          key={appId || index}
-          size="small"
-          label={STEAM_DLC_MAPPING[appId] || appId}
-          color="secondary"
-          variant="outlined"
-        />
-      ))}
-    </Stack>
-  </Box>
-)}
-
-                </Grid> */}
-                {rider?.gamesOwned?.length > 0 && (
-                  <Box sx={{ mt: 2 }}>
-                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                      Games Owned
-                    </Typography>
-                    <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                      {rider.gamesOwned.map((game, index) => (
-                        <Chip 
-                          key={index}
-                          size="small" 
-                          label={game} 
-                          color="warning"
-                          variant="filled"
-                        />
                       ))}
                     </Stack>
-                  </Box>
-                )}
-              </CardContent>
-            </Card>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
           </Grid>
-        </Grid>
+        </Fade>
+
+        {/* Profile & game details / license */}
+        <Fade in timeout={1200}>
+          <Grid container spacing={2} sx={{ mb: 2 }}>
+            <Grid item xs={12} lg={7}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" sx={{ mb: 2 }}>
+                    Profile & game details
+                  </Typography>
+                  <Grid container spacing={3}>
+                    <Grid item xs={12} md={6}>
+                      <Stack spacing={2}>
+                        <Box>
+                          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                            Steam information
+                          </Typography>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <Chip
+                              size="small"
+                              label={
+                                rider?.steamID ? `Steam ID: ${rider.steamID}` : 'No Steam ID'
+                              }
+                              color={rider?.steamID ? 'primary' : 'default'}
+                              variant="outlined"
+                            />
+                          </Stack>
+                        </Box>
+                        <Box>
+                          <Typography variant="subtitle2" gutterBottom>
+                            TruckersMP information
+                          </Typography>
+                          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                            <Chip
+                              size="small"
+                              label={
+                                rider?.truckersmpId
+                                  ? `TruckersMP ID: ${rider.truckersmpId}`
+                                  : 'No TruckersMP ID'
+                              }
+                              color={rider?.truckersmpId ? 'secondary' : 'default'}
+                              variant="outlined"
+                            />
+                            <Chip
+                              size="small"
+                              label={
+                                rider?.truckershubId
+                                  ? `TruckersHub ID: ${rider.truckershubId}`
+                                  : 'No TruckersHub ID'
+                              }
+                              color={rider?.truckershubId ? 'success' : 'default'}
+                              variant="outlined"
+                            />
+                          </Stack>
+                        </Box>
+                      </Stack>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <Stack spacing={2}>
+                        <Box>
+                          <Typography variant="subtitle2" gutterBottom>
+                            DLCs owned
+                          </Typography>
+                          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                            {rider?.dlcsOwned?.ets2?.length > 0 ? (
+                              <Chip
+                                size="small"
+                                label={`ETS2 DLCs: ${rider.dlcsOwned.ets2.length}`}
+                                color="info"
+                                variant="outlined"
+                              />
+                            ) : (
+                              <Chip
+                                size="small"
+                                label="No ETS2 DLCs"
+                                color="default"
+                                variant="outlined"
+                              />
+                            )}
+                            {rider?.dlcsOwned?.ats?.length > 0 ? (
+                              <Chip
+                                size="small"
+                                label={`ATS DLCs: ${rider.dlcsOwned.ats.length}`}
+                                color="info"
+                                variant="outlined"
+                              />
+                            ) : (
+                              <Chip
+                                size="small"
+                                label="No ATS DLCs"
+                                color="default"
+                                variant="outlined"
+                              />
+                            )}
+                          </Stack>
+                        </Box>
+                        <Box>
+                          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                            Games owned
+                          </Typography>
+                          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                            {rider?.gamesOwned?.length > 0 ? (
+                              <Chip
+                                size="small"
+                                label={`Games: ${rider.gamesOwned.length}`}
+                                color="warning"
+                                variant="outlined"
+                              />
+                            ) : (
+                              <Chip
+                                size="small"
+                                label="No games listed"
+                                color="default"
+                                variant="outlined"
+                              />
+                            )}
+                          </Stack>
+                        </Box>
+                      </Stack>
+                    </Grid>
+                  </Grid>
+                  {rider?.gamesOwned?.length > 0 && (
+                    <Box sx={{ mt: 2 }}>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                        Game list
+                      </Typography>
+                      <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                        {rider.gamesOwned.map((game, index) => (
+                          <Chip
+                            key={index}
+                            size="small"
+                            label={game}
+                            color="warning"
+                            variant="filled"
+                          />
+                        ))}
+                      </Stack>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+           
+          </Grid>
+        </Fade>
 
         <Dialog open={attendanceOpen} onClose={() => setAttendanceOpen(false)} fullWidth maxWidth="md">
           <DialogTitle>
@@ -982,7 +961,8 @@ export default function UserDashboard() {
         </Dialog>
 
         {/* Challenges */}
-        <Grid container spacing={3}>
+        <Fade in timeout={1300}>
+          <Grid container spacing={2} sx={{ mb: 2 }}>
           <Grid item xs={12} lg={6}>
             <Card variant="outlined">
               <CardContent>
@@ -1045,17 +1025,82 @@ export default function UserDashboard() {
               </CardContent>
             </Card>
           </Grid>
-         
         </Grid>
-
-        {/* License Section */}
-        <Fade in timeout={1200}>
-          <Grid container spacing={3} sx={{ mb: 4 }}>
+        </Fade>
+        <Fade in timeout={1500}>
+          <Grid container spacing={2} sx={{ mb: 0 }}>
+            <Grid item xs={12} md={7}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" sx={{ mb: 1.5 }}>
+                    Revenue & distance (last 6 months)
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    Based on your recent jobs. Distance is shown as a secondary line.
+                  </Typography>
+                  <Box sx={{ height: 260 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={finalRevenueData} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#4F46E5" stopOpacity={0.8} />
+                            <stop offset="95%" stopColor="#4F46E5" stopOpacity={0} />
+                          </linearGradient>
+                          <linearGradient id="distanceFill" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#0EA5E9" stopOpacity={0.7} />
+                            <stop offset="95%" stopColor="#0EA5E9" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="month" />
+                        <YAxis />
+                        <Tooltip />
+                        <Area type="monotone" dataKey="revenue" name="Revenue" stroke="#4F46E5" fill="url(#revenueFill)" />
+                        <Area type="monotone" dataKey="distance" name="Distance (km)" stroke="#0EA5E9" fill="url(#distanceFill)" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={5}>
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="h6" sx={{ mb: 1.5 }}>
+                        Jobs by weekday
+                      </Typography>
+                      <Box sx={{ height: 180 }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={weeklyData}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="day" />
+                            <YAxis allowDecimals={false} />
+                            <Tooltip />
+                            <Bar dataKey="jobs" name="Jobs" fill="#6366F1" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                
+              </Grid>
+            </Grid>
+          </Grid>
+        </Fade>
+        {/* License */}
+        <Fade in timeout={1400}>
+          <Grid container spacing={2} sx={{ mb: 2 }}>
             <Grid item xs={12}>
               <LicenseCard userData={user} riderData={rider} />
             </Grid>
           </Grid>
         </Fade>
+
+        {/* Performance overview — bottom */}
+       
       </Container>
       </Box>
     </Box>

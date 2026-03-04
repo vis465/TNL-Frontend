@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import axiosInstance from '../utils/axios';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -22,7 +22,6 @@ import {
   ListItem,
   ListItemText,
   ListItemAvatar,
-  ListItemSecondaryAction,
   IconButton,
   Dialog,
   DialogTitle,
@@ -30,49 +29,33 @@ import {
   DialogActions,
   TextField,
   InputAdornment,
-  Badge,
   Divider,
   Tooltip,
   Fade,
   Zoom,
-  Slide,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  FormControl,
+  Select,
+  MenuItem
 } from '@mui/material';
 import {
   Assignment,
-  TrendingUp,
-  TrendingDown,
   AccessTime,
   AttachMoney,
-  LocationOn,
-  MyLocation,
-  Inventory2,
-  Business,
-  AltRoute,
-  WarningAmber,
-  Speed,
-  Bolt,
-  DirectionsRun,
-  LocalShipping,
-  LocalMall,
   Star,
   EmojiEvents,
   Leaderboard,
   Refresh,
-  FilterList,
   Search,
   Sort,
   CheckCircle,
-  Cancel,
   Schedule,
   Timer,
-  Group,
-  Person,
   Visibility,
-  VisibilityOff
+  TrendingUp
 } from '@mui/icons-material';
-import { listTemplates, buyContract, getContractStats, myContracts, getContractLeaderboard } from '../services/contractsService';
+import { listTemplates, buyContract, myContracts, getContractLeaderboard } from '../services/contractsService';
 import { getMyWallet } from '../services/walletService';
 
 const ContractsMarketplace = () => {
@@ -125,11 +108,11 @@ const ContractsMarketplace = () => {
       setLeaderboardLoading(true);
       const leaderboardData = await getContractLeaderboard(20);
       const formattedData = leaderboardData.map((rider, index) => ({
-        rank: index + 1,
+        rank: typeof rider.rank === 'number' ? rider.rank : index + 1,
         name: rider.riderName || 'Unknown Rider',
         completed: rider.completedContracts || 0,
         active: rider.activeContracts || 0,
-        totalEarnings: rider.netEarnings || 0,
+        totalEarnings: rider.netEarnings ?? rider.totalEarnings ?? 0,
         totalContracts: rider.totalContracts || 0,
         completionRate: rider.completionRate || 0,
         employeeId: rider.riderEmployeeId
@@ -168,7 +151,7 @@ const ContractsMarketplace = () => {
       setLoading(true);
       setError('');
       await buyContract(selectedTemplate._id);
-      setSuccess('Contract purchased successfully!');
+      setSuccess('Contract purchased successfully! Go to “My Contracts” to start your next job.');
       setPurchaseDialogOpen(false);
       setSelectedTemplate(null);
       loadData();
@@ -179,58 +162,103 @@ const ContractsMarketplace = () => {
     }
   };
 
-  const getCriteriaIcon = (type) => {
-    const iconMap = {
-      sourceCity: <LocationOn />,
-      destinationCity: <MyLocation />,
-      cargoName: <Inventory2 />,
-      sourceCompany: <Business />,
-      destinationCompany: <Business />,
-      minDistance: <AltRoute />,
-      maxDamagePct: <WarningAmber />,
-      maxTopSpeedKmh: <Speed />,
-      minAvgSpeedKmh: <Bolt />,
-      maxAvgSpeedKmh: <DirectionsRun />,
-      minRevenue: <AttachMoney />,
-      maxTruckDamagePercent: <LocalShipping />,
-      maxTrailerDamagePercent: <LocalMall />
-    };
-    return iconMap[type] || <CheckCircle />;
+  const formatLabel = (key) =>
+    String(key)
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^./, (str) => str.toUpperCase())
+      .trim();
+
+  const formatValue = (value) => {
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+    if (Array.isArray(value)) return value.filter((v) => v != null && v !== '').join(', ');
+    if (value && typeof value === 'object') return JSON.stringify(value);
+    return String(value);
   };
 
-  const getCriteriaColor = (type) => {
-    const colorMap = {
-      sourceCity: 'primary',
-      destinationCity: 'secondary',
-      cargoName: 'info',
-      minDistance: 'primary',
-      maxDamagePct: 'warning',
-      minRevenue: 'success',
-      maxTruckDamagePercent: 'error',
-      maxTrailerDamagePercent: 'error'
+  const getTemplateMetrics = (template) => {
+    const cost = Number(template?.priceTokens || 0);
+    const reward = Number(template?.rewardTokens || 0);
+    const profit = reward - cost;
+    const roiPct = cost > 0 ? Math.round(((reward - cost) / cost) * 100) : null;
+
+    const tasks = Array.isArray(template?.tasks) ? template.tasks : [];
+    const totalCriteriaKeys = tasks.reduce((sum, t) => {
+      const criteria = t?.criteria && typeof t.criteria === 'object' ? t.criteria : null;
+      if (!criteria) return sum;
+      return sum + Object.entries(criteria).filter(([, v]) => v !== '' && v != null).length;
+    }, 0);
+
+    const startAt = template?.startAt ? new Date(template.startAt) : null;
+    const endAt = template?.endAt ? new Date(template.endAt) : null;
+    const now = new Date();
+    const isNotStarted = startAt && startAt > now;
+    const isExpired = endAt && endAt < now;
+
+    return {
+      cost,
+      reward,
+      profit,
+      roiPct,
+      taskCount: tasks.length,
+      totalCriteriaKeys,
+      startAt,
+      endAt,
+      isNotStarted,
+      isExpired
     };
-    return colorMap[type] || 'default';
   };
 
-  const filteredTemplates = templates.filter(template => {
-    const matchesSearch = template.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         template.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterBy === 'all' || 
-                         (filterBy === 'affordable' && template.priceTokens <= wallet.balance) ||
-                         (filterBy === 'premium' && template.priceTokens > 1000);
-    return matchesSearch && matchesFilter;
-  }).sort((a, b) => {
-    switch (sortBy) {
-      case 'price':
-        return a.priceTokens - b.priceTokens;
-      case 'reward':
-        return b.rewardTokens - a.rewardTokens;
-      case 'deadline':
-        return a.deadlineDays - b.deadlineDays;
-      default:
-        return 0;
-    }
-  });
+  const filteredTemplates = useMemo(() => {
+    const list = Array.isArray(templates) ? templates : [];
+    const balance = Number(wallet?.balance || 0);
+    const q = searchTerm.trim().toLowerCase();
+
+    const bySearchAndFilter = list.filter((template) => {
+      const title = (template?.title || '').toLowerCase();
+      const desc = (template?.description || '').toLowerCase();
+      const matchesSearch = !q || title.includes(q) || desc.includes(q);
+
+      const metrics = getTemplateMetrics(template);
+      const matchesFilter =
+        filterBy === 'all' ||
+        (filterBy === 'affordable' && metrics.cost <= balance) ||
+        (filterBy === 'profitable' && metrics.profit > 0) ||
+        (filterBy === 'availableNow' && !metrics.isNotStarted && !metrics.isExpired);
+
+      return matchesSearch && matchesFilter;
+    });
+
+    const sorted = [...bySearchAndFilter].sort((a, b) => {
+      const aM = getTemplateMetrics(a);
+      const bM = getTemplateMetrics(b);
+      switch (sortBy) {
+        case 'price':
+          return aM.cost - bM.cost;
+        case 'reward':
+          return bM.reward - aM.reward;
+        case 'profit':
+          return bM.profit - aM.profit;
+        case 'deadline':
+          return Number(a?.deadlineDays || 0) - Number(b?.deadlineDays || 0);
+        default:
+          return 0;
+      }
+    });
+
+    return sorted;
+  }, [templates, wallet?.balance, searchTerm, filterBy, sortBy]);
+
+  const marketplaceSummary = useMemo(() => {
+    const ownedActive = Array.isArray(myContractsData?.active) ? myContractsData.active.length : 0;
+    const ownedHistory = Array.isArray(myContractsData?.history) ? myContractsData.history.length : 0;
+    const ownedTotal = ownedActive + ownedHistory;
+
+    const balance = Number(wallet?.balance || 0);
+    const affordableCount = (Array.isArray(templates) ? templates : []).filter((t) => getTemplateMetrics(t).cost <= balance)
+      .length;
+
+    return { ownedActive, ownedHistory, ownedTotal, affordableCount };
+  }, [myContractsData?.active, myContractsData?.history, templates, wallet?.balance]);
 
   const isOwned = (templateId) => {
     return myContractsData.active.some(contract => 
@@ -254,39 +282,88 @@ const ContractsMarketplace = () => {
     <Container maxWidth="xl" sx={{ py: 4 }}>
       {/* Header */}
       <Fade in timeout={800}>
-        <Box sx={{ mb: 4, textAlign: 'center' }}>
-          <Typography 
-            variant="h3" 
-            fontWeight="bold" 
-            sx={{ 
-              mb: 2,
-              background: 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent'
+        <Box sx={{ mb: 4 }}>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: { xs: 2, md: 2.5 },
+              borderRadius: 3
             }}
           >
-            Contracts Marketplace
-          </Typography>
-          <Typography variant="h6" color="text.secondary" sx={{ mb: 3 }}>
-            Discover and purchase contracts to earn tokens and climb the leaderboard
-          </Typography>
-          
-          {/* Wallet Balance */}
-          <Card sx={{ 
-            maxWidth: 300, 
-            mx: 'auto', 
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: 'white'
-          }}>
-            <CardContent>
-              <Stack direction="row" alignItems="center" justifyContent="center" spacing={2}>
-                <AttachMoney />
-                <Typography variant="h5" fontWeight="bold">
-                  {wallet.formattedBalance || '0'} Tokens
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              spacing={{ xs: 2, md: 3 }}
+              alignItems={{ xs: 'stretch', md: 'center' }}
+              justifyContent="space-between"
+            >
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant={isMobile ? 'h4' : 'h3'} fontWeight={800} sx={{ mb: 0.75 }}>
+                  Contracts Marketplace
                 </Typography>
+                <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 860 }}>
+                  Browse available contracts like a store. Buy one, then go to your contract hub to see the next job and its exact requirements.
+                </Typography>
+
+                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: 1.5 }}>
+                  <Chip
+                    icon={<TrendingUp />}
+                    label={`${marketplaceSummary.ownedActive} active • ${marketplaceSummary.ownedTotal} owned`}
+                    variant="outlined"
+                  />
+                  <Chip icon={<Star />} label={`${marketplaceSummary.affordableCount} affordable`} color="success" variant="outlined" />
+                </Stack>
+              </Box>
+
+              <Stack spacing={1.25} alignItems={{ xs: 'stretch', md: 'flex-end' }}>
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    p: 1.25,
+                    borderRadius: 2,
+                    bgcolor: 'background.default'
+                  }}
+                >
+                  <Stack direction="row" alignItems="center" spacing={1} justifyContent="space-between">
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <AttachMoney fontSize="small" />
+                      <Typography variant="subtitle2" color="text.secondary">
+                        Token balance
+                      </Typography>
+                    </Stack>
+                    <Typography variant="h6" fontWeight={800}>
+                      {wallet.formattedBalance || wallet.balance || 0}
+                    </Typography>
+                  </Stack>
+                </Paper>
+
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                  <Button
+                    component={RouterLink}
+                    to="/contracts/me"
+                    variant="contained"
+                    size={isMobile ? 'medium' : 'large'}
+                    startIcon={<Assignment />}
+                    sx={{
+                      borderRadius: 999,
+                      fontWeight: 800
+                    }}
+                  >
+                    Open Contract Hub
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size={isMobile ? 'medium' : 'large'}
+                    startIcon={<Refresh />}
+                    onClick={loadData}
+                    disabled={loading}
+                    sx={{ borderRadius: 999 }}
+                  >
+                    Refresh
+                  </Button>
+                </Stack>
               </Stack>
-            </CardContent>
-          </Card>
+            </Stack>
+          </Paper>
         </Box>
       </Fade>
 
@@ -320,7 +397,64 @@ const ContractsMarketplace = () => {
         <Fade in timeout={600}>
           <Box>
             {/* Filters and Search */}
-            
+            <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+              <Grid container spacing={2} alignItems="center">
+                <Grid item xs={12} md={5}>
+                  <TextField
+                    fullWidth
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search contracts (title or description)…"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Search />
+                        </InputAdornment>
+                      )
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={3.5}>
+                  <FormControl fullWidth>
+                    <Select value={filterBy} onChange={(e) => setFilterBy(e.target.value)}>
+                      <MenuItem value="all">All</MenuItem>
+                      <MenuItem value="affordable">Affordable (within wallet)</MenuItem>
+                      <MenuItem value="profitable">Profitable (reward &gt; cost)</MenuItem>
+                      <MenuItem value="availableNow">Available now (within time window)</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={3.5}>
+                  <FormControl fullWidth>
+                    <Select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                      <MenuItem value="price">Sort: Lowest cost</MenuItem>
+                      <MenuItem value="reward">Sort: Highest reward</MenuItem>
+                      <MenuItem value="profit">Sort: Highest profit</MenuItem>
+                      <MenuItem value="deadline">Sort: Soonest deadline</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap alignItems="center">
+                    <Chip icon={<Sort />} label={`${filteredTemplates.length} shown`} variant="outlined" />
+                    <Button
+                      component={RouterLink}
+                      to="/contracts/me"
+                      variant="text"
+                      size="small"
+                      startIcon={<Assignment />}
+                      sx={{ ml: 'auto' }}
+                    >
+                      Open Contract Hub
+                    </Button>
+                  </Stack>
+                </Grid>
+              </Grid>
+            </Paper>
+
             {/* Contract Cards */}
             <Grid container spacing={3}>
               {filteredTemplates.map((template, index) => (
@@ -332,12 +466,15 @@ const ContractsMarketplace = () => {
                         display: 'flex',
                         flexDirection: 'column',
                         position: 'relative',
+                        overflow: 'hidden',
                         '&:hover': {
-                          transform: 'translateY(-4px)',
-                          boxShadow: 6
+                          transform: 'translateY(-3px)',
+                          boxShadow: 8
                         },
                         transition: 'all 0.3s ease',
-                        border: isOwned(template._id) ? '2px solid #4caf50' : '1px solid #e0e0e0'
+                        border: isOwned(template._id) ? '2px solid rgba(76, 175, 80, 0.6)' : '1px solid',
+                        borderColor: 'divider',
+                        borderRadius: 3
                       }}
                     >
                       {isOwned(template._id) && (
@@ -348,109 +485,165 @@ const ContractsMarketplace = () => {
                           sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}
                         />
                       )}
-                      
-                      <CardHeader
-                        title={
-                          <Typography variant="h6" fontWeight="bold" noWrap>
-                            {template.title}
-                          </Typography>
-                        }
-                        subheader={
-                          <Typography variant="body2" color="text.secondary" noWrap>
-                            {template.description}
-                          </Typography>
-                        }
-                        action={
-                          <IconButton size="small" onClick={() => handleViewDetails(template)}>
-                            <Visibility />
-                          </IconButton>
-                        }
-                      />
-                      
-                      <CardContent sx={{ flexGrow: 1 }}>
-                        {/* Price and Reward */}
-                        <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-                          <Chip
-                            icon={<AttachMoney />}
-                            label={`Cost: ${template.priceTokens} Tokens`}
-                            color="error"
-                            variant="outlined"
-                          />
-                          <Chip
-                            icon={<Star />}
-                            label={`Reward: ${template.rewardTokens} Tokens`}
-                            color="success"
-                            variant="outlined"
-                          />
-                        </Stack>
 
-                        {/* Deadline */}
-                        <Chip
-                          icon={<AccessTime />}
-                          label={`${template.deadlineDays} days`}
-                          color="info"
-                          variant="outlined"
-                          sx={{ mb: 2 }}
-                        />
-
-                        {/* Tasks */}
-                        {template.tasks && template.tasks.length > 0 && (
-                          <Box sx={{ mb: 2 }}>
-                            <Typography variant="subtitle2" gutterBottom>
-                              Tasks ({template.tasks.length})
-                            </Typography>
-                            <Stack spacing={1}>
-                              {template.tasks.slice(0, 3).map((task, taskIndex) => (
-                                <Box key={taskIndex} sx={{ display: 'flex', alignItems: 'center' }}>
-                                  <Box sx={{ 
-                                    width: 20, 
-                                    height: 20, 
-                                    borderRadius: '50%', 
-                                    bgcolor: 'primary.main', 
-                                    color: 'white',
-                    display: 'flex',
-                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '12px',
-                          fontWeight: 'bold',
-                                    mr: 1
-                                  }}>
-                                    {taskIndex + 1}
-                                  </Box>
-                                  <Typography variant="body2" noWrap>
-                          {task.title}
+                      {(() => {
+                        const m = getTemplateMetrics(template);
+                        const isPositive = m.profit > 0;
+                        const roiLabel = m.roiPct != null ? `${m.roiPct >= 0 ? '+' : ''}${m.roiPct}%` : null;
+                        return (
+                          <Box
+                            sx={{
+                              px: 2,
+                              py: 1.5,
+                              bgcolor: 'rgba(118, 75, 162, 0.10)',
+                              borderBottom: '1px solid',
+                              borderColor: 'divider'
+                            }}
+                          >
+                            <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+                              <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
+                                <Avatar
+                                  variant="rounded"
+                                  sx={{
+                                    width: 40,
+                                    height: 40,
+                                    bgcolor: 'rgba(102, 126, 234, 0.18)',
+                                    color: 'primary.main',
+                                    fontWeight: 900
+                                  }}
+                                >
+                                  <Assignment fontSize="small" />
+                                </Avatar>
+                                <Box sx={{ minWidth: 0 }}>
+                                  <Typography variant="subtitle1" fontWeight={800} noWrap>
+                                    {template.title}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary" noWrap>
+                                    {m.taskCount} jobs • {m.totalCriteriaKeys} requirements
                                   </Typography>
                                 </Box>
-                              ))}
-                              {template.tasks.length > 3 && (
-                                <Typography variant="caption" color="text.secondary">
-                                  +{template.tasks.length - 3} more tasks
-                                </Typography>
-                              )}
-                            </Stack>
-                          </Box>
-                        )}
+                              </Stack>
 
-                        {/* Criteria */}
-                        {template.tasks && template.tasks[0]?.criteria && (
-                          <Box>
-                            <Typography variant="subtitle2" gutterBottom>
-                              Requirements
-                            </Typography>
-                            <Stack direction="row" spacing={1} flexWrap="wrap">
-                              {Object.entries(template.tasks[0].criteria).slice(0, 3).map(([key, value]) => (
+                              <Stack direction="row" spacing={0.75} sx={{ flexShrink: 0 }}>
                                 <Chip
-                                    key={key}
                                   size="small"
-                                  icon={getCriteriaIcon(key)}
-                                  label={`${key}: ${value}`}
-                                  color={getCriteriaColor(key)}
+                                  icon={<TrendingUp sx={{ fontSize: 16 }} />}
+                                  label={`Profit ${m.profit >= 0 ? '+' : ''}${m.profit}`}
+                                  color={isPositive ? 'success' : 'warning'}
                                   variant="outlined"
                                 />
-                              ))}
+                                {roiLabel && (
+                                  <Chip size="small" label={roiLabel} variant="outlined" sx={{ fontWeight: 700 }} />
+                                )}
+                              </Stack>
                             </Stack>
                           </Box>
-                        )}
+                        );
+                      })()}
+                      
+                      <CardContent sx={{ flexGrow: 1 }}>
+                        {(() => {
+                          const m = getTemplateMetrics(template);
+                          const canAfford = m.cost <= Number(wallet?.balance || 0);
+                          const isPositive = m.profit > 0;
+
+                          return (
+                            <>
+                              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                                {template.description}
+                              </Typography>
+
+                              {/* Store-like pricing row */}
+                              <Grid container spacing={1.25} sx={{ mb: 2 }}>
+                                <Grid item xs={4}>
+                                  <Paper variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>
+                                    <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                                      Cost
+                                    </Typography>
+                                    <Stack direction="row" alignItems="center" spacing={0.75}>
+                                      <AttachMoney fontSize="small" />
+                                      <Typography variant="subtitle1" fontWeight={900}>
+                                        {m.cost}
+                                      </Typography>
+                                    </Stack>
+                                  </Paper>
+                                </Grid>
+                                <Grid item xs={4}>
+                                  <Paper variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>
+                                    <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                                      Reward
+                                    </Typography>
+                                    <Stack direction="row" alignItems="center" spacing={0.75}>
+                                      <Star fontSize="small" />
+                                      <Typography variant="subtitle1" fontWeight={900}>
+                                        {m.reward}
+                                      </Typography>
+                                    </Stack>
+                                  </Paper>
+                                </Grid>
+                                <Grid item xs={4}>
+                                  <Paper variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>
+                                    <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                                      Profit
+                                    </Typography>
+                                    <Stack direction="row" alignItems="center" spacing={0.75}>
+                                      <TrendingUp fontSize="small" color={isPositive ? 'success' : 'warning'} />
+                                      <Typography variant="subtitle1" fontWeight={900} color={isPositive ? 'success.main' : 'warning.main'}>
+                                        {m.profit >= 0 ? '+' : ''}{m.profit}
+                                      </Typography>
+                                    </Stack>
+                                  </Paper>
+                                </Grid>
+                              </Grid>
+
+                              {!canAfford && (
+                                <Alert severity="warning" variant="outlined" sx={{ mb: 2 }}>
+                                  You don’t have enough tokens to buy this contract yet.
+                                </Alert>
+                              )}
+
+                              {/* Deadline / Availability */}
+                              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
+                                <Chip
+                                  icon={<AccessTime />}
+                                  label={`Deadline: ${template.deadlineDays} days`}
+                                  color="info"
+                                  variant="outlined"
+                                />
+                                {(m.isNotStarted || m.isExpired) && (
+                                  <Chip
+                                    icon={<Timer />}
+                                    label={m.isExpired ? 'Expired' : 'Not started yet'}
+                                    color={m.isExpired ? 'error' : 'warning'}
+                                    variant="filled"
+                                  />
+                                )}
+                                {(template.startAt || template.endAt) && (
+                                  <Tooltip
+                                    title={`Start: ${m.startAt ? m.startAt.toLocaleString() : 'Immediate'} • End: ${m.endAt ? m.endAt.toLocaleString() : 'No expiration'}`}
+                                  >
+                                    <Chip
+                                      icon={<Schedule />}
+                                      label="Time window"
+                                      color="default"
+                                      variant="outlined"
+                                    />
+                                  </Tooltip>
+                                )}
+                              </Stack>
+
+                              <Button
+                                variant="text"
+                                size="small"
+                                startIcon={<Visibility />}
+                                onClick={() => handleViewDetails(template)}
+                                sx={{ px: 0, fontWeight: 800 }}
+                              >
+                                View details
+                              </Button>
+                            </>
+                          );
+                        })()}
                       </CardContent>
 
                       <CardActions sx={{ p: 2, pt: 0 }}>
@@ -460,16 +653,13 @@ const ContractsMarketplace = () => {
                           startIcon={<Assignment />}
                           onClick={() => handleBuyContract(template)}
                           disabled={isOwned(template._id) || template.priceTokens > wallet.balance}
-                          sx={{ 
-                      background: 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)',
-                            '&:hover': {
-                              background: 'linear-gradient(45deg, #5a6fd8 0%, #6a4190 100%)',
-                            }
-                          }}
+                          sx={{ borderRadius: 999, fontWeight: 900 }}
                         >
-                          {isOwned(template._id) ? 'Owned' : 
-                           template.priceTokens > wallet.balance ? 'Insufficient Funds' : 
-                           'Purchase Contract'}
+                          {isOwned(template._id)
+                            ? 'Already owned'
+                            : template.priceTokens > wallet.balance
+                              ? 'Not enough tokens'
+                              : `Buy for ${template.priceTokens} tokens`}
                         </Button>
                       </CardActions>
                     </Card>
@@ -496,68 +686,155 @@ const ContractsMarketplace = () => {
       {tabValue === 1 && (
         <Fade in timeout={600}>
           <Box>
-            <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>
-              Contract Leaderboard
-            </Typography>
+            <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'stretch', sm: 'center' }} justifyContent="space-between" spacing={1.5} sx={{ mb: 3 }}>
+              <Box>
+                <Typography variant="h5" fontWeight="bold">
+                  Contract Leaderboard
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Ranked by overall contract performance (completed, earnings and success rate).
+                </Typography>
+              </Box>
+              <Stack direction="row" spacing={1} justifyContent="flex-end">
+                <Button
+                  component={RouterLink}
+                  to="/contracts/me"
+                  variant="contained"
+                  startIcon={<Assignment />}
+                  sx={{ borderRadius: 999, fontWeight: 900 }}
+                >
+                  Open Contract Hub
+                </Button>
+                <Button variant="outlined" startIcon={<Refresh />} onClick={loadContractLeaderboard} disabled={leaderboardLoading}>
+                  Refresh
+                </Button>
+              </Stack>
+            </Stack>
             
             {leaderboardLoading ? (
               <LinearProgress />
             ) : (
-              <Card>
-                <CardContent>
-                  <List>
-                    {contractLeaderboard.map((rider, index) => (
-                      <React.Fragment key={rider.rank}>
-                        <ListItem>
-                          <ListItemAvatar>
-                            <Avatar sx={{ 
-                              bgcolor: rider.rank <= 3 ? 'primary.main' : 'grey.500',
-                              fontWeight: 'bold'
-                            }}>
-                              {rider.rank}
-                            </Avatar>
-                          </ListItemAvatar>
-                          <ListItemText
-                            primary={
-                              <Box display="flex" alignItems="center" gap={1}>
-                                <Typography variant="h6" fontWeight="bold">
+              <>
+                {/* Top 3 spotlight */}
+                <Grid container spacing={2} sx={{ mb: 2 }}>
+                  {contractLeaderboard.slice(0, 3).map((rider) => (
+                    <Grid item xs={12} md={4} key={`top-${rider.rank}`}>
+                      <Card
+                        sx={{
+                          height: '100%',
+                          border: '1px solid',
+                          borderColor: 'divider',
+                          background:
+                            rider.rank === 1
+                              ? 'linear-gradient(135deg, rgba(255,215,0,0.15) 0%, rgba(118,75,162,0.12) 100%)'
+                              : rider.rank === 2
+                              ? 'linear-gradient(135deg, rgba(192,192,192,0.14) 0%, rgba(102,126,234,0.10) 100%)'
+                              : 'linear-gradient(135deg, rgba(205,127,50,0.14) 0%, rgba(102,126,234,0.10) 100%)'
+                        }}
+                      >
+                        <CardContent>
+                          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+                            <Stack direction="row" alignItems="center" spacing={1.25} sx={{ minWidth: 0 }}>
+                              <Avatar sx={{ bgcolor: 'primary.main', fontWeight: 800 }}>
+                                {rider.rank}
+                              </Avatar>
+                              <Box sx={{ minWidth: 0 }}>
+                                <Typography variant="subtitle2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                  <EmojiEvents fontSize="small" />
+                                  Top performer
+                                </Typography>
+                                <Typography variant="h6" fontWeight="bold" noWrap>
                                   {rider.name}
                                 </Typography>
-                                {rider.rank <= 3 && (
-                                  <Star color="warning" fontSize="small" />
-                                )}
                               </Box>
-                            }
-                            secondary={
-                              <Stack direction="row" spacing={1} flexWrap="wrap">
-                                <Chip size="small" label={`${rider.completed} Completed`} color="success" />
-                                <Chip size="small" label={`${rider.active} Active`} color="info" />
-                                
-                                {rider.completionRate && (
-                                  <Chip 
-                                    size="small" 
-                                    label={`${rider.completionRate.toFixed(1)}% Success`} 
-                                    color={rider.completionRate >= 80 ? 'success' : rider.completionRate >= 60 ? 'warning' : 'error'}
-                                  />
-                                )}
-                               
+                            </Stack>
+                            <Star color="warning" />
+                          </Stack>
+
+                          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                            <Chip size="small" label={`${rider.completed} Completed`} color="success" />
+                            <Chip size="small" label={`${rider.active} Active`} color="info" />
+                            <Chip size="small" label={`${rider.totalContracts || rider.completed + rider.active} Total`} variant="outlined" />
+                            <Chip size="small" label={`${Number(rider.totalEarnings || 0).toLocaleString()} Tokens`} color="secondary" variant="outlined" />
+                            {rider.completionRate != null && (
+                              <Chip
+                                size="small"
+                                label={`${Number(rider.completionRate).toFixed(1)}% Success`}
+                                color={rider.completionRate >= 80 ? 'success' : rider.completionRate >= 60 ? 'warning' : 'error'}
+                              />
+                            )}
+                          </Stack>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+
+                {/* Full list */}
+                <Card>
+                  <CardContent>
+                    <List>
+                      {contractLeaderboard.map((rider, index) => (
+                        <React.Fragment key={rider.rank}>
+                          <ListItem
+                            secondaryAction={
+                              <Stack direction="row" spacing={1} alignItems="center">
+                                <Chip
+                                  size="small"
+                                  label={`${Number(rider.totalEarnings || 0).toLocaleString()} Tokens`}
+                                  color="secondary"
+                                  variant="outlined"
+                                />
+                                <Chip
+                                  size="small"
+                                  label={`#${rider.rank}`}
+                                  color={rider.rank <= 3 ? 'primary' : 'default'}
+                                  variant={rider.rank <= 3 ? 'outlined' : 'filled'}
+                                />
                               </Stack>
                             }
-                          />
-                          <ListItemSecondaryAction>
-                            <Chip
-                              label={`#${rider.rank}`}
-                              color={rider.rank <= 3 ? 'primary' : 'default'}
-                              variant={rider.rank <= 3 ? 'outlined' : 'default'}
+                          >
+                            <ListItemAvatar>
+                              <Avatar
+                                sx={{
+                                  bgcolor: rider.rank <= 3 ? 'primary.main' : 'grey.700',
+                                  fontWeight: 'bold'
+                                }}
+                              >
+                                {rider.rank}
+                              </Avatar>
+                            </ListItemAvatar>
+                            <ListItemText
+                              primary={
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+                                  <Typography variant="subtitle1" fontWeight="bold" noWrap>
+                                    {rider.name}
+                                  </Typography>
+                                  {rider.rank <= 3 && <Star color="warning" fontSize="small" />}
+                                </Box>
+                              }
+                              secondary={
+                                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                                  <Chip size="small" label={`${rider.completed} Completed`} color="success" />
+                                  <Chip size="small" label={`${rider.active} Active`} color="info" />
+                                  {rider.completionRate != null && (
+                                    <Chip
+                                      size="small"
+                                      label={`${Number(rider.completionRate).toFixed(1)}% Success`}
+                                      color={rider.completionRate >= 80 ? 'success' : rider.completionRate >= 60 ? 'warning' : 'error'}
+                                    />
+                                  )}
+                                </Stack>
+                              }
                             />
-                          </ListItemSecondaryAction>
-                        </ListItem>
-                        {index < contractLeaderboard.length - 1 && <Divider />}
-                      </React.Fragment>
-                    ))}
-                  </List>
-                </CardContent>
-              </Card>
+                          </ListItem>
+                          {index < contractLeaderboard.length - 1 && <Divider />}
+                        </React.Fragment>
+                      ))}
+                    </List>
+                  </CardContent>
+                </Card>
+              </>
             )}
           </Box>
         </Fade>
@@ -690,9 +967,7 @@ const ContractsMarketplace = () => {
                                 <Chip
                                   key={key}
                                   size="small"
-                                  icon={getCriteriaIcon(key)}
-                                  label={`${key}: ${value}`}
-                                  color={getCriteriaColor(key)}
+                                  label={`${formatLabel(key)}: ${formatValue(value)}`}
                                   variant="outlined"
                                 />
                               ))}

@@ -5,6 +5,7 @@ import {
   Pagination, Chip
 } from '@mui/material';
 import axiosInstance from '../utils/axios';
+import { useNavigate } from 'react-router-dom';
 
 const roleOptions = [
   { label: 'All', value: '' },
@@ -15,6 +16,7 @@ const roleOptions = [
 ];
 
 export default function AdminUsers() {
+  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -54,6 +56,7 @@ export default function AdminUsers() {
     <Box sx={{ maxWidth: 1200, mx: 'auto', px: 3, py: 4 }}>
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
         <Typography variant="h5" fontWeight={700}>Admin • Users & Roles</Typography>
+        <Button variant="contained" onClick={() => navigate('/admin/create-user')}>Create User</Button>
       </Stack>
 
       <Card variant="outlined" sx={{ mb: 3 }}>

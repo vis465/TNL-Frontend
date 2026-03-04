@@ -1,309 +1,277 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import {
   Grid,
   Card,
   CardContent,
-  CardActions,
-  Container,
+  CardActionArea,
   Typography,
   Box,
-  Button,
-  useMediaQuery,
   useTheme,
-  IconButton,
-  Tooltip,
-  AppBar,
-  Toolbar,
-  MenuIcon,
+  useMediaQuery,
+  alpha,
+  Chip,
 } from '@mui/material';
 import {
-  EmojiEvents,
-  Directions,
+  DirectionsCar,
   People,
   Analytics,
-  SettingsIcon,
   Assignment,
   Timeline,
-  Assessment,
-  Menu as MenuMui,
+  AccountBalance,
+  MilitaryTech,
+  HowToReg,
+  PersonAdd,
+  Group,
+  Event,
+  EmojiEvents,
 } from '@mui/icons-material';
-import AdminSidebar from '../components/AdminSidebar';
+import { useAuth } from '../contexts/AuthContext';
 
-const AdminDashboard = () => {
-  const [user, setUser] = useState(null);
-  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+const cardConfig = [
+  {
+    group: 'Events & Jobs',
+    title: 'Event Management',
+    description: 'Manage events, slots, bookings and special events.',
+    to: '/admin/events',
+    icon: Event,
+    color: 'primary',
+    roles: ['admin', 'eventteam'],
+  },
+  {
+    group: 'Events & Jobs',
+    title: 'Job Management',
+    description: 'Browse and manage jobs from TruckersHub.',
+    to: '/admin/jobs',
+    icon: DirectionsCar,
+    color: 'warning',
+    roles: ['admin', 'eventteam'],
+  },
+  {
+    group: 'Events & Jobs',
+    title: 'Analytics',
+    description: 'Event and engagement analytics.',
+    to: '/admin/analytics',
+    icon: Analytics,
+    color: 'info',
+    roles: ['admin', 'eventteam'],
+  },
+  {
+    group: 'People & HR',
+    title: 'User Management',
+    description: 'Manage user accounts and roles.',
+    to: '/admin/users',
+    icon: People,
+    color: 'primary',
+    roles: ['admin', 'hrteam'],
+  },
+  {
+    group: 'People & HR',
+    title: 'Create User',
+    description: 'Create a new user account.',
+    to: '/admin/create-user',
+    icon: PersonAdd,
+    color: 'secondary',
+    roles: ['admin'],
+  },
+  {
+    group: 'People & HR',
+    title: 'User Approvals',
+    description: 'Review and approve pending registrations.',
+    to: '/admin/user-approvals',
+    icon: HowToReg,
+    color: 'primary',
+    roles: ['admin', 'hrteam'],
+  },
+  {
+    group: 'People & HR',
+    title: 'Attendance',
+    description: 'Member attendance and reports.',
+    to: '/admin/attendance',
+    icon: Timeline,
+    color: 'success',
+    roles: ['admin', 'hrteam'],
+  },
+  {
+    group: 'People & HR',
+    title: 'Riders',
+    description: 'Manage rider profiles and data.',
+    to: '/admin/riders',
+    icon: Group,
+    color: 'info',
+    roles: ['admin', 'eventteam', 'hrteam'],
+  },
+  {
+    group: 'People & HR',
+    title: 'Achievements',
+    description: 'Issue and manage rider achievements.',
+    to: '/admin/achievements',
+    icon: MilitaryTech,
+    color: 'warning',
+    roles: ['admin', 'hrteam'],
+  },
+  {
+    group: 'Challenges',
+    title: 'Challenge Management',
+    description: 'Create and manage driving challenges.',
+    to: '/admin/challenges',
+    icon: EmojiEvents,
+    color: 'secondary',
+    roles: ['admin', 'eventteam', 'hrteam', 'financeteam'],
+  },
+  {
+    group: 'Finance',
+    title: 'Bank',
+    description: 'Bank balance, transactions and payouts.',
+    to: '/admin/bank',
+    icon: AccountBalance,
+    color: 'success',
+    roles: ['admin', 'financeteam'],
+  },
+  {
+    group: 'Finance',
+    title: 'Contracts',
+    description: 'Contract templates and management.',
+    to: '/admin/contracts',
+    icon: Assignment,
+    color: 'secondary',
+    roles: ['admin', 'eventteam', 'financeteam'],
+  },
+];
 
-  useEffect(() => {
-    // Fetch user from localStorage
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error('Error parsing user from localStorage:', e);
-      }
-    }
-  }, []);
+const groupOrder = ['Events & Jobs', 'People & HR', 'Challenges', 'Finance'];
 
-  const handleMobileDrawerToggle = () => {
-    setMobileDrawerOpen(!mobileDrawerOpen);
-  };
-
-  const handleMobileDrawerClose = () => {
-    setMobileDrawerOpen(false);
-  };
-
-  const managementCards = [
-    {
-      title: 'Event Management',
-      description: 'Manage events, slots, bookings, and special events. Create and organize trucking events for the community.',
-      icon: <EmojiEvents sx={{ fontSize: 40, color: 'primary.main' }} />,
-      color: 'primary',
-      href: '/admin/events',
-      features: ['Event Management', 'Booking Requests', 'Special Events', 'Analytics'],
-      allowedRoles: ['admin', 'eventteam']
-    },
-    {
-      title: 'Challenge Management',
-      description: 'Create and manage driving challenges. Track driver progress, leaderboards, and challenge completion.',
-      icon: <Directions sx={{ fontSize: 40, color: 'secondary.main' }} />,
-      color: 'secondary',
-      href: '/admin/challenges',
-      features: ['Create Challenges', 'Track Progress', 'View Leaderboards', 'Manage Rewards'],
-      allowedRoles: ['admin', 'eventteam', 'hrteam', 'financeteam']
-    },
-    {
-      title: 'Contracts',
-      description: 'Create story-like contract templates with tasks and constraints.',
-      icon: <Assignment sx={{ fontSize: 40, color: 'secondary.main' }} />,
-      color: 'secondary',
-      href: '/admin/contracts',
-      features: ['Templates', 'Tasks', 'Constraints', 'Deadlines'],
-      allowedRoles: ['admin', 'hrteam','financeteam']
-    },
-    {
-      title: 'Attendance Management',
-      description: 'Manage member attendance, track participation, and generate attendance reports for events.',
-      icon: <People sx={{ fontSize: 40, color: 'success.main' }} />,
-      color: 'success',
-      href: '/admin/attendance',
-      features: ['Member Attendance', 'Event Participation', 'Attendance Reports', 'Member Management'],
-      allowedRoles: ['admin', 'hrteam']
-    },
-    {
-      title: 'Job Management',
-      description: 'Browse, filter and manage all imported jobs from TruckersHub.',
-      icon: <Assignment sx={{ fontSize: 40, color: 'warning.main' }} />,
-      color: 'warning',
-      href: '/admin/jobs',
-      features: ['Browse Jobs', 'Filter by Status', 'Clean up old data'],
-      allowedRoles: ['admin', 'hrteam']
-    },
-    {
-      title: 'System Analytics',
-      description: 'View comprehensive analytics and reports for events, challenges, attendance, and user engagement.',
-      icon: <Analytics sx={{ fontSize: 40, color: 'info.main' }} />,
-      color: 'info',
-      href: '/admin/analytics',
-      features: ['Event Analytics', 'Challenge Statistics', 'Attendance Reports', 'User Engagement'],
-      allowedRoles: ['admin']
-    },
-    {
-      title: 'Bank',
-      description: 'View central bank balance, transactions, and pay bonuses to riders from the bank.',
-      icon: <Assessment sx={{ fontSize: 40, color: 'success.main' }} />,
-      color: 'success',
-      href: '/admin/bank',
-      features: ['Bank Balance', 'Transactions', 'Payout Bonuses'],
-      allowedRoles: ['admin','financeteam']
-    },
-    {
-      title: 'Achievement Management',
-      description: 'Issue and manage achievements for riders. Create custom achievements with logos and descriptions.',
-      icon: <EmojiEvents sx={{ fontSize: 40, color: 'warning.main' }} />,
-      color: 'warning',
-      href: '/admin/achievements',
-      features: ['Issue Achievements', 'Manage Awards', 'Track Recognition', 'Custom Badges'],
-      allowedRoles: ['admin', 'hrteam']
-    },
-    {
-      title: 'User Approvals',
-      description: 'Review and approve pending user registrations. Approve or reject new user accounts.',
-      icon: <People sx={{ fontSize: 40, color: 'primary.main' }} />,
-      color: 'primary',
-      href: '/admin/user-approvals',
-      features: ['Pending Approvals', 'Approve Users', 'Reject Users', 'Email Notifications'],
-      allowedRoles: ['admin', 'hrteam']
-    }
-  ];
+function AdminCard({ item, color, theme }) {
+  const Icon = item.icon;
+  const isDark = theme.palette.mode === 'dark';
+  const colorMain = theme.palette[color]?.main || theme.palette.primary.main;
+  const bg = alpha(colorMain, isDark ? 0.15 : 0.08);
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex' }}>
-      <AdminSidebar 
-        mobileDrawerOpen={mobileDrawerOpen}
-        handleMobileDrawerClose={handleMobileDrawerClose}
-        user={user}
-      />
+    <Card
+      elevation={0}
+      sx={{
+        height: '100%',
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: 'divider',
+        overflow: 'hidden',
+        transition: 'all 0.2s ease',
+        '&:hover': {
+          borderColor: colorMain,
+          boxShadow: `0 8px 24px ${alpha(colorMain, 0.2)}`,
+        },
+      }}
+    >
+      <CardActionArea
+        component={RouterLink}
+        to={item.to}
+        sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}
+      >
+        <CardContent sx={{ flexGrow: 1, p: 2.5 }}>
+          <Box
+            sx={{
+              width: 48,
+              height: 48,
+              borderRadius: 2,
+              bgcolor: bg,
+              color: colorMain,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mb: 1.5,
+            }}
+          >
+            <Icon sx={{ fontSize: 28 }} />
+          </Box>
+          <Typography variant="subtitle1" fontWeight={600} gutterBottom sx={{ color: 'text.primary' }}>
+            {item.title}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
+            {item.description}
+          </Typography>
+        </CardContent>
+      </CardActionArea>
+    </Card>
+  );
+}
 
-      <Box sx={{ flex: 1 }}>
-        {/* Mobile Header */}
-        {isMobile && (
-          <AppBar position="sticky" sx={{ display: { xs: 'block', md: 'none' } }}>
-            <Toolbar>
-              <IconButton
-                color="inherit"
-                aria-label="open drawer"
-                edge="start"
-                onClick={handleMobileDrawerToggle}
-                sx={{ mr: 2 }}
-              >
-                <MenuMui />
-              </IconButton>
-              <Typography variant="h6" noWrap component="div">
-                Admin Dashboard
-              </Typography>
-            </Toolbar>
-          </AppBar>
-        )}
+const AdminDashboard = () => {
+  const { user } = useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const role = user?.role;
 
-        <Container maxWidth="xl" sx={{
-          px: { xs: 1, sm: 2, md: 3 },
-          pt: { xs: 8, sm: 9 },
-          pb: 3
-        }}>
-      {/* Header */}
-      <Box sx={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        mb: 4,
-        flexWrap: 'wrap',
-        gap: 2
-      }}>
+  const allowedCards = cardConfig.filter((c) => role && c.roles.includes(role));
+  const byGroup = groupOrder.reduce((acc, group) => {
+    acc[group] = allowedCards.filter((c) => c.group === group);
+    return acc;
+  }, {});
+
+  return (
+    <Box>
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 2,
+          mb: 4,
+        }}
+      >
         <Box>
           <Typography
-            variant={isMobile ? "h4" : "h3"}
+            variant={isMobile ? 'h5' : 'h4'}
             component="h1"
+            fontWeight={700}
             gutterBottom
-            sx={{ fontWeight: 'bold' }}
           >
             Admin Dashboard
           </Typography>
-          <Typography variant="h6" color="text.secondary">
-            Choose what you want to manage
+          <Typography variant="body1" color="text.secondary">
+            Quick access to management tools
           </Typography>
         </Box>
         {user && (
-          <Box sx={{ textAlign: 'right' }}>
-            <Typography variant="body2" color="text.secondary">
-              Welcome back,
-            </Typography>
-            <Typography variant="h6" color="primary">
-              {user.username}
-            </Typography>
-          </Box>
+          <Chip
+            label={user.username}
+            size="medium"
+            variant="outlined"
+            sx={{ fontWeight: 500, textTransform: 'capitalize' }}
+          />
         )}
       </Box>
 
-      {/* Management Cards with RBAC gating */}
-      <Grid container spacing={3}>
-        {managementCards
-          .filter(card => !user || (card.allowedRoles || []).includes(user.role))
-          .map((card, index) => (
-            <Grid item xs={12} sm={6} lg={3} key={index}>
-              <Card
-                sx={{
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: 6
-                  }
-                }}
-              >
-                <CardContent sx={{ flexGrow: 1, p: 3 }}>
-                  <Box sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    mb: 2
-                  }}>
-                    {card.icon}
-                    <Typography
-                      variant="h5"
-                      component="h2"
-                      sx={{
-                        ml: 2,
-                        fontWeight: 'bold',
-                        color: `${card.color}.main`
-                      }}
-                    >
-                      {card.title}
-                    </Typography>
-                  </Box>
-
-                  <Typography
-                    variant="body1"
-                    color="text.secondary"
-                    paragraph
-                    sx={{ mb: 2 }}
-                  >
-                    {card.description}
-                  </Typography>
-
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                      Features:
-                    </Typography>
-                    {card.features.map((feature, idx) => (
-                      <Box key={idx} sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                        <Box
-                          sx={{
-                            width: 6,
-                            height: 6,
-                            borderRadius: '50%',
-                            bgcolor: `${card.color}.main`,
-                            mr: 1
-                          }}
-                        />
-                        <Typography variant="body2" color="text.secondary">
-                          {feature}
-                        </Typography>
-                      </Box>
-                    ))}
-                  </Box>
-                </CardContent>
-
-                <CardActions sx={{ p: 3, pt: 0 }}>
-                  <Button
-                    variant="contained"
-                    color={card.color}
-                    fullWidth
-                    size="large"
-                    href={card.href}
-                    disabled={user ? !(card.allowedRoles || []).includes(user.role) : true}
-                    sx={{
-                      fontWeight: 'bold',
-                      py: 1.5
-                    }}
-                  >
-                    Manage {card.title.split(' ')[0]}
-                  </Button>
-                </CardActions>
-              </Card>
+      {groupOrder.map((group) => {
+        const items = byGroup[group];
+        if (!items?.length) return null;
+        return (
+          <Box key={group} sx={{ mb: 4 }}>
+            <Typography
+              variant="overline"
+              sx={{
+                color: 'text.secondary',
+                fontWeight: 600,
+                letterSpacing: 1,
+                display: 'block',
+                mb: 1.5,
+              }}
+            >
+              {group}
+            </Typography>
+            <Grid container spacing={2}>
+              {items.map((item) => (
+                <Grid item xs={12} sm={6} md={4} key={item.to}>
+                  <AdminCard item={item} color={item.color} theme={theme} />
+                </Grid>
+              ))}
             </Grid>
-          ))}
-      </Grid>
-
-      {/* Quick Stats or Additional Info */}
-
-        </Container>
-      </Box>
+          </Box>
+        );
+      })}
     </Box>
   );
 };
 
-export default AdminDashboard; 
+export default AdminDashboard;

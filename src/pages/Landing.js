@@ -679,12 +679,7 @@ const Landing = () => {
 
   // Sample data for partners
   const partners = [
-    {
-      id: 1,
-      name: "Indian Truckers",
-      logo: "https://static.truckersmp.com/images/vtc/logo/19885.1712066123.png",
-
-    },
+   
     {
       id: 2,
       name: "Indian Carriers",

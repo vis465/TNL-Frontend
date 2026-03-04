@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import React from "react";
+import { Link as RouterLink, useLocation } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -9,15 +9,15 @@ import {
   ListItemIcon,
   ListItemText,
   Divider,
-  Drawer,
   SwipeableDrawer,
   IconButton,
+  Tooltip,
   useMediaQuery,
-  useTheme
-} from '@mui/material';
+  useTheme,
+} from "@mui/material";
 import {
   DashboardOutlined,
-  AssignmentTurnedInOutlined  ,
+  AssignmentTurnedInOutlined,
   LeaderboardOutlined,
   Assignment,
   AccountBalanceWallet,
@@ -28,228 +28,263 @@ import {
   EmojiEventsOutlined,
   AttachMoneyOutlined,
   Timeline,
-  Close
-} from '@mui/icons-material';
+  Close,
+  VerifiedUserOutlined,
+  PersonAdd,
+  Group,
+  MilitaryTech,
+  ChevronLeft,
+  ChevronRight,
+} from "@mui/icons-material";
 
-const AdminSidebar = ({ 
-  mobileDrawerOpen, 
-  handleMobileDrawerClose, 
-  user 
+const navItem = (to, label, icon, allowedRoles) => ({ to, label, icon, allowedRoles });
+
+// My area (user dashboard) – shown to all authenticated
+const myAreaItems = [
+  navItem("/dashboard", "Overview", <DashboardOutlined />, null),
+  navItem("/challenges", "Challenges", <AssignmentTurnedInOutlined />, null),
+  navItem("/leaderboard", "Leaderboards", <LeaderboardOutlined />, null),
+  navItem("/contracts", "Contracts", <Assignment />, null),
+  navItem("/wallet", "Wallet", <AccountBalanceWallet />, null),
+  navItem("/jobs", "Jobs", <LocalShippingOutlined />, null),
+  navItem("/validate-job", "Validate Job", <VerifiedUserOutlined />, null),
+  navItem("/attendance", "Attendance", <Event />, null),
+];
+
+// Admin home
+const adminHome = navItem("/admin", "Admin Dashboard", <AdminPanelSettings />, ["admin", "eventteam", "hrteam", "financeteam"]);
+
+// Events & jobs
+const eventsAndJobsItems = [
+  navItem("/admin/jobs", "Job Management", <LocalShippingOutlined />, ["admin", "eventteam"]),
+  navItem("/admin/events", "Event Management", <Event />, ["admin", "eventteam"]),
+  navItem("/admin/analytics", "Analytics", <Timeline />, ["admin", "eventteam"]),
+];
+
+// People & HR
+const peopleItems = [
+  navItem("/admin/users", "User Management", <People />, ["admin", "hrteam"]),
+  navItem("/admin/create-user", "Create User", <PersonAdd />, ["admin"]),
+  navItem("/admin/user-approvals", "User Approvals", <VerifiedUserOutlined />, ["admin", "hrteam"]),
+  navItem("/admin/attendance", "Attendance Management", <Event />, ["admin", "hrteam"]),
+  navItem("/admin/riders", "Riders", <Group />, ["admin", "eventteam", "hrteam"]),
+  navItem("/admin/achievements", "Achievements", <EmojiEventsOutlined />, ["admin", "hrteam"]),
+];
+
+// Challenges
+const challengesItems = [
+  navItem("/admin/challenges", "Challenge Management", <AssignmentTurnedInOutlined />, ["admin", "eventteam", "hrteam", "financeteam"]),
+];
+
+// Finance
+const financeItems = [
+  navItem("/admin/bank", "Bank", <AttachMoneyOutlined />, ["admin", "financeteam"]),
+  navItem("/admin/contracts", "Contract Management", <Assignment />, ["admin", "eventteam", "financeteam"]),
+];
+
+function canSee(userRole, allowedRoles) {
+  if (!allowedRoles) return true;
+  return userRole && allowedRoles.includes(userRole);
+}
+
+function NavListItem({ item, user, onClose, collapsed }) {
+  const location = useLocation();
+  const active = location.pathname === item.to;
+  if (!canSee(user?.role, item.allowedRoles)) return null;
+  const button = (
+    <ListItem disablePadding>
+      <ListItemButton
+        component={RouterLink}
+        to={item.to}
+        onClick={onClose}
+        selected={active}
+        sx={{
+          justifyContent: collapsed ? "center" : "flex-start",
+          px: collapsed ? 1 : 2,
+          "&.Mui-selected": {
+            bgcolor: "action.selected",
+            "&:hover": { bgcolor: "action.hover" },
+          },
+        }}
+      >
+        <ListItemIcon
+          sx={{
+            minWidth: collapsed ? 0 : 40,
+            justifyContent: "center",
+            color: active ? "primary.main" : "inherit",
+          }}
+        >
+          {item.icon}
+        </ListItemIcon>
+        {!collapsed && <ListItemText primary={item.label} />}
+      </ListItemButton>
+    </ListItem>
+  );
+  if (collapsed) {
+    return (
+      <Tooltip title={item.label} placement="right" arrow>
+        <span>{button}</span>
+      </Tooltip>
+    );
+  }
+  return button;
+}
+
+function SectionHeader({ label, collapsed }) {
+  if (collapsed) {
+    return <Divider sx={{ my: 1, mx: 1 }} />;
+  }
+  return (
+    <Box sx={{ px: 2, py: 1.25 }}>
+      <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ letterSpacing: "0.05em" }}>
+        {label}
+      </Typography>
+    </Box>
+  );
+}
+
+const AdminSidebar = ({
+  mobileDrawerOpen,
+  handleMobileDrawerClose,
+  user,
+  collapsed = false,
+  onToggleCollapse,
 }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const hasAdminAccess = user && ["admin", "eventteam", "hrteam", "financeteam"].includes(user.role);
+  const desktopWidth = collapsed ? 72 : 280;
 
-  const isAdmin = user?.role === 'admin';
-  const isEventTeam = user?.role === 'eventteam' || isAdmin;
-  const isHR = user?.role === 'hrteam' || isAdmin;
-  const isFinanceTeam = user?.role === 'financeteam' || isAdmin;
-
-  const SidebarContent = () => (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ p: 2 }}>
-        <Typography variant="subtitle1" fontWeight={700}>Dashboard</Typography>
-      </Box>
-      <List sx={{ flex: 1 }}>
-        {/* Core Navigation */}
-        <ListItem disablePadding>
-          <ListItemButton component={RouterLink} to="/dashboard" onClick={handleMobileDrawerClose}>
-            <ListItemIcon><DashboardOutlined /></ListItemIcon>
-            <ListItemText primary="Overview" />
-          </ListItemButton>
-        </ListItem>
-        
-        <ListItem disablePadding>
-          <ListItemButton component={RouterLink} to="/challenges" onClick={handleMobileDrawerClose}>
-            <ListItemIcon><AssignmentTurnedInOutlined /></ListItemIcon>
-            <ListItemText primary="Challenges" />
-          </ListItemButton>
-        </ListItem>
-        
-        <ListItem disablePadding>
-          <ListItemButton component={RouterLink} to="/leaderboard" onClick={handleMobileDrawerClose}>
-            <ListItemIcon><LeaderboardOutlined /></ListItemIcon>
-            <ListItemText primary="Leaderboards" />
-          </ListItemButton>
-        </ListItem>
-        
-        <ListItem disablePadding>
-          <ListItemButton component={RouterLink} to="/contracts" onClick={handleMobileDrawerClose}>
-            <ListItemIcon><Assignment /></ListItemIcon>
-            <ListItemText primary="Contracts" />
-          </ListItemButton>
-        </ListItem>
-
-        <ListItem disablePadding>
-          <ListItemButton component={RouterLink} to="/wallet" onClick={handleMobileDrawerClose}>
-            <ListItemIcon><AccountBalanceWallet /></ListItemIcon>
-            <ListItemText primary="Wallet" />
-          </ListItemButton>
-        </ListItem>
-
-        <ListItem disablePadding>
-          <ListItemButton component={RouterLink} to="/jobs" onClick={handleMobileDrawerClose}>
-            <ListItemIcon><LocalShippingOutlined /></ListItemIcon>
-            <ListItemText primary="Jobs" />
-          </ListItemButton>
-        </ListItem>
-
-        <ListItem disablePadding>
-          <ListItemButton component={RouterLink} to="/attendance" onClick={handleMobileDrawerClose}>
-            <ListItemIcon><Event /></ListItemIcon>
-            <ListItemText primary="Attendance" />
-          </ListItemButton>
-        </ListItem>
-
-        {/* Role-specific Navigation */}
-        {(isAdmin || isEventTeam || isHR || isFinanceTeam) && (
-          <>
-            <Divider sx={{ my: 1 }} />
-            <Box sx={{ px: 2, py: 1 }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                ADMIN PANEL
-              </Typography>
-            </Box>
-            
-            <ListItem disablePadding>
-              <ListItemButton component={RouterLink} to="/admin" onClick={handleMobileDrawerClose}>
-                <ListItemIcon><AdminPanelSettings /></ListItemIcon>
-                <ListItemText primary="Admin Dashboard" />
-              </ListItemButton>
-            </ListItem>
-
-            {(isAdmin || isEventTeam) && (
-              <>
-                <ListItem disablePadding>
-                  <ListItemButton component={RouterLink} to="/admin/jobs" onClick={handleMobileDrawerClose}>
-                    <ListItemIcon><LocalShippingOutlined /></ListItemIcon>
-                    <ListItemText primary="Job Management" />
-                  </ListItemButton>
-                </ListItem>
-                
-                <ListItem disablePadding>
-                  <ListItemButton component={RouterLink} to="/admin/events" onClick={handleMobileDrawerClose}>
-                    <ListItemIcon><Event /></ListItemIcon>
-                    <ListItemText primary="Event Management" />
-                  </ListItemButton>
-                </ListItem>
-                
-                <ListItem disablePadding>
-                  <ListItemButton component={RouterLink} to="/admin/analytics" onClick={handleMobileDrawerClose}>
-                    <ListItemIcon><Timeline /></ListItemIcon>
-                    <ListItemText primary="Analytics" />
-                  </ListItemButton>
-                </ListItem>
-              </>
-            )}
-
-            {(isAdmin || isHR) && (
-              <>
-                <ListItem disablePadding>
-                  <ListItemButton component={RouterLink} to="/admin/users" onClick={handleMobileDrawerClose}>
-                    <ListItemIcon><People /></ListItemIcon>
-                    <ListItemText primary="User Management" />
-                  </ListItemButton>
-                </ListItem>
-                
-                <ListItem disablePadding>
-                  <ListItemButton component={RouterLink} to="/admin/user-approvals" onClick={handleMobileDrawerClose}>
-                    <ListItemIcon><People /></ListItemIcon>
-                    <ListItemText primary="User Approvals" />
-                  </ListItemButton>
-                </ListItem>
-                
-                <ListItem disablePadding>
-                  <ListItemButton component={RouterLink} to="/admin/attendance" onClick={handleMobileDrawerClose}>
-                    <ListItemIcon><Event /></ListItemIcon>
-                    <ListItemText primary="Attendance Management" />
-                  </ListItemButton>
-                </ListItem>
-                
-                <ListItem disablePadding>
-                  <ListItemButton component={RouterLink} to="/admin/achievements" onClick={handleMobileDrawerClose}>
-                    <ListItemIcon><EmojiEventsOutlined /></ListItemIcon>
-                    <ListItemText primary="Achievements" />
-                  </ListItemButton>
-                </ListItem>
-              </>
-            )}
-
-            {(isAdmin || isEventTeam || isHR || isFinanceTeam) && (
-              <>
-                <ListItem disablePadding>
-                  <ListItemButton component={RouterLink} to="/admin/challenges" onClick={handleMobileDrawerClose}>
-                    <ListItemIcon><AssignmentTurnedInOutlined /></ListItemIcon>
-                    <ListItemText primary="Challenge Management" />
-                  </ListItemButton>
-                </ListItem>
-              </>
-            )}
-
-            {isAdmin  || isFinanceTeam && (
-              <>
-                <ListItem disablePadding>
-                  <ListItemButton component={RouterLink} to="/admin/bank" onClick={handleMobileDrawerClose}>
-                    <ListItemIcon><AttachMoneyOutlined /></ListItemIcon>
-                    <ListItemText primary="Bank Management" />
-                  </ListItemButton>
-                </ListItem>
-              </>
-            )}
-
-            {(isAdmin || isEventTeam || isFinanceTeam) && (
-              <>
-                <ListItem disablePadding>
-                  <ListItemButton component={RouterLink} to="/admin/contracts" onClick={handleMobileDrawerClose}>
-                    <ListItemIcon><Assignment /></ListItemIcon>
-                    <ListItemText primary="Contract Management" />
-                  </ListItemButton>
-                </ListItem>
-              </>
-            )}
-          </>
+  const SidebarContent = ({ isCollapsed }) => (
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", overflow: "auto" }}>
+      <Box sx={{ p: isCollapsed ? 1.5 : 2, display: "flex", alignItems: "center", justifyContent: isCollapsed ? "center" : "space-between" }}>
+        {!isCollapsed && (
+          <Typography variant="subtitle1" fontWeight={700}>
+            Menu
+          </Typography>
         )}
+      </Box>
+      <Divider />
+
+      <SectionHeader label="MY AREA" collapsed={isCollapsed} />
+      <List dense sx={{ pt: 0 }}>
+        {myAreaItems.map((item) => (
+          <NavListItem key={item.to} item={item} user={user} onClose={handleMobileDrawerClose} collapsed={isCollapsed} />
+        ))}
       </List>
+
+      {hasAdminAccess && (
+        <>
+          <Divider sx={{ my: 0.5 }} />
+          <SectionHeader label="ADMIN" collapsed={isCollapsed} />
+          <List dense sx={{ pt: 0 }}>
+            <NavListItem item={adminHome} user={user} onClose={handleMobileDrawerClose} collapsed={isCollapsed} />
+          </List>
+
+          {eventsAndJobsItems.some((i) => canSee(user?.role, i.allowedRoles)) && (
+            <>
+              <SectionHeader label="EVENTS & JOBS" collapsed={isCollapsed} />
+              <List dense sx={{ pt: 0 }}>
+                {eventsAndJobsItems.map((item) => (
+                  <NavListItem key={item.to} item={item} user={user} onClose={handleMobileDrawerClose} collapsed={isCollapsed} />
+                ))}
+              </List>
+            </>
+          )}
+
+          {peopleItems.some((i) => canSee(user?.role, i.allowedRoles)) && (
+            <>
+              <SectionHeader label="PEOPLE & HR" collapsed={isCollapsed} />
+              <List dense sx={{ pt: 0 }}>
+                {peopleItems.map((item) => (
+                  <NavListItem key={item.to} item={item} user={user} onClose={handleMobileDrawerClose} collapsed={isCollapsed} />
+                ))}
+              </List>
+            </>
+          )}
+
+          {challengesItems.some((i) => canSee(user?.role, i.allowedRoles)) && (
+            <>
+              <SectionHeader label="CHALLENGES" collapsed={isCollapsed} />
+              <List dense sx={{ pt: 0 }}>
+                {challengesItems.map((item) => (
+                  <NavListItem key={item.to} item={item} user={user} onClose={handleMobileDrawerClose} collapsed={isCollapsed} />
+                ))}
+              </List>
+            </>
+          )}
+
+          {financeItems.some((i) => canSee(user?.role, i.allowedRoles)) && (
+            <>
+              <SectionHeader label="FINANCE" collapsed={isCollapsed} />
+              <List dense sx={{ pt: 0 }}>
+                {financeItems.map((item) => (
+                  <NavListItem key={item.to} item={item} user={user} onClose={handleMobileDrawerClose} collapsed={isCollapsed} />
+                ))}
+              </List>
+            </>
+          )}
+        </>
+      )}
+
+      <Box sx={{ flex: 1, minHeight: 24 }} />
+
+      {!isMobile && onToggleCollapse && (
+        <Box sx={{ p: 1, borderTop: 1, borderColor: "divider" }}>
+          <Tooltip title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"} placement="right" arrow>
+            <IconButton onClick={onToggleCollapse} size="small" sx={{ width: "100%", borderRadius: 1 }}>
+              {isCollapsed ? <ChevronRight /> : <ChevronLeft />}
+            </IconButton>
+          </Tooltip>
+        </Box>
+      )}
     </Box>
   );
 
   return (
     <>
-      {/* Desktop Sidebar */}
-      <Drawer 
-        variant="permanent" 
+      {/* Desktop: in-flow sidebar (below navbar), collapsible */}
+      <Box
+        component="aside"
         sx={{
-          display: { xs: 'none', md: 'block' },
-          width: 280,
+          display: { xs: "none", md: "flex" },
+          width: desktopWidth,
           flexShrink: 0,
-          '& .MuiDrawer-paper': { width: 280, boxSizing: 'border-box' }
+          flexDirection: "column",
+          borderRight: 1,
+          borderColor: "divider",
+          bgcolor: "background.paper",
+          overflow: "hidden",
+          transition: theme.transitions.create("width", { duration: theme.transitions.duration.short }),
         }}
       >
-        <SidebarContent />
-      </Drawer>
+        <SidebarContent isCollapsed={collapsed} />
+      </Box>
 
-      {/* Mobile Drawer */}
       <SwipeableDrawer
         anchor="left"
         open={mobileDrawerOpen}
         onClose={handleMobileDrawerClose}
         sx={{
-          display: { xs: 'block', md: 'none' },
-          '& .MuiDrawer-paper': {
+          display: { xs: "block", md: "none" },
+          "& .MuiDrawer-paper": {
             width: 320,
-            boxSizing: 'border-box',
+            boxSizing: "border-box",
+            borderRight: 1,
+            borderColor: "divider",
           },
         }}
       >
-        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box sx={{ p: 2, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <Typography variant="h6" fontWeight={700}>
-            Dashboard Menu
+            Menu
           </Typography>
-          <IconButton onClick={handleMobileDrawerClose}>
+          <IconButton onClick={handleMobileDrawerClose} aria-label="close menu">
             <Close />
           </IconButton>
         </Box>
         <Divider />
-        <SidebarContent />
+        <SidebarContent isCollapsed={false} />
       </SwipeableDrawer>
     </>
   );

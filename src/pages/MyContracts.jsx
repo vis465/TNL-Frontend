@@ -11,6 +11,7 @@ import {
   Divider,
   List,
   ListItem,
+  ListItemButton,
   ListItemText,
   Container,
   Grid,
@@ -34,6 +35,7 @@ import {
 export default function MyContracts() {
   const [data, setData] = useState({ active: [], history: [] });
   const [loading, setLoading] = useState(true);
+  const [selectedTaskOrderByContractId, setSelectedTaskOrderByContractId] = useState({});
 
   const refresh = async () => {
     setLoading(true);
@@ -52,6 +54,41 @@ export default function MyContracts() {
       .then(setData)
       .finally(() => setLoading(false));
   }, []);
+
+  // Keep a sensible "selected task" per contract (defaults to current/next task).
+  useEffect(() => {
+    const contracts = [...(data.active || []), ...(data.history || [])];
+    if (!contracts.length) return;
+
+    setSelectedTaskOrderByContractId((prev) => {
+      let changed = false;
+      const next = { ...prev };
+
+      for (const c of contracts) {
+        if (!c?._id) continue;
+        if (next[c._id] != null) continue;
+
+        const tpl = c.templateId || {};
+        const tasks = Array.isArray(tpl.tasks) ? tpl.tasks : [];
+        const progress = Array.isArray(c.progress) ? c.progress : [];
+
+        let nextIdx = typeof c.currentTaskIndex === 'number' ? c.currentTaskIndex : 0;
+        if (!tasks[nextIdx]) {
+          const doneOrders = new Set(progress.filter(p => p.status === 'done').map(p => p.order));
+          nextIdx = tasks.findIndex(t => !doneOrders.has(t.order));
+          if (nextIdx < 0) nextIdx = 0;
+        }
+
+        const defaultOrder = tasks[nextIdx]?.order ?? tasks[0]?.order ?? null;
+        if (defaultOrder != null) {
+          next[c._id] = defaultOrder;
+          changed = true;
+        }
+      }
+
+      return changed ? next : prev;
+    });
+  }, [data]);
 
   const renderContract = (c) => {
     const tpl = c.templateId || {};
@@ -97,6 +134,13 @@ export default function MyContracts() {
           .trim();
       };
 
+      const formatValue = (value) => {
+        if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+        if (Array.isArray(value)) return value.filter(v => v != null && v !== '').join(', ');
+        if (value && typeof value === 'object') return JSON.stringify(value);
+        return String(value);
+      };
+
       return (
         <Grid container spacing={2}>
           {entries.map(([k, v]) => (
@@ -128,7 +172,7 @@ export default function MyContracts() {
                     fontWeight: 500
                   }}
                 >
-                  {v}
+                  {formatValue(v)}
                 </Typography>
               </Box>
             </Grid>
@@ -139,6 +183,10 @@ export default function MyContracts() {
 
     const isOverdue = new Date(c.deadlineAt) < new Date();
     const statusColor = c.status === 'completed' ? '#2e7d32' : c.status === 'active' ? '#1976d2' : '#666';
+    const selectedOrder = selectedTaskOrderByContractId[c._id] ?? nextTask?.order ?? tasks[0]?.order ?? null;
+    const selectedTask = selectedOrder != null ? tasks.find(t => t.order === selectedOrder) : null;
+    const selectedIdx = selectedTask ? tasks.findIndex(t => t.order === selectedTask.order) : -1;
+    const selectedStatus = selectedTask ? getTaskStatus(selectedTask) : 'pending';
 
     return (
       <Paper
@@ -221,78 +269,165 @@ export default function MyContracts() {
           {tasks.length > 0 && (
             <>
               <Divider sx={{ my: 3 }} />
-              <Typography variant="subtitle1" sx={{ mb: 2, color: 'white', fontWeight: 500 }}>
-                Progress Steps
-              </Typography>
-              
-              <List dense sx={{  borderRadius: 2, p: 1 }}>
-                {tasks.map((t, idx) => {
-                  const taskStatus = getTaskStatus(t);
-                  const isCompleted = taskStatus === 'done';
-                  
-                  return (
-                    <ListItem
-                      key={t.order}
-                      sx={{
-                        py: 1.5,
-                        px: 2,
-                        borderRadius: 1,
-                        mb: 0.5,
-                     
-                        border: '1px solid',
-                        borderColor: isCompleted ? '#c8e6c9' : '#e0e0e0'
-                      }}
-                    >
-                      <ListItemText
-                        primary={
-                          <Stack direction="row" alignItems="center" spacing={1}>
-                            {isCompleted ? (
-                              <CheckCircle sx={{ color: '#2e7d32', fontSize: 20 }} />
-                            ) : (
-                              <PlayArrow sx={{ color: '#1976d2', fontSize: 20 }} />
-                            )}
-                            <Typography
-                              variant="body1"
+              <Stack direction="row" alignItems="baseline" justifyContent="space-between" sx={{ mb: 2 }}>
+                <Typography variant="subtitle1" sx={{ color: 'white', fontWeight: 500 }}>
+                  Contract Jobs
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#9aa0a6' }}>
+                  Select a job to view its requirements
+                </Typography>
+              </Stack>
+
+              <Grid container spacing={2}>
+                {/* Left: step-by-step job list */}
+                <Grid item xs={12} md={5}>
+                  <Box
+                    sx={{
+                      border: '1px solid #e0e0e0',
+                      borderRadius: 2,
+                      overflow: 'hidden'
+                    }}
+                  >
+                    <Box sx={{ px: 2, py: 1.5, bgcolor: '#0f141a' }}>
+                      <Stack direction="row" alignItems="center" justifyContent="space-between">
+                        <Typography variant="subtitle2" sx={{ color: 'white', fontWeight: 600 }}>
+                          Job checklist
+                        </Typography>
+                        <Chip
+                          size="small"
+                          icon={<TrendingUp sx={{ fontSize: 16 }} />}
+                          label={`${done}/${total}`}
+                          sx={{ bgcolor: '#111827', color: 'white' }}
+                        />
+                      </Stack>
+                    </Box>
+
+                    <List dense disablePadding>
+                      {tasks.map((t, idx) => {
+                        const taskStatus = getTaskStatus(t);
+                        const isCompleted = taskStatus === 'done';
+                        const isCurrent = nextTask && nextTask.order === t.order && !isCompleted;
+                        const isSelected = selectedOrder != null && selectedOrder === t.order;
+
+                        return (
+                          <ListItem disablePadding key={t.order}>
+                            <ListItemButton
+                              onClick={() => {
+                                if (!c?._id) return;
+                                setSelectedTaskOrderByContractId((prev) => ({ ...prev, [c._id]: t.order }));
+                              }}
                               sx={{
-                                fontWeight: isCompleted ? 600 : 500,
-                                color: isCompleted ? '#2e7d32' : 'white'
+                                py: 1.25,
+                                px: 2,
+                                borderBottom: idx === tasks.length - 1 ? 'none' : '1px solid #eaeaea',
+                                bgcolor: isSelected ? '#101b2a' : 'transparent',
+                                '&:hover': { bgcolor: isSelected ? '#0f2038' : '#0b0f14' }
                               }}
                             >
-                              {idx + 1}. {t.title}
-                            </Typography>
-                          </Stack>
-                        }
-                        secondary={
-                          <Typography variant="body2" sx={{ color: '#666', mt: 0.5 }}>
-                            {isCompleted ? 'Completed' : 'In Progress'}
-                          </Typography>
-                        }
-                      />
-                      
-                      <Chip
-                        icon={isCompleted ? <Done sx={{ fontSize: 16 }} /> : <Schedule sx={{ fontSize: 16 }} />}
-                        label={isCompleted ? 'Done' : 'Pending'}
-                        size="small"
-                        sx={{
-                          
-                          color: isCompleted ? '#2e7d32' : '#f57c00',
-                          fontWeight: 500
-                        }}
-                      />
-                    </ListItem>
-                  );
-                })}
-              </List>
+                              <Stack direction="row" alignItems="center" spacing={1.25} sx={{ width: '100%' }}>
+                                {isCompleted ? (
+                                  <CheckCircle sx={{ color: '#2e7d32', fontSize: 20 }} />
+                                ) : isCurrent ? (
+                                  <PlayArrow sx={{ color: '#42a5f5', fontSize: 20 }} />
+                                ) : (
+                                  <Schedule sx={{ color: '#9aa0a6', fontSize: 20 }} />
+                                )}
 
-              {/* Next Step */}
-              {nextTask && getTaskStatus(nextTask) !== 'done' && (
-                <Box sx={{ mt: 3, p: 3, borderRadius: 2, border: '1px solid #bbdefb' }}>
-                  <Typography variant="subtitle2" sx={{ mb: 1.5, color: '#1976d2', fontWeight: 600 }}>
-                    Next Step: {nextTask.title}
-                  </Typography>
-                  {renderCriteria(nextTask.criteria)}
-                </Box>
-              )}
+                                <Box sx={{ flex: 1, minWidth: 0 }}>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      fontWeight: isSelected ? 700 : isCompleted ? 600 : 500,
+                                      color: isCompleted ? '#9ad3a2' : 'white'
+                                    }}
+                                    noWrap
+                                  >
+                                    {idx + 1}. {t.title}
+                                  </Typography>
+                                  <Typography variant="caption" sx={{ color: '#9aa0a6' }}>
+                                    {isCompleted ? 'Completed' : isCurrent ? 'Current job' : 'Upcoming'}
+                                  </Typography>
+                                </Box>
+
+                                <Chip
+                                  size="small"
+                                  icon={isCompleted ? <Done sx={{ fontSize: 16 }} /> : <Schedule sx={{ fontSize: 16 }} />}
+                                  label={isCompleted ? 'Done' : isCurrent ? 'Now' : 'Pending'}
+                                  sx={{
+                                    bgcolor: isCompleted ? '#e8f5e9' : isCurrent ? '#e3f2fd' : '#fff3e0',
+                                    color: isCompleted ? '#2e7d32' : isCurrent ? '#1565c0' : '#ef6c00',
+                                    fontWeight: 600
+                                  }}
+                                />
+                              </Stack>
+                            </ListItemButton>
+                          </ListItem>
+                        );
+                      })}
+                    </List>
+                  </Box>
+                </Grid>
+
+                {/* Right: selected job requirements */}
+                <Grid item xs={12} md={7}>
+                  <Box
+                    sx={{
+                      border: '1px solid #e0e0e0',
+                      borderRadius: 2,
+                      p: 2.5,
+                      bgcolor: '#0f141a'
+                    }}
+                  >
+                    <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={2} sx={{ mb: 2 }}>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="subtitle2" sx={{ color: '#9aa0a6', fontWeight: 700, letterSpacing: 0.4 }}>
+                          {selectedTask
+                            ? `JOB ${selectedIdx >= 0 ? selectedIdx + 1 : ''} OF ${tasks.length}`
+                            : `JOB REQUIREMENTS`}
+                        </Typography>
+                        <Typography variant="h6" sx={{ color: 'white', fontWeight: 600 }} noWrap>
+                          {selectedTask ? selectedTask.title : 'Select a job'}
+                        </Typography>
+                      </Box>
+
+                      {selectedTask && (
+                        <Stack direction="row" spacing={1} sx={{ flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                          <Chip
+                            size="small"
+                            label={selectedStatus === 'done' ? 'Completed' : nextTask?.order === selectedTask.order ? 'Current' : 'Pending'}
+                            sx={{
+                              bgcolor: selectedStatus === 'done' ? '#e8f5e9' : nextTask?.order === selectedTask.order ? '#e3f2fd' : '#fff3e0',
+                              color: selectedStatus === 'done' ? '#2e7d32' : nextTask?.order === selectedTask.order ? '#1565c0' : '#ef6c00',
+                              fontWeight: 700
+                            }}
+                          />
+                          {nextTask?.order === selectedTask.order && selectedStatus !== 'done' && (
+                            <Chip
+                              size="small"
+                              icon={<PlayArrow sx={{ fontSize: 16 }} />}
+                              label="Do this next"
+                              sx={{ bgcolor: '#111827', color: 'white', fontWeight: 700 }}
+                            />
+                          )}
+                        </Stack>
+                      )}
+                    </Stack>
+
+                    {selectedTask ? (
+                      <>
+                        <Typography variant="body2" sx={{ color: '#c7ccd1', mb: 2 }}>
+                          Complete the requirements below to finish this job.
+                        </Typography>
+                        {renderCriteria(selectedTask.criteria)}
+                      </>
+                    ) : (
+                      <Typography variant="body2" sx={{ color: '#c7ccd1' }}>
+                        Pick a job from the checklist to see exactly what you need to do.
+                      </Typography>
+                    )}
+                  </Box>
+                </Grid>
+              </Grid>
             </>
           )}
         </Box>
@@ -356,7 +491,7 @@ export default function MyContracts() {
 
         {/* Content Grid */}
         <Grid container spacing={4}>
-          <Grid item xs={12} lg={6}>
+          <Grid item xs={12}>
             <Typography variant="h6" sx={{ mb: 3,  fontWeight: 500 }}>
               Active Contracts ({loading ? '...' : data.active.length})
             </Typography>
@@ -380,7 +515,7 @@ export default function MyContracts() {
             )}
           </Grid>
           
-          <Grid item xs={12} lg={6}>
+          <Grid item xs={12}>
             <Typography variant="h6" sx={{ mb: 3, color: 'white', fontWeight: 500 }}>
               Contract History ({loading ? '...' : data.history.length})
             </Typography>

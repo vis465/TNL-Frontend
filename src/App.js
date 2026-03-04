@@ -28,6 +28,7 @@ import AttendanceManagement from "./pages/AttendanceManagement";
 import MyBookings from "./pages/MyBookings";
 import Servers from "./pages/Servers";
 import PrivateRoute from "./components/PrivateRoute";
+import AdminLayout from "./components/AdminLayout";
 import Others from "./pages/Others";
 import AttendingEvents from "./components/AttendingEvents";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
@@ -85,6 +86,9 @@ import ResetPassword from "./pages/ResetPassword";
 import Wallet from "./pages/Wallet";
 import PersonalGoals from "./pages/PersonalGoals";
 import AdminUserApprovals from "./pages/AdminUserApprovals";
+import JobValidation from "./pages/JobValidation";
+import AdminCreateUser from "./pages/AdminCreateUser";
+import ChangePassword from "./pages/ChangePassword";
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -282,12 +286,12 @@ function App() {
               >
                 <RedirectBasedOnHost />
                 <Navbar />
-                <Box component="main" sx={{ flexGrow: 1 }}>
+                <Box component="main" sx={{ flexGrow: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
                   <Routes>
                     {/* Public routes */}
                     <Route
                       path="/player"
-                      element={<PlayerProfile playerId={5304347} />}
+                      element={<PlayerProfile plxayerId={5304347} />}
                     />
                     <Route path="/maintain" element={<PageMaintenance />} />
                     <Route path="/" element={<Landing />} />
@@ -354,8 +358,10 @@ function App() {
                       }
                     >
                       <Route path="/dashboard" element={<UserDashboardV2 />} />
+                      <Route path="/change-password" element={<ChangePassword />} />
                       <Route path="/profile" element={<UserDashboardV2 />} />
                       <Route path="/jobs" element={<RiderJobs />} />
+                      <Route path="/validate-job" element={<JobValidation />} />
                       <Route path="/attendance" element={<RiderAttendance />} />
                       <Route
                         path="/contracts"
@@ -368,8 +374,9 @@ function App() {
                       <Route path="/jobs/:id" element={<JobDetails />} />
                     </Route>
 
-                    {/* Role-based admin area: shared dashboard, gated subroutes */}
+                    {/* Admin area: layout with sidebar + nested gated routes */}
                     <Route
+                      path="/admin"
                       element={
                         <PrivateRoute
                           allowedRoles={[
@@ -378,14 +385,14 @@ function App() {
                             "hrteam",
                             "financeteam",
                           ]}
-                        />
+                        >
+                          <AdminLayout />
+                        </PrivateRoute>
                       }
                     >
-                      <Route path="/admin" element={<AdminDashboard />} />
-
-                      {/* Admin + Event team */}
+                      <Route index element={<AdminDashboard />} />
                       <Route
-                        path="/admin/jobs"
+                        path="jobs"
                         element={
                           <PrivateRoute allowedRoles={["admin", "eventteam"]}>
                             <AdminJobs />
@@ -393,7 +400,7 @@ function App() {
                         }
                       />
                       <Route
-                        path="/admin/events"
+                        path="events"
                         element={
                           <PrivateRoute allowedRoles={["admin", "eventteam"]}>
                             <EventManagement />
@@ -401,16 +408,15 @@ function App() {
                         }
                       />
                       <Route
-                        path="/admin/analytics"
+                        path="analytics"
                         element={
                           <PrivateRoute allowedRoles={["admin", "eventteam"]}>
                             <AnalyticsDashboard />
                           </PrivateRoute>
                         }
                       />
-                      {/* Admin + HR team */}
                       <Route
-                        path="/admin/users"
+                        path="users"
                         element={
                           <PrivateRoute allowedRoles={["admin", "hrteam"]}>
                             <AdminUsers />
@@ -418,7 +424,15 @@ function App() {
                         }
                       />
                       <Route
-                        path="/admin/challenges"
+                        path="create-user"
+                        element={
+                          <PrivateRoute allowedRoles={["admin"]}>
+                            <AdminCreateUser />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="challenges"
                         element={
                           <PrivateRoute
                             allowedRoles={[
@@ -433,7 +447,7 @@ function App() {
                         }
                       />
                       <Route
-                        path="/admin/challenges/:id"
+                        path="challenges/:id"
                         element={
                           <PrivateRoute
                             allowedRoles={[
@@ -448,7 +462,7 @@ function App() {
                         }
                       />
                       <Route
-                        path="/admin/attendance"
+                        path="attendance"
                         element={
                           <PrivateRoute allowedRoles={["admin", "hrteam"]}>
                             <HRDashboard />
@@ -456,7 +470,7 @@ function App() {
                         }
                       />
                       <Route
-                        path="/admin/riders"
+                        path="riders"
                         element={
                           <PrivateRoute
                             allowedRoles={["admin", "eventteam", "hrteam"]}
@@ -466,7 +480,7 @@ function App() {
                         }
                       />
                       <Route
-                        path="/admin/achievements"
+                        path="achievements"
                         element={
                           <PrivateRoute allowedRoles={["admin", "hrteam"]}>
                             <AdminAchievements />
@@ -474,7 +488,7 @@ function App() {
                         }
                       />
                       <Route
-                        path="/admin/bank"
+                        path="bank"
                         element={
                           <PrivateRoute allowedRoles={["admin", "financeteam"]}>
                             <AdminBank />
@@ -482,7 +496,7 @@ function App() {
                         }
                       />
                       <Route
-                        path="/admin/contracts"
+                        path="contracts"
                         element={
                           <PrivateRoute
                             allowedRoles={["admin", "eventteam", "financeteam"]}
@@ -492,7 +506,7 @@ function App() {
                         }
                       />
                       <Route
-                        path="/admin/user-approvals"
+                        path="user-approvals"
                         element={
                           <PrivateRoute allowedRoles={["admin", "hrteam"]}>
                             <AdminUserApprovals />

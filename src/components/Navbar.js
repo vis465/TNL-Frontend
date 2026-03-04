@@ -10,11 +10,11 @@ import {
   Menu,
   MenuItem,
   useTheme,
+  useMediaQuery,
   Container,
   Avatar,
   Tooltip,
   Fade,
-  useMediaQuery,
   SwipeableDrawer,
   List,
   ListItem,
@@ -22,457 +22,302 @@ import {
   ListItemIcon,
   ListItemText,
   Divider,
-  Badge,
+  Chip,
 } from '@mui/material';
-import { 
-  AccountCircle, 
-  Dashboard, 
-  DirectionsCar, 
-  Logout, 
-  PersonAdd,
-  People as PeopleIcon,
-  Speed,
-  Notifications,
-  FireTruckOutlined,
-  EmojiEvents,
-  Brightness4,
-  Brightness7,
+import {
+  AccountCircle,
+  Logout,
+  People,
   Event,
   AdminPanelSettings,
-  MenuIcon,
-  Menu as MenuMui,
+  Menu as MenuIcon,
   Close,
   Home,
   Work,
   ContactMail,
   Login,
-  AttachMoney,
+  FireTruckOutlined,
+  Brightness4,
+  Brightness7,
+  Dashboard,
+  AccountBalanceWallet,
 } from '@mui/icons-material';
-import EventIcon from '@mui/icons-material/Event';
 import { useAuth } from '../contexts/AuthContext';
-import { styled, keyframes } from '@mui/material/styles';
+import { styled } from '@mui/material/styles';
 import { ThemeContext } from '../App';
 import logo from '../img/tnllogo.jpg';
 import { getMyWallet } from '../services/walletService';
 
-// Animation keyframes
-const pulse = keyframes`
-  0% {
-    box-shadow: 0 0 0 0 rgb(255, 255, 0, 0.4);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgb(255, 255, 0, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgb(255, 255, 0, 0);
-  }
-`;
-
-const float = keyframes`
-  0% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-5px);
-  }
-  100% {
-    transform: translateY(0px);
-  }
-`;
-
-const glow = keyframes`
-  0% {
-    text-shadow: 0 0 5px rgba(255, 255, 0, 0.5), 0 0 10px rgba(255, 255, 0, 0.3);
-  }
-  50% {
-    text-shadow: 0 0 10px rgba(255, 255, 0, 0.5), 0 0 10px rgba(255, 255, 0, 0.3);
-  }
-  100% {
-    text-shadow: 0 0 5px rgba(255, 255, 0, 0.5), 0 0 10px rgba(255, 255, 0, 0.3);
-  }
-`;
-
-// Styled components
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
-  background: theme.palette.mode === 'dark' 
-    ? 'rgba(30, 30, 30, 0.9)' 
-    : 'rgba(255, 255, 255, 0.9)',
-  backdropFilter: 'blur(10px)',
+  background: theme.palette.mode === 'dark'
+    ? 'rgba(30, 30, 30, 0.92)'
+    : 'rgba(255, 255, 255, 0.92)',
+  backdropFilter: 'blur(12px)',
   boxShadow: theme.palette.mode === 'dark'
-    ? '0 4px 30px rgba(0, 0, 0, 0.3)'
-    : '0 4px 30px rgba(0, 0, 0, 0.1)',
-  borderBottom: `1px solid ${theme.palette.mode === 'dark' 
-    ? 'rgba(255, 255, 255, 0.1)' 
-    : 'rgba(0, 0, 0, 0.1)'}`,
+    ? '0 1px 0 0 rgba(255,255,255,0.08)'
+    : '0 1px 0 0 rgba(0,0,0,0.06)',
+  borderBottom: `1px solid ${theme.palette.divider}`,
   position: 'sticky',
   top: 0,
-  zIndex: theme.zIndex.drawer + 1,
+  zIndex: theme.zIndex.appBar,
 }));
 
-const LogoText = styled(Typography)(({ theme }) => ({
+const LogoBrand = styled(Typography)(({ theme }) => ({
   fontWeight: 700,
-  letterSpacing: '0.05em',
-  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
-  textShadow: theme.palette.mode === 'dark' 
-    ? '0 0 10px rgba(255, 255, 255, 0.3)' 
-    : '0 0 10px rgba(0, 0, 0, 0.1)',
+  letterSpacing: '0.02em',
+  color: 'inherit',
 }));
 
 const NavButton = styled(Button)(({ theme }) => ({
-  borderRadius: '20px',
-  padding: '6px 16px',
-  margin: '0 5px',
-  transition: 'all 0.3s ease',
-  position: 'relative',
-  overflow: 'hidden',
-  color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
-  '&:before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    background: theme.palette.mode === 'dark' 
-      ? 'rgba(255, 255, 255, 0.1)' 
-      : 'rgba(0, 0, 0, 0.1)',
-    opacity: 0,
-    transition: 'opacity 0.3s ease',
-    zIndex: -1,
-  },
+  borderRadius: 8,
+  padding: '8px 14px',
+  margin: '0 2px',
+  textTransform: 'none',
+  fontWeight: 500,
+  color: theme.palette.text.primary,
   '&:hover': {
-    transform: 'translateY(-2px)',
-    boxShadow: theme.palette.mode === 'dark'
-      ? '0 4px 15px rgba(255, 255, 255, 0.1)'
-      : '0 4px 15px rgba(0, 0, 0, 0.1)',
-    '&:before': {
-      opacity: 0.1,
-    },
+    backgroundColor: theme.palette.action.hover,
   },
-}));
-
-const AnimatedIcon = styled(Box)(({ theme }) => ({
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  animation: `${float} 3s ease-in-out infinite`,
 }));
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
-  const [mobileMenuAnchor, setMobileMenuAnchor] = useState(null);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(null);
   const theme = useTheme();
   const { isDarkMode, toggleTheme } = useContext(ThemeContext);
-  const [walletBalance, setWalletBalance] = useState(null);
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
-  useEffect(() => {
-    const handleScroll = () => {
-      const isScrolled = window.scrollY > 10;
-      if (isScrolled !== scrolled) {
-        setScrolled(isScrolled);
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, [scrolled]);
+  const hasStaffRole = user && ['admin', 'eventteam', 'hrteam', 'financeteam'].includes(user.role);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-    getMyWallet().then(w => setWalletBalance(w.balance)).catch(() => {});
-  }, []);
+    if (!isAuthenticated) return;
+    getMyWallet()
+      .then((w) => setWalletBalance(w?.balance))
+      .catch(() => {});
+  }, [isAuthenticated]);
 
-  const handleMenu = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMobileMenu = (event) => {
-    setMobileMenuAnchor(event.currentTarget);
-  };
-
-  const handleMobileDrawerToggle = () => {
-    setMobileDrawerOpen(!mobileDrawerOpen);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleMobileClose = () => {
-    setMobileMenuAnchor(null);
-  };
-
-  const handleMobileDrawerClose = () => {
-    setMobileDrawerOpen(false);
-  };
+  const handleUserMenuOpen = (e) => setAnchorEl(e.currentTarget);
+  const handleUserMenuClose = () => setAnchorEl(null);
+  const handleMobileDrawerToggle = () => setMobileDrawerOpen((o) => !o);
+  const handleMobileDrawerClose = () => setMobileDrawerOpen(false);
 
   const handleLogout = () => {
     logout();
-    handleClose();
-    handleMobileClose();
+    handleUserMenuClose();
     handleMobileDrawerClose();
     navigate('/login');
   };
 
-  const isAdmin = user?.role === 'admin';
-  const isEventTeam = user?.role === 'eventteam' || isAdmin;
-  const isHR = user?.role === 'hrteam' || isAdmin;
-  const isFinanceTeam = user?.role === 'financeteam' || isAdmin;
-
-  // Navigation items based on user role and authentication status
-  const getNavItems = () => {
-    // If user is not authenticated, show public navigation
-    if (!isAuthenticated) {
-      return [
-        { label: 'Home', path: '/', icon: <Home />, shortLabel: 'Home' },
-        { label: 'Our Team', path: '/team', icon: <PersonAdd />, shortLabel: 'Team' },
-        { label: 'Events', path: '/events', icon: <Event />, shortLabel: 'Events' },
-        { label: 'Apply', path: '/apply', icon: <Work />, shortLabel: 'Apply' },
-        { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined />, shortLabel: 'Servers' },
-        { label: 'Contact', path: '/contact', icon: <ContactMail />, shortLabel: 'Contact' },
-        { label: 'Login', path: '/login', icon: <Login />, shortLabel: 'Login' },
+  const navItems = !isAuthenticated
+    ? [
+        { label: 'Home', path: '/', icon: <Home /> },
+        { label: 'Our Team', path: '/team', icon: <People /> },
+        { label: 'Events', path: '/events', icon: <Event /> },
+        { label: 'Apply', path: '/apply', icon: <Work /> },
+        { label: 'Servers', path: '/servers', icon: <FireTruckOutlined /> },
+        { label: 'Contact', path: '/contact', icon: <ContactMail /> },
+        { label: 'Login', path: '/login', icon: <Login /> },
+      ]
+    : [
+        { label: 'Home', path: '/', icon: <Home /> },
+        { label: 'Events', path: '/events', icon: <Event /> },
+        { label: 'Servers', path: '/servers', icon: <FireTruckOutlined /> },
+        { label: 'Dashboard', path: '/dashboard', icon: <Dashboard /> },
+        ...(hasStaffRole ? [{ label: 'Admin', path: '/admin', icon: <AdminPanelSettings /> }] : []),
       ];
-    }
-
-    // For authenticated users, show minimal navigation with only admin access
-    if (isAdmin) {
-      return [
-        { label: 'Admin', path: '/admin', icon: <AdminPanelSettings />, shortLabel: 'Admin' },
-      ];
-    } else if (isEventTeam || isHR || isFinanceTeam) {
-      return [
-        { label: 'Admin', path: '/admin', icon: <AdminPanelSettings />, shortLabel: 'Admin' },
-      ];
-    } else {
-      // For authenticated regular users (riders) - minimal navigation
-      return [
-        { label: 'Home', path: '/', icon: <Home />, shortLabel: 'Home' },
-        { label: 'Events', path: '/events', icon: <Event />, shortLabel: 'Events' },
-        { label: 'Server Status', path: '/servers', icon: <FireTruckOutlined />, shortLabel: 'Servers' },
-      ];
-    }
-  };
-
-  const navItems = getNavItems();
 
   return (
-    <StyledAppBar 
-      position="fixed" 
-      elevation={scrolled ? 4 : 0}
-      sx={{
-        background: theme.palette.mode === 'dark' ? 'rgba(30, 30, 30, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-      }}
-    >
+    <StyledAppBar position="sticky" elevation={0}>
       <Container maxWidth="xl">
-        <Toolbar disableGutters>
-          {/* Logo */}
-          <AnimatedIcon sx={{ mr: 2 }}>
-            <img src={logo} alt="logo" style={{ width: '28px', height: '28px' }} />
-          </AnimatedIcon>
-          
-          {/* Logo Text */}
-          <LogoText
-            variant="h6"
+        <Toolbar disableGutters sx={{ minHeight: { xs: 56, sm: 64 } }}>
+          <Box
             component={RouterLink}
             to="/"
             sx={{
-              flexGrow: 1,
-              textDecoration: 'none',
-              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
               display: 'flex',
               alignItems: 'center',
+              gap: 1.5,
+              mr: 2,
+              textDecoration: 'none',
+              color: 'inherit',
             }}
           >
-            Tamilnadu Logistics
-          </LogoText>
+            <img src={logo} alt="TNL" style={{ width: 32, height: 32, borderRadius: 6 }} />
+            <LogoBrand variant="h6" sx={{ display: { xs: 'none', sm: 'block' } }}>
+              Tamilnadu Logistics
+            </LogoBrand>
+          </Box>
 
-          {/* Desktop Navigation */}
-          <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
+          <Box sx={{ flexGrow: 1 }} />
+
+          {/* Desktop nav */}
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 0.5 }}>
             {navItems.map((item) => (
               <NavButton
                 key={item.path}
                 component={RouterLink}
                 to={item.path}
                 startIcon={item.icon}
+                size="small"
               >
                 {item.label}
               </NavButton>
             ))}
-            
-            {/* User Menu for Desktop */}
+
+            <Tooltip title={isDarkMode ? 'Light mode' : 'Dark mode'}>
+              <IconButton onClick={toggleTheme} color="inherit" size="small" sx={{ ml: 0.5 }}>
+                {isDarkMode ? <Brightness7 /> : <Brightness4 />}
+              </IconButton>
+            </Tooltip>
+
             {isAuthenticated && (
               <Tooltip title="Account">
                 <IconButton
-                  onClick={handleMenu}
-                  sx={{ ml: 1 }}
-                  size="large"
-                  aria-label="account of current user"
+                  onClick={handleUserMenuOpen}
+                  size="small"
+                  sx={{ ml: 0.5 }}
+                  aria-label="account menu"
                   aria-controls="user-menu"
                   aria-haspopup="true"
                   color="inherit"
                 >
-                  <Avatar sx={{ width: 32, height: 32 }} src={user?.riderId?.avatar}>
-                    {user?.name?.[0]?.toUpperCase() || <AccountCircle />}
+                  <Avatar
+                    sx={{ width: 36, height: 36 }}
+                    src={user?.riderId?.avatar}
+                    alt={user?.name || user?.username}
+                  >
+                    {user?.name?.[0]?.toUpperCase() || user?.username?.[0]?.toUpperCase() || <AccountCircle />}
                   </Avatar>
                 </IconButton>
               </Tooltip>
             )}
           </Box>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile: menu button only (drawer has nav + user) */}
           <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center' }}>
+            <IconButton onClick={toggleTheme} color="inherit" size="small">
+              {isDarkMode ? <Brightness7 /> : <Brightness4 />}
+            </IconButton>
             <IconButton
-              size="large"
-              aria-label="menu"
+              aria-label="open menu"
               onClick={handleMobileDrawerToggle}
               color="inherit"
+              edge="end"
             >
-              <MenuMui />
+              <MenuIcon />
             </IconButton>
           </Box>
-
-          {/* Desktop User Menu */}
-          <Menu
-            id="user-menu"
-            anchorEl={anchorEl}
-            anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'right',
-            }}
-            keepMounted
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
-            open={Boolean(anchorEl)}
-            onClose={handleClose}
-            TransitionComponent={Fade}
-          >
-            <MenuItem onClick={handleClose}>
-            <RouterLink to="/dashboard" style={{ display: 'flex', alignItems: 'center', color: 'inherit', textDecoration: 'none' }}>
-              <AccountCircle sx={{ mr: 1 }} />
-              Profile
-            </RouterLink>
-            </MenuItem>
-            <MenuItem onClick={handleLogout}>
-              <Logout sx={{ mr: 1 }} />
-              Logout
-            </MenuItem>
-          </Menu>
-
-          {/* Mobile Drawer */}
-          <SwipeableDrawer
-            anchor="right"
-            open={mobileDrawerOpen}
-            onClose={handleMobileDrawerClose}
-            onOpen={handleMobileDrawerToggle}
-            sx={{
-              display: { xs: 'block', md: 'none' },
-              '& .MuiDrawer-paper': {
-                width: 280,
-                boxSizing: 'border-box',
-              },
-            }}
-          >
-            <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography variant="h6" fontWeight={700}>
-                Menu
-              </Typography>
-              <IconButton onClick={handleMobileDrawerClose}>
-                <Close />
-              </IconButton>
-            </Box>
-            <Divider />
-            
-            {/* User Info */}
-            {isAuthenticated && (
-              <>
-                <Box sx={{ p: 2, bgcolor: 'action.hover' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Avatar sx={{ width: 48, height: 48 }} src={user?.riderId?.avatar}>
-                      {user?.name?.[0]?.toUpperCase() || <AccountCircle />}
-                    </Avatar>
-                    <Box>
-                      <Typography variant="subtitle1" fontWeight={600}>
-                        {user?.name || user?.username}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {user?.role}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Box>
-                <Divider />
-              </>
-            )}
-
-            {/* Navigation Items */}
-            <List>
-              {navItems.map((item) => (
-                <ListItem key={item.path} disablePadding>
-                  <ListItemButton 
-                    component={RouterLink} 
-                    to={item.path} 
-                    onClick={handleMobileDrawerClose}
-                    sx={{ py: 1.5 }}
-                  >
-                    <ListItemIcon>
-                      {item.icon}
-                    </ListItemIcon>
-                    <ListItemText 
-                      primary={item.label}
-                      primaryTypographyProps={{ fontWeight: 500 }}
-                    />
-                  </ListItemButton>
-                </ListItem>
-              ))}
-            </List>
-            
-            <Divider />
-            
-            {/* Authentication - Only show for authenticated users */}
-            {isAuthenticated && (
-              <List>
-                <ListItem disablePadding>
-                  <ListItemButton 
-                    component={RouterLink} 
-                    to="/dashboard" 
-                    onClick={handleMobileDrawerClose}
-                    sx={{ py: 1.5 }}
-                  >
-                    <ListItemIcon>
-                      <AccountCircle />
-                    </ListItemIcon>
-                    <ListItemText 
-                      primary="Profile"
-                      primaryTypographyProps={{ fontWeight: 500 }}
-                    />
-                  </ListItemButton>
-                </ListItem>
-                <ListItem disablePadding>
-                  <ListItemButton onClick={handleLogout} sx={{ py: 1.5 }}>
-                    <ListItemIcon>
-                      <Logout />
-                    </ListItemIcon>
-                    <ListItemText 
-                      primary="Logout"
-                      primaryTypographyProps={{ fontWeight: 500 }}
-                    />
-                  </ListItemButton>
-                </ListItem>
-              </List>
-            )}
-          </SwipeableDrawer>
         </Toolbar>
       </Container>
+
+      {/* Desktop user dropdown */}
+      <Menu
+        id="user-menu"
+        anchorEl={anchorEl}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        open={Boolean(anchorEl)}
+        onClose={handleUserMenuClose}
+        TransitionComponent={Fade}
+        PaperProps={{ sx: { minWidth: 200, mt: 1.5 } }}
+      >
+        <MenuItem
+          component={RouterLink}
+          to="/dashboard"
+          onClick={handleUserMenuClose}
+          sx={{ gap: 1.5 }}
+        >
+          <AccountCircle fontSize="small" />
+          Dashboard
+        </MenuItem>
+        <MenuItem onClick={handleLogout} sx={{ gap: 1.5 }}>
+          <Logout fontSize="small" />
+          Logout
+        </MenuItem>
+      </Menu>
+
+      {/* Mobile drawer */}
+      <SwipeableDrawer
+        anchor="right"
+        open={mobileDrawerOpen}
+        onClose={handleMobileDrawerClose}
+        onOpen={() => setMobileDrawerOpen(true)}
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          '& .MuiDrawer-paper': { width: 300, boxSizing: 'border-box' },
+        }}
+      >
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <LogoBrand variant="h6">Menu</LogoBrand>
+          <IconButton onClick={handleMobileDrawerClose} aria-label="close menu">
+            <Close />
+          </IconButton>
+        </Box>
+        <Divider />
+
+        {isAuthenticated && (
+          <>
+            <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 1, mx: 2, my: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Avatar sx={{ width: 48, height: 48 }} src={user?.riderId?.avatar}>
+                  {user?.name?.[0]?.toUpperCase() || user?.username?.[0]?.toUpperCase() || <AccountCircle />}
+                </Avatar>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="subtitle1" fontWeight={600} noWrap>
+                    {user?.name || user?.username}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                    <Chip label={user?.role} size="small" variant="outlined" sx={{ textTransform: 'capitalize' }} />
+                    {walletBalance != null && (
+                      <Chip
+                        icon={<AccountBalanceWallet sx={{ fontSize: 16 }} />}
+                        label={walletBalance}
+                        size="small"
+                        variant="filled"
+                        color="primary"
+                      />
+                    )}
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
+            <Divider />
+          </>
+        )}
+
+        <List dense sx={{ px: 1 }}>
+          {navItems.map((item) => (
+            <ListItem key={item.path} disablePadding>
+              <ListItemButton
+                component={RouterLink}
+                to={item.path}
+                onClick={handleMobileDrawerClose}
+                sx={{ borderRadius: 1 }}
+              >
+                <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
+                <ListItemText primary={item.label} primaryTypographyProps={{ fontWeight: 500 }} />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+
+        {isAuthenticated && (
+          <>
+            <Divider sx={{ my: 1 }} />
+            <List dense sx={{ px: 1 }}>
+              <ListItem disablePadding>
+                <ListItemButton onClick={handleLogout} sx={{ borderRadius: 1 }} color="error">
+                  <ListItemIcon sx={{ minWidth: 40 }}><Logout /></ListItemIcon>
+                  <ListItemText primary="Logout" primaryTypographyProps={{ fontWeight: 500 }} />
+                </ListItemButton>
+              </ListItem>
+            </List>
+          </>
+        )}
+      </SwipeableDrawer>
     </StyledAppBar>
   );
 };

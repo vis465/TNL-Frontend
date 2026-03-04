@@ -71,6 +71,12 @@ const Login = () => {
       // Update auth context
       login(user, token);
       
+      // Force password change on first login if required
+      if (user?.mustChangePassword) {
+        navigate('/change-password');
+        return;
+      }
+
       // Navigate to home page
       navigate('/dashboard');
     } catch (error) {
