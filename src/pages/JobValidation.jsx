@@ -48,8 +48,24 @@ export default function JobValidation() {
   const fetchValidatedJobs = async () => {
     try {
       setTableLoading(true);
-      const { data } = await axiosInstance.get('/me/validated-jobs');
-      setValidatedJobs(data.validatedJobs || []);
+      const { data } = await axiosInstance.get('/jobs/public', {
+        params: { limit: LIMIT, sort: '-createdAt' },
+      });
+      const items = data.items || [];
+      setValidatedJobs(
+        items.map((job) => ({
+          jobId: job.jobID,
+          driverName: job.driver?.username,
+          startCity: job.source?.city?.name,
+          endCity: job.destination?.city?.name,
+          cargo: job.cargo?.name,
+          distanceDriven: job.distanceDriven,
+          updatedAt: job.updatedAt || job.createdAt,
+          challengeName: null,
+          challengeCompleted: false,
+          completed: job.status === 'delivered',
+        }))
+      );
     } catch (e) {
       console.warn('Failed to load validated jobs', e);
       setValidatedJobs([]);
@@ -181,9 +197,9 @@ export default function JobValidation() {
                 <TableHead>
                   <TableRow>
                     <TableCell><strong>Job ID</strong></TableCell>
+                    <TableCell><strong>Rider</strong></TableCell>
                     <TableCell><strong>Challenge</strong></TableCell>
                     <TableCell><strong>Route</strong></TableCell>
-                    <TableCell><strong>Cargo</strong></TableCell>
                     <TableCell align="right"><strong>Distance (km)</strong></TableCell>
                     <TableCell><strong>Status</strong></TableCell>
                     <TableCell><strong>Validated</strong></TableCell>
@@ -192,12 +208,19 @@ export default function JobValidation() {
                 <TableBody>
                   {validatedJobs.map((row) => (
                     <TableRow key={`${row.jobId}-${row.challengeId}-${row.updatedAt}`} hover>
-                      <TableCell>{row.jobId}</TableCell>
+                      <TableCell>
+                        <a
+                          href={`/jobs/${row.jobId}`}
+                          style={{ textDecoration: 'none', color: '#1976d2' }}
+                        >
+                          {row.jobId}
+                        </a>
+                      </TableCell>
+                      <TableCell>{row.driverName || '—'}</TableCell>
                       <TableCell>{row.challengeName || '—'}</TableCell>
                       <TableCell>
                         {[row.startCity, row.endCity].filter(Boolean).join(' → ') || '—'}
                       </TableCell>
-                      <TableCell>{row.cargo || '—'}</TableCell>
                       <TableCell align="right">{row.distanceDriven != null ? Number(row.distanceDriven).toLocaleString() : '—'}</TableCell>
                       <TableCell>
                         {row.challengeCompleted ? (

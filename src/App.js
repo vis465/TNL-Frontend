@@ -89,6 +89,7 @@ import AdminUserApprovals from "./pages/AdminUserApprovals";
 import JobValidation from "./pages/JobValidation";
 import AdminCreateUser from "./pages/AdminCreateUser";
 import ChangePassword from "./pages/ChangePassword";
+import OnlineRiders from "./pages/OnlineRiders";
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -362,6 +363,7 @@ function App() {
                       <Route path="/profile" element={<UserDashboardV2 />} />
                       <Route path="/jobs" element={<RiderJobs />} />
                       <Route path="/validate-job" element={<JobValidation />} />
+                      <Route path="/online-riders" element={<OnlineRiders />} />
                       <Route path="/attendance" element={<RiderAttendance />} />
                       <Route
                         path="/contracts"

@@ -35,6 +35,7 @@ import {
   MilitaryTech,
   ChevronLeft,
   ChevronRight,
+  WifiTethering,
 } from "@mui/icons-material";
 
 const navItem = (to, label, icon, allowedRoles) => ({ to, label, icon, allowedRoles });
@@ -48,6 +49,7 @@ const myAreaItems = [
   navItem("/wallet", "Wallet", <AccountBalanceWallet />, null),
   navItem("/jobs", "Jobs", <LocalShippingOutlined />, null),
   navItem("/validate-job", "Validate Job", <VerifiedUserOutlined />, null),
+  navItem("/online-riders", "Online Riders", <WifiTethering />, null),
   navItem("/attendance", "Attendance", <Event />, null),
 ];
 

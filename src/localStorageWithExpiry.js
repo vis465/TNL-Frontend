@@ -8,7 +8,7 @@ export const getItemWithExpiry = (key) => {
     return null;
   }
   const item = JSON.parse(itemStr);
-  console.log("item", item);
+  
   
   return item;
 };
