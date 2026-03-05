@@ -90,6 +90,7 @@ import JobValidation from "./pages/JobValidation";
 import AdminCreateUser from "./pages/AdminCreateUser";
 import ChangePassword from "./pages/ChangePassword";
 import OnlineRiders from "./pages/OnlineRiders";
+import MapPlayground from "./pages/MapPlayground";
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -330,6 +331,7 @@ function App() {
                     <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                     <Route path="/events" element={<Home />} />
                     <Route path="/leaderboard" element={<Leaderboard />} />
+                    <Route path="/map-test" element={<MapPlayground />} />
                     <Route
                       path="/riders/licence"
                       element={<LicenseGenerator />}

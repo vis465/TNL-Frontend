@@ -109,7 +109,7 @@ export default function MyContracts() {
 
     const getTaskStatus = (t) => {
       const found = progress.find(p => p.order === t.order);
-      return found?.status === 'done' ? 'done' : 'pending';
+      return found?.status === 'completed' || found?.status === 'done' ? 'done' : 'Next to do';
     };
 
     const renderCriteria = (criteria) => {
