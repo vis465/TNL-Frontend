@@ -23,8 +23,6 @@ import {
   IconButton,
   Stack,
   Snackbar,
-  useMediaQuery,
-  useTheme,
   Card,
   CardContent,
   CardActions,
@@ -36,8 +34,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  AppBar,
-  Toolbar,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -46,18 +42,15 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import ToggleOnIcon from '@mui/icons-material/ToggleOn';
 import ToggleOffIcon from '@mui/icons-material/ToggleOff';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import { Menu as MenuMui } from '@mui/icons-material';
 import axiosInstance from '../utils/axios';
 import Autocomplete from '@mui/material/Autocomplete';
 import { normalizeName } from '../utils/normalizeName';
 import { useExternalData } from '../contexts/ExternalDataContext';
-import AdminSidebar from '../components/AdminSidebar';
 
 const AdminChallenges = () => {
   const [challenges, setChallenges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [success, setSuccess] = useState('');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -69,17 +62,6 @@ const AdminChallenges = () => {
   // Use external data context
   const { cityOptions, companyOptionsByCity, cargoOptions, loading: externalDataLoading, error: externalDataError } = useExternalData();
   
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
-  const handleMobileDrawerToggle = () => {
-    setMobileDrawerOpen(!mobileDrawerOpen);
-  };
-
-  const handleMobileDrawerClose = () => {
-    setMobileDrawerOpen(false);
-  };
-
   // Form state
   const [formData, setFormData] = useState({
     name: '',
@@ -412,34 +394,7 @@ const AdminChallenges = () => {
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex' }}>
-      <AdminSidebar 
-        mobileDrawerOpen={mobileDrawerOpen}
-        handleMobileDrawerClose={handleMobileDrawerClose}
-        user={user}
-      />
-
-      <Box sx={{ flex: 1 }}>
-        {/* Mobile Header */}
-        {isMobile && (
-          <AppBar position="sticky" sx={{ display: { xs: 'block', md: 'none' } }}>
-            <Toolbar>
-              <IconButton
-                color="inherit"
-                aria-label="open drawer"
-                edge="start"
-                onClick={handleMobileDrawerToggle}
-                sx={{ mr: 2 }}
-              >
-                <MenuMui />
-              </IconButton>
-              <Typography variant="h6" noWrap component="div">
-                Challenge Management
-              </Typography>
-            </Toolbar>
-          </AppBar>
-        )}
-
+    <>
         <Container maxWidth="xl" sx={{ 
           px: { xs: 1, sm: 2, md: 3 },
           pt: { xs: 8, sm: 9 },
@@ -995,8 +950,7 @@ const AdminChallenges = () => {
         </DialogActions>
       </Dialog>
         </Container>
-      </Box>
-    </Box>
+    </>
   );
 };
 
