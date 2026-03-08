@@ -167,11 +167,7 @@ const Navbar = () => {
               </NavButton>
             ))}
 
-            <Tooltip title={isDarkMode ? 'Light mode' : 'Dark mode'}>
-              <IconButton onClick={toggleTheme} color="inherit" size="small" sx={{ ml: 0.5 }}>
-                {isDarkMode ? <Brightness7 /> : <Brightness4 />}
-              </IconButton>
-            </Tooltip>
+           
 
             {isAuthenticated && (
               <Tooltip title="Account">
