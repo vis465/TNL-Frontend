@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { createTemplate, updateTemplate, deleteTemplate } from '../services/contractsService';
+import { createTemplate, updateTemplate, deleteTemplate, adminCompleteContractTask } from '../services/contractsService';
 import { fetchTemplates, fetchInstancesByStatus, invalidateTemplates, invalidateInstances } from '../store/slices/contractsSlice';
 import { Grid, Card, CardContent, CardActions, Typography, Button, TextField, Stack, IconButton, Chip, Divider, Alert, ToggleButton, ToggleButtonGroup, LinearProgress, Switch, FormControlLabel, Accordion, AccordionSummary, AccordionDetails, Box, Tabs, Tab } from '@mui/material';
 import Autocomplete from '@mui/material/Autocomplete';
@@ -41,6 +41,7 @@ export default function AdminContracts() {
   const [progressVisibleCount, setProgressVisibleCount] = useState(40);
   const [progressSearch, setProgressSearch] = useState('');
   const [expandedProgressId, setExpandedProgressId] = useState(null);
+  const [completingTaskKey, setCompletingTaskKey] = useState(null);
   const PROGRESS_PAGE_SIZE = 40;
 
   const instances = useMemo(
@@ -369,6 +370,22 @@ export default function AdminContracts() {
     dispatch(fetchInstancesByStatus(statusFilter));
   };
 
+  const handleManualComplete = async (instanceId, taskOrder) => {
+    const key = `${instanceId}:${taskOrder}`;
+    setCompletingTaskKey(key);
+    setErr('');
+    setMsg('');
+    try {
+      await adminCompleteContractTask(instanceId, taskOrder);
+      setMsg(`Marked task ${taskOrder} as done`);
+      handleRefreshProgress();
+    } catch (e) {
+      setErr(e?.response?.data?.message || e.message || 'Failed to complete task');
+    } finally {
+      setCompletingTaskKey(null);
+    }
+  };
+
   const renderProgressTab = () => (
     <Card>
       <CardContent>
@@ -439,6 +456,7 @@ export default function AdminContracts() {
                 const templateTitle = tpl.title || 'Untitled Template';
                 const isExpanded = expandedProgressId === c._id;
                 const statusColor = c.status === 'completed' ? 'success' : c.status === 'failed' ? 'error' : 'warning';
+                const nextPending = progress.find(p => p.status !== 'done' && p.status !== 'completed');
 
                 return (
                   <Card key={c._id} variant="outlined" sx={{ overflow: 'hidden' }}>
@@ -470,6 +488,25 @@ export default function AdminContracts() {
                       </AccordionSummary>
                       <AccordionDetails sx={{ pt: 0, borderTop: 1, borderColor: 'divider' }}>
                         <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>Task progress</Typography>
+                        {c.status === 'active' && nextPending && (
+                          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ xs: 'stretch', sm: 'center' }} sx={{ mb: 1.5, p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
+                            <Typography variant="body2" sx={{ flex: 1 }}>
+                              Current job: <b>{nextPending.order}</b>
+                              {(() => {
+                                const t = tasks.find(tt => tt.order === nextPending.order);
+                                return t?.title ? ` — ${t.title}` : '';
+                              })()}
+                            </Typography>
+                            <Button
+                              size="small"
+                              variant="contained"
+                              onClick={() => handleManualComplete(c._id, nextPending.order)}
+                              disabled={completingTaskKey === `${c._id}:${nextPending.order}`}
+                            >
+                              Mark current job as done
+                            </Button>
+                          </Stack>
+                        )}
                         <Stack spacing={0.5}>
                           {tasks.length > 0 ? tasks.map((task, idx) => {
                             const prog = progress.find(pr => pr.order === task.order) ?? progress[idx];
@@ -484,6 +521,17 @@ export default function AdminContracts() {
                                   <Typography variant="caption" color="text.secondary">
                                     · Matched {new Date(prog.matchedAt).toLocaleString()}
                                   </Typography>
+                                )}
+                                {!done && c.status === 'active' && (
+                                  <Button
+                                    size="small"
+                                    variant="outlined"
+                                    onClick={() => handleManualComplete(c._id, task.order)}
+                                    disabled={completingTaskKey === `${c._id}:${task.order}`}
+                                    sx={{ ml: 'auto' }}
+                                  >
+                                    Mark done
+                                  </Button>
                                 )}
                               </Stack>
                             );
