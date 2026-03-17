@@ -135,3 +135,8 @@ export async function adminListContractInstances(status) {
   return data;
 }
 
+export async function adminCompleteContractTask(instanceId, taskOrder) {
+  const { data } = await axiosInstance.post(`/contracts/admin/instances/${instanceId}/tasks/${taskOrder}/complete`);
+  return data;
+}
+
