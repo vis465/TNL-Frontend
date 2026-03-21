@@ -36,6 +36,8 @@ import {
   ChevronLeft,
   ChevronRight,
   WifiTethering,
+  RequestQuote,
+  Payments,
 } from "@mui/icons-material";
 
 const navItem = (to, label, icon, allowedRoles) => ({ to, label, icon, allowedRoles });
@@ -47,6 +49,7 @@ const myAreaItems = [
   navItem("/leaderboard", "Leaderboards", <LeaderboardOutlined />, null),
   navItem("/contracts", "Contracts", <Assignment />, null),
   navItem("/wallet", "Wallet", <AccountBalanceWallet />, null),
+  navItem("/loans", "Loans", <RequestQuote />, ["rider", "admin", "financeteam"]),
   navItem("/jobs", "Jobs", <LocalShippingOutlined />, null),
   navItem("/validate-job", "Validate Job", <VerifiedUserOutlined />, null),
   navItem("/online-riders", "Online Riders", <WifiTethering />, null),
@@ -82,6 +85,8 @@ const challengesItems = [
 const financeItems = [
   navItem("/admin/bank", "Bank", <AttachMoneyOutlined />, ["admin", "financeteam"]),
   navItem("/admin/contracts", "Contract Management", <Assignment />, ["admin", "eventteam", "financeteam"]),
+  navItem("/admin/loans", "Loan Management", <RequestQuote />, ["admin", "financeteam"]),
+  navItem("/admin/emis", "EMI Tracking", <Payments />, ["admin", "financeteam"]),
 ];
 
 function canSee(userRole, allowedRoles) {
