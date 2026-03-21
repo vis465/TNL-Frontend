@@ -29,7 +29,13 @@ import {
   Collapse,
   Accordion,
   AccordionSummary,
-  AccordionDetails
+  AccordionDetails,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Checkbox,
+  ListItemText
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -53,10 +59,12 @@ import {
   Save as SaveIcon,
   Cancel as CancelIcon,
   Lock as LockIcon,
-  LockOpen as LockOpenIcon
+  LockOpen as LockOpenIcon,
+  PersonAdd as PersonAddIcon
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import axiosInstance from '../utils/axios';
+import ridersService from '../services/ridersService';
 
 const HRDashboard = () => {
   const { user, isAuthenticated } = useAuth();
@@ -102,6 +110,14 @@ const HRDashboard = () => {
   // Event details dialog state
   const [eventDetailsOpen, setEventDetailsOpen] = useState(false);
   const [selectedEventDetails, setSelectedEventDetails] = useState(null);
+  
+  // Manual attendance management state
+  const [riders, setRiders] = useState([]);
+  const [addRiderOpen, setAddRiderOpen] = useState(false);
+  const [confirmAddRiderOpen, setConfirmAddRiderOpen] = useState(false);
+  const [removeAttendanceOpen, setRemoveAttendanceOpen] = useState(false);
+  const [selectedRiderIds, setSelectedRiderIds] = useState([]);
+  const [riderToRemove, setRiderToRemove] = useState(null);
 
   useEffect(() => {
     if (user?.role === 'hrteam' || user?.role === 'admin') {
@@ -384,6 +400,95 @@ const HRDashboard = () => {
     } catch (error) {
       setError('Failed to fetch event details');
       console.error('Error fetching event details:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchRiders = async () => {
+    try {
+      const list = await ridersService.list();
+      setRiders(Array.isArray(list) ? list : []);
+    } catch (error) {
+      console.error('Error fetching riders:', error);
+      setError('Failed to fetch riders list');
+    }
+  };
+
+  const openAddRiderDialog = async () => {
+    setSelectedRiderIds([]);
+    await fetchRiders();
+    setAddRiderOpen(true);
+  };
+
+  const existingRiderIds = new Set(
+    (selectedEventDetails?.attendanceEntries || [])
+      .map((entry) => entry?.riderId?._id)
+      .filter(Boolean)
+  );
+  const availableRiders = riders.filter((rider) => !existingRiderIds.has(rider._id));
+  const selectedRiders = availableRiders.filter((rider) => selectedRiderIds.includes(rider._id));
+
+  const handleManualAddRider = async () => {
+    if (!selectedEventDetails?._id || selectedRiderIds.length === 0) {
+      setError('Please select at least one rider to add');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const results = await Promise.allSettled(
+        selectedRiderIds.map((riderId) =>
+          axiosInstance.post(`/attendance-events/${selectedEventDetails._id}/attendance/manual`, {
+            riderId,
+            status: 'approved',
+            notes: 'Added manually by HR'
+          })
+        )
+      );
+
+      const addedCount = results.filter((r) => r.status === 'fulfilled').length;
+      const failedCount = results.length - addedCount;
+
+      const response = await axiosInstance.get(`/attendance-events/${selectedEventDetails._id}`);
+      setSelectedEventDetails(response.data);
+      fetchAttendanceEvents();
+      fetchAttendanceStats();
+      if (failedCount > 0) {
+        setSuccess(`${addedCount} rider(s) added, ${failedCount} failed`);
+      } else {
+        setSuccess(`${addedCount} rider(s) added to attendance list`);
+      }
+      setConfirmAddRiderOpen(false);
+      setAddRiderOpen(false);
+      setSelectedRiderIds([]);
+    } catch (error) {
+      setError(error.response?.data?.message || 'Failed to add riders');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemoveAttendanceEntry = (entry) => {
+    setRiderToRemove(entry);
+    setRemoveAttendanceOpen(true);
+  };
+
+  const confirmRemoveAttendanceEntry = async () => {
+    if (!selectedEventDetails?._id || !riderToRemove?._id) return;
+
+    try {
+      setLoading(true);
+      await axiosInstance.delete(`/attendance-events/${selectedEventDetails._id}/attendance/${riderToRemove._id}`);
+      const response = await axiosInstance.get(`/attendance-events/${selectedEventDetails._id}`);
+      setSelectedEventDetails(response.data);
+      fetchAttendanceEvents();
+      fetchAttendanceStats();
+      setSuccess(`${riderToRemove?.riderId?.name || 'Rider'} removed from attendance list`);
+      setRemoveAttendanceOpen(false);
+      setRiderToRemove(null);
+    } catch (error) {
+      setError(error.response?.data?.message || 'Failed to remove rider');
     } finally {
       setLoading(false);
     }
@@ -964,6 +1069,16 @@ const HRDashboard = () => {
               <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
                 Attendance Entries ({selectedEventDetails.attendanceEntries?.length || 0})
               </Typography>
+              <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                <Button
+                  variant="contained"
+                  startIcon={<PersonAddIcon />}
+                  onClick={openAddRiderDialog}
+                  disabled={loading}
+                >
+                  Add Rider Manually
+                </Button>
+              </Box>
               
               {selectedEventDetails.attendanceEntries && selectedEventDetails.attendanceEntries.length > 0 ? (
                 <TableContainer component={Paper} variant="outlined">
@@ -999,35 +1114,47 @@ const HRDashboard = () => {
                           </TableCell>
                           <TableCell>{entry.notes || '-'}</TableCell>
                           <TableCell>
-                            {entry.status === 'pending' && (
-                              <Box sx={{ display: 'flex', gap: 1 }}>
-                                <Button
-                                  size="small"
-                                  variant="contained"
-                                  color="success"
-                                  onClick={() => handleApproveAttendance(selectedEventDetails._id, entry._id)}
-                                  disabled={loading}
-                                  startIcon={<CheckCircleIcon />}
-                                >
-                                  Approve
-                                </Button>
-                                <Button
-                                  size="small"
-                                  variant="contained"
-                                  color="error"
-                                  onClick={() => handleRejectAttendance(selectedEventDetails._id, entry._id)}
-                                  disabled={loading}
-                                  startIcon={<CancelIcon />}
-                                >
-                                  Reject
-                                </Button>
-                              </Box>
-                            )}
-                            {entry.status !== 'pending' && (
-                              <Typography variant="body2" color="text.secondary">
-                                {entry.status === 'approved' ? 'Approved' : 'Rejected'}
-                              </Typography>
-                            )}
+                            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+                              {entry.status === 'pending' && (
+                                <>
+                                  <Button
+                                    size="small"
+                                    variant="contained"
+                                    color="success"
+                                    onClick={() => handleApproveAttendance(selectedEventDetails._id, entry._id)}
+                                    disabled={loading}
+                                    startIcon={<CheckCircleIcon />}
+                                  >
+                                    Approve
+                                  </Button>
+                                  <Button
+                                    size="small"
+                                    variant="contained"
+                                    color="error"
+                                    onClick={() => handleRejectAttendance(selectedEventDetails._id, entry._id)}
+                                    disabled={loading}
+                                    startIcon={<CancelIcon />}
+                                  >
+                                    Reject
+                                  </Button>
+                                </>
+                              )}
+                              {entry.status !== 'pending' && (
+                                <Typography variant="body2" color="text.secondary">
+                                  {entry.status === 'approved' ? 'Approved' : 'Rejected'}
+                                </Typography>
+                              )}
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="error"
+                                onClick={() => handleRemoveAttendanceEntry(entry)}
+                                disabled={loading}
+                                startIcon={<RemoveIcon />}
+                              >
+                                Remove
+                              </Button>
+                            </Box>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -1047,6 +1174,149 @@ const HRDashboard = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setEventDetailsOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Add Rider Dialog */}
+      <Dialog open={addRiderOpen} onClose={() => setAddRiderOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Add Rider to Attendance</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Event: {selectedEventDetails?.title}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            Selected: {selectedRiderIds.length} rider(s)
+          </Typography>
+          {selectedRiders.length > 0 && (
+            <Box
+              sx={{
+                mb: 2,
+                maxHeight: 140,
+                overflow: 'auto',
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 1,
+                p: 1
+              }}
+            >
+              {selectedRiders.map((rider) => (
+                <Typography key={rider._id} variant="body2">
+                  - {rider.name || rider.username} 
+                </Typography>
+              ))}
+            </Box>
+          )}
+          <FormControl fullWidth sx={{ mt: 1 }}>
+            <InputLabel id="add-rider-select-label">Select riders</InputLabel>
+            <Select
+              labelId="add-rider-select-label"
+              multiple
+              value={selectedRiderIds}
+              label="Select riders"
+              onChange={(e) => setSelectedRiderIds(e.target.value)}
+              renderValue={(selected) => `${selected.length} selected`}
+            >
+              {availableRiders.map((rider) => (
+                <MenuItem key={rider._id} value={rider._id}>
+                  <Checkbox checked={selectedRiderIds.includes(rider._id)} />
+                  <ListItemText
+                    primary={rider.name || rider.username}
+                    secondary={`${rider.username || '-'} (${rider.employeeID || 'No ID'})`}
+                  />
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          {availableRiders.length > 0 && (
+            <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+              <Button size="small" onClick={() => setSelectedRiderIds(availableRiders.map((r) => r._id))}>
+                Select All
+              </Button>
+              <Button size="small" onClick={() => setSelectedRiderIds([])}>
+                Clear
+              </Button>
+            </Box>
+          )}
+          {availableRiders.length === 0 && (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+              All riders are already in this attendance list.
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAddRiderOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            disabled={selectedRiderIds.length === 0 || loading}
+            onClick={() => setConfirmAddRiderOpen(true)}
+          >
+            Continue
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Confirm Add Rider Dialog */}
+      <Dialog open={confirmAddRiderOpen} onClose={() => setConfirmAddRiderOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Confirm Riders Addition</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" gutterBottom>
+            Please confirm the selected riders below will be added to this attendance list:
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 1 }}>
+            <strong>Event:</strong> {selectedEventDetails?.title}
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 1, mb: 1 }}>
+            <strong>Total to add:</strong> {selectedRiders.length}
+          </Typography>
+          <Box sx={{ maxHeight: 220, overflow: 'auto', border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1 }}>
+            {selectedRiders.map((rider) => (
+              <Typography key={rider._id} variant="body2">
+                - {rider.name || rider.username} ({rider.employeeID || 'No ID'})
+              </Typography>
+            ))}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmAddRiderOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={handleManualAddRider}
+            disabled={loading || selectedRiderIds.length === 0}
+            startIcon={<PersonAddIcon />}
+          >
+            {loading ? <CircularProgress size={20} /> : `Confirm Add ${selectedRiderIds.length} Rider(s)`}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Confirm Remove Rider Dialog */}
+      <Dialog open={removeAttendanceOpen} onClose={() => setRemoveAttendanceOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Remove Rider from Attendance</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" gutterBottom>
+            Are you sure you want to remove this rider from the attendance list?
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 1 }}>
+            <strong>Event:</strong> {selectedEventDetails?.title}
+          </Typography>
+          <Typography variant="body2">
+            <strong>Name:</strong> {riderToRemove?.riderId?.name || riderToRemove?.riderId?.username || '-'}
+          </Typography>
+          <Typography variant="body2">
+            <strong>Employee ID:</strong> {riderToRemove?.riderId?.employeeID || '-'}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRemoveAttendanceOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={confirmRemoveAttendanceEntry}
+            disabled={loading || !riderToRemove}
+            startIcon={<RemoveIcon />}
+          >
+            {loading ? <CircularProgress size={20} /> : 'Confirm Remove'}
+          </Button>
         </DialogActions>
       </Dialog>
     </Container>
