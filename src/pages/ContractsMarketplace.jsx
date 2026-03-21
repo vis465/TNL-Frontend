@@ -58,6 +58,293 @@ import {
 import { listTemplates, buyContract, myContracts, getContractLeaderboard } from '../services/contractsService';
 import { getMyWallet } from '../services/walletService';
 
+// Custom hook for countdown timer
+const useCountdown = (deadlineDate) => {
+  const [timeLeft, setTimeLeft] = useState('');
+
+  useEffect(() => {
+    if (!deadlineDate) {
+      setTimeLeft('');
+      return;
+    }
+
+    const calculateTimeLeft = () => {
+      const now = new Date().getTime();
+      const deadline = new Date(deadlineDate).getTime();
+      const difference = deadline - now;
+
+      if (difference <= 0) {
+        setTimeLeft('Expired');
+        return;
+      }
+
+      const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+
+      if (days > 0) {
+        setTimeLeft(`${days}d ${hours}h ${minutes}m`);
+      } else if (hours > 0) {
+        setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+      } else if (minutes > 0) {
+        setTimeLeft(`${minutes}m ${seconds}s`);
+      } else {
+        setTimeLeft(`${seconds}s`);
+      }
+    };
+
+    calculateTimeLeft();
+    const timer = setInterval(calculateTimeLeft, 1000);
+
+    return () => clearInterval(timer);
+  }, [deadlineDate]);
+
+  return timeLeft;
+};
+
+function getTemplateMetrics(template) {
+  const cost = Number(template?.priceTokens || 0);
+  const reward = Number(template?.rewardTokens || 0);
+  const profit = reward - cost;
+  const roiPct = cost > 0 ? Math.round(((reward - cost) / cost) * 100) : null;
+
+  const tasks = Array.isArray(template?.tasks) ? template.tasks : [];
+  const totalCriteriaKeys = tasks.reduce((sum, t) => {
+    const criteria = t?.criteria && typeof t.criteria === 'object' ? t.criteria : null;
+    if (!criteria) return sum;
+    return sum + Object.entries(criteria).filter(([, v]) => v !== '' && v != null).length;
+  }, 0);
+
+  const startAt = template?.startAt ? new Date(template.startAt) : null;
+  const endAt = template?.endAt ? new Date(template.endAt) : null;
+  const now = new Date();
+  const isNotStarted = startAt && startAt > now;
+  const isExpired = endAt && endAt < now;
+
+  const deadlineStart = startAt || now;
+  const deadlineDate = new Date(deadlineStart.getTime() + (template?.deadlineDays || 0) * 24 * 60 * 60 * 1000);
+
+  return {
+    cost,
+    reward,
+    profit,
+    roiPct,
+    taskCount: tasks.length,
+    totalCriteriaKeys,
+    startAt,
+    endAt,
+    deadlineDate,
+    isNotStarted,
+    isExpired
+  };
+}
+
+// Contract Card Component
+const ContractCard = ({ template, wallet, isOwned, onBuyContract, onViewDetails }) => {
+  const m = getTemplateMetrics(template);
+  const countdown = useCountdown(m.deadlineDate);
+  const canAfford = m.cost <= Number(wallet?.balance || 0);
+  const isPositive = m.profit > 0;
+  return (
+    <Card 
+      sx={{ 
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'relative',
+        overflow: 'hidden',
+        '&:hover': {
+          transform: 'translateY(-3px)',
+          boxShadow: 8
+        },
+        transition: 'all 0.3s ease',
+        border: isOwned(template._id) ? '2px solid rgba(76, 175, 80, 0.6)' : '1px solid',
+        borderColor: 'divider',
+        borderRadius: 3
+      }}
+    >
+      {isOwned(template._id) && (
+        <Chip
+          label="Owned"
+          color="success"
+          size="small"
+          sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}
+        />
+      )}
+
+      <Box
+        sx={{
+          px: 2,
+          py: 1.5,
+          bgcolor: 'rgba(118, 75, 162, 0.10)',
+          borderBottom: '1px solid',
+          borderColor: 'divider'
+        }}
+      >
+        <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
+            <Avatar
+              variant="rounded"
+              sx={{
+                width: 40,
+                height: 40,
+                bgcolor: 'rgba(102, 126, 234, 0.18)',
+                color: 'primary.main',
+                fontWeight: 900
+              }}
+            >
+              <Assignment fontSize="small" />
+            </Avatar>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="subtitle1" fontWeight={800} noWrap>
+                {template.title}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" noWrap>
+                {m.taskCount} jobs • {m.totalCriteriaKeys} requirements
+              </Typography>
+            </Box>
+          </Stack>
+
+          <Stack direction="row" spacing={0.75} sx={{ flexShrink: 0 }}>
+            <Chip
+              size="small"
+              icon={<TrendingUp sx={{ fontSize: 16 }} />}
+              label={`Profit ${m.profit >= 0 ? '+' : ''}${m.profit}`}
+              color={isPositive ? 'success' : 'warning'}
+              variant="outlined"
+            />
+            {m.roiPct != null && (
+              <Chip size="small" label={`${m.roiPct >= 0 ? '+' : ''}${m.roiPct}%`} variant="outlined" sx={{ fontWeight: 700 }} />
+            )}
+          </Stack>
+        </Stack>
+      </Box>
+      
+      <CardContent sx={{ flexGrow: 1 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+          {template.description}
+        </Typography>
+
+        {/* Store-like pricing row */}
+        <Grid container spacing={1.25} sx={{ mb: 2 }}>
+          <Grid item xs={4}>
+            <Paper variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>
+              <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                Cost
+              </Typography>
+              <Stack direction="row" alignItems="center" spacing={0.75}>
+                <AttachMoney fontSize="small" />
+                <Typography variant="subtitle1" fontWeight={900}>
+                  {m.cost}
+                </Typography>
+              </Stack>
+            </Paper>
+          </Grid>
+          <Grid item xs={4}>
+            <Paper variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>
+              <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                Reward
+              </Typography>
+              <Stack direction="row" alignItems="center" spacing={0.75}>
+                <Star fontSize="small" />
+                <Typography variant="subtitle1" fontWeight={900}>
+                  {m.reward}
+                </Typography>
+              </Stack>
+            </Paper>
+          </Grid>
+          <Grid item xs={4}>
+            <Paper variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>
+              <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                Profit
+              </Typography>
+              <Stack direction="row" alignItems="center" spacing={0.75}>
+                <TrendingUp fontSize="small" color={isPositive ? 'success' : 'warning'} />
+                <Typography variant="subtitle1" fontWeight={900} color={isPositive ? 'success.main' : 'warning.main'}>
+                  {m.profit >= 0 ? '+' : ''}{m.profit}
+                </Typography>
+              </Stack>
+            </Paper>
+          </Grid>
+        </Grid>
+
+        {!canAfford && (
+          <Alert severity="warning" variant="outlined" sx={{ mb: 2 }}>
+            You don't have enough tokens to buy this contract yet.
+          </Alert>
+        )}
+
+        {/* Deadline / Availability */}
+        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
+          <Chip
+            icon={<AccessTime />}
+            label={`Deadline: ${template.deadlineDays} days`}
+            color="info"
+            variant="outlined"
+          />
+          {countdown && countdown !== 'Expired' && (
+            <Chip
+              icon={<Timer />}
+              label={`⏱️ ${countdown}`}
+              color="warning"
+              variant="filled"
+              sx={{ fontWeight: 'bold', fontFamily: 'monospace' }}
+            />
+          )}
+          {(m.isNotStarted || m.isExpired) && (
+            <Chip
+              icon={<Timer />}
+              label={m.isExpired ? 'Expired' : 'Not started yet'}
+              color={m.isExpired ? 'error' : 'warning'}
+              variant="filled"
+            />
+          )}
+          {(template.startAt || template.endAt) && (
+            <Tooltip
+              title={`Start: ${m.startAt ? m.startAt.toLocaleString() : 'Immediate'} • End: ${m.endAt ? m.endAt.toLocaleString() : 'No expiration'}`}
+            >
+              <Chip
+                icon={<Schedule />}
+                label="Time window"
+                color="default"
+                variant="outlined"
+              />
+            </Tooltip>
+          )}
+        </Stack>
+
+        <Button
+          variant="text"
+          size="small"
+          startIcon={<Visibility />}
+          onClick={() => onViewDetails(template)}
+          sx={{ px: 0, fontWeight: 800 }}
+        >
+          View details
+        </Button>
+      </CardContent>
+
+      <CardActions sx={{ p: 2, pt: 0 }}>
+        <Button
+          fullWidth
+          variant="contained"
+          startIcon={<Assignment />}
+          onClick={() => onBuyContract(template)}
+          disabled={isOwned(template._id) || template.priceTokens > wallet.balance}
+          sx={{ borderRadius: 999, fontWeight: 900 }}
+        >
+          {isOwned(template._id)
+            ? 'Already owned'
+            : template.priceTokens > wallet.balance
+              ? 'Not enough tokens'
+              : `Buy for ${template.priceTokens} tokens`}
+        </Button>
+      </CardActions>
+    </Card>
+  );
+};
+
 const ContractsMarketplace = () => {
   const [templates, setTemplates] = useState([]);
   const [myContractsData, setMyContractsData] = useState({ active: [], history: [] });
@@ -175,7 +462,7 @@ const ContractsMarketplace = () => {
     return String(value);
   };
 
-  const getTemplateMetrics = (template) => {
+  function getTemplateMetrics(template) {
     const cost = Number(template?.priceTokens || 0);
     const reward = Number(template?.rewardTokens || 0);
     const profit = reward - cost;
@@ -194,6 +481,10 @@ const ContractsMarketplace = () => {
     const isNotStarted = startAt && startAt > now;
     const isExpired = endAt && endAt < now;
 
+    // Calculate deadline date: start from startAt or now, add deadlineDays
+    const deadlineStart = startAt || now;
+    const deadlineDate = new Date(deadlineStart.getTime() + (template?.deadlineDays || 0) * 24 * 60 * 60 * 1000);
+
     return {
       cost,
       reward,
@@ -203,10 +494,11 @@ const ContractsMarketplace = () => {
       totalCriteriaKeys,
       startAt,
       endAt,
+      deadlineDate,
       isNotStarted,
       isExpired
     };
-  };
+  }
 
   const filteredTemplates = useMemo(() => {
     const list = Array.isArray(templates) ? templates : [];
@@ -459,211 +751,13 @@ const ContractsMarketplace = () => {
             <Grid container spacing={3}>
               {filteredTemplates.map((template, index) => (
                 <Grid item xs={12} md={6} lg={4} key={template._id}>
-                  <Zoom in timeout={800 + index * 100}>
-                    <Card 
-                      sx={{ 
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        position: 'relative',
-                        overflow: 'hidden',
-                        '&:hover': {
-                          transform: 'translateY(-3px)',
-                          boxShadow: 8
-                        },
-                        transition: 'all 0.3s ease',
-                        border: isOwned(template._id) ? '2px solid rgba(76, 175, 80, 0.6)' : '1px solid',
-                        borderColor: 'divider',
-                        borderRadius: 3
-                      }}
-                    >
-                      {isOwned(template._id) && (
-                        <Chip
-                          label="Owned"
-                          color="success"
-                          size="small"
-                          sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}
-                        />
-                      )}
-
-                      {(() => {
-                        const m = getTemplateMetrics(template);
-                        const isPositive = m.profit > 0;
-                        const roiLabel = m.roiPct != null ? `${m.roiPct >= 0 ? '+' : ''}${m.roiPct}%` : null;
-                        return (
-                          <Box
-                            sx={{
-                              px: 2,
-                              py: 1.5,
-                              bgcolor: 'rgba(118, 75, 162, 0.10)',
-                              borderBottom: '1px solid',
-                              borderColor: 'divider'
-                            }}
-                          >
-                            <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
-                              <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
-                                <Avatar
-                                  variant="rounded"
-                                  sx={{
-                                    width: 40,
-                                    height: 40,
-                                    bgcolor: 'rgba(102, 126, 234, 0.18)',
-                                    color: 'primary.main',
-                                    fontWeight: 900
-                                  }}
-                                >
-                                  <Assignment fontSize="small" />
-                                </Avatar>
-                                <Box sx={{ minWidth: 0 }}>
-                                  <Typography variant="subtitle1" fontWeight={800} noWrap>
-                                    {template.title}
-                                  </Typography>
-                                  <Typography variant="caption" color="text.secondary" noWrap>
-                                    {m.taskCount} jobs • {m.totalCriteriaKeys} requirements
-                                  </Typography>
-                                </Box>
-                              </Stack>
-
-                              <Stack direction="row" spacing={0.75} sx={{ flexShrink: 0 }}>
-                                <Chip
-                                  size="small"
-                                  icon={<TrendingUp sx={{ fontSize: 16 }} />}
-                                  label={`Profit ${m.profit >= 0 ? '+' : ''}${m.profit}`}
-                                  color={isPositive ? 'success' : 'warning'}
-                                  variant="outlined"
-                                />
-                                {roiLabel && (
-                                  <Chip size="small" label={roiLabel} variant="outlined" sx={{ fontWeight: 700 }} />
-                                )}
-                              </Stack>
-                            </Stack>
-                          </Box>
-                        );
-                      })()}
-                      
-                      <CardContent sx={{ flexGrow: 1 }}>
-                        {(() => {
-                          const m = getTemplateMetrics(template);
-                          const canAfford = m.cost <= Number(wallet?.balance || 0);
-                          const isPositive = m.profit > 0;
-
-                          return (
-                            <>
-                              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                                {template.description}
-                              </Typography>
-
-                              {/* Store-like pricing row */}
-                              <Grid container spacing={1.25} sx={{ mb: 2 }}>
-                                <Grid item xs={4}>
-                                  <Paper variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>
-                                    <Typography variant="caption" color="text.secondary" fontWeight={700}>
-                                      Cost
-                                    </Typography>
-                                    <Stack direction="row" alignItems="center" spacing={0.75}>
-                                      <AttachMoney fontSize="small" />
-                                      <Typography variant="subtitle1" fontWeight={900}>
-                                        {m.cost}
-                                      </Typography>
-                                    </Stack>
-                                  </Paper>
-                                </Grid>
-                                <Grid item xs={4}>
-                                  <Paper variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>
-                                    <Typography variant="caption" color="text.secondary" fontWeight={700}>
-                                      Reward
-                                    </Typography>
-                                    <Stack direction="row" alignItems="center" spacing={0.75}>
-                                      <Star fontSize="small" />
-                                      <Typography variant="subtitle1" fontWeight={900}>
-                                        {m.reward}
-                                      </Typography>
-                                    </Stack>
-                                  </Paper>
-                                </Grid>
-                                <Grid item xs={4}>
-                                  <Paper variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>
-                                    <Typography variant="caption" color="text.secondary" fontWeight={700}>
-                                      Profit
-                                    </Typography>
-                                    <Stack direction="row" alignItems="center" spacing={0.75}>
-                                      <TrendingUp fontSize="small" color={isPositive ? 'success' : 'warning'} />
-                                      <Typography variant="subtitle1" fontWeight={900} color={isPositive ? 'success.main' : 'warning.main'}>
-                                        {m.profit >= 0 ? '+' : ''}{m.profit}
-                                      </Typography>
-                                    </Stack>
-                                  </Paper>
-                                </Grid>
-                              </Grid>
-
-                              {!canAfford && (
-                                <Alert severity="warning" variant="outlined" sx={{ mb: 2 }}>
-                                  You don’t have enough tokens to buy this contract yet.
-                                </Alert>
-                              )}
-
-                              {/* Deadline / Availability */}
-                              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
-                                <Chip
-                                  icon={<AccessTime />}
-                                  label={`Deadline: ${template.deadlineDays} days`}
-                                  color="info"
-                                  variant="outlined"
-                                />
-                                {(m.isNotStarted || m.isExpired) && (
-                                  <Chip
-                                    icon={<Timer />}
-                                    label={m.isExpired ? 'Expired' : 'Not started yet'}
-                                    color={m.isExpired ? 'error' : 'warning'}
-                                    variant="filled"
-                                  />
-                                )}
-                                {(template.startAt || template.endAt) && (
-                                  <Tooltip
-                                    title={`Start: ${m.startAt ? m.startAt.toLocaleString() : 'Immediate'} • End: ${m.endAt ? m.endAt.toLocaleString() : 'No expiration'}`}
-                                  >
-                                    <Chip
-                                      icon={<Schedule />}
-                                      label="Time window"
-                                      color="default"
-                                      variant="outlined"
-                                    />
-                                  </Tooltip>
-                                )}
-                              </Stack>
-
-                              <Button
-                                variant="text"
-                                size="small"
-                                startIcon={<Visibility />}
-                                onClick={() => handleViewDetails(template)}
-                                sx={{ px: 0, fontWeight: 800 }}
-                              >
-                                View details
-                              </Button>
-                            </>
-                          );
-                        })()}
-                      </CardContent>
-
-                      <CardActions sx={{ p: 2, pt: 0 }}>
-                        <Button
-                          fullWidth
-                          variant="contained"
-                          startIcon={<Assignment />}
-                          onClick={() => handleBuyContract(template)}
-                          disabled={isOwned(template._id) || template.priceTokens > wallet.balance}
-                          sx={{ borderRadius: 999, fontWeight: 900 }}
-                        >
-                          {isOwned(template._id)
-                            ? 'Already owned'
-                            : template.priceTokens > wallet.balance
-                              ? 'Not enough tokens'
-                              : `Buy for ${template.priceTokens} tokens`}
-                        </Button>
-                      </CardActions>
-                    </Card>
-                  </Zoom>
+                    <ContractCard
+                      template={template}
+                      wallet={wallet}
+                      isOwned={isOwned}
+                      onBuyContract={handleBuyContract}
+                      onViewDetails={handleViewDetails}
+                    />
                 </Grid>
               ))}
             </Grid>
