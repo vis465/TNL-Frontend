@@ -27,7 +27,6 @@ import {
   Receipt,
   AttachMoney
 } from '@mui/icons-material';
-import { getRecentTransactions, getWalletStats } from '../services/walletService';
 
 const WalletTransactions = ({ wallet, onRefresh }) => {
   const [transactions, setTransactions] = useState([]);
@@ -37,30 +36,31 @@ const WalletTransactions = ({ wallet, onRefresh }) => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    loadTransactions();
+    const walletTransactions = Array.isArray(wallet?.transactions) ? wallet.transactions : [];
+    const recent = walletTransactions.slice(0, 10);
+    const totalCredits = recent.filter((tx) => tx.type === 'credit').length;
+    const totalDebits = recent.filter((tx) => tx.type === 'debit').length;
+
+    setTransactions(recent);
+    setStats({
+      totalTransactions: recent.length,
+      totalCredits,
+      totalDebits
+    });
   }, [wallet]);
 
-  const loadTransactions = async () => {
+  const handleRefresh = async () => {
+    if (!onRefresh) return;
     try {
       setLoading(true);
       setError('');
-      const [transactionsData, statsData] = await Promise.all([
-        getRecentTransactions(10),
-        getWalletStats()
-      ]);
-      setTransactions(transactionsData.transactions);
-      setStats(statsData);
+      await onRefresh();
     } catch (err) {
-      setError('Failed to load transactions');
-      console.error('Transaction loading error:', err);
+      setError('Failed to refresh transactions');
+      console.error('Transaction refresh error:', err);
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleRefresh = () => {
-    loadTransactions();
-    if (onRefresh) onRefresh();
   };
 
   const getTransactionIcon = (type, sourceKind) => {

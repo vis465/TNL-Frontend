@@ -19,7 +19,7 @@ import {
   TextField,
   Typography
 } from '@mui/material';
-import { createLoan, getLoanPlans, getMyLoanInstallments, getMyLoans } from '../services/loanService';
+import { createLoan, forepayUpcomingEmi, getLoanPlans, getMyLoanInstallments, getMyLoans } from '../services/loanService';
 
 const MAX_LOAN_PRINCIPAL = 10000;
 
@@ -33,6 +33,7 @@ const Loans = () => {
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
 
   const selectedPlan = useMemo(
     () => plans.find((p) => Number(p.tenureMonths) === Number(selectedTenure)),
@@ -97,6 +98,7 @@ const Loans = () => {
       }
       setActionLoading(true);
       setError('');
+      setMessage('');
       await createLoan({
         principal: principalValue,
         tenureMonths: Number(selectedTenure),
@@ -110,6 +112,22 @@ const Loans = () => {
     }
   };
 
+  const onForepayUpcoming = async () => {
+    if (!selectedLoanId) return;
+    try {
+      setActionLoading(true);
+      setError('');
+      setMessage('');
+      const result = await forepayUpcomingEmi(selectedLoanId);
+      setMessage(`EMI #${result.installmentNo} forepaid. Debited ${result.debitedAmount} tokens.`);
+      await Promise.all([loadMyLoans(), loadInstallments(selectedLoanId)]);
+    } catch (e) {
+      setError(e?.response?.data?.message || 'Failed to forepay EMI');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Typography variant="h4" sx={{ mb: 2 }}>Loans & EMI</Typography>
@@ -118,6 +136,7 @@ const Loans = () => {
       </Typography>
 
       {(loading || actionLoading) && <LinearProgress sx={{ mb: 2 }} />}
+      {message && <Alert severity="success" sx={{ mb: 2 }}>{message}</Alert>}
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       <Grid container spacing={3}>
@@ -182,6 +201,14 @@ const Loans = () => {
                   </Box>
                 ))}
               </Stack>
+              <Button
+                sx={{ mt: 2 }}
+                variant="outlined"
+                onClick={onForepayUpcoming}
+                disabled={actionLoading || !selectedLoanId}
+              >
+                Forepay Upcoming EMI
+              </Button>
             </CardContent>
           </Card>
 

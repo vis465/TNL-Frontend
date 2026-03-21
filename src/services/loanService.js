@@ -20,6 +20,11 @@ export async function getMyLoanInstallments(loanId) {
   return data;
 }
 
+export async function forepayUpcomingEmi(loanId) {
+  const { data } = await axiosInstance.post(`/loans/me/${loanId}/forepay`);
+  return data;
+}
+
 export async function getAdminLoans(params = {}) {
   const { data } = await axiosInstance.get('/loans/admin', { params });
   return data;
