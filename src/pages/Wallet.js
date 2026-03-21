@@ -175,13 +175,6 @@ const Wallet = () => {
             >
               Refresh
             </Button>
-            <Button
-              variant="contained"
-              startIcon={<Add />}
-              onClick={() => setPurchaseDialogOpen(true)}
-            >
-              Add Tokens
-            </Button>
           </Stack>
         </Stack>
 

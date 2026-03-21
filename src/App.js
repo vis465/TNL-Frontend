@@ -91,6 +91,9 @@ import AdminCreateUser from "./pages/AdminCreateUser";
 import ChangePassword from "./pages/ChangePassword";
 import OnlineRiders from "./pages/OnlineRiders";
 import MapPlayground from "./pages/MapPlayground";
+import Loans from "./pages/Loans";
+import AdminLoans from "./pages/AdminLoans";
+import AdminEmis from "./pages/AdminEmis";
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -373,6 +376,7 @@ function App() {
                       />
                       <Route path="/contracts/me" element={<MyContracts />} />
                       <Route path="/wallet" element={<Wallet />} />
+                      <Route path="/loans" element={<Loans />} />
                       <Route path="/goals" element={<PersonalGoals />} />
                       {/* <Route path="/jobs/:id" element={<JobDetailsMUI />} /> */}
                       <Route path="/jobs/:id" element={<JobDetails />} />
@@ -506,6 +510,22 @@ function App() {
                             allowedRoles={["admin", "eventteam", "financeteam"]}
                           >
                             <AdminContracts />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="loans"
+                        element={
+                          <PrivateRoute allowedRoles={["admin", "financeteam"]}>
+                            <AdminLoans />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="emis"
+                        element={
+                          <PrivateRoute allowedRoles={["admin", "financeteam"]}>
+                            <AdminEmis />
                           </PrivateRoute>
                         }
                       />

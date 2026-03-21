@@ -77,8 +77,13 @@ const Login = () => {
         return;
       }
 
-      // Navigate to home page
-      navigate('/dashboard');
+      // Get the callback URL from query params, or default to dashboard
+      const from = searchParams.get('from');
+      if (from && from !== '/login') {
+        navigate(decodeURIComponent(from));
+      } else {
+        navigate('/dashboard');
+      }
     } catch (error) {
       console.error('Login error:', error);
       const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';

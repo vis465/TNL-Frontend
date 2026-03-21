@@ -499,7 +499,8 @@ export default function AdminContracts() {
                             </Typography>
                             <Button
                               size="small"
-                              variant="contained"
+                              variant="outlined"
+                              // color='black'
                               onClick={() => handleManualComplete(c._id, nextPending.order)}
                               disabled={completingTaskKey === `${c._id}:${nextPending.order}`}
                             >
