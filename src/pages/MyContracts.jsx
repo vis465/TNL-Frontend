@@ -74,7 +74,7 @@ export default function MyContracts() {
 
         let nextIdx = typeof c.currentTaskIndex === 'number' ? c.currentTaskIndex : 0;
         if (!tasks[nextIdx]) {
-          const doneOrders = new Set(progress.filter(p => p.status === 'done').map(p => p.order));
+          const doneOrders = new Set(progress.filter((p) => isDoneStatus(p.status)).map((p) => p.order));
           nextIdx = tasks.findIndex(t => !doneOrders.has(t.order));
           if (nextIdx < 0) nextIdx = 0;
         }
@@ -90,18 +90,40 @@ export default function MyContracts() {
     });
   }, [data]);
 
+  const isDoneStatus = (status) => status === 'done' || status === 'completed';
+
+  const getProgressSummary = (tasks, progress) => {
+    if (tasks.length > 0) {
+      const doneByOrder = new Set(
+        progress
+          .filter((p) => isDoneStatus(p.status))
+          .map((p) => p.order)
+      );
+      const doneCount = tasks.reduce((sum, task) => sum + (doneByOrder.has(task.order) ? 1 : 0), 0);
+      const totalCount = tasks.length;
+      const pct = Math.min(100, Math.round((doneCount / totalCount) * 100));
+      return { done: doneCount, total: totalCount, pct };
+    }
+
+    const fallbackTotal = Math.max(progress.length, 1);
+    const fallbackDone = Math.min(
+      fallbackTotal,
+      progress.filter((p) => isDoneStatus(p.status)).length
+    );
+    const pct = Math.min(100, Math.round((fallbackDone / fallbackTotal) * 100));
+    return { done: fallbackDone, total: fallbackTotal, pct };
+  };
+
   const renderContract = (c) => {
     const tpl = c.templateId || {};
     const tasks = Array.isArray(tpl.tasks) ? tpl.tasks : [];
     const progress = Array.isArray(c.progress) ? c.progress : [];
-    const total = tasks.length || progress.length || 1;
-    const done = progress.filter(p => p.status === 'done').length;
-    const pct = Math.round((done / total) * 100);
+    const { total, done, pct } = getProgressSummary(tasks, progress);
 
     // Determine current/next task index
     let nextIdx = typeof c.currentTaskIndex === 'number' ? c.currentTaskIndex : 0;
     if (!tasks[nextIdx]) {
-      const doneOrders = new Set(progress.filter(p => p.status === 'done').map(p => p.order));
+      const doneOrders = new Set(progress.filter((p) => isDoneStatus(p.status)).map((p) => p.order));
       nextIdx = tasks.findIndex(t => !doneOrders.has(t.order));
       if (nextIdx < 0) nextIdx = tasks.length - 1;
     }
@@ -109,7 +131,7 @@ export default function MyContracts() {
 
     const getTaskStatus = (t) => {
       const found = progress.find(p => p.order === t.order);
-      return found?.status === 'completed' || found?.status === 'done' ? 'done' : 'Next to do';
+      return isDoneStatus(found?.status) ? 'done' : 'Next to do';
     };
 
     const renderCriteria = (criteria) => {
