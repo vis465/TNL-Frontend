@@ -54,7 +54,7 @@ const PublicAttendance = () => {
   const fetchAttendanceData = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/hr-events/public/attendance');
+      const response = await axiosInstance.get('/attendance-events/public/attendance');
       setEvents(response.data);
       console.log(response.data);
     } catch (error) {
@@ -67,7 +67,7 @@ const PublicAttendance = () => {
 
   const fetchLeaderboard = async () => {
     try {
-      const response = await axiosInstance.get('/hr-events/public/leaderboard?limit=10');
+      const response = await axiosInstance.get('/attendance-events/public/leaderboard?limit=10');
       setLeaderboard(response.data);
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
@@ -91,8 +91,12 @@ const PublicAttendance = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'active': return 'success';
-      case 'completed': return 'primary';
+      case 'active':
+      case 'open':
+        return 'success';
+      case 'completed':
+      case 'closed':
+        return 'primary';
       case 'cancelled': return 'error';
       default: return 'default';
     }

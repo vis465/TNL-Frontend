@@ -36,7 +36,7 @@ export default function Leaderboard() {
     try {
       const [jobsRes, attRes] = await Promise.all([
         axiosInstance.get('/leaderboard', { params: { from: from || undefined, to: to || undefined } }),
-        axiosInstance.get('/attendance-events/public/leaderboard')
+        axiosInstance.get('/hr-events/public/leaderboard?limit=10')
       ]);
       setData(jobsRes.data);
       setAttendance(Array.isArray(attRes.data) ? attRes.data : []);
