@@ -1,30 +1,48 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { toPng, toCanvas } from 'html-to-image';
 import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  Avatar,
-  CircularProgress,
-  Alert,
-  Stack,
-  Chip,
-  Paper
+  Box, Card, CardContent, Typography, Avatar, Stack, alpha
 } from '@mui/material';
-import { Download, Refresh, Person, LocalShipping, VerifiedUser } from '@mui/icons-material';
+import { LocalShipping, VerifiedUser } from '@mui/icons-material';
 import tnlLogo from '../img/tnllogo.jpg';
-import axiosInstance from '../utils/axios';
+
+const font = "'Montserrat', sans-serif";
+
+const T = {
+  bg: '#09090B',
+  surface: '#111113',
+  surfaceAlt: '#0F0F11',
+  surfaceHover: '#1A1A1D',
+  border: 'rgba(255,255,255,0.06)',
+  borderHover: 'rgba(255,255,255,0.1)',
+  text: '#FAFAFA',
+  textSecondary: '#A1A1AA',
+  textMuted: '#71717A',
+  textFaint: '#3F3F46',
+  accent: '#E4FF1A',
+  accentDim: 'rgba(228,255,26,0.06)',
+  gold: '#E2B93B',
+  goldDim: 'rgba(226,185,59,0.08)',
+  goldMid: 'rgba(226,185,59,0.18)',
+  success: '#34D399',
+  radius: '10px',
+  radiusSm: '6px',
+  radiusXs: '4px',
+};
+
+const sxCard = {
+  bgcolor: T.surface,
+  border: `1px solid ${T.border}`,
+  borderRadius: T.radius,
+  boxShadow: 'none',
+  transition: 'border-color 0.2s ease',
+  '&:hover': { borderColor: T.borderHover },
+};
 
 const LicenseCard = ({ userData, riderData }) => {
   const elementRef = useRef(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [licenseNumber, setLicenseNumber] = useState('');
   const [memberData, setMemberData] = useState(null);
 
-  // Generate license number using employeeID or user ID
   const generateLicenseNumber = (employeeId) => {
     const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
     return `TNL ${randomNum}-${employeeId}`;
@@ -38,312 +56,250 @@ const LicenseCard = ({ userData, riderData }) => {
         ...userData,
         ...riderData,
         employeeID: riderData?.employeeID || userData?.user_id || userData?.id,
-        joinDate: riderData?.createdAt || userData?.createdAt || new Date().toISOString()
+        joinDate: riderData?.createdAt || userData?.createdAt || new Date().toISOString(),
       });
     }
-    console.log("memberData",memberData)
-    console.log("riderData",riderData)
-    console.log("userData",userData)
   }, [userData, riderData]);
-
- 
 
   if (!memberData) {
     return (
-      <Card sx={{ p: 3, textAlign: 'center' }}>
-        <LocalShipping sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-        <Typography variant="h6" color="text.secondary">
-          No user data available
-        </Typography>
+      <Card sx={sxCard}>
+        <CardContent sx={{ p: '20px !important' }}>
+          <Stack alignItems="center" spacing={1} sx={{ py: 4 }}>
+            <LocalShipping sx={{ fontSize: 28, color: T.textFaint }} />
+            <Typography sx={{ fontFamily: font, fontSize: '0.8rem', color: T.textMuted, fontWeight: 500 }}>
+              No user data available
+            </Typography>
+          </Stack>
+        </CardContent>
       </Card>
     );
   }
 
+  const joinYear = memberData.joinDate
+    ? new Date(memberData.joinDate).getFullYear()
+    : new Date().getFullYear();
+
   return (
-    <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-        <Typography variant="h5" fontWeight="bold">
-          TNL License
-        </Typography>
-        <Stack direction="row" spacing={1}>
-          
-          
+    <Card sx={sxCard}>
+      <CardContent sx={{ p: '20px !important' }}>
+        {/* Section header */}
+        <Stack direction="row" alignItems="center" spacing={1.25} sx={{ mb: 2.5 }}>
+          <Box sx={{
+            width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            bgcolor: T.goldDim, borderRadius: T.radiusSm, color: T.gold,
+          }}>
+            <VerifiedUser sx={{ fontSize: 16 }} />
+          </Box>
+          <Typography sx={{ fontFamily: font, fontSize: '0.85rem', fontWeight: 700, color: T.text }}>
+            TNL License
+          </Typography>
         </Stack>
-      </Stack>
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-
-      {/* License Card Container */}
-      <Box
-        ref={elementRef}
-        sx={{
-          width: 720,
-          height: 450,
-          minWidth: 720,
-          minHeight: 450,
-          maxWidth: '100%',
-          position: 'relative',
-          mx: 'auto',
-          // Ensure proper rendering for html-to-image
-          boxSizing: 'border-box',
-          fontFamily: 'Arial, sans-serif',
-          overflow: 'hidden'
-        }}
-      >
-        {/* License Card */}
+        {/* License card visual */}
         <Box
+          ref={elementRef}
           sx={{
             width: '100%',
-            height: '100%',
-            background: `linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.6) 100%)`,
-            borderRadius: 3.75,
+            maxWidth: 680,
+            aspectRatio: '16 / 9',
+            mx: 'auto',
             position: 'relative',
+            borderRadius: '14px',
             overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'row',
-            border: '3px solid #ffd700',
-            boxShadow: '0 12px 48px rgba(0,0,0,0.6)',
-            boxSizing: 'border-box'
+            background: `
+              radial-gradient(ellipse at 20% 50%, rgba(226,185,59,0.06) 0%, transparent 60%),
+              radial-gradient(ellipse at 80% 20%, rgba(226,185,59,0.04) 0%, transparent 50%),
+              linear-gradient(160deg, #0C0C0E 0%, #111113 40%, #0E0E10 100%)
+            `,
+            border: `1.5px solid ${T.goldMid}`,
+            boxShadow: `0 0 0 1px ${alpha(T.gold, 0.05)}, 0 20px 50px -12px rgba(0,0,0,0.5)`,
           }}
         >
-        {/* Title Section - Top */}
-        <Box sx={{
-          position: 'absolute',
-          top: 12,
-          left: 0,
-          right: 0,
-          textAlign: 'center',
-          zIndex: 3
-        }}>
-          <Typography variant="h6" sx={{
-            color: '#ffd700',
-            fontWeight: 'bold',
-            fontSize: '1.5rem',
-            mb: 0.75
-          }}>
-            TAMILNADU LOGISTICS
-          </Typography>
-          <Typography variant="body2" sx={{
-            color: '#ffd700',
-            fontSize: '1.05rem',
-            fontWeight: '500',
-            opacity: 0.8
-          }}>
-            ரௌத்திரம் பழகு
-          </Typography>
-        </Box>
-
-        {/* India Flag - Top Right */}
-        <Box sx={{
-          position: 'absolute',
-          top: 12,
-          right: 12,
-          zIndex: 3
-        }}>
+          {/* Background logo watermark */}
           <Box sx={{
-            width: 36,
-            height: 24,
-            borderRadius: 0.75,
-            overflow: 'hidden',
-            border: '1.5px solid rgba(255, 255, 255, 0.3)'
-          }}>
-            <img
-              crossOrigin="anonymous"
-              alt="India Flag"
-              src="http://purecatamphetamine.github.io/country-flag-icons/3x2/IN.svg"
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
-          </Box>
-        </Box>
-
-        {/* Background TNL Logo */}
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            right: '-15%',
+            position: 'absolute', top: '50%', right: '-5%',
             transform: 'translateY(-50%)',
-            width: '40%',
-            height: '40%',
-            opacity: 0.1,
-            zIndex: 1
-          }}
-        >
-          <img
-            src={tnlLogo}
-            alt="TNL Background"
-            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-          />
-        </Box>
-
-        {/* Left Section - Photo Area */}
-        <Box sx={{
-          flex: '0 0 120px',
-          p: 2,
-          pt: 6,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          position: 'relative',
-          zIndex: 2
-        }}>
-          {/* Photo Area */}
-          <Box sx={{
-            width: 80,
-            height: 100,
-            background: 'linear-gradient(135deg, #1a1a1a, #2a2a2a)',
-            borderRadius: 1.5,
-            border: '2px solid #ffd700',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            mb: 1.5,
-            overflow: 'hidden',
-            position: 'relative'
+            width: '35%', height: '35%', opacity: 0.04, zIndex: 0,
           }}>
+            <img src={tnlLogo} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          </Box>
+
+          {/* Top bar */}
+          <Box sx={{
+            position: 'absolute', top: 0, left: 0, right: 0,
+            px: 3, pt: 2, pb: 1.5, zIndex: 2,
+            display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+          }}>
+            <Box>
+              <Typography sx={{
+                fontFamily: font, fontWeight: 800, fontSize: '0.95rem',
+                color: T.gold, letterSpacing: '0.12em', textTransform: 'uppercase',
+                lineHeight: 1.2,
+              }}>
+                Tamilnadu Logistics
+              </Typography>
+              <Typography sx={{
+                fontFamily: font, fontSize: '0.7rem', fontWeight: 500,
+                color: alpha(T.gold, 0.55), mt: 0.25,
+              }}>
+                ரௌத்திரம் பழகு
+              </Typography>
+            </Box>
             <Box sx={{
-              width: '100%',
-              height: '100%',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #ffd700, #ffed4e)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: '2px solid #fff',
-              position: 'absolute'
+              width: 32, height: 22, borderRadius: '3px', overflow: 'hidden',
+              border: `1px solid ${alpha('#fff', 0.12)}`, flexShrink: 0, mt: 0.25,
             }}>
-              {riderData?.avatar ? (
-                <img
-                  src={riderData.avatar}
-                  alt="Avatar"
-                  style={{ 
-                    width: '100%', 
-                    height: '100%', 
-                    objectFit: 'cover', 
-                    borderRadius: '50%' 
-                  }}
-                />
-              ) : (
-                <Typography variant="h5" sx={{
-                  color: '#000',
-                  fontWeight: 'bold',
-                  fontSize: '1.2rem'
-                }}>
-                  {memberData.username?.charAt(0).toUpperCase() || 'U'}
-                </Typography>
-              )}
+              <img
+                crossOrigin="anonymous" alt="IN"
+                src="http://purecatamphetamine.github.io/country-flag-icons/3x2/IN.svg"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
             </Box>
           </Box>
 
-          {/* Verification Badge */}
+          {/* Main content area */}
           <Box sx={{
-            background: 'linear-gradient(135deg, #4caf50, #45a049)',
-            color: '#fff',
-            px: 1.5,
-            py: 0.3,
-            borderRadius: 1,
-            fontWeight: '600',
-            fontSize: '8px',
-            border: '1px solid #fff',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.3
+            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+            display: 'flex', pt: 8, px: 3, pb: 5, zIndex: 1,
           }}>
-            <Box sx={{
-              width: 3,
-              height: 3,
-              borderRadius: '50%',
-              background: '#fff'
-            }} />
-            VERIFIED
+            {/* Avatar column */}
+            <Box sx={{ flexShrink: 0, mr: 2.5, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <Box sx={{
+                width: 72, height: 88, borderRadius: '8px', overflow: 'hidden',
+                border: `1.5px solid ${alpha(T.gold, 0.35)}`,
+                bgcolor: '#0A0A0C',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {riderData?.avatar ? (
+                  <img
+                    src={riderData.avatar} alt="Avatar"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <Typography sx={{
+                    fontFamily: font, fontSize: '1.6rem', fontWeight: 800,
+                    color: T.gold, opacity: 0.7,
+                  }}>
+                    {(memberData.username || memberData.name || 'U').charAt(0).toUpperCase()}
+                  </Typography>
+                )}
+              </Box>
+              <Box sx={{
+                mt: 1, px: 1, py: 0.25, borderRadius: '3px',
+                bgcolor: alpha(T.success, 0.12), border: `1px solid ${alpha(T.success, 0.25)}`,
+                display: 'flex', alignItems: 'center', gap: 0.5,
+              }}>
+                <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: T.success }} />
+                <Typography sx={{
+                  fontFamily: font, fontSize: '0.5rem', fontWeight: 700,
+                  color: T.success, letterSpacing: '0.06em', textTransform: 'uppercase',
+                }}>
+                  Verified
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* Details column */}
+            <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <Typography sx={{
+                fontFamily: font, fontWeight: 700, fontSize: '1.35rem',
+                color: T.text, lineHeight: 1.2, letterSpacing: '-0.01em', mb: 1.5,
+              }} noWrap>
+                {memberData.name || memberData.username || 'Member'}
+              </Typography>
+
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1.5 }}>
+                <Box>
+                  <Typography sx={{
+                    fontFamily: font, fontSize: '0.5rem', fontWeight: 600,
+                    color: T.textFaint, letterSpacing: '0.1em', textTransform: 'uppercase', mb: 0.25,
+                  }}>
+                    Role
+                  </Typography>
+                  <Typography sx={{
+                    fontFamily: font, fontSize: '0.78rem', fontWeight: 600,
+                    color: T.gold,
+                  }}>
+                    {userData?.role || 'Member'}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography sx={{
+                    fontFamily: font, fontSize: '0.5rem', fontWeight: 600,
+                    color: T.textFaint, letterSpacing: '0.1em', textTransform: 'uppercase', mb: 0.25,
+                  }}>
+                    Employee ID
+                  </Typography>
+                  <Typography sx={{
+                    fontFamily: font, fontSize: '0.78rem', fontWeight: 600,
+                    color: T.textSecondary,
+                  }}>
+                    {memberData.employeeID || 'N/A'}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography sx={{
+                    fontFamily: font, fontSize: '0.5rem', fontWeight: 600,
+                    color: T.textFaint, letterSpacing: '0.1em', textTransform: 'uppercase', mb: 0.25,
+                  }}>
+                    License No.
+                  </Typography>
+                  <Typography sx={{
+                    fontFamily: font, fontSize: '0.78rem', fontWeight: 600,
+                    color: T.textSecondary, letterSpacing: '0.03em',
+                  }}>
+                    {licenseNumber}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography sx={{
+                    fontFamily: font, fontSize: '0.5rem', fontWeight: 600,
+                    color: T.textFaint, letterSpacing: '0.1em', textTransform: 'uppercase', mb: 0.25,
+                  }}>
+                    Member Since
+                  </Typography>
+                  <Typography sx={{
+                    fontFamily: font, fontSize: '0.78rem', fontWeight: 600,
+                    color: T.textSecondary,
+                  }}>
+                    {joinYear}
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
           </Box>
-        </Box>
 
-        {/* Right Section - Personal Details */}
-        <Box sx={{
-          flex: 1,
-          p: 3,
-          pt: 9,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          position: 'relative',
-          zIndex: 2
-        }}>
-          {/* Member Name */}
-          <Typography variant="h4" sx={{
-            color: '#fff',
-            fontWeight: '600',
-            fontSize: '1.95rem',
-            mb: 1.5
-          }}>
-            {memberData.name || memberData.username || 'Member'}
-          </Typography>
-
-          {/* Role */}
+          {/* Bottom bar */}
           <Box sx={{
-            background: 'rgba(255, 215, 0, 0.1)',
-            p: 1.5,
-            borderRadius: 1.5,
-            border: '1.5px solid rgba(255, 215, 0, 0.3)',
-            mb: 2.25,
-            display: 'inline-block'
+            position: 'absolute', bottom: 0, left: 0, right: 0,
+            px: 3, py: 1.5, zIndex: 2,
+            borderTop: `1px solid ${alpha(T.gold, 0.08)}`,
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           }}>
-            <Typography variant="body1" sx={{
-              color: '#ffd700',
-              fontWeight: '500',
-              fontSize: '1.2rem'
+            <Typography sx={{
+              fontFamily: font, fontSize: '0.55rem', fontWeight: 500,
+              color: T.textFaint, letterSpacing: '0.04em',
             }}>
-              {userData?.role || 'Member'}
+              Issued by TNL Administration
             </Typography>
-            <Typography variant="body2" sx={{ color: '#ccc', fontSize: '1.05rem', mt: 0.75 }}>
-              <strong>ID:</strong> {memberData.employeeID || 'N/A'}
-            </Typography>
-          </Box>
-
-          {/* Member Since */}
-          
-        </Box>
-
-        {/* TNL Administration - Bottom Right */}
-        <Box sx={{
-          position: 'absolute',
-          bottom: 12,
-          right: 12,
-          zIndex: 3,
-          textAlign: 'center'
-        }}>
-          <Box sx={{
-            borderRadius: 1.5,
-            textAlign: 'center',
-            minWidth: 150
-          }}>
-            <Typography variant="caption" sx={{
-              color: '#ffd700',
-              fontWeight: 'bold',
-              fontSize: '0.9rem',
-              display: 'block'
-            }}>
-              TNL ADMINISTRATION
-            </Typography>
-            <Typography variant="caption" sx={{
-              color: '#ccc',
-              fontSize: '0.75rem',
-              display: 'block',
-              mt: 0.3
+            <Typography sx={{
+              fontFamily: font, fontSize: '0.55rem', fontWeight: 600,
+              color: alpha(T.gold, 0.4), letterSpacing: '0.06em', textTransform: 'uppercase',
             }}>
               Authorized Signatory
             </Typography>
           </Box>
+
+          {/* Subtle horizontal line accent */}
+          <Box sx={{
+            position: 'absolute', bottom: 34, left: 24, right: 24,
+            height: '1px',
+            background: `linear-gradient(90deg, transparent, ${alpha(T.gold, 0.1)}, transparent)`,
+          }} />
         </Box>
-        </Box>
-      </Box>
-    </Box>
+      </CardContent>
+    </Card>
   );
 };
 

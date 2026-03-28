@@ -60,7 +60,7 @@ const AdminChallenges = () => {
   const [actionLoading, setActionLoading] = useState(false);
   
   // Use external data context
-  const { cityOptions, companyOptionsByCity, cargoOptions, loading: externalDataLoading, error: externalDataError } = useExternalData();
+  const { cityOptions, companyOptionsByCity, cargoOptions, ensureCargoOptions, loading: externalDataLoading, error: externalDataError } = useExternalData();
   
   // Form state
   const [formData, setFormData] = useState({
@@ -104,6 +104,11 @@ const AdminChallenges = () => {
     }
     
   }, []);
+
+  // AdminChallenges needs cargo list for criteria autocompletes.
+  useEffect(() => {
+    ensureCargoOptions?.();
+  }, [ensureCargoOptions]);
 
   // Helper function to convert IST datetime to Unix seconds
   const istToUnixSeconds = (istDateTime) => {

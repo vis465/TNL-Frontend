@@ -22,52 +22,7 @@ import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import axiosInstance from '../utils/axios';
-
-// List of available DLCs
-const AVAILABLE_DLCS = [
-  'Going East!',
-  'Scandinavia',
-  'Vive la France!',
-  'Italia',
-  'Beyond the Baltic Sea',
-  'Road to the Black Sea',
-  'Iberia',
-  'Heart of Russia',
-  'West Balkans',
-  'Promods',
-  'Oregon',
-  'Washington',
-  'Utah',
-  'Idaho',
-  'Colorado',
-  'Wyoming',
-  'Montana',
-  'Texas',
-  'Oklahoma',
-  'Kansas',
-  'Nebraska',
-  'Missouri',
-  'Arkansas',
-  'Louisiana',
-  'Mississippi',
-  'Alabama',
-  'Georgia',
-  'Florida',
-  'South Carolina',
-  'North Carolina',
-  'Tennessee',
-  'Kentucky',
-  'Indiana',
-  'Ohio',
-  'Michigan',
-  'Wisconsin',
-  'Minnesota',
-  'Iowa',
-  'Illinois',
-  'Missouri',
-  'Arkansas',
-  'Louisiana',
-];
+import { AVAILABLE_DLCS } from '../constants/dlcs';
 
 const InviteForm = ({ open, onClose, onInviteSubmitted }) => {
   const [formData, setFormData] = useState({

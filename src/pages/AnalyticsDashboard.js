@@ -43,7 +43,8 @@ import {
   EmojiEvents as ChallengeIcon,
   Assignment as ContractIcon,
   People as AttendanceIcon,
-  List as RecentIcon
+  List as RecentIcon,
+  CalendarMonth as CalendarMonthIcon
 } from '@mui/icons-material';
 
 const COLORS = ['#2196F3', '#4CAF50', '#FFC107', '#F44336', '#9C27B0', '#00BCD4'];
@@ -69,6 +70,15 @@ const AnalyticsDashboard = () => {
       eventAttendance: [],
       hrAttendanceEvents: [],
       topAttendees: []
+    },
+    externalAttendance: {
+      total: 0,
+      upcoming: 0,
+      past: 0,
+      byCreator: [],
+      recent: [],
+      topHostVtcs: [],
+      inviteBookings: { pending: 0, approved: 0, rejected: 0, cancelled: 0, total: 0, approvalRatePercent: 0 }
     }
   });
   const [activeTab, setActiveTab] = useState(0);
@@ -126,7 +136,16 @@ const AnalyticsDashboard = () => {
         challengeProgress: response.data.challengeProgress || [],
         contractProgress: response.data.contractProgress || { active: 0, completed: 0, failed: 0, total: 0, completionRate: 0 },
         contractByTemplate: response.data.contractByTemplate || [],
-        attendanceStats: response.data.attendanceStats || { eventAttendance: [], hrAttendanceEvents: [], topAttendees: [] }
+        attendanceStats: response.data.attendanceStats || { eventAttendance: [], hrAttendanceEvents: [], topAttendees: [] },
+        externalAttendance: response.data.externalAttendance || {
+          total: 0,
+          upcoming: 0,
+          past: 0,
+          byCreator: [],
+          recent: [],
+          topHostVtcs: [],
+          inviteBookings: { pending: 0, approved: 0, rejected: 0, cancelled: 0, total: 0, approvalRatePercent: 0 }
+        }
       });
     } catch (err) {
       console.error('Error fetching analytics:', err);
@@ -148,6 +167,21 @@ const AnalyticsDashboard = () => {
       link.remove();
     } catch (err) {
       setError('Failed to export data.');
+    }
+  };
+
+  const handleExportExternalAttendance = async () => {
+    try {
+      const response = await axiosInstance.get('/analytics/export-external-attendance', { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'external-attendance.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      setError('Failed to export external attendance.');
     }
   };
 
@@ -182,6 +216,8 @@ const AnalyticsDashboard = () => {
   const attendanceStats = stats.attendanceStats || {};
   const hrAttendanceEvents = attendanceStats.hrAttendanceEvents || [];
   const topAttendees = attendanceStats.topAttendees || [];
+  const ext = stats.externalAttendance || {};
+  const extInvite = ext.inviteBookings || {};
   const eventAttendanceList = attendanceStats.eventAttendance && attendanceStats.eventAttendance.length
     ? attendanceStats.eventAttendance
     : (stats.eventAttendance || []).map(e => ({ eventName: e.name, confirmed: e.attendance }));
@@ -223,6 +259,7 @@ const AnalyticsDashboard = () => {
           <Tab icon={<ContractIcon />} label="Contract progress" />
           <Tab icon={<AttendanceIcon />} label="Attendances" />
           <Tab icon={<RecentIcon />} label="Recent Bookings" />
+          <Tab icon={<CalendarMonthIcon />} label="External attendance" />
         </Tabs>
       </Box>
 
@@ -741,6 +778,122 @@ const AnalyticsDashboard = () => {
 
       {/* Recent Bookings – unchanged */}
       {activeTab === 6 && <RecentBookings />}
+
+      {activeTab === 7 && (
+        <Box>
+          <Box display="flex" justifyContent="flex-end" mb={2}>
+            <Button variant="outlined" startIcon={<DownloadIcon />} onClick={handleExportExternalAttendance}>
+              Export external attendance CSV
+            </Button>
+          </Box>
+          <Grid container spacing={3} mb={3}>
+            <Grid item xs={12} sm={6} md={3}>
+              <Paper elevation={2} sx={{ p: 2 }}>
+                <Typography color="textSecondary" variant="body2">External entries (total)</Typography>
+                <Typography variant="h4">{ext.total ?? 0}</Typography>
+              </Paper>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Paper elevation={2} sx={{ p: 2 }}>
+                <Typography color="textSecondary" variant="body2">Upcoming convoys</Typography>
+                <Typography variant="h4">{ext.upcoming ?? 0}</Typography>
+              </Paper>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Paper elevation={2} sx={{ p: 2 }}>
+                <Typography color="textSecondary" variant="body2">Past logged</Typography>
+                <Typography variant="h4">{ext.past ?? 0}</Typography>
+              </Paper>
+            </Grid>
+          </Grid>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <Paper sx={{ p: 2 }}>
+                <Typography variant="h6" gutterBottom>Entries by creator</Typography>
+                <TableContainer>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Username</TableCell>
+                        <TableCell align="right">Count</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {(ext.byCreator || []).map((row) => (
+                        <TableRow key={row.username}>
+                          <TableCell>{row.username}</TableCell>
+                          <TableCell align="right">{row.count}</TableCell>
+                        </TableRow>
+                      ))}
+                      {(!ext.byCreator || ext.byCreator.length === 0) && (
+                        <TableRow><TableCell colSpan={2}>No data</TableCell></TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Paper>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Paper sx={{ p: 2 }}>
+                <Typography variant="h6" gutterBottom>Top host VTCs (external)</Typography>
+                <TableContainer>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>VTC</TableCell>
+                        <TableCell align="right">Events</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {(ext.topHostVtcs || []).map((row) => (
+                        <TableRow key={row.name}>
+                          <TableCell>{row.name}</TableCell>
+                          <TableCell align="right">{row.count}</TableCell>
+                        </TableRow>
+                      ))}
+                      {(!ext.topHostVtcs || ext.topHostVtcs.length === 0) && (
+                        <TableRow><TableCell colSpan={2}>No data</TableCell></TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Paper>
+            </Grid>
+            <Grid item xs={12}>
+              <Paper sx={{ p: 2 }}>
+                <Typography variant="h6" gutterBottom>Recent entries</Typography>
+                <TableContainer>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Title</TableCell>
+                        <TableCell>TMP ID</TableCell>
+                        <TableCell>Slot</TableCell>
+                        <TableCell>Created by</TableCell>
+                        <TableCell>Created</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {(ext.recent || []).map((row, i) => (
+                        <TableRow key={i}>
+                          <TableCell>{row.title}</TableCell>
+                          <TableCell>{row.truckersmpEventId}</TableCell>
+                          <TableCell>{row.slotNumber}</TableCell>
+                          <TableCell>{row.createdByUsername}</TableCell>
+                          <TableCell>{row.createdAt ? new Date(row.createdAt).toLocaleString() : '—'}</TableCell>
+                        </TableRow>
+                      ))}
+                      {(!ext.recent || ext.recent.length === 0) && (
+                        <TableRow><TableCell colSpan={5}>No recent entries</TableCell></TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Paper>
+            </Grid>
+          </Grid>
+        </Box>
+      )}
     </Container>
   );
 };

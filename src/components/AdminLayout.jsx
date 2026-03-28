@@ -10,7 +10,16 @@ import { useTheme, useMediaQuery } from "@mui/material";
 import { Menu as MenuIcon } from "@mui/icons-material";
 import AdminSidebar from "./AdminSidebar";
 
-export default function AdminLayout() {
+/**
+ * Shared shell: sidebar + main (Outlet). Used for member routes and /admin.
+ * @param {string} [sidebarBrandTitle='Account'] — Header in sidebar / drawer
+ * @param {string} [mobileBarTitle] — Sticky app bar on small screens (defaults to sidebarBrandTitle)
+ */
+export default function AdminLayout({
+  sidebarBrandTitle = "Account",
+  mobileBarTitle,
+}) {
+  const barTitle = mobileBarTitle ?? sidebarBrandTitle;
   const [user, setUser] = useState(null);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -44,6 +53,7 @@ export default function AdminLayout() {
         user={user}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+        brandTitle={sidebarBrandTitle}
       />
 
       <Box component="main" sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
@@ -60,7 +70,7 @@ export default function AdminLayout() {
                 <MenuIcon />
               </IconButton>
               <Typography variant="h6" noWrap component="div">
-                Admin
+                {barTitle}
               </Typography>
             </Toolbar>
           </AppBar>

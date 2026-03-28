@@ -26,7 +26,7 @@ export const fetchInstancesByStatus = createAsyncThunk(
     if (instancesStatus === key && instancesLastFetched && Date.now() - instancesLastFetched < STALE_MS) {
       return { status: key, data: null }; // use existing list
     }
-    const data = await adminListContractInstances(status || undefined);
+    const data = await adminListContractInstances(status || undefined, { compact: true });
     return { status: key, data: Array.isArray(data) ? data : [] };
   }
 );

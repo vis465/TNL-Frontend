@@ -129,9 +129,11 @@ export async function deleteTemplate(id) {
 }
 
 // Admin list contract instances with progress
-export async function adminListContractInstances(status) {
-  const qs = status ? `?status=${encodeURIComponent(status)}` : '';
-  const { data } = await axiosInstance.get(`/contracts/admin/instances${qs}`);
+export async function adminListContractInstances(status, { compact = true } = {}) {
+  const qs = new URLSearchParams();
+  if (status) qs.set('status', status);
+  if (compact) qs.set('compact', '1');
+  const { data } = await axiosInstance.get(`/contracts/admin/instances?${qs.toString()}`);
   return data;
 }
 

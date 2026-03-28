@@ -94,6 +94,9 @@ import MapPlayground from "./pages/MapPlayground";
 import Loans from "./pages/Loans";
 import AdminLoans from "./pages/AdminLoans";
 import AdminEmis from "./pages/AdminEmis";
+import EventCalendarPage from "./pages/EventCalendarPage";
+import AdminExternalAttendance from "./pages/AdminExternalAttendance";
+import FleetManagement from "./pages/FleetManagement";
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -349,7 +352,7 @@ function App() {
                       path="/rider/register"
                       element={<RiderRegistration />}
                     />
-                    {/* Authenticated personal routes */}
+                    {/* Authenticated personal routes (sidebar shell — same as /admin for staff) */}
                     <Route
                       element={
                         <PrivateRoute
@@ -363,23 +366,26 @@ function App() {
                         />
                       }
                     >
-                      <Route path="/dashboard" element={<UserDashboardV2 />} />
-                      <Route path="/change-password" element={<ChangePassword />} />
-                      <Route path="/profile" element={<UserDashboardV2 />} />
-                      <Route path="/jobs" element={<RiderJobs />} />
-                      <Route path="/validate-job" element={<JobValidation />} />
-                      <Route path="/online-riders" element={<OnlineRiders />} />
-                      <Route path="/attendance" element={<RiderAttendance />} />
-                      <Route
-                        path="/contracts"
-                        element={<ContractsMarketplace />}
-                      />
-                      <Route path="/contracts/me" element={<MyContracts />} />
-                      <Route path="/wallet" element={<Wallet />} />
-                      <Route path="/loans" element={<Loans />} />
-                      <Route path="/goals" element={<PersonalGoals />} />
-                      {/* <Route path="/jobs/:id" element={<JobDetailsMUI />} /> */}
-                      <Route path="/jobs/:id" element={<JobDetails />} />
+                      <Route element={<AdminLayout />}>
+                        <Route path="/dashboard" element={<UserDashboardV2 />} />
+                        <Route path="/change-password" element={<ChangePassword />} />
+                        <Route path="/profile" element={<UserDashboardV2 />} />
+                        <Route path="/jobs" element={<RiderJobs />} />
+                        <Route path="/validate-job" element={<JobValidation />} />
+                        <Route path="/online-riders" element={<OnlineRiders />} />
+                        <Route path="/attendance" element={<RiderAttendance />} />
+                        <Route
+                          path="/contracts"
+                          element={<ContractsMarketplace />}
+                        />
+                        <Route path="/contracts/me" element={<MyContracts />} />
+                        <Route path="/wallet" element={<Wallet />} />
+                        <Route path="/fleet" element={<FleetManagement />} />
+                        <Route path="/loans" element={<Loans />} />
+                        <Route path="/goals" element={<PersonalGoals />} />
+                        <Route path="/jobs/:id" element={<JobDetails />} />
+                        <Route path="/calendar" element={<EventCalendarPage />} />
+                      </Route>
                     </Route>
 
                     {/* Admin area: layout with sidebar + nested gated routes */}
@@ -394,7 +400,10 @@ function App() {
                             "financeteam",
                           ]}
                         >
-                          <AdminLayout />
+                          <AdminLayout
+                            sidebarBrandTitle="Staff console"
+                            mobileBarTitle="Staff console"
+                          />
                         </PrivateRoute>
                       }
                     >
@@ -412,6 +421,14 @@ function App() {
                         element={
                           <PrivateRoute allowedRoles={["admin", "eventteam"]}>
                             <EventManagement />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="external-attendance"
+                        element={
+                          <PrivateRoute allowedRoles={["admin", "eventteam"]}>
+                            <AdminExternalAttendance />
                           </PrivateRoute>
                         }
                       />

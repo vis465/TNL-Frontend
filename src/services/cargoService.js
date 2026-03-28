@@ -1,6 +1,6 @@
 import axios from "../utils/axios";
 
-const CARGO_API_URL = "https://hub.nexonlogistics.com/api/cargos";
+const CARGO_API_URL = "https://hub.nexonlogistics.com/api/gamedata/cargos";
 
 export const fetchCargos = async () => {
   try {

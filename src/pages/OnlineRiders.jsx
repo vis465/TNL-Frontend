@@ -74,11 +74,7 @@ export default function OnlineRiders() {
   console.log(players);
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex' }}>
-      <AdminSidebar
-        mobileDrawerOpen={mobileDrawerOpen}
-        handleMobileDrawerClose={() => setMobileDrawerOpen(false)}
-        user={user}
-      />
+      
 
       <Box sx={{ flex: 1 }}>
         {isMobile && (

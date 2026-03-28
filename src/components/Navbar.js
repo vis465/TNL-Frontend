@@ -40,7 +40,9 @@ import {
   Brightness4,
   Brightness7,
   Dashboard,
+  CalendarMonth,
   AccountBalanceWallet,
+  GarageOutlined,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { styled } from '@mui/material/styles';
@@ -126,6 +128,8 @@ const Navbar = () => {
         { label: 'Events', path: '/events', icon: <Event /> },
         { label: 'Servers', path: '/servers', icon: <FireTruckOutlined /> },
         { label: 'Dashboard', path: '/dashboard', icon: <Dashboard /> },
+        { label: 'Fleet', path: '/fleet', icon: <GarageOutlined /> },
+        { label: 'Event calendar', path: '/calendar', icon: <CalendarMonth /> },
         ...(hasStaffRole ? [{ label: 'Admin', path: '/admin', icon: <AdminPanelSettings /> }] : []),
       ];
 
@@ -228,6 +232,15 @@ const Navbar = () => {
         >
           <AccountCircle fontSize="small" />
           Dashboard
+        </MenuItem>
+        <MenuItem
+          component={RouterLink}
+          to="/fleet"
+          onClick={handleUserMenuClose}
+          sx={{ gap: 1.5 }}
+        >
+          <GarageOutlined fontSize="small" />
+          Fleet
         </MenuItem>
         <MenuItem onClick={handleLogout} sx={{ gap: 1.5 }}>
           <Logout fontSize="small" />

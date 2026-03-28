@@ -12,92 +12,27 @@ import {
   SwipeableDrawer,
   IconButton,
   Tooltip,
+  Chip,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
+import Close from "@mui/icons-material/Close";
+import ChevronLeft from "@mui/icons-material/ChevronLeft";
+import ChevronRight from "@mui/icons-material/ChevronRight";
 import {
-  DashboardOutlined,
-  AssignmentTurnedInOutlined,
-  LeaderboardOutlined,
-  Assignment,
-  AccountBalanceWallet,
-  LocalShippingOutlined,
-  Event,
-  AdminPanelSettings,
-  People,
-  EmojiEventsOutlined,
-  AttachMoneyOutlined,
-  Timeline,
-  Close,
-  VerifiedUserOutlined,
-  PersonAdd,
-  Group,
-  MilitaryTech,
-  ChevronLeft,
-  ChevronRight,
-  WifiTethering,
-  RequestQuote,
-  Payments,
-} from "@mui/icons-material";
-
-const navItem = (to, label, icon, allowedRoles) => ({ to, label, icon, allowedRoles });
-
-// My area (user dashboard) – shown to all authenticated
-const myAreaItems = [
-  navItem("/dashboard", "Overview", <DashboardOutlined />, null),
-  navItem("/challenges", "Challenges", <AssignmentTurnedInOutlined />, null),
-  navItem("/leaderboard", "Leaderboards", <LeaderboardOutlined />, null),
-  navItem("/contracts", "Contracts", <Assignment />, null),
-  navItem("/wallet", "Wallet", <AccountBalanceWallet />, null),
-  navItem("/loans", "Loans", <RequestQuote />, ["rider", "admin", "financeteam"]),
-  navItem("/jobs", "Jobs", <LocalShippingOutlined />, null),
-  navItem("/validate-job", "Validate Job", <VerifiedUserOutlined />, null),
-  navItem("/online-riders", "Online Riders", <WifiTethering />, null),
-  navItem("/attendance", "Attendance", <Event />, null),
-];
-
-// Admin home
-const adminHome = navItem("/admin", "Admin Dashboard", <AdminPanelSettings />, ["admin", "eventteam", "hrteam", "financeteam"]);
-
-// Events & jobs
-const eventsAndJobsItems = [
-  navItem("/admin/jobs", "Job Management", <LocalShippingOutlined />, ["admin", "eventteam"]),
-  navItem("/admin/events", "Event Management", <Event />, ["admin", "eventteam"]),
-  navItem("/admin/analytics", "Analytics", <Timeline />, ["admin", "eventteam"]),
-];
-
-// People & HR
-const peopleItems = [
-  navItem("/admin/users", "User Management", <People />, ["admin", "hrteam"]),
-  navItem("/admin/create-user", "Create User", <PersonAdd />, ["admin", "hrteam"]),
-  navItem("/admin/user-approvals", "User Approvals", <VerifiedUserOutlined />, ["admin", "hrteam"]),
-  navItem("/admin/attendance", "Attendance Management", <Event />, ["admin", "hrteam"]),
-  navItem("/admin/riders", "Riders", <Group />, ["admin", "eventteam", "hrteam"]),
-  navItem("/admin/achievements", "Achievements", <EmojiEventsOutlined />, ["admin", "hrteam"]),
-];
-
-// Challenges
-const challengesItems = [
-  navItem("/admin/challenges", "Challenge Management", <AssignmentTurnedInOutlined />, ["admin", "eventteam", "hrteam", "financeteam"]),
-];
-
-// Finance
-const financeItems = [
-  navItem("/admin/bank", "Bank", <AttachMoneyOutlined />, ["admin", "financeteam"]),
-  navItem("/admin/contracts", "Contract Management", <Assignment />, ["admin", "eventteam", "financeteam"]),
-  navItem("/admin/loans", "Loan Management", <RequestQuote />, ["admin", "financeteam"]),
-  navItem("/admin/emis", "EMI Tracking", <Payments />, ["admin", "financeteam"]),
-];
-
-function canSee(userRole, allowedRoles) {
-  if (!allowedRoles) return true;
-  return userRole && allowedRoles.includes(userRole);
-}
+  MY_AREA_SECTIONS,
+  ADMIN_SECTIONS,
+  STAFF_ROLES,
+  userCanSeeNavItem,
+  isNavPathActive,
+} from "../config/adminNavigation";
 
 function NavListItem({ item, user, onClose, collapsed }) {
   const location = useLocation();
-  const active = location.pathname === item.to;
-  if (!canSee(user?.role, item.allowedRoles)) return null;
+  const active = isNavPathActive(location.pathname, item);
+  if (!userCanSeeNavItem(user?.role, item.roles)) return null;
+  const Icon = item.Icon;
+
   const button = (
     <ListItem disablePadding>
       <ListItemButton
@@ -121,12 +56,13 @@ function NavListItem({ item, user, onClose, collapsed }) {
             color: active ? "primary.main" : "inherit",
           }}
         >
-          {item.icon}
+          <Icon />
         </ListItemIcon>
-        {!collapsed && <ListItemText primary={item.label} />}
+        {!collapsed && <ListItemText primary={item.label} primaryTypographyProps={{ noWrap: true }} />}
       </ListItemButton>
     </ListItem>
   );
+
   if (collapsed) {
     return (
       <Tooltip title={item.label} placement="right" arrow>
@@ -143,11 +79,38 @@ function SectionHeader({ label, collapsed }) {
   }
   return (
     <Box sx={{ px: 2, py: 1.25 }}>
-      <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ letterSpacing: "0.05em" }}>
+      <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ letterSpacing: "0.06em" }}>
         {label}
       </Typography>
     </Box>
   );
+}
+
+function NavSection({ section, user, onClose, collapsed }) {
+  const visible = section.items.some((item) => userCanSeeNavItem(user?.role, item.roles));
+  if (!visible) return null;
+  return (
+    <>
+      <SectionHeader label={section.label} collapsed={collapsed} />
+      <List dense sx={{ pt: 0 }}>
+        {section.items.map((item) => (
+          <NavListItem key={`${section.id}-${item.to}`} item={item} user={user} onClose={onClose} collapsed={collapsed} />
+        ))}
+      </List>
+    </>
+  );
+}
+
+function formatRoleLabel(role) {
+  if (!role) return "";
+  const map = {
+    rider: "Rider",
+    admin: "Admin",
+    eventteam: "Event team",
+    hrteam: "HR team",
+    financeteam: "Finance team",
+  };
+  return map[role] || role.replace(/team$/, " team").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 const AdminSidebar = ({
@@ -156,81 +119,68 @@ const AdminSidebar = ({
   user,
   collapsed = false,
   onToggleCollapse,
+  /** Sidebar header (e.g. "Account" for members, "Staff console" for /admin) */
+  brandTitle = "Account",
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  const hasAdminAccess = user && ["admin", "eventteam", "hrteam", "financeteam"].includes(user.role);
-  const desktopWidth = collapsed ? 72 : 280;
+  const hasAdminAccess = user && STAFF_ROLES.includes(user.role);
+  const desktopWidth = collapsed ? 72 : 288;
 
   const SidebarContent = ({ isCollapsed }) => (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column", overflow: "auto" }}>
-      <Box sx={{ p: isCollapsed ? 1.5 : 2, display: "flex", alignItems: "center", justifyContent: isCollapsed ? "center" : "space-between" }}>
+      <Box
+        sx={{
+          p: isCollapsed ? 1.5 : 2,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: isCollapsed ? "center" : "space-between",
+          gap: 1,
+          flexWrap: "wrap",
+        }}
+      >
         {!isCollapsed && (
-          <Typography variant="subtitle1" fontWeight={700}>
-            Menu
-          </Typography>
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Typography variant="subtitle1" fontWeight={700} noWrap>
+              {brandTitle}
+            </Typography>
+            {user?.role && (
+              <Chip
+                size="small"
+                label={formatRoleLabel(user.role)}
+                variant="outlined"
+                sx={{ mt: 0.75, fontWeight: 600, textTransform: "none" }}
+              />
+            )}
+          </Box>
         )}
       </Box>
       <Divider />
 
       <SectionHeader label="MY AREA" collapsed={isCollapsed} />
-      <List dense sx={{ pt: 0 }}>
-        {myAreaItems.map((item) => (
-          <NavListItem key={item.to} item={item} user={user} onClose={handleMobileDrawerClose} collapsed={isCollapsed} />
-        ))}
-      </List>
+      {MY_AREA_SECTIONS.map((section) => (
+        <NavSection
+          key={section.id}
+          section={section}
+          user={user}
+          onClose={handleMobileDrawerClose}
+          collapsed={isCollapsed}
+        />
+      ))}
 
       {hasAdminAccess && (
         <>
           <Divider sx={{ my: 0.5 }} />
           <SectionHeader label="ADMIN" collapsed={isCollapsed} />
-          <List dense sx={{ pt: 0 }}>
-            <NavListItem item={adminHome} user={user} onClose={handleMobileDrawerClose} collapsed={isCollapsed} />
-          </List>
-
-          {eventsAndJobsItems.some((i) => canSee(user?.role, i.allowedRoles)) && (
-            <>
-              <SectionHeader label="EVENTS & JOBS" collapsed={isCollapsed} />
-              <List dense sx={{ pt: 0 }}>
-                {eventsAndJobsItems.map((item) => (
-                  <NavListItem key={item.to} item={item} user={user} onClose={handleMobileDrawerClose} collapsed={isCollapsed} />
-                ))}
-              </List>
-            </>
-          )}
-
-          {peopleItems.some((i) => canSee(user?.role, i.allowedRoles)) && (
-            <>
-              <SectionHeader label="PEOPLE & HR" collapsed={isCollapsed} />
-              <List dense sx={{ pt: 0 }}>
-                {peopleItems.map((item) => (
-                  <NavListItem key={item.to} item={item} user={user} onClose={handleMobileDrawerClose} collapsed={isCollapsed} />
-                ))}
-              </List>
-            </>
-          )}
-
-          {challengesItems.some((i) => canSee(user?.role, i.allowedRoles)) && (
-            <>
-              <SectionHeader label="CHALLENGES" collapsed={isCollapsed} />
-              <List dense sx={{ pt: 0 }}>
-                {challengesItems.map((item) => (
-                  <NavListItem key={item.to} item={item} user={user} onClose={handleMobileDrawerClose} collapsed={isCollapsed} />
-                ))}
-              </List>
-            </>
-          )}
-
-          {financeItems.some((i) => canSee(user?.role, i.allowedRoles)) && (
-            <>
-              <SectionHeader label="FINANCE" collapsed={isCollapsed} />
-              <List dense sx={{ pt: 0 }}>
-                {financeItems.map((item) => (
-                  <NavListItem key={item.to} item={item} user={user} onClose={handleMobileDrawerClose} collapsed={isCollapsed} />
-                ))}
-              </List>
-            </>
-          )}
+          {ADMIN_SECTIONS.map((section) => (
+            <NavSection
+              key={section.id}
+              section={section}
+              user={user}
+              onClose={handleMobileDrawerClose}
+              collapsed={isCollapsed}
+            />
+          ))}
         </>
       )}
 
@@ -250,7 +200,6 @@ const AdminSidebar = ({
 
   return (
     <>
-      {/* Desktop: in-flow sidebar (below navbar), collapsible */}
       <Box
         component="aside"
         sx={{
@@ -276,6 +225,7 @@ const AdminSidebar = ({
           display: { xs: "block", md: "none" },
           "& .MuiDrawer-paper": {
             width: 320,
+            maxWidth: "100vw",
             boxSizing: "border-box",
             borderRight: 1,
             borderColor: "divider",
@@ -284,7 +234,7 @@ const AdminSidebar = ({
       >
         <Box sx={{ p: 2, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <Typography variant="h6" fontWeight={700}>
-            Menu
+            {brandTitle}
           </Typography>
           <IconButton onClick={handleMobileDrawerClose} aria-label="close menu">
             <Close />

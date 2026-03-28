@@ -49,7 +49,7 @@ export default function AdminContracts() {
     [storeInstances, instancesStatus, statusFilter]
   );
 
-  const { cityOptions, companyOptionsByCity, cargoOptions } = useExternalData();
+  const { cityOptions, companyOptionsByCity, cargoOptions, ensureCargoOptions } = useExternalData();
 
   useEffect(() => {
     dispatch(fetchTemplates());
@@ -58,6 +58,11 @@ export default function AdminContracts() {
   useEffect(() => {
     dispatch(fetchInstancesByStatus(statusFilter));
   }, [dispatch, statusFilter]);
+
+  // AdminContracts needs cargo list for criteria autocompletes.
+  useEffect(() => {
+    ensureCargoOptions?.();
+  }, [ensureCargoOptions]);
 
   useEffect(() => { setProgressVisibleCount(PROGRESS_PAGE_SIZE); }, [statusFilter]);
   useEffect(() => { setProgressVisibleCount(PROGRESS_PAGE_SIZE); }, [progressSearch]);
@@ -449,9 +454,24 @@ export default function AdminContracts() {
                 const tpl = c.templateId || {};
                 const tasks = Array.isArray(tpl.tasks) ? tpl.tasks.slice().sort((a, b) => (a.order || 0) - (b.order || 0)) : [];
                 const progress = Array.isArray(c.progress) ? c.progress : [];
-                const doneCount = progress.filter(p => p.status === 'done').length;
-                const total = Math.max(tasks.length, progress.length, 1);
-                const pct = Math.round((doneCount / total) * 100);
+                const isDoneStatus = (status) => status === 'done' || status === 'completed';
+                let doneCount = 0;
+                let total = 1;
+
+                if (tasks.length > 0) {
+                  total = tasks.length;
+                  const doneOrders = new Set(
+                    progress
+                      .filter((p) => isDoneStatus(p.status))
+                      .map((p) => p.order)
+                  );
+                  doneCount = tasks.reduce((sum, t) => sum + (doneOrders.has(t.order) ? 1 : 0), 0);
+                } else {
+                  total = Math.max(progress.length, 1);
+                  doneCount = progress.filter((p) => isDoneStatus(p.status)).length;
+                }
+
+                const pct = Math.min(100, Math.round((doneCount / total) * 100));
                 const riderName = c?.riderId?.tmpIngameName || c?.riderId?.name || c?.riderId?.steamName || c?.riderId?._id || 'Unknown Rider';
                 const templateTitle = tpl.title || 'Untitled Template';
                 const isExpanded = expandedProgressId === c._id;
@@ -511,7 +531,7 @@ export default function AdminContracts() {
                         <Stack spacing={0.5}>
                           {tasks.length > 0 ? tasks.map((task, idx) => {
                             const prog = progress.find(pr => pr.order === task.order) ?? progress[idx];
-                            const done = prog?.status === 'done';
+                            const done = isDoneStatus(prog?.status);
                             return (
                               <Stack key={task.order ?? idx} direction="row" alignItems="center" spacing={1}>
                                 {done ? <CheckCircleIcon color="success" fontSize="small" /> : <RadioButtonUncheckedIcon fontSize="small" color="disabled" />}
@@ -538,7 +558,7 @@ export default function AdminContracts() {
                             );
                           }) : progress.map((p, idx) => (
                             <Stack key={idx} direction="row" alignItems="center" spacing={1}>
-                              {p.status === 'done' ? <CheckCircleIcon color="success" fontSize="small" /> : <RadioButtonUncheckedIcon fontSize="small" color="disabled" />}
+                              {isDoneStatus(p.status) ? <CheckCircleIcon color="success" fontSize="small" /> : <RadioButtonUncheckedIcon fontSize="small" color="disabled" />}
                               <Typography variant="body2">Task {p.order ?? idx + 1}: {p.status}</Typography>
                             </Stack>
                           ))}

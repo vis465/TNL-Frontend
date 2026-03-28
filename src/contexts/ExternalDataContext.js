@@ -19,22 +19,24 @@ export const ExternalDataProvider = ({ children }) => {
   const [cargoOptions, setCargoOptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [lastFetch, setLastFetch] = useState(null);
+  const [lastMapFetch, setLastMapFetch] = useState(null);
+  const [lastCargoFetch, setLastCargoFetch] = useState(null);
 
   // Cache duration in milliseconds (5 minutes)
   const CACHE_DURATION = 5 * 60 * 1000;
 
-  const isCacheValid = () => {
-    if (!lastFetch) return false;
-    return Date.now() - lastFetch < CACHE_DURATION;
+  const isMapCacheValid = () => {
+    if (!lastMapFetch) return false;
+    return Date.now() - lastMapFetch < CACHE_DURATION;
   };
 
-  const loadExternalData = async (forceRefresh = false) => {
-    // Check if we have valid cached data
-    if (!forceRefresh && isCacheValid() && cityOptions.length > 0) {
-      setLoading(false);
-      return;
-    }
+  const isCargoCacheValid = () => {
+    if (!lastCargoFetch) return false;
+    return Date.now() - lastCargoFetch < CACHE_DURATION;
+  };
+
+  const loadMapData = async (forceRefresh = false) => {
+    if (!forceRefresh && isMapCacheValid() && cityOptions.length > 0) return;
 
     try {
       setLoading(true);
@@ -45,40 +47,65 @@ export const ExternalDataProvider = ({ children }) => {
       const cities = md?.mapData?.cities || [];
       setMapData({ cities });
 
-      // Store city options with both name and id - optimize with useMemo-like processing
+      // Store city options with both name and id
       const cityOpts = cities
-        .filter(c => c.name && c.id) // Filter out invalid entries first
+        .filter(c => c.name && c.id)
         .map(c => ({ name: c.name, id: c.id }))
         .sort((a, b) => a.name.localeCompare(b.name));
       setCityOptions(cityOpts);
 
-      // Store company options by city - optimize processing
+      // Store company options by city
       const byCity = {};
       cities.forEach(c => {
         if (c.name && c.companies) {
           byCity[c.name] = c.companies
-            .filter(co => co.name && co.id) // Filter out invalid entries first
+            .filter(co => co.name && co.id)
             .map(co => ({ name: co.name, id: co.id }))
             .sort((a, b) => a.name.localeCompare(b.name));
         }
       });
       setCompanyOptionsByCity(byCity);
 
-      // Load cargo options
-      const cargos = await fetchCargos();
-      setCargoOptions(cargos);
-
-      setLastFetch(Date.now());
+      setLastMapFetch(Date.now());
     } catch (err) {
-      console.error('Error loading external data:', err);
-      setError(err.message || 'Failed to load external data');
+      console.error('Error loading map external data:', err);
+      setError(err.message || 'Failed to load map data');
     } finally {
       setLoading(false);
     }
   };
 
+  const loadCargoData = async (forceRefresh = false) => {
+    if (!forceRefresh && isCargoCacheValid() && cargoOptions.length > 0) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const cargos = await fetchCargos();
+      setCargoOptions(cargos);
+      setLastCargoFetch(Date.now());
+    } catch (err) {
+      console.error('Error loading cargo options:', err);
+      setError(err.message || 'Failed to load cargo options');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Loads both (kept for backward compatibility with `refreshData`)
+  const loadExternalData = async (forceRefresh = false) => {
+    await loadMapData(forceRefresh);
+    await loadCargoData(forceRefresh);
+  };
+
   const refreshData = () => {
     return loadExternalData(true);
+  };
+
+  // Lazy entry point so we don't call the cargo API on every page load.
+  const ensureCargoOptions = async () => {
+    await loadCargoData(false);
   };
 
   const getCityById = useCallback((id) => {
@@ -100,7 +127,8 @@ export const ExternalDataProvider = ({ children }) => {
 
   // Load data on mount
   useEffect(() => {
-    loadExternalData();
+    // Cargo is lazy-loaded on demand.
+    loadMapData(false);
   }, []);
 
   const value = useMemo(() => ({
@@ -113,10 +141,12 @@ export const ExternalDataProvider = ({ children }) => {
     // State
     loading,
     error,
-    lastFetch,
+    lastMapFetch,
+    lastCargoFetch,
     
     // Actions
     loadExternalData,
+    ensureCargoOptions,
     refreshData,
     
     // Utilities
@@ -124,7 +154,7 @@ export const ExternalDataProvider = ({ children }) => {
     getCompanyById,
     getCitiesByGame,
     getCompaniesByCity,
-    isCacheValid
+    isCacheValid: isMapCacheValid
   }), [
     mapData,
     cityOptions,
@@ -132,11 +162,13 @@ export const ExternalDataProvider = ({ children }) => {
     cargoOptions,
     loading,
     error,
-    lastFetch,
+    lastMapFetch,
+    lastCargoFetch,
     getCityById,
     getCompanyById,
     getCitiesByGame,
-    getCompaniesByCity
+    getCompaniesByCity,
+    ensureCargoOptions
   ]);
 
   return (

@@ -11,135 +11,25 @@ import {
   useMediaQuery,
   alpha,
   Chip,
+  Stack,
 } from '@mui/material';
-import {
-  DirectionsCar,
-  People,
-  Analytics,
-  Assignment,
-  Timeline,
-  AccountBalance,
-  MilitaryTech,
-  HowToReg,
-  PersonAdd,
-  Group,
-  Event,
-  EmojiEvents,
-} from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import {
+  ADMIN_DASHBOARD_CARDS,
+  ADMIN_DASHBOARD_GROUP_ORDER,
+  userCanSeeNavItem,
+} from '../config/adminNavigation';
 
-const cardConfig = [
-  {
-    group: 'Events & Jobs',
-    title: 'Event Management',
-    description: 'Manage events, slots, bookings and special events.',
-    to: '/admin/events',
-    icon: Event,
-    color: 'primary',
-    roles: ['admin', 'eventteam'],
-  },
-  {
-    group: 'Events & Jobs',
-    title: 'Job Management',
-    description: 'Browse and manage jobs from TruckersHub.',
-    to: '/admin/jobs',
-    icon: DirectionsCar,
-    color: 'warning',
-    roles: ['admin', 'eventteam'],
-  },
-  {
-    group: 'Events & Jobs',
-    title: 'Analytics',
-    description: 'Event and engagement analytics.',
-    to: '/admin/analytics',
-    icon: Analytics,
-    color: 'info',
-    roles: ['admin', 'eventteam'],
-  },
-  {
-    group: 'People & HR',
-    title: 'User Management',
-    description: 'Manage user accounts and roles.',
-    to: '/admin/users',
-    icon: People,
-    color: 'primary',
-    roles: ['admin', 'hrteam'],
-  },
-  {
-    group: 'People & HR',
-    title: 'Create User',
-    description: 'Create a new user account.',
-    to: '/admin/create-user',
-    icon: PersonAdd,
-    color: 'secondary',
-    roles: ['admin', 'hrteam'],
-  },
-  {
-    group: 'People & HR',
-    title: 'User Approvals',
-    description: 'Review and approve pending registrations.',
-    to: '/admin/user-approvals',
-    icon: HowToReg,
-    color: 'primary',
-    roles: ['admin', 'hrteam'],
-  },
-  {
-    group: 'People & HR',
-    title: 'Attendance',
-    description: 'Member attendance and reports.',
-    to: '/admin/attendance',
-    icon: Timeline,
-    color: 'success',
-    roles: ['admin', 'hrteam'],
-  },
-  {
-    group: 'People & HR',
-    title: 'Riders',
-    description: 'Manage rider profiles and data.',
-    to: '/admin/riders',
-    icon: Group,
-    color: 'info',
-    roles: ['admin', 'eventteam', 'hrteam'],
-  },
-  {
-    group: 'People & HR',
-    title: 'Achievements',
-    description: 'Issue and manage rider achievements.',
-    to: '/admin/achievements',
-    icon: MilitaryTech,
-    color: 'warning',
-    roles: ['admin', 'hrteam'],
-  },
-  {
-    group: 'Challenges',
-    title: 'Challenge Management',
-    description: 'Create and manage driving challenges.',
-    to: '/admin/challenges',
-    icon: EmojiEvents,
-    color: 'secondary',
-    roles: ['admin', 'eventteam', 'hrteam', 'financeteam'],
-  },
-  {
-    group: 'Finance',
-    title: 'Bank',
-    description: 'Bank balance, transactions and payouts.',
-    to: '/admin/bank',
-    icon: AccountBalance,
-    color: 'success',
-    roles: ['admin', 'financeteam'],
-  },
-  {
-    group: 'Finance',
-    title: 'Contracts',
-    description: 'Contract templates and management.',
-    to: '/admin/contracts',
-    icon: Assignment,
-    color: 'secondary',
-    roles: ['admin', 'eventteam', 'financeteam'],
-  },
-];
-
-const groupOrder = ['Events & Jobs', 'People & HR', 'Challenges', 'Finance'];
+function formatStaffRole(role) {
+  if (!role) return '';
+  const map = {
+    admin: 'Admin',
+    eventteam: 'Event team',
+    hrteam: 'HR team',
+    financeteam: 'Finance team',
+  };
+  return map[role] || role;
+}
 
 function AdminCard({ item, color, theme }) {
   const Icon = item.icon;
@@ -202,8 +92,8 @@ const AdminDashboard = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const role = user?.role;
 
-  const allowedCards = cardConfig.filter((c) => role && c.roles.includes(role));
-  const byGroup = groupOrder.reduce((acc, group) => {
+  const allowedCards = ADMIN_DASHBOARD_CARDS.filter((c) => userCanSeeNavItem(role, c.roles));
+  const byGroup = ADMIN_DASHBOARD_GROUP_ORDER.reduce((acc, group) => {
     acc[group] = allowedCards.filter((c) => c.group === group);
     return acc;
   }, {});
@@ -215,7 +105,7 @@ const AdminDashboard = () => {
           display: 'flex',
           flexWrap: 'wrap',
           justifyContent: 'space-between',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           gap: 2,
           mb: 4,
         }}
@@ -227,23 +117,35 @@ const AdminDashboard = () => {
             fontWeight={700}
             gutterBottom
           >
-            Admin Dashboard
+            Admin dashboard
           </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Quick access to management tools
+          <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 640 }}>
+            Shortcuts match your role. Use the sidebar for the full menu (personal tools under{' '}
+            <strong>My area</strong>, staff tools by section).
           </Typography>
         </Box>
         {user && (
-          <Chip
-            label={user.username}
-            size="medium"
-            variant="outlined"
-            sx={{ fontWeight: 500, textTransform: 'capitalize' }}
-          />
+          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+            <Chip
+              label={user.username}
+              size="medium"
+              variant="outlined"
+              sx={{ fontWeight: 500 }}
+            />
+            {role && (
+              <Chip
+                label={formatStaffRole(role)}
+                size="medium"
+                color="primary"
+                variant="filled"
+                sx={{ fontWeight: 600, textTransform: 'none' }}
+              />
+            )}
+          </Stack>
         )}
       </Box>
 
-      {groupOrder.map((group) => {
+      {ADMIN_DASHBOARD_GROUP_ORDER.map((group) => {
         const items = byGroup[group];
         if (!items?.length) return null;
         return (
