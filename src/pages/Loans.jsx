@@ -21,7 +21,7 @@ import {
 } from '@mui/material';
 import { createLoan, forepayUpcomingEmi, getLoanPlans, getMyLoanInstallments, getMyLoans } from '../services/loanService';
 
-const MAX_LOAN_PRINCIPAL = 10000;
+const MAX_LOAN_PRINCIPAL = 500000;
 
 const Loans = () => {
   const [principal, setPrincipal] = useState(1000);

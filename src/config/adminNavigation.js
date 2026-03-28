@@ -7,9 +7,10 @@ import DashboardOutlined from '@mui/icons-material/DashboardOutlined';
 import LockResetOutlined from '@mui/icons-material/LockResetOutlined';
 import LocalShippingOutlined from '@mui/icons-material/LocalShippingOutlined';
 import VerifiedUserOutlined from '@mui/icons-material/VerifiedUserOutlined';
-import GarageOutlined from '@mui/icons-material/GarageOutlined';
+
 import WifiTethering from '@mui/icons-material/WifiTethering';
 import AccountBalanceWalletOutlined from '@mui/icons-material/AccountBalanceWalletOutlined';
+import StorefrontOutlined from '@mui/icons-material/StorefrontOutlined';
 import AssignmentOutlined from '@mui/icons-material/AssignmentOutlined';
 import FolderSharedOutlined from '@mui/icons-material/FolderSharedOutlined';
 import RequestQuoteOutlined from '@mui/icons-material/RequestQuoteOutlined';
@@ -33,6 +34,7 @@ import EmojiEventsOutlined from '@mui/icons-material/EmojiEventsOutlined';
 import AttachMoneyOutlined from '@mui/icons-material/AttachMoneyOutlined';
 import PaymentsOutlined from '@mui/icons-material/PaymentsOutlined';
 import DirectionsCar from '@mui/icons-material/DirectionsCar';
+import GarageOutlined from '@mui/icons-material/GarageOutlined';
 
 /** Staff roles that can open /admin (matches App.js admin layout gate). */
 export const STAFF_ROLES = ['admin', 'eventteam', 'hrteam', 'financeteam'];
@@ -55,7 +57,7 @@ export const MY_AREA_SECTIONS = [
     items: [
       { to: '/jobs', label: 'VTC jobs', Icon: LocalShippingOutlined, roles: null },
       { to: '/validate-job', label: 'Validate job', Icon: VerifiedUserOutlined, roles: null },
-      
+
       { to: '/fleet', label: 'Fleet', Icon: GarageOutlined, roles: null },
       { to: '/online-riders', label: 'Online riders', Icon: WifiTethering, roles: null },
     ],
@@ -65,6 +67,13 @@ export const MY_AREA_SECTIONS = [
     label: 'Economy',
     items: [
       { to: '/wallet', label: 'Wallet', Icon: AccountBalanceWalletOutlined, roles: null },
+      {
+        to: '/trucks/marketplace',
+        label: 'Truck marketplace',
+        Icon: StorefrontOutlined,
+        roles: null,
+        matchExact: true,
+      },
       {
         to: '/contracts',
         label: 'Contract marketplace',
@@ -132,6 +141,12 @@ export const ADMIN_SECTIONS = [
         to: '/admin/analytics',
         label: 'Analytics',
         Icon: AnalyticsOutlined,
+        roles: ['admin', 'eventteam'],
+      },
+      {
+        to: '/admin/trucks',
+        label: 'Truck catalogue',
+        Icon: GarageOutlined,
         roles: ['admin', 'eventteam'],
       },
     ],
@@ -225,6 +240,15 @@ export const ADMIN_DASHBOARD_CARDS = [
     to: '/admin/analytics',
     icon: AnalyticsOutlined,
     color: 'info',
+    roles: ['admin', 'eventteam'],
+  },
+  {
+    group: 'Events & operations',
+    title: 'Truck catalogue',
+    description: 'Create, edit, and delete marketplace trucks.',
+    to: '/admin/trucks',
+    icon: GarageOutlined,
+    color: 'secondary',
     roles: ['admin', 'eventteam'],
   },
   {

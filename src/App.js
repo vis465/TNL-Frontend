@@ -97,6 +97,8 @@ import AdminEmis from "./pages/AdminEmis";
 import EventCalendarPage from "./pages/EventCalendarPage";
 import AdminExternalAttendance from "./pages/AdminExternalAttendance";
 import FleetManagement from "./pages/FleetManagement";
+import TruckMarketplace from "./pages/TruckMarketplace";
+import AdminTrucks from "./pages/AdminTrucks";
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -381,6 +383,7 @@ function App() {
                         <Route path="/contracts/me" element={<MyContracts />} />
                         <Route path="/wallet" element={<Wallet />} />
                         <Route path="/fleet" element={<FleetManagement />} />
+                        <Route path="/trucks/marketplace" element={<TruckMarketplace />} />
                         <Route path="/loans" element={<Loans />} />
                         <Route path="/goals" element={<PersonalGoals />} />
                         <Route path="/jobs/:id" element={<JobDetails />} />
@@ -437,6 +440,14 @@ function App() {
                         element={
                           <PrivateRoute allowedRoles={["admin", "eventteam"]}>
                             <AnalyticsDashboard />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="trucks"
+                        element={
+                          <PrivateRoute allowedRoles={["admin", "eventteam"]}>
+                            <AdminTrucks />
                           </PrivateRoute>
                         }
                       />

@@ -23,6 +23,8 @@ import GarageOutlinedIcon from '@mui/icons-material/GarageOutlined';
 import StraightenIcon from '@mui/icons-material/Straighten';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import { Link as RouterLink } from 'react-router-dom';
+import TruckThumbAvatar from '../components/TruckThumbAvatar';
 import { getOwnedTrucksFleet, getFleetDeliveries } from '../services/fleetService';
 
 const T = {
@@ -114,7 +116,7 @@ export default function FleetManagement() {
   const totalDeliveries = trucks.reduce((sum, t) => sum + (Number(t.deliveriesCount) || 0), 0);
 
   return (
-    <Box sx={{ bgcolor: T.bg, minHeight: '100%', py: 3 }}>
+    <Box sx={{ minHeight: '100%', py: 3 }}>
       <Container maxWidth="lg">
         <Stack direction="row" alignItems="flex-start" justifyContent="space-between" flexWrap="wrap" gap={2} sx={{ mb: 3 }}>
           <Box>
@@ -161,9 +163,17 @@ export default function FleetManagement() {
         )}
 
         {!loading && !trucks.length && !error && (
-          <Alert severity="info" sx={{ mb: 2, bgcolor: T.surface, border: `1px solid ${T.border}`, color: T.text }}>
-            You do not own any marketplace trucks yet. When you purchase one, deliveries completed in-game with that
-            truck will add to its odometer here.
+          <Alert
+            severity="info"
+            sx={{ mb: 2, bgcolor: T.surface, border: `1px solid ${T.border}`, color: T.text }}
+            action={
+              <Button color="inherit" size="small" variant="outlined" component={RouterLink} to="/trucks/marketplace">
+                Truck marketplace
+              </Button>
+            }
+          >
+            You do not own any marketplace trucks yet. Buy a model in the truck marketplace; deliveries completed
+            in-game with that truck will add to its odometer here.
           </Alert>
         )}
 
@@ -222,17 +232,10 @@ export default function FleetManagement() {
                       }}
                     >
                       <CardContent sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                        <Box
-                          component="img"
-                          src={t.image || t.brandLogo || '/logo192.png'}
-                          alt=""
-                          sx={{
-                            width: 72,
-                            height: 48,
-                            objectFit: 'contain',
-                            borderRadius: 1,
-                            bgcolor: 'rgba(255,255,255,0.04)'
-                          }}
+                        <TruckThumbAvatar
+                          key={`${id}-${t.image || ''}-${t.brandLogo || ''}`}
+                          image={t.image}
+                          brandLogo={t.brandLogo}
                         />
                         <Box sx={{ flex: 1, minWidth: 0 }}>
                           <Typography sx={{ fontWeight: 700, color: T.text }} noWrap>

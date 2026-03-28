@@ -44,10 +44,27 @@ import {
   Assignment as ContractIcon,
   People as AttendanceIcon,
   List as RecentIcon,
-  CalendarMonth as CalendarMonthIcon
+  CalendarMonth as CalendarMonthIcon,
+  LocalShipping as LocalShippingIcon
 } from '@mui/icons-material';
 
 const COLORS = ['#2196F3', '#4CAF50', '#FFC107', '#F44336', '#9C27B0', '#00BCD4'];
+
+/** Jobs / fleet data sometimes store brand/model as { id, name }; React cannot render plain objects. */
+function formatAnalyticsScalar(value, fallback = '—') {
+  if (value == null || value === '') return fallback;
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (typeof value === 'object') {
+    if (typeof value.name === 'string' && value.name.trim()) return value.name.trim();
+    if (typeof value.label === 'string' && value.label.trim()) return value.label.trim();
+    if (value.id != null && typeof value.name === 'string') return String(value.name).trim();
+    if (value.id != null) return String(value.id);
+  }
+  return fallback;
+}
+
 const STATUS_COLORS = {
   approved: '#4CAF50',
   pending: '#FFC107',
@@ -79,7 +96,8 @@ const AnalyticsDashboard = () => {
       recent: [],
       topHostVtcs: [],
       inviteBookings: { pending: 0, approved: 0, rejected: 0, cancelled: 0, total: 0, approvalRatePercent: 0 }
-    }
+    },
+    truckAnalytics: null
   });
   const [activeTab, setActiveTab] = useState(0);
 
@@ -145,7 +163,8 @@ const AnalyticsDashboard = () => {
           recent: [],
           topHostVtcs: [],
           inviteBookings: { pending: 0, approved: 0, rejected: 0, cancelled: 0, total: 0, approvalRatePercent: 0 }
-        }
+        },
+        truckAnalytics: response.data.truckAnalytics ?? null
       });
     } catch (err) {
       console.error('Error fetching analytics:', err);
@@ -218,6 +237,23 @@ const AnalyticsDashboard = () => {
   const topAttendees = attendanceStats.topAttendees || [];
   const ext = stats.externalAttendance || {};
   const extInvite = ext.inviteBookings || {};
+  const ta = stats.truckAnalytics;
+  const ownershipByTruckChart = (ta?.ownership?.byTruck || [])
+    .slice(0, 12)
+    .map((r) => {
+      const display =
+        formatAnalyticsScalar(r.displayName, '') ||
+        `${formatAnalyticsScalar(r.brandName, '')} ${formatAnalyticsScalar(r.modelName, '')}`.trim() ||
+        formatAnalyticsScalar(r.key, '—');
+      return {
+        name: String(display).slice(0, 26),
+        owners: Number(r.ownerCount) || 0,
+      };
+    });
+  const topBrandsChart = (ta?.jobUsage?.topBrands || []).map((b) => ({
+    name: String(formatAnalyticsScalar(b.brand, '—')).slice(0, 20),
+    jobs: Number(b.jobsCount) || 0,
+  }));
   const eventAttendanceList = attendanceStats.eventAttendance && attendanceStats.eventAttendance.length
     ? attendanceStats.eventAttendance
     : (stats.eventAttendance || []).map(e => ({ eventName: e.name, confirmed: e.attendance }));
@@ -260,6 +296,7 @@ const AnalyticsDashboard = () => {
           <Tab icon={<AttendanceIcon />} label="Attendances" />
           <Tab icon={<RecentIcon />} label="Recent Bookings" />
           <Tab icon={<CalendarMonthIcon />} label="External attendance" />
+          <Tab icon={<LocalShippingIcon />} label="Trucks" />
         </Tabs>
       </Box>
 
@@ -296,6 +333,47 @@ const AnalyticsDashboard = () => {
               </Paper>
             </Grid>
           </Grid>
+          {stats.truckAnalytics && !stats.truckAnalytics.error && (
+            <Grid container spacing={2} mb={3}>
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Truck marketplace and fleet
+                </Typography>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Paper elevation={2} sx={{ p: 2, height: '100%' }}>
+                  <Typography color="textSecondary" variant="body2">Marketplace models (active)</Typography>
+                  <Typography variant="h5">{stats.truckAnalytics.marketplace?.activeCatalogCount ?? 0}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Stock units: {stats.truckAnalytics.marketplace?.totalStock ?? 0}
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Paper elevation={2} sx={{ p: 2, height: '100%' }}>
+                  <Typography color="textSecondary" variant="body2">Members with owned trucks</Typography>
+                  <Typography variant="h5">{stats.truckAnalytics.ownership?.summary?.usersWithOwnedTrucks ?? 0}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Ownership rows: {stats.truckAnalytics.ownership?.summary?.totalOwnershipRecords ?? 0}
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Paper elevation={2} sx={{ p: 2, height: '100%' }}>
+                  <Typography color="textSecondary" variant="body2">Jobs (truck usage sample)</Typography>
+                  <Typography variant="h5">{stats.truckAnalytics.jobUsage?.summary?.totalJobsAnalyzed ?? 0}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Models tracked: {stats.truckAnalytics.jobUsage?.summary?.trackedTruckModels ?? 0}
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3} display="flex" alignItems="center">
+                <Button variant="outlined" fullWidth onClick={() => setActiveTab(8)} startIcon={<LocalShippingIcon />}>
+                  Open Trucks tab
+                </Button>
+              </Grid>
+            </Grid>
+          )}
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
               <Paper sx={{ p: 3, height: '100%' }}>
@@ -892,6 +970,177 @@ const AnalyticsDashboard = () => {
               </Paper>
             </Grid>
           </Grid>
+        </Box>
+      )}
+
+      {activeTab === 8 && (
+        <Box>
+          {!ta && (
+            <Typography color="text.secondary">No truck analytics in this response.</Typography>
+          )}
+          {ta?.error && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              Truck marketplace / ownership data could not be loaded: {ta.message || 'Unknown error'}
+            </Alert>
+          )}
+          {ta && !ta.error && (
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6} md={3}>
+                <Paper elevation={2} sx={{ p: 2 }}>
+                  <Typography color="textSecondary" variant="body2">Catalog (active models)</Typography>
+                  <Typography variant="h4">{ta.marketplace?.activeCatalogCount ?? 0}</Typography>
+                  <Typography variant="caption" display="block" color="text.secondary">
+                    Inactive listed: {ta.marketplace?.inactiveCatalogCount ?? 0}
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Paper elevation={2} sx={{ p: 2 }}>
+                  <Typography color="textSecondary" variant="body2">Total marketplace stock</Typography>
+                  <Typography variant="h4">{ta.marketplace?.totalStock ?? 0}</Typography>
+                  <Typography variant="caption" display="block" color="text.secondary">
+                    Avg list price: {ta.marketplace?.avgListPrice ?? 0}
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Paper elevation={2} sx={{ p: 2 }}>
+                  <Typography color="textSecondary" variant="body2">Fleet ownership</Typography>
+                  <Typography variant="h4">{ta.ownership?.summary?.usersWithOwnedTrucks ?? 0}</Typography>
+                  <Typography variant="caption" display="block" color="text.secondary">
+                    Unique models owned: {ta.ownership?.summary?.uniqueOwnedTruckModels ?? 0} · Records:{' '}
+                    {ta.ownership?.summary?.totalOwnershipRecords ?? 0}
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Paper elevation={2} sx={{ p: 2 }}>
+                  <Typography color="textSecondary" variant="body2">Job-linked truck usage</Typography>
+                  <Typography variant="h4">{ta.jobUsage?.summary?.totalJobsAnalyzed ?? 0}</Typography>
+                  <Typography variant="caption" display="block" color="text.secondary">
+                    Distance (sum): {Math.round(ta.jobUsage?.summary?.totalDistance ?? 0)} · Revenue (sum):{' '}
+                    {Math.round(ta.jobUsage?.summary?.totalRevenue ?? 0)}
+                  </Typography>
+                </Paper>
+              </Grid>
+
+              <Grid item xs={12} md={4}>
+                <Paper sx={{ p: 2 }}>
+                  <Typography variant="h6" gutterBottom>
+                    Catalog by game type
+                  </Typography>
+                  <TableContainer>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Game</TableCell>
+                          <TableCell align="right">Active models</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {Object.entries(ta.marketplace?.byGameType || {}).map(([game, count]) => (
+                          <TableRow key={String(game)}>
+                            <TableCell>{formatAnalyticsScalar(game, String(game))}</TableCell>
+                            <TableCell align="right">{typeof count === 'number' ? count : Number(count) || 0}</TableCell>
+                          </TableRow>
+                        ))}
+                        {(!ta.marketplace?.byGameType || Object.keys(ta.marketplace.byGameType).length === 0) && (
+                          <TableRow>
+                            <TableCell colSpan={2}>No catalog rows</TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Paper>
+              </Grid>
+
+              <Grid item xs={12} md={8}>
+                <Paper sx={{ p: 2 }}>
+                  <Typography variant="h6" gutterBottom>
+                    Top owned models (by member count)
+                  </Typography>
+                  <Box sx={{ height: 320 }}>
+                    {ownershipByTruckChart.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={ownershipByTruckChart} layout="vertical" margin={{ left: 12, right: 20 }}>
+                          <CartesianGrid strokeDasharray="3 3" horizontal vertical={false} />
+                          <XAxis type="number" />
+                          <YAxis type="category" dataKey="name" width={130} tick={{ fontSize: 11 }} />
+                          <Tooltip formatter={(v) => (typeof v === 'number' ? v : formatAnalyticsScalar(v, String(v)))} />
+                          <Bar dataKey="owners" name="Owners" fill="#5c6bc0" radius={[0, 4, 4, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <Typography color="text.secondary">No ownership data yet.</Typography>
+                    )}
+                  </Box>
+                </Paper>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Paper sx={{ p: 2 }}>
+                  <Typography variant="h6" gutterBottom>
+                    Job volume by brand (top 10)
+                  </Typography>
+                  <Box sx={{ height: 300 }}>
+                    {topBrandsChart.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={topBrandsChart} margin={{ bottom: 40 }}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" angle={-25} textAnchor="end" height={70} interval={0} tick={{ fontSize: 10 }} />
+                          <YAxis />
+                          <Tooltip formatter={(v) => (typeof v === 'number' ? v : formatAnalyticsScalar(v, String(v)))} />
+                          <Bar dataKey="jobs" name="Jobs" fill="#00897b" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <Typography color="text.secondary">No job truck brand data.</Typography>
+                    )}
+                  </Box>
+                </Paper>
+              </Grid>
+
+              <Grid item xs={12}>
+                <Paper sx={{ p: 2 }}>
+                  <Typography variant="h6" gutterBottom>
+                    Job usage by brand + model (top rows)
+                  </Typography>
+                  <TableContainer>
+                    <Table size="small" stickyHeader>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Brand</TableCell>
+                          <TableCell>Model</TableCell>
+                          <TableCell align="right">Jobs</TableCell>
+                          <TableCell align="right">Drivers</TableCell>
+                          <TableCell align="right">Total distance</TableCell>
+                          <TableCell align="right">Avg / job</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {(ta.jobUsage?.usageByTruck || []).map((row, i) => (
+                          <TableRow key={i}>
+                            <TableCell>{formatAnalyticsScalar(row.brand)}</TableCell>
+                            <TableCell>{formatAnalyticsScalar(row.model)}</TableCell>
+                            <TableCell align="right">{row.jobsCount}</TableCell>
+                            <TableCell align="right">{row.uniqueDriverCount}</TableCell>
+                            <TableCell align="right">{Math.round(Number(row.totalDistance) || 0)}</TableCell>
+                            <TableCell align="right">{Math.round(Number(row.avgDistancePerJob) || 0)}</TableCell>
+                          </TableRow>
+                        ))}
+                        {(!ta.jobUsage?.usageByTruck || ta.jobUsage.usageByTruck.length === 0) && (
+                          <TableRow>
+                            <TableCell colSpan={6}>No job usage breakdown</TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Paper>
+              </Grid>
+            </Grid>
+          )}
         </Box>
       )}
     </Container>
