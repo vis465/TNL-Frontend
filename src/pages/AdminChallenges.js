@@ -75,8 +75,8 @@ const AdminChallenges = () => {
     endCompany: '',
     endCompanyId: '',
     minDistance: '',
-    requiredJobs: 1,
-    cargo: '',
+    requiredJobs: 0,
+    cargo: [],
     status: 'active',
     rewards: '',
     allowAutoPark: false,
@@ -148,8 +148,9 @@ const AdminChallenges = () => {
       setError('');
       
       // Validate form data
-      if (!formData.name || !formData.minDistance || !formData.cargo || !formData.endAtLocal) {
-        setError('Required: name, minDistance, cargo, endAtLocal');
+      const cargoArr = (Array.isArray(formData.cargo) ? formData.cargo : [formData.cargo]).filter(Boolean);
+      if (!formData.name || !formData.minDistance || cargoArr.length === 0 || !formData.endAtLocal) {
+        setError('Required: name, minDistance, at least one cargo, endAtLocal');
         return;
       }
 
@@ -158,8 +159,8 @@ const AdminChallenges = () => {
         return;
       }
 
-      if (formData.requiredJobs <= 0) {
-        setError('Required jobs must be greater than 0');
+      if (Number(formData.requiredJobs) < 0) {
+        setError('Required jobs must be 0 or greater');
         return;
       }
 
@@ -181,7 +182,7 @@ const AdminChallenges = () => {
         endCityId: formData.endCityId || '',
         endCompany: formData.endCompany ? normalizeName(formData.endCompany) : '',
         endCompanyId: formData.endCompanyId || '',
-        cargo: normalizeName(formData.cargo),
+        cargo: cargoArr.map(c => normalizeName(c)),
         // Convert local datetime to Unix seconds for backend
         startAtUnix: istToUnixSeconds(formData.startAtLocal),
         endAtUnix: istToUnixSeconds(formData.endAtLocal)
@@ -207,8 +208,9 @@ const AdminChallenges = () => {
       setActionLoading(true);
       setError('');
       
-      if (!formData.name || !formData.minDistance || !formData.cargo || !formData.endAtLocal) {
-        setError('Required: name, minDistance, cargo, endAtLocal');
+      const cargoArr = (Array.isArray(formData.cargo) ? formData.cargo : [formData.cargo]).filter(Boolean);
+      if (!formData.name || !formData.minDistance || cargoArr.length === 0 || !formData.endAtLocal) {
+        setError('Required: name, minDistance, at least one cargo, endAtLocal');
         return;
       }
 
@@ -217,8 +219,8 @@ const AdminChallenges = () => {
         return;
       }
 
-      if (formData.requiredJobs <= 0) {
-        setError('Required jobs must be greater than 0');
+      if (Number(formData.requiredJobs) < 0) {
+        setError('Required jobs must be 0 or greater');
         return;
       }
 
@@ -242,8 +244,8 @@ const AdminChallenges = () => {
         endCompany: formData.endCompany ? normalizeName(formData.endCompany) : '',
         endCompanyId: formData.endCompanyId || '',
         minDistance: formData.minDistance,
-        requiredJobs: formData.requiredJobs || 1,
-        cargo: normalizeName(formData.cargo),
+        requiredJobs: formData.requiredJobs === '' ? 0 : Number(formData.requiredJobs),
+        cargo: cargoArr.map(c => normalizeName(c)),
         status: formData.status || 'active',
         rewards: formData.rewards || '',
         mapImageUrl: formData.mapImageUrl || '',
@@ -323,7 +325,7 @@ const AdminChallenges = () => {
       endCompanyId: challenge.endCompanyId || '',
       minDistance: challenge.minDistance,
       requiredJobs: challenge.requiredJobs,
-      cargo: challenge.cargo,
+      cargo: Array.isArray(challenge.cargo) ? challenge.cargo : (challenge.cargo ? [challenge.cargo] : []),
       status: challenge.status,
       mapImageUrl: challenge.mapImageUrl || '',
       rewards: challenge.rewards || '',
@@ -356,8 +358,8 @@ const AdminChallenges = () => {
       endCompany: '',
       endCompanyId: '',
       minDistance: '',
-      requiredJobs: 1,
-      cargo: '',
+      requiredJobs: 0,
+      cargo: [],
       status: 'active',
       rewards: '',
       allowAutoPark: false,
@@ -496,7 +498,7 @@ const AdminChallenges = () => {
                   <Grid item xs={6}>
                     <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'primary.main', color: 'primary.contrastText', textAlign: 'center' }}>
                       <Typography variant="overline" sx={{ display: 'block', fontWeight: 900, opacity: 0.9 }}>Required Jobs</Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 900 }}>{challenge.requiredJobs}</Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 900 }}>{Number(challenge.requiredJobs) === 0 ? 'Unlimited' : challenge.requiredJobs}</Typography>
                     </Box>
                   </Grid>
                   <Grid item xs={6}>
@@ -508,7 +510,11 @@ const AdminChallenges = () => {
                   <Grid item xs={12}>
                     <Box sx={{ p: 1.5, borderRadius: 2, border: '1px dashed', borderColor: 'divider' }}>
                       <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 800 }}>Cargo</Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 700 }}>{challenge.cargo}</Typography>
+                      <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 0.5 }}>
+                        {(Array.isArray(challenge.cargo) ? challenge.cargo : [challenge.cargo]).filter(Boolean).map((c, i) => (
+                          <Chip key={i} label={c} size="small" variant="outlined" sx={{ fontWeight: 700 }} />
+                        ))}
+                      </Stack>
                     </Box>
                   </Grid>
                   
@@ -762,24 +768,30 @@ const AdminChallenges = () => {
                 onChange={handleInputChange('requiredJobs')}
                 fullWidth
                 required
-                inputProps={{ min: 1 }}
-                helperText="Number of qualifying jobs to complete the challenge"
+                inputProps={{ min: 0 }}
+                helperText="0 = unlimited (leaderboard only)"
               />
             </Box>
             
             <Autocomplete
+              multiple
               freeSolo
               options={cargoOptions}
-              value={formData.cargo}
-              onInputChange={(_, v) => updateFormData({ cargo: v })}
+              value={Array.isArray(formData.cargo) ? formData.cargo : (formData.cargo ? [formData.cargo] : [])}
+              onChange={(_, newValue) => updateFormData({ cargo: newValue })}
+              renderTags={(value, getTagProps) =>
+                value.map((option, index) => (
+                  <Chip variant="outlined" label={option} {...getTagProps({ index })} key={index} />
+                ))
+              }
               renderInput={(params) => (
                 <TextField 
                   {...params} 
                   label="Cargo" 
                   fullWidth 
                   required
-                  placeholder="e.g., Wood Bark"
-                  helperText="Select from available cargo or type custom name"
+                  placeholder={formData.cargo?.length ? '' : 'e.g., Wood Bark'}
+                  helperText="Select or type multiple cargo names, press Enter to add each"
                 />
               )}
             />

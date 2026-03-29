@@ -991,7 +991,7 @@ const PublicChallenges = () => {
                       <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'warning.main', color: 'warning.contrastText', textAlign: 'center' }}>
                         <Typography variant="overline" sx={{ display: 'block', fontWeight: 800, opacity: 0.9 }}>Cargo</Typography>
                         <Typography variant="h6" sx={{ fontWeight: 800 }}>
-                          {challenge.cargo}
+                          {(Array.isArray(challenge.cargo) ? challenge.cargo : [challenge.cargo]).filter(Boolean).join(', ')}
                         </Typography>
                       </Box>
                     </Grid>
@@ -1002,7 +1002,7 @@ const PublicChallenges = () => {
                     <Grid item xs={12} sm={6}>
                       <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'primary.main', color: 'primary.contrastText', textAlign: 'center' }}>
                         <Typography variant="overline" sx={{ display: 'block', fontWeight: 800, opacity: 0.9 }}>Required Jobs</Typography>
-                        <Typography variant="h4" sx={{ fontWeight: 900 }}>{challenge.requiredJobs}</Typography>
+                        <Typography variant="h4" sx={{ fontWeight: 900 }}>{Number(challenge.requiredJobs) === 0 ? 'Unlimited' : challenge.requiredJobs}</Typography>
                       </Box>
                     </Grid>
                     <Grid item xs={12} sm={6}>
@@ -1283,7 +1283,7 @@ const PublicChallenges = () => {
                           </Box>
                           {challenge.cargo && (
                             <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
-                              Cargo: {challenge.cargo}
+                              Cargo: {(Array.isArray(challenge.cargo) ? challenge.cargo : [challenge.cargo]).filter(Boolean).join(', ')}
                             </Typography>
                           )}
                         </Box>
@@ -1332,7 +1332,7 @@ const PublicChallenges = () => {
                               Distance: {Math.round(completion.totalDistance || 0).toLocaleString()} km
                             </Typography>
                             <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
-                              Jobs: {completion.totalJobsCompleted} / {challenge.requiredJobs || completion.totalJobsCompleted}
+                              Jobs: {Number(challenge.requiredJobs) === 0 ? `${completion.totalJobsCompleted}` : `${completion.totalJobsCompleted} / ${challenge.requiredJobs || completion.totalJobsCompleted}`}
                             </Typography>
                             {challenge.minDistance && (
                               <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
@@ -1430,7 +1430,9 @@ const PublicChallenges = () => {
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2">
-                          {Math.min(entry?.completedJobs ?? 0, selectedChallenge?.requiredJobs ?? 0)} / {selectedChallenge?.requiredJobs ?? 0}
+                          {Number(selectedChallenge?.requiredJobs) === 0
+                            ? `${entry?.completedJobs ?? 0} jobs`
+                            : `${Math.min(entry?.completedJobs ?? 0, selectedChallenge?.requiredJobs ?? 0)} / ${selectedChallenge?.requiredJobs ?? 0}`}
                         </Typography>
                       </TableCell>
                       <TableCell>

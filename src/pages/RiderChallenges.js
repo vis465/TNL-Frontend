@@ -206,7 +206,10 @@ const RiderChallenges = () => {
                     <strong>Min Distance:</strong> {challenge.minDistance} km
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    <strong>Cargo:</strong> {challenge.cargo}
+                    <strong>Required Jobs:</strong> {Number(challenge.requiredJobs) === 0 ? 'Unlimited' : challenge.requiredJobs}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    <strong>Cargo:</strong> {(Array.isArray(challenge.cargo) ? challenge.cargo : [challenge.cargo]).filter(Boolean).join(', ')}
                   </Typography>
                 </Stack>
 

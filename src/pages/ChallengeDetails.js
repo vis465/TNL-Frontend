@@ -189,7 +189,9 @@ const ChallengeDetails = () => {
                 <Grid item xs={6}>
                   <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'info.main', color: 'info.contrastText', textAlign: 'center' }}>
                     <Typography variant="overline" sx={{ display: 'block', fontWeight: 900, opacity: 0.9 }}>Cargo</Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 900 }}>{challenge.cargo}</Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 900 }}>
+                      {(Array.isArray(challenge.cargo) ? challenge.cargo : [challenge.cargo]).filter(Boolean).join(', ')}
+                    </Typography>
                   </Box>
                 </Grid>
                 <Grid item xs={6}>
@@ -201,7 +203,7 @@ const ChallengeDetails = () => {
                 <Grid item xs={12}>
                   <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'primary.main', color: 'primary.contrastText', textAlign: 'center' }}>
                     <Typography variant="overline" sx={{ display: 'block', fontWeight: 900, opacity: 0.9 }}>Required Jobs</Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 900 }}>{challenge.requiredJobs}</Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 900 }}>{Number(challenge.requiredJobs) === 0 ? 'Unlimited' : challenge.requiredJobs}</Typography>
                   </Box>
                 </Grid>
                 {challenge.description && (
@@ -287,15 +289,15 @@ const ChallengeDetails = () => {
                     <Box sx={{ minWidth: 100 }}>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                         <Typography variant="caption" color="text.secondary">
-                          {driver.completedJobs} / {challenge.requiredJobs}
+                          {Number(challenge.requiredJobs) === 0 ? `${driver.completedJobs} jobs` : `${driver.completedJobs} / ${challenge.requiredJobs}`}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {driver.completionPercentage.toFixed(1)}%
+                          {Number(challenge.requiredJobs) === 0 ? 'N/A' : `${driver.completionPercentage.toFixed(1)}%`}
                         </Typography>
                       </Box>
                       <LinearProgress
                         variant="determinate"
-                        value={Math.min(driver.completionPercentage, 100)}
+                        value={Number(challenge.requiredJobs) === 0 ? 0 : Math.min(driver.completionPercentage, 100)}
                         color={getCompletionColor(driver.completionPercentage)}
                         sx={{ height: 6, borderRadius: 3 }}
                       />
