@@ -444,7 +444,9 @@ export default function AdminExternalAttendance() {
                   <TableCell>{r.title}</TableCell>
                   <TableCell>{r.truckersmpEventId}</TableCell>
                   <TableCell>{r.slotNumber}</TableCell>
-                  <TableCell sx={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.slotImageUrl}</TableCell>
+                  <a href={r.slotImageUrl} target="_blank" rel="noopener noreferrer">
+                    <TableCell sx={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.slotImageUrl}</TableCell>
+                  </a>
                   <TableCell>{formatLocal(r.meetupAt || r.startUtc)}</TableCell>
                   <TableCell>{formatLocal(r.departureAt || r.endUtc)}</TableCell>
                   <TableCell sx={{ maxWidth: 140 }}>{notesSnippet(r.notes)}</TableCell>

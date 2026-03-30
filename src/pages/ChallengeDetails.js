@@ -12,6 +12,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TableSortLabel,
   CircularProgress,
   Alert,
   Chip,
@@ -49,6 +50,9 @@ const ChallengeDetails = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedDriver, setSelectedDriver] = useState(null);
   const [jobsDialogOpen, setJobsDialogOpen] = useState(false);
+
+  const [driverSortField, setDriverSortField] = useState('completedJobs'); // completedJobs | totalDistance | status
+  const [driverSortDirection, setDriverSortDirection] = useState('desc'); // asc | desc
   
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -88,6 +92,30 @@ const ChallengeDetails = () => {
     if (percentage >= 50) return 'warning';
     return 'primary';
   };
+
+  const handleDriverSort = (field) => {
+    if (driverSortField === field) {
+      setDriverSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+      return;
+    }
+    setDriverSortField(field);
+    setDriverSortDirection('desc');
+  };
+
+  const sortedDrivers = [...drivers].sort((a, b) => {
+    const dir = driverSortDirection === 'asc' ? 1 : -1;
+    const getVal = (d) => {
+      if (driverSortField === 'completedJobs') return Number(d.completedJobs ?? 0);
+      if (driverSortField === 'totalDistance') return Number(d.totalDistance ?? 0);
+      if (driverSortField === 'status') return d.isCompleted ? 1 : 0;
+      return 0;
+    };
+
+    const va = getVal(a);
+    const vb = getVal(b);
+    if (va === vb) return String(a._id).localeCompare(String(b._id));
+    return (va - vb) * dir;
+  });
 
   if (loading) {
     return (
@@ -265,15 +293,39 @@ const ChallengeDetails = () => {
               <TableRow>
                 <TableCell>Driver</TableCell>
                 <TableCell>Progress</TableCell>
-                <TableCell>Jobs Completed</TableCell>
-                <TableCell>Total Distance</TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={driverSortField === 'completedJobs'}
+                    direction={driverSortField === 'completedJobs' ? driverSortDirection : 'asc'}
+                    onClick={() => handleDriverSort('completedJobs')}
+                  >
+                    Jobs Completed
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={driverSortField === 'totalDistance'}
+                    direction={driverSortField === 'totalDistance' ? driverSortDirection : 'asc'}
+                    onClick={() => handleDriverSort('totalDistance')}
+                  >
+                    Total Distance
+                  </TableSortLabel>
+                </TableCell>
                 <TableCell>Last Activity</TableCell>
-                <TableCell>Status</TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={driverSortField === 'status'}
+                    direction={driverSortField === 'status' ? driverSortDirection : 'asc'}
+                    onClick={() => handleDriverSort('status')}
+                  >
+                    Status
+                  </TableSortLabel>
+                </TableCell>
                 <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {drivers.map((driver) => (
+              {sortedDrivers.map((driver) => (
                 <TableRow key={driver._id}>
                   <TableCell>
                     <Box>

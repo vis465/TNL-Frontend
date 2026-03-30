@@ -26,6 +26,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TableSortLabel,
   Tabs,
   Tab,
   IconButton,
@@ -70,6 +71,9 @@ const PublicChallenges = () => {
   const [countdowns, setCountdowns] = useState({});
   const [firstCompleters, setFirstCompleters] = useState([]);
   const [firstCompletersLoading, setFirstCompletersLoading] = useState(false);
+
+  const [leaderboardSortField, setLeaderboardSortField] = useState('completedJobs'); // completedJobs | totalDistance | status
+  const [leaderboardSortDirection, setLeaderboardSortDirection] = useState('desc'); // asc | desc
   
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -324,6 +328,30 @@ const PublicChallenges = () => {
     if (percentage >= 50) return 'warning';
     return 'primary';
   };
+
+  const handleLeaderboardSort = (field) => {
+    if (leaderboardSortField === field) {
+      setLeaderboardSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+      return;
+    }
+    setLeaderboardSortField(field);
+    setLeaderboardSortDirection('desc');
+  };
+
+  const sortedLeaderboard = [...leaderboard].sort((a, b) => {
+    const dir = leaderboardSortDirection === 'asc' ? 1 : -1;
+    const getVal = (entry) => {
+      if (leaderboardSortField === 'completedJobs') return Number(entry?.completedJobs ?? 0);
+      if (leaderboardSortField === 'totalDistance') return Number(entry?.totalDistance ?? 0);
+      if (leaderboardSortField === 'status') return entry?.isCompleted ? 1 : 0;
+      return 0;
+    };
+
+    const va = getVal(a);
+    const vb = getVal(b);
+    if (va === vb) return String(a?._id ?? '').localeCompare(String(b?._id ?? ''));
+    return (va - vb) * dir;
+  });
 
   const handleSnackbarClose = () => {
     setSnackbarOpen(false);
@@ -1404,14 +1432,38 @@ const PublicChallenges = () => {
                   <TableRow>
                     <TableCell>Rank</TableCell>
                     <TableCell>Driver</TableCell>
-                    <TableCell>Jobs Completed</TableCell>
-                    <TableCell>Total Distance</TableCell>
-                    <TableCell>Status</TableCell>
+                    <TableCell>
+                      <TableSortLabel
+                        active={leaderboardSortField === 'completedJobs'}
+                        direction={leaderboardSortField === 'completedJobs' ? leaderboardSortDirection : 'asc'}
+                        onClick={() => handleLeaderboardSort('completedJobs')}
+                      >
+                        Jobs Completed
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell>
+                      <TableSortLabel
+                        active={leaderboardSortField === 'totalDistance'}
+                        direction={leaderboardSortField === 'totalDistance' ? leaderboardSortDirection : 'asc'}
+                        onClick={() => handleLeaderboardSort('totalDistance')}
+                      >
+                        Total Distance
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell>
+                      <TableSortLabel
+                        active={leaderboardSortField === 'status'}
+                        direction={leaderboardSortField === 'status' ? leaderboardSortDirection : 'asc'}
+                        onClick={() => handleLeaderboardSort('status')}
+                      >
+                        Status
+                      </TableSortLabel>
+                    </TableCell>
                     <TableCell>Last Activity</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {leaderboard.map((entry, index) => (
+                  {sortedLeaderboard.map((entry, index) => (
                     <TableRow key={entry._id}>
                       <TableCell>
                         <Typography variant="h6" color="primary">
