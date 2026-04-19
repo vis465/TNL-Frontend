@@ -109,6 +109,7 @@ function formatRoleLabel(role) {
     eventteam: "Event team",
     hrteam: "HR team",
     financeteam: "Finance team",
+    communityManager: "Community manager",
   };
   return map[role] || role.replace(/team$/, " team").replace(/\b\w/g, (c) => c.toUpperCase());
 }

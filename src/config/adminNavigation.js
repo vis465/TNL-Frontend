@@ -35,9 +35,11 @@ import AttachMoneyOutlined from '@mui/icons-material/AttachMoneyOutlined';
 import PaymentsOutlined from '@mui/icons-material/PaymentsOutlined';
 import DirectionsCar from '@mui/icons-material/DirectionsCar';
 import GarageOutlined from '@mui/icons-material/GarageOutlined';
+import GroupsOutlined from '@mui/icons-material/GroupsOutlined';
+import LocalOfferOutlined from '@mui/icons-material/LocalOfferOutlined';
 
 /** Staff roles that can open /admin (matches App.js admin layout gate). */
-export const STAFF_ROLES = ['admin', 'eventteam', 'hrteam', 'financeteam'];
+export const STAFF_ROLES = ['admin', 'eventteam', 'hrteam', 'financeteam', 'communityManager'];
 
 /**
  * Sidebar: personal shortcuts while using the admin shell.
@@ -99,6 +101,15 @@ export const MY_AREA_SECTIONS = [
       // { to: '/goals', label: 'Personal goals', Icon: FlagOutlined, roles: null },
       { to: '/attendance', label: 'My attendance', Icon: EventAvailableOutlined, roles: null },
       { to: '/calendar', label: 'Event calendar', Icon: CalendarMonthOutlined, roles: null },
+    ],
+  },
+  {
+    id: 'divisions-my',
+    label: 'Divisions',
+    items: [
+      { to: '/division', label: 'My division', Icon: GroupsOutlined, roles: null },
+      { to: '/division/invites', label: 'Invitations', Icon: HowToReg, roles: null },
+      { to: '/division-leaderboard', label: 'Division leaderboard', Icon: LeaderboardOutlined, roles: null },
     ],
   },
 ];
@@ -181,6 +192,30 @@ export const ADMIN_SECTIONS = [
     ],
   },
   {
+    id: 'divisions',
+    label: 'Divisions',
+    items: [
+      {
+        to: '/division-leaderboard',
+        label: 'Division leaderboard',
+        Icon: LeaderboardOutlined,
+        roles: STAFF_ROLES,
+      },
+      {
+        to: '/admin/divisions',
+        label: 'Divisions',
+        Icon: GroupsOutlined,
+        roles: ['admin', 'communityManager'],
+      },
+      {
+        to: '/admin/cargo-rates',
+        label: 'Cargo market rates',
+        Icon: LocalOfferOutlined,
+        roles: ['admin'],
+      },
+    ],
+  },
+  {
     id: 'finance',
     label: 'Finance',
     items: [
@@ -202,6 +237,7 @@ export const ADMIN_DASHBOARD_GROUP_ORDER = [
   'Events & operations',
   'People & HR',
   'Challenges',
+  'Divisions',
   'Finance',
 ];
 
@@ -313,6 +349,33 @@ export const ADMIN_DASHBOARD_CARDS = [
     icon: EmojiEventsOutlined,
     color: 'secondary',
     roles: ['admin', 'eventteam', 'hrteam', 'financeteam'],
+  },
+  {
+    group: 'Divisions',
+    title: 'Division leaderboard',
+    description: 'See how every division ranks by revenue, jobs, and wallets.',
+    to: '/division-leaderboard',
+    icon: LeaderboardOutlined,
+    color: 'warning',
+    roles: STAFF_ROLES,
+  },
+  {
+    group: 'Divisions',
+    title: 'Divisions',
+    description: 'Create divisions, assign leaders, and oversee members.',
+    to: '/admin/divisions',
+    icon: GroupsOutlined,
+    color: 'primary',
+    roles: ['admin', 'communityManager'],
+  },
+  {
+    group: 'Divisions',
+    title: 'Cargo market rates',
+    description: 'Configure revenue normalization and division policy caps.',
+    to: '/admin/cargo-rates',
+    icon: LocalOfferOutlined,
+    color: 'secondary',
+    roles: ['admin'],
   },
   {
     group: 'Finance',
