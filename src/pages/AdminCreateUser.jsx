@@ -22,6 +22,7 @@ const roleOptions = [
   { label: 'HR Team', value: 'hrteam' },
   { label: 'Event Team', value: 'eventteam' },
   { label: 'Finance Team', value: 'financeteam' },
+  { label: 'Community Manager', value: 'communityManager' },
   { label: 'Admin', value: 'admin' },
 ];
 

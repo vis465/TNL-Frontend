@@ -12,6 +12,8 @@ const roleOptions = [
   { label: 'Admin', value: 'admin' },
   { label: 'Event Team', value: 'eventteam' },
   { label: 'HR Team', value: 'hrteam' },
+  { label: 'Finance Team', value: 'financeteam' },
+  { label: 'Community Manager', value: 'communityManager' },
   { label: 'Rider', value: 'rider' },
 ];
 
@@ -112,7 +114,7 @@ export default function AdminUsers() {
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={1}>
-                        {['admin','eventteam','hrteam','rider'].filter(r => r !== u.role).map((r) => (
+                        {['admin','eventteam','hrteam','financeteam','communityManager','rider'].filter(r => r !== u.role).map((r) => (
                           <Button
                             key={r}
                             size="small"

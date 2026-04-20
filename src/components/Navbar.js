@@ -13,6 +13,7 @@ import {
   useMediaQuery,
   Container,
   Avatar,
+  Badge,
   Tooltip,
   Fade,
   SwipeableDrawer,
@@ -43,6 +44,8 @@ import {
   CalendarMonth,
   AccountBalanceWallet,
   GarageOutlined,
+  Groups,
+  StarOutline,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { styled } from '@mui/material/styles';
@@ -117,6 +120,7 @@ const Navbar = () => {
     ? [
         { label: 'Home', path: '/', icon: <Home /> },
         { label: 'Our Team', path: '/team', icon: <People /> },
+        { label: 'Divisions', path: '/divisions', icon: <Groups /> },
         { label: 'Events', path: '/events', icon: <Event /> },
         { label: 'Apply', path: '/apply', icon: <Work /> },
         { label: 'Servers', path: '/servers', icon: <FireTruckOutlined /> },
@@ -125,6 +129,7 @@ const Navbar = () => {
       ]
     : [
         { label: 'Home', path: '/', icon: <Home /> },
+        { label: 'Divisions', path: '/divisions', icon: <Groups /> },
         { label: 'Events', path: '/events', icon: <Event /> },
         { label: 'Servers', path: '/servers', icon: <FireTruckOutlined /> },
         { label: 'Dashboard', path: '/dashboard', icon: <Dashboard /> },
@@ -132,6 +137,9 @@ const Navbar = () => {
         { label: 'Event calendar', path: '/calendar', icon: <CalendarMonth /> },
         ...(hasStaffRole ? [{ label: 'Admin', path: '/admin', icon: <AdminPanelSettings /> }] : []),
       ];
+
+  const secondaryRoles = Array.isArray(user?.secondaryRoles) ? user.secondaryRoles : [];
+  const isDivisionLeader = secondaryRoles.includes('divisionLeader');
 
   return (
     <StyledAppBar position="sticky" elevation={0}>
@@ -174,7 +182,13 @@ const Navbar = () => {
            
 
             {isAuthenticated && (
-              <Tooltip title="Account">
+              <Tooltip
+                title={
+                  isDivisionLeader
+                    ? `Account · Division leader${user?.leadsDivision?.name ? ` · ${user.leadsDivision.name}` : ''}`
+                    : 'Account'
+                }
+              >
                 <IconButton
                   onClick={handleUserMenuOpen}
                   size="small"
@@ -184,13 +198,37 @@ const Navbar = () => {
                   aria-haspopup="true"
                   color="inherit"
                 >
-                  <Avatar
-                    sx={{ width: 36, height: 36 }}
-                    src={user?.riderId?.avatar}
-                    alt={user?.name || user?.username}
+                  <Badge
+                    overlap="circular"
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                    invisible={!isDivisionLeader}
+                    badgeContent={
+                      <Box
+                        sx={{
+                          width: 16,
+                          height: 16,
+                          borderRadius: '50%',
+                          bgcolor: 'warning.main',
+                          color: 'common.white',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          border: '2px solid',
+                          borderColor: 'background.paper',
+                        }}
+                      >
+                        <StarOutline sx={{ fontSize: 10 }} />
+                      </Box>
+                    }
                   >
-                    {user?.name?.[0]?.toUpperCase() || user?.username?.[0]?.toUpperCase() || <AccountCircle />}
-                  </Avatar>
+                    <Avatar
+                      sx={{ width: 36, height: 36 }}
+                      src={user?.riderId?.avatar}
+                      alt={user?.name || user?.username}
+                    >
+                      {user?.name?.[0]?.toUpperCase() || user?.username?.[0]?.toUpperCase() || <AccountCircle />}
+                    </Avatar>
+                  </Badge>
                 </IconButton>
               </Tooltip>
             )}
@@ -222,8 +260,28 @@ const Navbar = () => {
         open={Boolean(anchorEl)}
         onClose={handleUserMenuClose}
         TransitionComponent={Fade}
-        PaperProps={{ sx: { minWidth: 200, mt: 1.5 } }}
+        PaperProps={{ sx: { minWidth: 220, mt: 1.5 } }}
       >
+        {isAuthenticated && (
+          <Box sx={{ px: 2, py: 1.25 }}>
+            <Typography variant="subtitle2" fontWeight={700} noWrap>
+              {user?.name || user?.username}
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.5, flexWrap: 'wrap' }}>
+              <Chip label={user?.role} size="small" variant="outlined" sx={{ textTransform: 'capitalize' }} />
+              {isDivisionLeader && (
+                <Chip
+                  icon={<StarOutline sx={{ fontSize: 14 }} />}
+                  label={user?.leadsDivision?.name ? `Leader · ${user.leadsDivision.name}` : 'Division leader'}
+                  size="small"
+                  color="warning"
+                  variant="outlined"
+                />
+              )}
+            </Box>
+          </Box>
+        )}
+        {isAuthenticated && <Divider sx={{ my: 0.5 }} />}
         <MenuItem
           component={RouterLink}
           to="/dashboard"
@@ -278,8 +336,17 @@ const Navbar = () => {
                   <Typography variant="subtitle1" fontWeight={600} noWrap>
                     {user?.name || user?.username}
                   </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5, flexWrap: 'wrap' }}>
                     <Chip label={user?.role} size="small" variant="outlined" sx={{ textTransform: 'capitalize' }} />
+                    {isDivisionLeader && (
+                      <Chip
+                        icon={<StarOutline sx={{ fontSize: 14 }} />}
+                        label="Division leader"
+                        size="small"
+                        color="warning"
+                        variant="outlined"
+                      />
+                    )}
                     {walletBalance != null && (
                       <Chip
                         icon={<AccountBalanceWallet sx={{ fontSize: 16 }} />}

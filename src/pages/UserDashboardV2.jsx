@@ -8,7 +8,7 @@ import {
   Box, Grid, Card, CardContent, Typography, Stack, Avatar, Button,
   Dialog, DialogTitle, DialogContent, DialogActions,
   Pagination, IconButton, useMediaQuery, useTheme, AppBar, Toolbar,
-  Container, Fade, LinearProgress, TextField, alpha
+  Container, Fade, LinearProgress, TextField, alpha, Alert
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import AccountBalanceWallet from '@mui/icons-material/AccountBalanceWallet';
@@ -236,6 +236,8 @@ export default function UserDashboard() {
   const [wallet, setWallet] = useState({ balance: 0, transactions: [] });
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [externalUpcoming, setExternalUpcoming] = useState([]);
+  const [pendingDivisionInvites, setPendingDivisionInvites] = useState(0);
+  const [divisionSummary, setDivisionSummary] = useState(null);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -269,6 +271,28 @@ export default function UserDashboard() {
         const { data } = await axiosInstance.get('/attendance-events/active/me');
         setActiveAttendanceEvents(Array.isArray(data) ? data : []);
       } catch { /* silent */ }
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await axiosInstance.get('/me/division/invites');
+        setPendingDivisionInvites((data?.invites || []).length);
+      } catch {
+        setPendingDivisionInvites(0);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await axiosInstance.get('/me/division/summary');
+        setDivisionSummary(data?.division ? data : null);
+      } catch {
+        setDivisionSummary(null);
+      }
     })();
   }, []);
 
@@ -426,6 +450,20 @@ export default function UserDashboard() {
       `}</style>
 
       <Box sx={{ flex: 1, minWidth: 0 }}>
+        {pendingDivisionInvites > 0 && (
+          <Box sx={{ px: { xs: 2, md: 3 }, pt: 2 }}>
+            <Alert
+              severity="info"
+              action={(
+                <Button component={RouterLink} to="/division/invites" size="small" sx={{ textTransform: 'none' }}>
+                  View invites
+                </Button>
+              )}
+            >
+              You have {pendingDivisionInvites} division invitation(s).
+            </Alert>
+          </Box>
+        )}
         {/* Mobile top bar */}
         {isMobile && (
           <AppBar position="sticky" elevation={0} sx={{
@@ -535,6 +573,141 @@ export default function UserDashboard() {
                   />
                 </Grid>
               </Grid>
+
+              {divisionSummary?.division && (
+                <Card sx={{ ...sxCard, mb: 3 }}>
+                  <Box
+                    sx={{
+                      position: 'relative',
+                      height: 110,
+                      background: divisionSummary.division.bannerUrl
+                        ? `url(${divisionSummary.division.bannerUrl}) center/cover no-repeat`
+                        : `linear-gradient(135deg, ${alpha(T.accent, 0.25)}, ${alpha(T.info, 0.2)})`,
+                    }}
+                  >
+                    <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0.1))' }} />
+                  </Box>
+                  <CardContent sx={{ p: '20px !important', mt: -5, position: 'relative' }}>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'flex-end' }} sx={{ mb: 2 }}>
+                      <Avatar
+                        src={divisionSummary.division.logoUrl || undefined}
+                        sx={{ width: 72, height: 72, border: `4px solid ${T.surface}`, bgcolor: T.surfaceElevated }}
+                      >
+                        {divisionSummary.division.name?.[0] || 'D'}
+                      </Avatar>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography variant="caption" sx={{ ...sxLabel, display: 'block' }}>My Division</Typography>
+                        <Typography variant="h6" sx={{ color: T.text, fontFamily: font, fontWeight: 700 }} noWrap>
+                          {divisionSummary.division.name}
+                          {divisionSummary.division.isLeader && (
+                            <Typography component="span" sx={{ ml: 1, fontSize: '0.75rem', color: T.accent, fontWeight: 600 }}>
+                              · LEADER
+                            </Typography>
+                          )}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: T.textSecondary, fontFamily: font }}>
+                          Rank #{divisionSummary.me?.rank || '—'} of {divisionSummary.me?.peerCount || divisionSummary.division.memberCount || 0}
+                          {' · '}{divisionSummary.division.memberCount || 0} members
+                          {' · '}{divisionSummary.division.taxPercent || 0}% tax
+                        </Typography>
+                      </Box>
+                      <Stack direction="row" spacing={1}>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          component={RouterLink}
+                          to={`/divisions/${divisionSummary.division.slug}`}
+                          sx={{ borderColor: T.border, color: T.text }}
+                        >
+                          Public page
+                        </Button>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          component={RouterLink}
+                          to="/division"
+                          sx={{ bgcolor: T.accent, color: '#000', '&:hover': { bgcolor: alpha(T.accent, 0.85) } }}
+                        >
+                          Manage
+                        </Button>
+                      </Stack>
+                    </Stack>
+
+                    <Grid container spacing={1.5}>
+                      <Grid item xs={6} sm={3}>
+                        <Stack sx={{ p: 1.5, borderRadius: T.radiusSm, border: `1px solid ${T.border}`, bgcolor: T.surfaceAlt }}>
+                          <Typography variant="caption" sx={{ ...sxLabel }}>My jobs</Typography>
+                          <Typography sx={{ color: T.text, fontFamily: font, fontWeight: 700 }}>
+                            {(divisionSummary.me?.stats?.totalJobs || 0).toLocaleString()}
+                          </Typography>
+                        </Stack>
+                      </Grid>
+                      <Grid item xs={6} sm={3}>
+                        <Stack sx={{ p: 1.5, borderRadius: T.radiusSm, border: `1px solid ${T.border}`, bgcolor: T.surfaceAlt }}>
+                          <Typography variant="caption" sx={{ ...sxLabel }}>My revenue</Typography>
+                          <Typography sx={{ color: T.text, fontFamily: font, fontWeight: 700 }}>
+                            {Math.round(divisionSummary.me?.stats?.totalRevenue || 0).toLocaleString()}
+                          </Typography>
+                        </Stack>
+                      </Grid>
+                      <Grid item xs={6} sm={3}>
+                        <Stack sx={{ p: 1.5, borderRadius: T.radiusSm, border: `1px solid ${T.border}`, bgcolor: T.surfaceAlt }}>
+                          <Typography variant="caption" sx={{ ...sxLabel }}>Tax contributed</Typography>
+                          <Typography sx={{ color: T.text, fontFamily: font, fontWeight: 700 }}>
+                            {Math.round(divisionSummary.me?.stats?.totalTaxContributed || 0).toLocaleString()}
+                          </Typography>
+                        </Stack>
+                      </Grid>
+                      <Grid item xs={6} sm={3}>
+                        <Stack sx={{ p: 1.5, borderRadius: T.radiusSm, border: `1px solid ${T.border}`, bgcolor: T.surfaceAlt }}>
+                          <Typography variant="caption" sx={{ ...sxLabel }}>Division wallet</Typography>
+                          <Typography sx={{ color: T.text, fontFamily: font, fontWeight: 700 }}>
+                            {Math.round(divisionSummary.division.walletBalance || 0).toLocaleString()}
+                          </Typography>
+                        </Stack>
+                      </Grid>
+                    </Grid>
+
+                    {Array.isArray(divisionSummary.recentJobs) && divisionSummary.recentJobs.length > 0 && (
+                      <Box sx={{ mt: 2 }}>
+                        <Typography variant="caption" sx={{ ...sxLabel, display: 'block', mb: 1 }}>Latest division jobs</Typography>
+                        <Stack spacing={0.75}>
+                          {divisionSummary.recentJobs.slice(0, 3).map((j, idx) => (
+                            <Stack
+                              key={idx}
+                              direction="row"
+                              spacing={1}
+                              alignItems="center"
+                              sx={{
+                                p: 1,
+                                borderRadius: T.radiusXs,
+                                border: `1px solid ${j.mine ? alpha(T.accent, 0.35) : T.border}`,
+                                bgcolor: j.mine ? T.accentDim : T.surfaceAlt,
+                              }}
+                            >
+                              <Avatar src={j.riderAvatar || undefined} sx={{ width: 22, height: 22 }}>
+                                {j.riderName?.[0] || '?'}
+                              </Avatar>
+                              <Typography variant="caption" sx={{ color: T.text, fontFamily: font, fontWeight: 600, minWidth: 120 }} noWrap>
+                                {j.mine ? 'You' : j.riderName}
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: T.textSecondary, fontFamily: font, flex: 1 }} noWrap>
+                                {j.cargo || 'cargo'}
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: T.textSecondary, fontFamily: font }}>
+                                {j.distanceKm.toLocaleString()} km
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: T.success, fontFamily: font, fontWeight: 600, minWidth: 80, textAlign: 'right' }}>
+                                {j.revenue.toLocaleString()}
+                              </Typography>
+                            </Stack>
+                          ))}
+                        </Stack>
+                      </Box>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
               {/* ── Charts ──────────────────────────────────────── */}
               {/* <Grid container spacing={2} sx={{ mb: 3 }}>

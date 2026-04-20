@@ -99,6 +99,15 @@ import AdminExternalAttendance from "./pages/AdminExternalAttendance";
 import FleetManagement from "./pages/FleetManagement";
 import TruckMarketplace from "./pages/TruckMarketplace";
 import AdminTrucks from "./pages/AdminTrucks";
+import AdminDivisions from "./pages/AdminDivisions";
+import AdminDivisionDetail from "./pages/AdminDivisionDetail";
+import AdminCargoRates from "./pages/AdminCargoRates";
+import MyDivision from "./pages/MyDivision";
+import DivisionInvites from "./pages/DivisionInvites";
+import DivisionLeaderboard from "./pages/DivisionLeaderboard";
+import DivisionPublic from "./pages/DivisionPublic";
+import DivisionsIndex from "./pages/DivisionsIndex";
+import AdminCoupons from "./pages/AdminCoupons";
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -339,6 +348,9 @@ function App() {
                     <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                     <Route path="/events" element={<Home />} />
                     <Route path="/leaderboard" element={<Leaderboard />} />
+                    <Route path="/division-leaderboard" element={<DivisionLeaderboard />} />
+                    <Route path="/divisions" element={<DivisionsIndex />} />
+                    <Route path="/divisions/:slug" element={<DivisionPublic />} />
                     <Route path="/map-test" element={<MapPlayground />} />
                     <Route
                       path="/riders/licence"
@@ -364,6 +376,7 @@ function App() {
                             "eventteam",
                             "hrteam",
                             "financeteam",
+                            "communityManager",
                           ]}
                         />
                       }
@@ -388,6 +401,8 @@ function App() {
                         <Route path="/goals" element={<PersonalGoals />} />
                         <Route path="/jobs/:id" element={<JobDetails />} />
                         <Route path="/calendar" element={<EventCalendarPage />} />
+                        <Route path="/division" element={<MyDivision />} />
+                        <Route path="/division/invites" element={<DivisionInvites />} />
                       </Route>
                     </Route>
 
@@ -401,6 +416,7 @@ function App() {
                             "eventteam",
                             "hrteam",
                             "financeteam",
+                            "communityManager",
                           ]}
                         >
                           <AdminLayout
@@ -554,6 +570,38 @@ function App() {
                         element={
                           <PrivateRoute allowedRoles={["admin", "financeteam"]}>
                             <AdminEmis />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="divisions"
+                        element={
+                          <PrivateRoute allowedRoles={["admin", "communityManager"]}>
+                            <AdminDivisions />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="divisions/:id"
+                        element={
+                          <PrivateRoute allowedRoles={["admin", "communityManager"]}>
+                            <AdminDivisionDetail />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="cargo-rates"
+                        element={
+                          <PrivateRoute allowedRoles={["admin"]}>
+                            <AdminCargoRates />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="coupons"
+                        element={
+                          <PrivateRoute allowedRoles={["admin"]}>
+                            <AdminCoupons />
                           </PrivateRoute>
                         }
                       />
