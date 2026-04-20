@@ -32,6 +32,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import BuildIcon from '@mui/icons-material/Build';
 import BlockIcon from '@mui/icons-material/Block';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { Link as RouterLink } from 'react-router-dom';
 import TruckThumbAvatar from '../components/TruckThumbAvatar';
 import {
@@ -69,6 +70,23 @@ const sxLabel = {
   color: T.textMuted,
 };
 
+function formatDuration(totalSeconds) {
+  const s = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+  if (s <= 0) return 'Ready';
+  const hours = Math.floor(s / 3600);
+  const minutes = Math.floor((s % 3600) / 60);
+  const seconds = s % 60;
+  if (hours > 0) return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+}
+
+function truckSecondsRemaining(truck, nowMs) {
+  if (!truck?.maintenanceReadyAt) return 0;
+  const ready = new Date(truck.maintenanceReadyAt).getTime();
+  if (!Number.isFinite(ready)) return 0;
+  return Math.max(0, Math.floor((ready - nowMs) / 1000));
+}
+
 export default function FleetManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -82,6 +100,8 @@ export default function FleetManagement() {
   const [maintainBusy, setMaintainBusy] = useState(false);
   const [maintainError, setMaintainError] = useState('');
   const [feedback, setFeedback] = useState('');
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const [repairMinutes, setRepairMinutes] = useState(120);
 
   const user = useMemo(() => getItemWithExpiry('user') || {}, []);
   const secondaryRoles = Array.isArray(user?.secondaryRoles) ? user.secondaryRoles : [];
@@ -97,6 +117,9 @@ export default function FleetManagement() {
       const list = Array.isArray(data?.ownedTrucks) ? data.ownedTrucks : [];
       setTrucks(list);
       setDivisionId(data?.divisionId || null);
+      if (Number.isFinite(Number(data?.config?.maintRepairMinutes))) {
+        setRepairMinutes(Number(data.config.maintRepairMinutes));
+      }
       setSelectedId((prev) => {
         if (prev && list.some((t) => String(t._id || t.divisionTruckId) === String(prev))) {
           return prev;
@@ -138,12 +161,48 @@ export default function FleetManagement() {
     if (selectedId) loadDeliveries(selectedId);
   }, [selectedId, loadDeliveries]);
 
+  // Tick every second only when we actually have a truck with an active
+  // garage timer, to keep countdowns live without wasting renders otherwise.
+  const hasActiveTimer = useMemo(
+    () =>
+      trucks.some(
+        (t) =>
+          t?.blocked &&
+          t?.maintenanceReadyAt &&
+          new Date(t.maintenanceReadyAt).getTime() > Date.now()
+      ),
+    [trucks]
+  );
+  useEffect(() => {
+    if (!hasActiveTimer) return undefined;
+    const id = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [hasActiveTimer]);
+
+  // When any timer is ready to expire, refetch so the server can flip
+  // `blocked` off and riders can use the truck again without a manual refresh.
+  useEffect(() => {
+    const readyTruck = trucks.find(
+      (t) =>
+        t?.blocked &&
+        t?.maintenanceReadyAt &&
+        new Date(t.maintenanceReadyAt).getTime() <= nowMs
+    );
+    if (readyTruck) loadTrucks();
+  }, [trucks, nowMs, loadTrucks]);
+
   const selected = trucks.find(
     (t) => t && String(t._id || t.divisionTruckId) === String(selectedId)
   );
   const totalOdo = trucks.reduce((sum, t) => sum + (Number(t.odometerKm) || 0), 0);
   const totalDeliveries = trucks.reduce((sum, t) => sum + (Number(t.deliveriesCount) || 0), 0);
   const blockedCount = trucks.filter((t) => t.blocked).length;
+  const inServiceCount = trucks.filter(
+    (t) =>
+      t.blocked &&
+      t.maintenanceReadyAt &&
+      new Date(t.maintenanceReadyAt).getTime() > nowMs
+  ).length;
 
   const handleConfirmMaintain = async () => {
     if (!maintainTarget || !divisionId) return;
@@ -152,9 +211,10 @@ export default function FleetManagement() {
     try {
       const truckId = maintainTarget._id || maintainTarget.divisionTruckId;
       const data = await payTruckMaintenance(divisionId, truckId);
+      const mins = Number(data?.repairMinutes || repairMinutes);
       setFeedback(
         data?.message ||
-          `Truck serviced. Division wallet debited ${Number(data?.amount || 0).toLocaleString()} tokens.`
+          `Maintenance paid (${Number(data?.amount || 0).toLocaleString()} tokens). Truck is in the garage for ~${mins} minutes.`
       );
       setMaintainTarget(null);
       await loadTrucks();
@@ -312,16 +372,21 @@ export default function FleetManagement() {
             <Grid item xs={12} sm={6} md={3}>
               <Card sx={sxCard}>
                 <CardContent>
-                  <Typography sx={sxLabel}>Blocked for maintenance</Typography>
+                  <Typography sx={sxLabel}>Needs maintenance</Typography>
                   <Typography
                     variant="h5"
                     sx={{
                       fontWeight: 800,
-                      color: blockedCount ? T.danger : T.success,
+                      color: blockedCount - inServiceCount > 0 ? T.danger : T.success,
                     }}
                   >
-                    {blockedCount}
+                    {blockedCount - inServiceCount}
                   </Typography>
+                  {inServiceCount > 0 && (
+                    <Typography variant="caption" sx={{ color: T.info, display: 'block', mt: 0.5 }}>
+                      {inServiceCount} in garage
+                    </Typography>
+                  )}
                 </CardContent>
               </Card>
             </Grid>
@@ -340,6 +405,9 @@ export default function FleetManagement() {
                     100,
                     Math.round((Number(t.wearKm || 0) / Number(t.wearThresholdKm || 1)) * 100)
                   );
+                  const secondsLeft = truckSecondsRemaining(t, nowMs);
+                  const inService = t.blocked && secondsLeft > 0;
+                  const needsMaintenance = t.blocked && !inService;
                   return (
                     <Card
                       key={id || t.displayName}
@@ -364,7 +432,14 @@ export default function FleetManagement() {
                                 `${t.brandName || ''} ${t.modelName || ''}`.trim() ||
                                 'Truck'}
                             </Typography>
-                            {t.blocked ? (
+                            {inService ? (
+                              <Chip
+                                size="small"
+                                color="info"
+                                icon={<AccessTimeIcon sx={{ fontSize: '16px !important' }} />}
+                                label={`In garage · ${formatDuration(secondsLeft)}`}
+                              />
+                            ) : needsMaintenance ? (
                               <Chip
                                 size="small"
                                 color="error"
@@ -427,7 +502,23 @@ export default function FleetManagement() {
                               Purchased {new Date(t.purchasedAt).toLocaleDateString()}
                             </Typography>
                           )}
-                          {isLeaderOfThis && t.blocked && (
+                          {inService && (
+                            <Box sx={{ mt: 1 }}>
+                              <Typography
+                                variant="caption"
+                                sx={{ color: T.info, fontWeight: 600 }}
+                              >
+                                Ready at{' '}
+                                {t.maintenanceReadyAt
+                                  ? new Date(t.maintenanceReadyAt).toLocaleTimeString([], {
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                    })
+                                  : '—'}
+                              </Typography>
+                            </Box>
+                          )}
+                          {isLeaderOfThis && needsMaintenance && (
                             <Button
                               size="small"
                               variant="contained"
@@ -441,6 +532,14 @@ export default function FleetManagement() {
                             >
                               Pay maintenance
                             </Button>
+                          )}
+                          {!isLeaderOfThis && needsMaintenance && (
+                            <Typography
+                              variant="caption"
+                              sx={{ color: T.textMuted, display: 'block', mt: 1 }}
+                            >
+                              Waiting for the leader to pay maintenance.
+                            </Typography>
                           )}
                         </Box>
                       </CardContent>
@@ -539,9 +638,15 @@ export default function FleetManagement() {
         <DialogTitle>Pay for maintenance</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Service <strong>{maintainTarget?.displayName || maintainTarget?.modelName}</strong>?
-            The division wallet will be debited for the maintenance cost and the truck will be
-            cleared for duty. Division tax will resume collecting from matching jobs.
+            Send <strong>{maintainTarget?.displayName || maintainTarget?.modelName}</strong> to
+            the garage? The division wallet will be debited for
+            {' '}
+            <strong>
+              {Number(maintainTarget?.maintenanceCost || 0).toLocaleString()} tokens
+            </strong>
+            . The truck stays offline for <strong>~{repairMinutes} minutes</strong> while it is
+            being serviced and returns automatically. Division tax on matching jobs is paused
+            until it comes back.
           </DialogContentText>
           {maintainError && (
             <Alert severity="error" sx={{ mt: 2 }}>

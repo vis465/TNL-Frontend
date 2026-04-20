@@ -132,6 +132,13 @@ export default function AdminDivisionDetail() {
   }, [tab, id]);
 
   const patchTruck = async (truckId, body) => {
+    // Defense-in-depth: the backend PATCH /trucks/:truckId/admin already
+    // enforces adminOrCommunityManager. Refuse at the client too so an
+    // inspected button can't surprise the user with a 403.
+    if (!canStaff) {
+      alert('Only admin or community manager can perform this action.');
+      return;
+    }
     try {
       await axiosInstance.patch(`/divisions/${id}/trucks/${truckId}/admin`, body);
       await loadTrucks();
@@ -896,13 +903,28 @@ export default function AdminDivisionDetail() {
                         />
                       </TableCell>
                       <TableCell>
-                        {t.retired ? (
-                          <Chip size="small" color="default" label="Retired" />
-                        ) : t.blocked ? (
-                          <Chip size="small" color="error" label="Blocked" />
-                        ) : (
-                          <Chip size="small" color="success" label="Operational" />
-                        )}
+                        {(() => {
+                          if (t.retired) return <Chip size="small" color="default" label="Retired" />;
+                          const readyAt = t.maintenanceReadyAt
+                            ? new Date(t.maintenanceReadyAt).getTime()
+                            : 0;
+                          const inService = t.blocked && readyAt > Date.now();
+                          if (inService) {
+                            const mins = Math.max(
+                              1,
+                              Math.ceil((readyAt - Date.now()) / 60000)
+                            );
+                            return (
+                              <Chip
+                                size="small"
+                                color="info"
+                                label={`In garage · ${mins}m left`}
+                              />
+                            );
+                          }
+                          if (t.blocked) return <Chip size="small" color="error" label="Blocked" />;
+                          return <Chip size="small" color="success" label="Operational" />;
+                        })()}
                       </TableCell>
                       <TableCell>
                         {t.purchasedAt ? new Date(t.purchasedAt).toLocaleDateString() : '—'}
@@ -910,33 +932,71 @@ export default function AdminDivisionDetail() {
                       {canStaff && (
                         <TableCell align="right">
                           <Stack direction="row" spacing={1} justifyContent="flex-end" flexWrap="wrap" useFlexGap>
-                            {t.blocked ? (
-                              <Tooltip title="Clear block without charging the wallet (force unblock)">
-                                <Button
-                                  size="small"
-                                  variant="outlined"
-                                  onClick={() => patchTruck(t._id, { blocked: false, wearKm: 0 })}
-                                >
-                                  Force unblock
-                                </Button>
-                              </Tooltip>
-                            ) : (
-                              <Button
-                                size="small"
-                                variant="outlined"
-                                color="warning"
-                                onClick={() => patchTruck(t._id, { blocked: true })}
-                              >
-                                Block
-                              </Button>
-                            )}
-                            <Tooltip title="Pay for maintenance from the division wallet">
+                            {/*
+                              Staff-only overrides (admin + communityManager).
+                              Skip timer / Force unblock / Block are hidden
+                              from everyone else and rejected at both the
+                              client (patchTruck guard) and the server
+                              (adminOrCommunityManagerAuth on PATCH /admin).
+                            */}
+                            {(() => {
+                              const readyAt = t.maintenanceReadyAt
+                                ? new Date(t.maintenanceReadyAt).getTime()
+                                : 0;
+                              const inService = t.blocked && readyAt > Date.now();
+                              if (inService) {
+                                return (
+                                  <Tooltip title="Admin / Community Manager: finish the repair immediately without waiting for the timer">
+                                    <Button
+                                      size="small"
+                                      variant="contained"
+                                      color="info"
+                                      onClick={() => patchTruck(t._id, { skipMaintenance: true })}
+                                    >
+                                      Skip timer
+                                    </Button>
+                                  </Tooltip>
+                                );
+                              }
+                              if (t.blocked) {
+                                return (
+                                  <Tooltip title="Admin / Community Manager: clear block without charging the wallet">
+                                    <Button
+                                      size="small"
+                                      variant="outlined"
+                                      onClick={() => patchTruck(t._id, { blocked: false, wearKm: 0 })}
+                                    >
+                                      Force unblock
+                                    </Button>
+                                  </Tooltip>
+                                );
+                              }
+                              return (
+                                <Tooltip title="Admin / Community Manager: force this truck into maintenance">
+                                  <Button
+                                    size="small"
+                                    variant="outlined"
+                                    color="warning"
+                                    onClick={() => patchTruck(t._id, { blocked: true })}
+                                  >
+                                    Block
+                                  </Button>
+                                </Tooltip>
+                              );
+                            })()}
+                            <Tooltip title="Pay for maintenance from the division wallet (starts the garage timer)">
                               <span>
                                 <Button
                                   size="small"
                                   variant="contained"
                                   color="warning"
-                                  disabled={!t.blocked && pct < 70}
+                                  disabled={
+                                    !t.blocked && pct < 70
+                                      ? true
+                                      : t.blocked &&
+                                        t.maintenanceReadyAt &&
+                                        new Date(t.maintenanceReadyAt).getTime() > Date.now()
+                                  }
                                   onClick={() => forceMaintain(t._id)}
                                 >
                                   Maintain
