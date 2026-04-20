@@ -20,17 +20,24 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Link
+  Link,
+  Divider,
 } from '@mui/material';
 import TruckThumbAvatar from '../components/TruckThumbAvatar';
 import SearchIcon from '@mui/icons-material/Search';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import StorefrontOutlinedIcon from '@mui/icons-material/StorefrontOutlined';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined';
 import AccountBalanceWalletOutlined from '@mui/icons-material/AccountBalanceWalletOutlined';
-import { getTruckMarketplaceCatalog, purchaseTruckModel } from '../services/truckMarketplaceService';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import {
+  getTruckMarketplaceCatalog,
+  purchaseDivisionTruck,
+  previewCoupon,
+} from '../services/truckMarketplaceService';
 import { getOwnedTrucksFleet } from '../services/fleetService';
-import { getMyWallet } from '../services/walletService';
+import axiosInstance from '../utils/axios';
 
 const T = {
   surface: '#111113',
@@ -40,7 +47,8 @@ const T = {
   accent: '#E4FF1A',
   accentDim: 'rgba(228,255,26,0.08)',
   success: '#22C55E',
-  info: '#38BDF8'
+  info: '#38BDF8',
+  warn: '#F59E0B',
 };
 
 const sxCard = {
@@ -50,26 +58,42 @@ const sxCard = {
   boxShadow: 'none',
   height: '100%',
   display: 'flex',
-  flexDirection: 'column'
+  flexDirection: 'column',
 };
 
 function tabProps(index) {
   return { id: `truck-market-tab-${index}`, 'aria-controls': `truck-market-tabpanel-${index}` };
 }
 
+/**
+ * Truck marketplace.
+ *
+ * - Catalogue is public, but purchases require the caller to be a division
+ *   leader (secondary role); the buy button is disabled otherwise.
+ * - Price is paid from the division wallet (not the rider's personal wallet).
+ * - Optional coupon code is previewed before confirmation.
+ */
 export default function TruckMarketplace() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [sourceLabel, setSourceLabel] = useState('');
   const [brands, setBrands] = useState([]);
   const [ownedTrucks, setOwnedTrucks] = useState([]);
-  const [wallet, setWallet] = useState(null);
+  const [myDivisionInfo, setMyDivisionInfo] = useState(null); // { division, isLeader }
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState(0);
+
   const [confirmModel, setConfirmModel] = useState(null);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponPreview, setCouponPreview] = useState(null);
+  const [couponChecking, setCouponChecking] = useState(false);
   const [purchaseLoading, setPurchaseLoading] = useState(false);
   const [purchaseError, setPurchaseError] = useState('');
   const [purchaseOk, setPurchaseOk] = useState('');
+
+  const divisionId = myDivisionInfo?.division?._id || null;
+  const isLeader = Boolean(myDivisionInfo?.isLeader);
+  const divisionBalance = Number(myDivisionInfo?.division?.walletBalance || 0);
 
   const ownedItemIds = useMemo(() => {
     const s = new Set();
@@ -84,15 +108,15 @@ export default function TruckMarketplace() {
     setError('');
     setPurchaseOk('');
     try {
-      const [cat, owned, w] = await Promise.all([
+      const [cat, owned, div] = await Promise.all([
         getTruckMarketplaceCatalog({ preferApi: false }),
         getOwnedTrucksFleet().catch(() => ({ ownedTrucks: [] })),
-        getMyWallet().catch(() => null)
+        axiosInstance.get('/me/division').then((r) => r.data).catch(() => null),
       ]);
       setBrands(Array.isArray(cat?.brands) ? cat.brands : []);
       setSourceLabel(cat?.source || '');
       setOwnedTrucks(owned?.ownedTrucks || []);
-      setWallet(w);
+      setMyDivisionInfo(div || null);
     } catch (e) {
       setError(e.response?.data?.message || 'Could not load truck marketplace.');
       setBrands([]);
@@ -105,19 +129,9 @@ export default function TruckMarketplace() {
     loadAll();
   }, [loadAll]);
 
-  const balance = Number(wallet?.balance ?? 0);
-
   const isOwned = useCallback(
-    (brandId, model) => {
-      if (model?.itemId && ownedItemIds.has(String(model.itemId))) return true;
-      return (ownedTrucks || []).some(
-        (t) =>
-          !t.truckItemId &&
-          String(t.brandId || '') === String(brandId) &&
-          String(t.modelId || '') === String(model.id)
-      );
-    },
-    [ownedItemIds, ownedTrucks]
+    (model) => model?.itemId && ownedItemIds.has(String(model.itemId)),
+    [ownedItemIds]
   );
 
   const filteredBrands = useMemo(() => {
@@ -130,7 +144,7 @@ export default function TruckMarketplace() {
           (m) =>
             String(m.name || '').toLowerCase().includes(q) ||
             String(b.name || '').toLowerCase().includes(q)
-        )
+        ),
       }))
       .filter((b) => (b.models || []).length > 0);
   }, [brands, search]);
@@ -143,15 +157,59 @@ export default function TruckMarketplace() {
 
   const tabBrandList = useMemo(() => [{ id: '_all', name: 'All brands' }, ...brands], [brands]);
 
-  const handlePurchase = async () => {
+  const openConfirm = (brand, model) => {
+    setPurchaseError('');
+    setCouponCode('');
+    setCouponPreview(null);
+    setConfirmModel({ brandId: brand.id, brandName: brand.name, model });
+  };
+
+  const closeConfirm = () => {
+    if (purchaseLoading) return;
+    setConfirmModel(null);
+    setCouponCode('');
+    setCouponPreview(null);
+  };
+
+  const handleCouponCheck = async () => {
     if (!confirmModel) return;
-    const { brandId, model } = confirmModel;
+    const trimmed = String(couponCode || '').trim();
+    if (!trimmed) {
+      setCouponPreview(null);
+      return;
+    }
+    setCouponChecking(true);
+    try {
+      const p = await previewCoupon(trimmed, confirmModel.model.itemId);
+      setCouponPreview(p);
+    } catch (e) {
+      setCouponPreview({
+        valid: false,
+        reason: e.response?.data?.message || 'INVALID',
+        effectivePrice: Number(confirmModel.model.purchasePriceTokens) || 0,
+        discount: 0,
+      });
+    } finally {
+      setCouponChecking(false);
+    }
+  };
+
+  const handlePurchase = async () => {
+    if (!confirmModel || !divisionId || !isLeader) return;
     setPurchaseLoading(true);
     setPurchaseError('');
     try {
-      await purchaseTruckModel(brandId, model.id);
-      setPurchaseOk(`Purchased ${model.name}.`);
+      const res = await purchaseDivisionTruck(
+        divisionId,
+        confirmModel.model.itemId,
+        couponPreview?.valid ? couponCode.trim() : ''
+      );
+      setPurchaseOk(
+        `Purchased ${confirmModel.model.name} for ${Number(res.effectivePrice || 0).toLocaleString()} tokens.`
+      );
       setConfirmModel(null);
+      setCouponCode('');
+      setCouponPreview(null);
       await loadAll();
     } catch (e) {
       setPurchaseError(e.response?.data?.message || 'Purchase failed.');
@@ -160,9 +218,20 @@ export default function TruckMarketplace() {
     }
   };
 
+  const basePrice = Math.max(0, Number(confirmModel?.model?.purchasePriceTokens) || 0);
+  const payable = couponPreview?.valid ? Number(couponPreview.effectivePrice) : basePrice;
+  const canAffordConfirm = divisionId && payable <= divisionBalance;
+
   return (
     <Box sx={{ py: 1 }}>
-      <Stack direction="row" alignItems="flex-start" justifyContent="space-between" flexWrap="wrap" gap={2} sx={{ mb: 3 }}>
+      <Stack
+        direction="row"
+        alignItems="flex-start"
+        justifyContent="space-between"
+        flexWrap="wrap"
+        gap={2}
+        sx={{ mb: 3 }}
+      >
         <Box>
           <Stack direction="row" alignItems="center" gap={1.5} sx={{ mb: 1 }}>
             <Box
@@ -174,7 +243,7 @@ export default function TruckMarketplace() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 bgcolor: T.accentDim,
-                color: T.accent
+                color: T.accent,
               }}
             >
               <StorefrontOutlinedIcon />
@@ -184,11 +253,13 @@ export default function TruckMarketplace() {
             </Typography>
           </Stack>
           <Typography sx={{ color: T.textMuted, maxWidth: 640, fontSize: '0.95rem' }}>
-            Buy truck models with wallet tokens. Owned trucks appear in{' '}
+            Division leaders buy trucks for the entire division from here. The price is paid from the{' '}
+            <strong>division wallet</strong> and the truck is usable by every active member. Purchased
+            trucks show up in{' '}
             <Link component={RouterLink} to="/fleet" underline="hover" sx={{ color: T.info, fontWeight: 600 }}>
               Fleet
-            </Link>{' '}
-            and can accrue odometer from matched deliveries.
+            </Link>
+            .
           </Typography>
           {sourceLabel ? (
             <Typography variant="caption" sx={{ color: T.textMuted, display: 'block', mt: 0.5 }}>
@@ -197,17 +268,32 @@ export default function TruckMarketplace() {
           ) : null}
         </Box>
         <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-          <Chip
-            icon={<AccountBalanceWalletOutlined sx={{ fontSize: '18px !important' }} />}
-            label={`Balance: ${balance.toLocaleString()}`}
-            variant="outlined"
-            sx={{ fontWeight: 700 }}
-          />
+          {divisionId ? (
+            <Chip
+              icon={<AccountBalanceWalletOutlined sx={{ fontSize: '18px !important' }} />}
+              label={`Division wallet: ${divisionBalance.toLocaleString()}`}
+              variant="outlined"
+              sx={{ fontWeight: 700 }}
+            />
+          ) : null}
           <Button variant="outlined" size="small" startIcon={<RefreshIcon />} onClick={() => loadAll()}>
             Refresh
           </Button>
         </Stack>
       </Stack>
+
+      {!loading && !divisionId && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          You're not part of a division yet. Join or create one to view your division's fleet. You can still browse the
+          catalogue below.
+        </Alert>
+      )}
+      {!loading && divisionId && !isLeader && (
+        <Alert severity="info" icon={<LockOutlinedIcon />} sx={{ mb: 2 }}>
+          Only your division leader can buy trucks. You can still browse the catalogue and see what your division
+          already owns.
+        </Alert>
+      )}
 
       {loading && <LinearProgress sx={{ mb: 2, borderRadius: 1 }} />}
       {error && (
@@ -240,7 +326,7 @@ export default function TruckMarketplace() {
                 <InputAdornment position="start">
                   <SearchIcon fontSize="small" />
                 </InputAdornment>
-              )
+              ),
             }}
           />
 
@@ -273,8 +359,9 @@ export default function TruckMarketplace() {
                 {(brand.models || []).map((model) => {
                   const price = Math.max(0, Number(model.purchasePriceTokens) || 0);
                   const rent = Math.max(0, Number(model.rentPerJobTokens) || 0);
-                  const owned = isOwned(brand.id, model);
-                  const canAfford = price <= balance;
+                  const owned = isOwned(model);
+                  const canBuy = isLeader && !!divisionId;
+                  const canAfford = price <= divisionBalance;
                   return (
                     <Grid item xs={12} sm={6} md={4} key={`${brand.id}-${model.id}`}>
                       <Card sx={sxCard}>
@@ -305,9 +392,7 @@ export default function TruckMarketplace() {
                           </Stack>
                           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                             <Chip size="small" label={`${price.toLocaleString()} tokens`} sx={{ fontWeight: 600 }} />
-                            {rent > 0 ? (
-                              <Chip size="small" variant="outlined" label={`${rent}/job rent`} />
-                            ) : null}
+                            {rent > 0 ? <Chip size="small" variant="outlined" label={`${rent}/job rent`} /> : null}
                             {Number(model.stock) > 0 ? (
                               <Chip size="small" variant="outlined" label={`Stock ${model.stock}`} />
                             ) : null}
@@ -317,13 +402,14 @@ export default function TruckMarketplace() {
                           <Button
                             fullWidth
                             variant="contained"
-                            disabled={owned || !canAfford}
-                            onClick={() => {
-                              setPurchaseError('');
-                              setConfirmModel({ brandId: brand.id, brandName: brand.name, model });
-                            }}
+                            disabled={!canBuy || !canAfford}
+                            onClick={() => openConfirm(brand, model)}
                           >
-                            {owned ? 'Owned' : !canAfford ? 'Insufficient balance' : 'Purchase'}
+                            {!canBuy
+                              ? 'Leader only'
+                              : !canAfford
+                              ? 'Division wallet low'
+                              : 'Buy for division'}
                           </Button>
                         </CardActions>
                       </Card>
@@ -336,14 +422,80 @@ export default function TruckMarketplace() {
         </>
       )}
 
-      <Dialog open={Boolean(confirmModel)} onClose={() => !purchaseLoading && setConfirmModel(null)} maxWidth="xs" fullWidth>
-        <DialogTitle>Confirm purchase</DialogTitle>
+      <Dialog open={Boolean(confirmModel)} onClose={closeConfirm} maxWidth="xs" fullWidth>
+        <DialogTitle>Confirm division purchase</DialogTitle>
         <DialogContent>
           {confirmModel && (
-            <Typography variant="body2" color="text.secondary">
-              Buy <strong>{confirmModel.model.name}</strong> ({confirmModel.brandName}) for{' '}
-              <strong>{Math.max(0, Number(confirmModel.model.purchasePriceTokens) || 0).toLocaleString()}</strong> tokens?
-            </Typography>
+            <Stack spacing={1.5}>
+              <Typography variant="body2" color="text.secondary">
+                Buying <strong>{confirmModel.model.name}</strong> ({confirmModel.brandName}) for your division
+                <strong> {myDivisionInfo?.division?.name || ''}</strong>.
+              </Typography>
+              <Stack direction="row" justifyContent="space-between">
+                <Typography variant="body2">Base price</Typography>
+                <Typography variant="body2">{basePrice.toLocaleString()} tokens</Typography>
+              </Stack>
+
+              <Divider />
+
+              <TextField
+                size="small"
+                label="Coupon code (optional)"
+                value={couponCode}
+                onChange={(e) => {
+                  setCouponCode(e.target.value.toUpperCase());
+                  setCouponPreview(null);
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LocalOfferOutlinedIcon fontSize="small" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <Stack direction="row" spacing={1}>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  disabled={!couponCode.trim() || couponChecking}
+                  onClick={handleCouponCheck}
+                >
+                  {couponChecking ? 'Checking…' : 'Apply coupon'}
+                </Button>
+                {couponPreview?.valid ? (
+                  <Chip
+                    size="small"
+                    color="success"
+                    label={`-${Number(couponPreview.discount).toLocaleString()} tokens`}
+                  />
+                ) : null}
+                {couponPreview && !couponPreview.valid ? (
+                  <Chip
+                    size="small"
+                    color="warning"
+                    label={couponPreview.reason || 'INVALID'}
+                  />
+                ) : null}
+              </Stack>
+
+              <Divider />
+
+              <Stack direction="row" justifyContent="space-between">
+                <Typography variant="body2" fontWeight={600}>
+                  Division pays
+                </Typography>
+                <Typography variant="body2" fontWeight={600}>
+                  {payable.toLocaleString()} tokens
+                </Typography>
+              </Stack>
+              <Typography variant="caption" sx={{ color: T.textMuted }}>
+                Division wallet balance: {divisionBalance.toLocaleString()} tokens
+              </Typography>
+              {!canAffordConfirm && (
+                <Alert severity="warning">Insufficient division wallet balance for this purchase.</Alert>
+              )}
+            </Stack>
           )}
           {purchaseError && (
             <Alert severity="error" sx={{ mt: 2 }}>
@@ -352,10 +504,14 @@ export default function TruckMarketplace() {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmModel(null)} disabled={purchaseLoading}>
+          <Button onClick={closeConfirm} disabled={purchaseLoading}>
             Cancel
           </Button>
-          <Button variant="contained" onClick={handlePurchase} disabled={purchaseLoading}>
+          <Button
+            variant="contained"
+            onClick={handlePurchase}
+            disabled={purchaseLoading || !canAffordConfirm || !isLeader}
+          >
             {purchaseLoading ? 'Processing…' : 'Buy'}
           </Button>
         </DialogActions>

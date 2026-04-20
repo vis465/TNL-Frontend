@@ -213,6 +213,12 @@ export const ADMIN_SECTIONS = [
         Icon: LocalOfferOutlined,
         roles: ['admin'],
       },
+      {
+        to: '/admin/coupons',
+        label: 'Marketplace coupons',
+        Icon: LocalOfferOutlined,
+        roles: ['admin'],
+      },
     ],
   },
   {
@@ -375,6 +381,15 @@ export const ADMIN_DASHBOARD_CARDS = [
     to: '/admin/cargo-rates',
     icon: LocalOfferOutlined,
     color: 'secondary',
+    roles: ['admin'],
+  },
+  {
+    group: 'Divisions',
+    title: 'Marketplace coupons',
+    description: 'Create and manage discount codes for truck marketplace purchases.',
+    to: '/admin/coupons',
+    icon: LocalOfferOutlined,
+    color: 'success',
     roles: ['admin'],
   },
   {

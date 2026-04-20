@@ -53,8 +53,12 @@ import {
   Schedule as ScheduleIcon,
   LocalShipping,
   DirectionsCar as DirectionsCarIcon,
+  GroupsOutlined,
+  AccountBalanceWalletOutlined,
+  EmojiEventsOutlined,
 } from '@mui/icons-material';
 import FullScreenVideoPlayer from '../components/FullScreenVideoPlayer';
+import DivisionsCarousel from '../components/DivisionsCarousel';
 import { leaderboardService } from '../services/leaderboardService';
 
 // Add CSS animations for space effects
@@ -1153,8 +1157,6 @@ const Landing = () => {
           </Box>
         </Box>
       </Box>
-
-      {/* Welcome Section */}
       <Box ref={aboutRef} sx={{ py: 12, bgcolor: 'background.default' }}>
         <Container maxWidth="lg">
           <motion.div
@@ -1208,6 +1210,166 @@ const Landing = () => {
           </motion.div>
         </Container>
       </Box>
+
+      {/* Divisions intro + carousel (post-hero) */}
+      <Box sx={{ bgcolor: 'background.default', pt: { xs: 8, md: 12 }, pb: { xs: 5, md: 7 } }}>
+        <Container maxWidth="lg">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.6 }}
+          >
+            <Box sx={{ textAlign: 'center', mb: { xs: 5, md: 6 } }}>
+              <Typography
+                variant="overline"
+                sx={{
+                  color: 'warning.main',
+                  letterSpacing: 3,
+                  fontWeight: 700,
+                  display: 'block',
+                  mb: 1,
+                }}
+              >
+                VTC DIVISIONAL SYSTEM
+              </Typography>
+              <Typography
+                variant="h3"
+                fontWeight={800}
+                sx={{
+                  lineHeight: 1.1,
+                  mb: 2,
+                  fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
+                }}
+              >
+                Player-run crews. Shared wallets. One leaderboard.
+              </Typography>
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                sx={{ maxWidth: 760, mx: 'auto', fontSize: { xs: '1rem', md: '1.1rem' } }}
+              >
+                A division is a squad of riders who roll together under a shared
+                identity. Leaders buy trucks from the division wallet, members
+                drive them, and every delivery feeds the same revenue pool —
+                climbing the division leaderboard as a team.
+              </Typography>
+            </Box>
+
+            <Grid container spacing={3} sx={{ mb: { xs: 5, md: 7 } }}>
+              {[
+                {
+                  Icon: GroupsOutlined,
+                  title: 'Join a crew',
+                  body: 'Apply to a division or get invited by a leader. Members share identity, colors, and a spot on the board.',
+                },
+                {
+                  Icon: LocalShipping,
+                  title: 'Shared fleet',
+                  body: 'Trucks are owned by the division, not the individual. Any member can drive any truck on a job.',
+                },
+                {
+                  Icon: AccountBalanceWalletOutlined,
+                  title: 'Shared wallet',
+                  body: 'A slice of every job feeds the division wallet — leaders reinvest it into trucks, maintenance, and payouts.',
+                },
+                {
+                  Icon: EmojiEventsOutlined,
+                  title: 'Compete together',
+                  body: 'Jobs, kilometers, and revenue all stack onto the global division leaderboard. Ride to the top together.',
+                },
+              ].map(({ Icon, title, body }) => (
+                <Grid item xs={12} sm={6} md={3} key={title}>
+                  <Box
+                    sx={{
+                      height: '100%',
+                      p: 3,
+                      borderRadius: 3,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      bgcolor: 'background.paper',
+                      transition: 'transform 0.2s, box-shadow 0.2s, border-color 0.2s',
+                      '&:hover': {
+                        transform: 'translateY(-4px)',
+                        boxShadow: 4,
+                        borderColor: 'warning.main',
+                      },
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 2,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        bgcolor: 'warning.main',
+                        color: 'common.white',
+                        mb: 2,
+                      }}
+                    >
+                      <Icon />
+                    </Box>
+                    <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
+                      {title}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {body}
+                    </Typography>
+                  </Box>
+                </Grid>
+              ))}
+            </Grid>
+
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              justifyContent="space-between"
+              alignItems={{ xs: 'flex-start', sm: 'flex-end' }}
+              spacing={2}
+              sx={{ mb: 1 }}
+            >
+              <Box>
+                <Typography
+                  variant="overline"
+                  sx={{
+                    color: 'warning.main',
+                    letterSpacing: 3,
+                    fontWeight: 700,
+                    display: 'block',
+                  }}
+                >
+                  MEET THE CREWS
+                </Typography>
+                <Typography
+                  variant="h4"
+                  fontWeight={800}
+                  sx={{ lineHeight: 1.1, fontSize: { xs: '1.75rem', md: '2.25rem' } }}
+                >
+                  List of divisions
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                  Swipe through the active divisions in the community.
+                </Typography>
+              </Box>
+              <Button
+                component="a"
+                href="/divisions"
+                variant="contained"
+                color="warning"
+                endIcon={<ArrowForwardIcon />}
+              >
+                See all divisions
+              </Button>
+            </Stack>
+          </motion.div>
+        </Container>
+      </Box>
+
+      <DivisionsCarousel />
+
+      {/* Welcome Section */}
+     
 
       {/* Stats Section */}
       <Box sx={{ py: 8, color: 'white' }}>

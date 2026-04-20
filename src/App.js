@@ -106,6 +106,8 @@ import MyDivision from "./pages/MyDivision";
 import DivisionInvites from "./pages/DivisionInvites";
 import DivisionLeaderboard from "./pages/DivisionLeaderboard";
 import DivisionPublic from "./pages/DivisionPublic";
+import DivisionsIndex from "./pages/DivisionsIndex";
+import AdminCoupons from "./pages/AdminCoupons";
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -347,6 +349,7 @@ function App() {
                     <Route path="/events" element={<Home />} />
                     <Route path="/leaderboard" element={<Leaderboard />} />
                     <Route path="/division-leaderboard" element={<DivisionLeaderboard />} />
+                    <Route path="/divisions" element={<DivisionsIndex />} />
                     <Route path="/divisions/:slug" element={<DivisionPublic />} />
                     <Route path="/map-test" element={<MapPlayground />} />
                     <Route
@@ -591,6 +594,14 @@ function App() {
                         element={
                           <PrivateRoute allowedRoles={["admin"]}>
                             <AdminCargoRates />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="coupons"
+                        element={
+                          <PrivateRoute allowedRoles={["admin"]}>
+                            <AdminCoupons />
                           </PrivateRoute>
                         }
                       />

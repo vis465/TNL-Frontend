@@ -16,6 +16,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TableSortLabel,
   Tab,
   Tabs,
   Typography,
@@ -30,13 +31,17 @@ export default function DivisionLeaderboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [tab, setTab] = useState(0);
+  const [sort, setSort] = useState('totalRevenue');
+  const [dir, setDir] = useState('desc');
 
-  const load = async () => {
+  const load = async (nextSort = sort, nextDir = dir) => {
     setLoading(true);
     setError('');
     try {
       const [lb, list] = await Promise.all([
-        axiosInstance.get('/divisions/leaderboard/global', { params: { limit: 50 } }),
+        axiosInstance.get('/divisions/leaderboard/global', {
+          params: { limit: 50, sort: nextSort, dir: nextDir },
+        }),
         axiosInstance.get('/divisions/public/list').catch(() => ({ data: { divisions: [] } })),
       ]);
       setRows(lb.data.divisions || []);
@@ -50,7 +55,15 @@ export default function DivisionLeaderboard() {
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const toggleSort = (key) => {
+    const nextDir = sort === key ? (dir === 'asc' ? 'desc' : 'asc') : 'desc';
+    setSort(key);
+    setDir(nextDir);
+    load(key, nextDir);
+  };
 
   const divBySlug = new Map(divisions.map((d) => [String(d._id), d]));
   const top = rows.slice(0, 3);
@@ -131,11 +144,60 @@ export default function DivisionLeaderboard() {
                 <TableHead>
                   <TableRow>
                     <TableCell>#</TableCell>
-                    <TableCell>Division</TableCell>
-                    <TableCell align="right">Members</TableCell>
-                    <TableCell align="right">Jobs</TableCell>
-                    <TableCell align="right">Revenue</TableCell>
-                    <TableCell align="right">Wallet tokens</TableCell>
+                    <TableCell sortDirection={sort === 'name' ? dir : false}>
+                      <TableSortLabel
+                        active={sort === 'name'}
+                        direction={sort === 'name' ? dir : 'asc'}
+                        onClick={() => toggleSort('name')}
+                      >
+                        Division
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="right" sortDirection={sort === 'memberCount' ? dir : false}>
+                      <TableSortLabel
+                        active={sort === 'memberCount'}
+                        direction={sort === 'memberCount' ? dir : 'desc'}
+                        onClick={() => toggleSort('memberCount')}
+                      >
+                        Members
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="right" sortDirection={sort === 'totalJobs' ? dir : false}>
+                      <TableSortLabel
+                        active={sort === 'totalJobs'}
+                        direction={sort === 'totalJobs' ? dir : 'desc'}
+                        onClick={() => toggleSort('totalJobs')}
+                      >
+                        Jobs
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="right" sortDirection={sort === 'totalDistance' ? dir : false}>
+                      <TableSortLabel
+                        active={sort === 'totalDistance'}
+                        direction={sort === 'totalDistance' ? dir : 'desc'}
+                        onClick={() => toggleSort('totalDistance')}
+                      >
+                        Distance (km)
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="right" sortDirection={sort === 'totalRevenue' ? dir : false}>
+                      <TableSortLabel
+                        active={sort === 'totalRevenue'}
+                        direction={sort === 'totalRevenue' ? dir : 'desc'}
+                        onClick={() => toggleSort('totalRevenue')}
+                      >
+                        Revenue
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="right" sortDirection={sort === 'totalTaxTokens' ? dir : false}>
+                      <TableSortLabel
+                        active={sort === 'totalTaxTokens'}
+                        direction={sort === 'totalTaxTokens' ? dir : 'desc'}
+                        onClick={() => toggleSort('totalTaxTokens')}
+                      >
+                        Wallet tokens
+                      </TableSortLabel>
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -165,6 +227,7 @@ export default function DivisionLeaderboard() {
                         </TableCell>
                         <TableCell align="right">{r.memberCount}</TableCell>
                         <TableCell align="right">{r.totalJobs}</TableCell>
+                        <TableCell align="right">{Math.round(r.totalDistance || 0).toLocaleString()}</TableCell>
                         <TableCell align="right">{Math.round(r.totalRevenue || 0).toLocaleString()}</TableCell>
                         <TableCell align="right">{Math.round(r.totalTaxTokens || 0).toLocaleString()}</TableCell>
                       </TableRow>
@@ -172,7 +235,7 @@ export default function DivisionLeaderboard() {
                   })}
                   {!rows.length && !loading && (
                     <TableRow>
-                      <TableCell colSpan={6} align="center">
+                      <TableCell colSpan={7} align="center">
                         <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>No division activity yet.</Typography>
                       </TableCell>
                     </TableRow>

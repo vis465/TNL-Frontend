@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import {
   Alert,
@@ -23,6 +23,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TableSortLabel,
   TextField,
   Typography,
 } from '@mui/material';
@@ -46,6 +47,29 @@ export default function DivisionPublic() {
   const [applyMessage, setApplyMessage] = useState('');
   const [applyBusy, setApplyBusy] = useState(false);
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
+  const [memberSort, setMemberSort] = useState('revenue');
+  const [memberDir, setMemberDir] = useState('desc');
+
+  const leaderboard = data?.leaderboard;
+  const sortedLeaderboard = useMemo(() => {
+    const rows = [...(leaderboard || [])];
+    rows.sort((a, b) => {
+      if (memberSort === 'name') {
+        return memberDir === 'asc'
+          ? String(a.name || '').localeCompare(String(b.name || ''))
+          : String(b.name || '').localeCompare(String(a.name || ''));
+      }
+      const av = Number(a[memberSort] || 0);
+      const bv = Number(b[memberSort] || 0);
+      return memberDir === 'asc' ? av - bv : bv - av;
+    });
+    return rows;
+  }, [leaderboard, memberSort, memberDir]);
+
+  const toggleMemberSort = (key) => {
+    setMemberDir((prev) => (memberSort === key ? (prev === 'asc' ? 'desc' : 'asc') : 'desc'));
+    setMemberSort(key);
+  };
 
   const user = getItemWithExpiry('user');
   const isAuthed = Boolean(user?.token || user?.id || user?._id);
@@ -126,7 +150,7 @@ export default function DivisionPublic() {
     );
   }
 
-  const { division, members, leaderboard, recentJobs = [] } = data;
+  const { division, members, recentJobs = [] } = data;
 
   return (
     <Box sx={{ minHeight: '100vh', pb: 6 }}>
@@ -141,7 +165,7 @@ export default function DivisionPublic() {
           background: division.bannerUrl ? undefined : (t) => `linear-gradient(135deg, ${t.palette.primary.dark}, ${t.palette.secondary.dark})`,
         }}
       >
-        <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.75), rgba(0,0,0,0.1))' }} />
+        <Box sx={{ position: 'absolute', inset: 0 }} />
       </Box>
 
       <Container maxWidth="lg">
@@ -293,14 +317,46 @@ export default function DivisionPublic() {
                   <TableHead>
                     <TableRow>
                       <TableCell>#</TableCell>
-                      <TableCell>Rider</TableCell>
-                      <TableCell align="right">Jobs</TableCell>
-                      <TableCell align="right">Revenue</TableCell>
-                      <TableCell align="right">Distance</TableCell>
+                      <TableCell sortDirection={memberSort === 'name' ? memberDir : false}>
+                        <TableSortLabel
+                          active={memberSort === 'name'}
+                          direction={memberSort === 'name' ? memberDir : 'asc'}
+                          onClick={() => toggleMemberSort('name')}
+                        >
+                          Rider
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell align="right" sortDirection={memberSort === 'jobs' ? memberDir : false}>
+                        <TableSortLabel
+                          active={memberSort === 'jobs'}
+                          direction={memberSort === 'jobs' ? memberDir : 'desc'}
+                          onClick={() => toggleMemberSort('jobs')}
+                        >
+                          Jobs
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell align="right" sortDirection={memberSort === 'revenue' ? memberDir : false}>
+                        <TableSortLabel
+                          active={memberSort === 'revenue'}
+                          direction={memberSort === 'revenue' ? memberDir : 'desc'}
+                          onClick={() => toggleMemberSort('revenue')}
+                        >
+                          Revenue
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell align="right" sortDirection={memberSort === 'distance' ? memberDir : false}>
+                        <TableSortLabel
+                          active={memberSort === 'distance'}
+                          direction={memberSort === 'distance' ? memberDir : 'desc'}
+                          onClick={() => toggleMemberSort('distance')}
+                        >
+                          Distance
+                        </TableSortLabel>
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {(leaderboard || []).map((r, idx) => (
+                    {sortedLeaderboard.map((r, idx) => (
                       <TableRow key={r.riderId} hover>
                         <TableCell>{idx + 1}</TableCell>
                         <TableCell>

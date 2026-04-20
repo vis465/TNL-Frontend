@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Autocomplete,
@@ -22,8 +22,11 @@ import {
   Typography,
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
+import LocalShippingOutlined from '@mui/icons-material/LocalShippingOutlined';
+import BuildOutlined from '@mui/icons-material/BuildOutlined';
 import axiosInstance from '../utils/axios';
 import { getItemWithExpiry } from '../localStorageWithExpiry';
+import { getDivisionTrucks } from '../services/fleetService';
 
 export default function MyDivision() {
   const [data, setData] = useState(null);
@@ -40,6 +43,8 @@ export default function MyDivision() {
   const [inviteQuery, setInviteQuery] = useState('');
   const [inviteLoading, setInviteLoading] = useState(false);
 
+  const [fleetTrucks, setFleetTrucks] = useState([]);
+
   const load = async () => {
     setLoading(true);
     setError('');
@@ -47,16 +52,19 @@ export default function MyDivision() {
       const { data: d } = await axiosInstance.get('/me/division');
       setData(d);
       if (d?.division?._id) {
-        const [{ data: l }, { data: m }] = await Promise.all([
+        const [{ data: l }, { data: m }, fleet] = await Promise.all([
           axiosInstance.get(`/divisions/${d.division._id}/leaderboard`, { params: { limit: 30 } }),
           axiosInstance.get(`/divisions/${d.division._id}/members`).catch(() => ({ data: { members: [] } })),
+          getDivisionTrucks(d.division._id).catch(() => ({ trucks: [] })),
         ]);
         setLb(l.riders || []);
         setMembers(m.members || []);
+        setFleetTrucks(Array.isArray(fleet?.trucks) ? fleet.trucks : []);
         setTaxPct(String(d.division.taxPercent ?? 0));
       } else {
         setLb([]);
         setMembers([]);
+        setFleetTrucks([]);
       }
     } catch (e) {
       setError(e?.response?.data?.message || 'Failed to load');
@@ -73,6 +81,17 @@ export default function MyDivision() {
   const uid = String(user.id || user._id || '');
   const leaderIdStr = String(div?.leaderId || div?.leader?._id || '');
   const isLeader = Boolean(div && uid && leaderIdStr && uid === leaderIdStr);
+
+  const fleetSummary = useMemo(() => {
+    const total = fleetTrucks.length;
+    const blocked = fleetTrucks.filter((t) => t.blocked).length;
+    const wearHigh = fleetTrucks.filter((t) => {
+      const pct = (Number(t.wearKm || 0) / Math.max(1, Number(t.wearThresholdKm || 1))) * 100;
+      return pct >= 70 && !t.blocked;
+    }).length;
+    const fleetKm = fleetTrucks.reduce((s, t) => s + (Number(t.odometerKm) || 0), 0);
+    return { total, blocked, wearHigh, fleetKm };
+  }, [fleetTrucks]);
 
   useEffect(() => {
     if (!isLeader || !div?._id) return;
@@ -291,6 +310,62 @@ export default function MyDivision() {
               </CardContent>
             </Card>
           )}
+
+          <Card variant="outlined">
+            <CardContent>
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
+                <LocalShippingOutlined color="primary" />
+                <Typography fontWeight={700}>Division fleet</Typography>
+                <Box sx={{ flex: 1 }} />
+                <Button size="small" variant="outlined" component={RouterLink} to="/fleet">
+                  Open fleet
+                </Button>
+                {isLeader && (
+                  <Button
+                    size="small"
+                    variant="contained"
+                    component={RouterLink}
+                    to="/trucks/marketplace"
+                  >
+                    Buy truck
+                  </Button>
+                )}
+              </Stack>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                <Chip size="small" label={`Trucks ${fleetSummary.total}`} />
+                <Chip
+                  size="small"
+                  color={fleetSummary.blocked ? 'error' : 'success'}
+                  icon={<BuildOutlined sx={{ fontSize: 16 }} />}
+                  label={
+                    fleetSummary.blocked
+                      ? `${fleetSummary.blocked} blocked`
+                      : 'All operational'
+                  }
+                />
+                {fleetSummary.wearHigh > 0 && (
+                  <Chip
+                    size="small"
+                    color="warning"
+                    variant="outlined"
+                    label={`${fleetSummary.wearHigh} wearing`}
+                  />
+                )}
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  label={`${Math.round(fleetSummary.fleetKm).toLocaleString()} km driven`}
+                />
+              </Stack>
+              {fleetSummary.blocked > 0 && isLeader && (
+                <Alert severity="warning" sx={{ mt: 1.5 }}>
+                  {fleetSummary.blocked} truck{fleetSummary.blocked === 1 ? '' : 's'} need
+                  maintenance. Division tax from matching jobs is withheld until serviced —
+                  head to Fleet to pay the bill.
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
 
           <Card>
             <CardContent>

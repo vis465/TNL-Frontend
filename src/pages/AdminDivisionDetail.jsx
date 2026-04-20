@@ -74,6 +74,9 @@ export default function AdminDivisionDetail() {
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [deleting, setDeleting] = useState(false);
 
+  const [trucks, setTrucks] = useState([]);
+  const [trucksLoading, setTrucksLoading] = useState(false);
+
   const user = getItemWithExpiry('user') || {};
   const uid = String(user.id || user._id || '');
   const leaderIdStr = String(division?.leaderId || division?.leader?._id || '');
@@ -107,6 +110,42 @@ export default function AdminDivisionDetail() {
       setError(e?.response?.data?.message || 'Failed to load');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadTrucks = async () => {
+    if (!id) return;
+    setTrucksLoading(true);
+    try {
+      const { data } = await axiosInstance.get(`/divisions/${id}/trucks`);
+      setTrucks(Array.isArray(data?.trucks) ? data.trucks : []);
+    } catch (e) {
+      setError(e?.response?.data?.message || 'Failed to load trucks');
+    } finally {
+      setTrucksLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (tab === 6 && id) loadTrucks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, id]);
+
+  const patchTruck = async (truckId, body) => {
+    try {
+      await axiosInstance.patch(`/divisions/${id}/trucks/${truckId}/admin`, body);
+      await loadTrucks();
+    } catch (e) {
+      alert(e?.response?.data?.message || 'Truck update failed');
+    }
+  };
+
+  const forceMaintain = async (truckId) => {
+    try {
+      await axiosInstance.post(`/divisions/${id}/trucks/${truckId}/maintain`);
+      await loadTrucks();
+    } catch (e) {
+      alert(e?.response?.data?.message || 'Maintenance failed');
     }
   };
 
@@ -354,7 +393,7 @@ export default function AdminDivisionDetail() {
         </Card>
       )}
 
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
+      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }} variant="scrollable" scrollButtons="auto">
         <Tab label="Overview" />
         <Tab label="Members" />
         <Tab label="Leaderboard" />
@@ -363,6 +402,7 @@ export default function AdminDivisionDetail() {
         <Tab
           label={`Requests${joinRequests.length ? ` (${joinRequests.length})` : ''}`}
         />
+        <Tab label={`Trucks${trucks.length ? ` (${trucks.length})` : ''}`} />
       </Tabs>
 
       {tab === 0 && division && (
@@ -776,6 +816,157 @@ export default function AdminDivisionDetail() {
                     <TableCell colSpan={canManageMembers ? 4 : 3} align="center">
                       <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
                         No pending applications.
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {tab === 6 && (
+        <Card>
+          <CardContent>
+            <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'center' }} sx={{ mb: 2 }} spacing={1}>
+              <Box>
+                <Typography variant="subtitle1" fontWeight={700}>
+                  Division fleet
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Trucks purchased from the division wallet. Blocked trucks freeze the division's
+                  tax contribution for matching jobs until maintenance is paid.
+                </Typography>
+              </Box>
+              <Button size="small" variant="outlined" onClick={loadTrucks} disabled={trucksLoading}>
+                {trucksLoading ? 'Loading…' : 'Refresh'}
+              </Button>
+            </Stack>
+            {trucksLoading && <LinearProgress sx={{ mb: 1 }} />}
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Truck</TableCell>
+                  <TableCell align="right">Odometer</TableCell>
+                  <TableCell align="right">Deliveries</TableCell>
+                  <TableCell>Wear</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Purchased</TableCell>
+                  {canStaff && <TableCell align="right">Admin</TableCell>}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {trucks.map((t) => {
+                  const pct = Math.min(
+                    100,
+                    Math.round((Number(t.wearKm || 0) / Math.max(1, Number(t.wearThresholdKm || 1))) * 100)
+                  );
+                  return (
+                    <TableRow key={t._id} hover>
+                      <TableCell>
+                        <Stack direction="row" spacing={1.5} alignItems="center">
+                          <Avatar
+                            src={t.image || t.brandLogo || undefined}
+                            variant="rounded"
+                            sx={{ width: 40, height: 40, bgcolor: 'action.hover' }}
+                          >
+                            {(t.brandName || 'T')[0]}
+                          </Avatar>
+                          <Box>
+                            <Typography variant="body2" fontWeight={600}>
+                              {t.displayName || `${t.brandName || ''} ${t.modelName || ''}`.trim()}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {t.brandName} · {t.modelName}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </TableCell>
+                      <TableCell align="right">
+                        {Math.round(Number(t.odometerKm) || 0).toLocaleString()} km
+                      </TableCell>
+                      <TableCell align="right">{t.deliveriesCount || 0}</TableCell>
+                      <TableCell>
+                        <Chip
+                          size="small"
+                          color={pct >= 100 ? 'error' : pct >= 70 ? 'warning' : 'success'}
+                          label={`${pct}%`}
+                          variant="outlined"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {t.retired ? (
+                          <Chip size="small" color="default" label="Retired" />
+                        ) : t.blocked ? (
+                          <Chip size="small" color="error" label="Blocked" />
+                        ) : (
+                          <Chip size="small" color="success" label="Operational" />
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {t.purchasedAt ? new Date(t.purchasedAt).toLocaleDateString() : '—'}
+                      </TableCell>
+                      {canStaff && (
+                        <TableCell align="right">
+                          <Stack direction="row" spacing={1} justifyContent="flex-end" flexWrap="wrap" useFlexGap>
+                            {t.blocked ? (
+                              <Tooltip title="Clear block without charging the wallet (force unblock)">
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  onClick={() => patchTruck(t._id, { blocked: false, wearKm: 0 })}
+                                >
+                                  Force unblock
+                                </Button>
+                              </Tooltip>
+                            ) : (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="warning"
+                                onClick={() => patchTruck(t._id, { blocked: true })}
+                              >
+                                Block
+                              </Button>
+                            )}
+                            <Tooltip title="Pay for maintenance from the division wallet">
+                              <span>
+                                <Button
+                                  size="small"
+                                  variant="contained"
+                                  color="warning"
+                                  disabled={!t.blocked && pct < 70}
+                                  onClick={() => forceMaintain(t._id)}
+                                >
+                                  Maintain
+                                </Button>
+                              </span>
+                            </Tooltip>
+                            {!t.retired && (
+                              <Button
+                                size="small"
+                                color="error"
+                                onClick={() => {
+                                  if (window.confirm('Retire this truck? It will no longer accrue odometer.')) {
+                                    patchTruck(t._id, { retired: true });
+                                  }
+                                }}
+                              >
+                                Retire
+                              </Button>
+                            )}
+                          </Stack>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  );
+                })}
+                {!trucks.length && !trucksLoading && (
+                  <TableRow>
+                    <TableCell colSpan={canStaff ? 7 : 6} align="center">
+                      <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+                        This division does not own any trucks yet.
                       </Typography>
                     </TableCell>
                   </TableRow>
