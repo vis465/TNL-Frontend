@@ -89,8 +89,8 @@ export default function AdminDivisions() {
     const t = setTimeout(async () => {
       setLeaderLoading(true);
       try {
-        const { data } = await axiosInstance.get('/divisions/eligible-leaders', {
-          params: { q: leaderQuery || undefined },
+        const { data } = await axiosInstance.get('/divisions/leaders/search', {
+          params: { q: leaderQuery || undefined, limit: 40 },
         });
         setLeaderOptions(data.users || []);
       } catch (_) {
@@ -369,7 +369,12 @@ export default function AdminDivisions() {
               options={leaderOptions}
               loading={leaderLoading}
               value={createForm.leader}
-              getOptionLabel={(o) => (o ? `${o.username} (${o.email})` : '')}
+              getOptionLabel={(o) => {
+                if (!o) return '';
+                const riderName = o.rider?.name || o.username || 'User';
+                const employee = o.rider?.employeeID ? ` · ${o.rider.employeeID}` : '';
+                return `${riderName} (${o.username})${employee}`;
+              }}
               isOptionEqualToValue={(a, b) => a?._id === b?._id}
               onInputChange={(_, v, reason) => {
                 if (reason === 'input') setLeaderQuery(v);
@@ -377,14 +382,30 @@ export default function AdminDivisions() {
               onChange={(_, v) => setCreateForm((p) => ({ ...p, leader: v }))}
               renderOption={(props, o) => (
                 <li {...props}>
-                  <Stack>
-                    <Typography variant="body2" fontWeight={600}>{o.username}</Typography>
-                    <Typography variant="caption" color="text.secondary">{o.email} · {o.role}</Typography>
+                  <Stack direction="row" spacing={1.5} alignItems="center">
+                    <Avatar src={o.rider?.avatar || undefined} sx={{ width: 28, height: 28 }}>
+                      {(o.rider?.name || o.username || '?')?.[0]}
+                    </Avatar>
+                    <Box>
+                      <Typography variant="body2" fontWeight={600}>
+                        {o.rider?.name || o.username}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        @{o.username}
+                        {o.rider?.employeeID ? ` · ${o.rider.employeeID}` : ''}
+                        {o.email ? ` · ${o.email}` : ''}
+                      </Typography>
+                    </Box>
                   </Stack>
                 </li>
               )}
               renderInput={(params) => (
-                <TextField {...params} label="Leader (search by username or email)" required helperText="User who will lead this division" />
+                <TextField
+                  {...params}
+                  label="Leader (global rider search)"
+                  required
+                  helperText="Search by rider name, username, employee ID, or TruckersHub ID"
+                />
               )}
             />
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
