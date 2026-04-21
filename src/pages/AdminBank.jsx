@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Box,
   Paper,
@@ -79,9 +79,20 @@ import {
   Gavel,
   Speed as SpeedIcon,
   Park,
-  Build
+  Build,
+  Groups,
 } from '@mui/icons-material';
-import { getBankBalance, getBankTransactions, bankBonus, bankDeduct, searchRiders } from '../services/bankService';
+import {
+  getBankBalance,
+  getBankTransactions,
+  bankBonus,
+  bankDeduct,
+  searchRiders,
+  getBankDivisions,
+  bankCreditDivision,
+  bankDebitDivision,
+  getDivisionWalletTransactions,
+} from '../services/bankService';
 
 export default function AdminBank() {
   const [balance, setBalance] = useState(0);
@@ -117,6 +128,49 @@ export default function AdminBank() {
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
 
+  // Division wallet ops
+  const [divisionOptions, setDivisionOptions] = useState([]);
+  const [selectedDivision, setSelectedDivision] = useState(null);
+  const [divToAmount, setDivToAmount] = useState('');
+  const [divToReason, setDivToReason] = useState('');
+  const [divToLoading, setDivToLoading] = useState(false);
+  const [divFromAmount, setDivFromAmount] = useState('');
+  const [divFromReason, setDivFromReason] = useState('');
+  const [divFromLoading, setDivFromLoading] = useState(false);
+  const [divTx, setDivTx] = useState([]);
+  const [divTxPage, setDivTxPage] = useState(1);
+  const [divTxTotalPages, setDivTxTotalPages] = useState(1);
+  const [divTxLoading, setDivTxLoading] = useState(false);
+  const divisionSearchTimer = useRef(null);
+
+  const loadDivisionOptions = useCallback(async (q) => {
+    try {
+      const d = await getBankDivisions(q || undefined);
+      setDivisionOptions(d.items || []);
+    } catch {
+      setDivisionOptions([]);
+    }
+  }, []);
+
+  const loadDivisionTransactions = useCallback(async (page, division) => {
+    const div = division || selectedDivision;
+    if (!div?._id) {
+      setDivTx([]);
+      setDivTxTotalPages(1);
+      return;
+    }
+    setDivTxLoading(true);
+    try {
+      const d = await getDivisionWalletTransactions(div._id, page, 15);
+      setDivTx(d.items || []);
+      setDivTxTotalPages(d.pagination?.totalPages || 1);
+    } catch {
+      setDivTx([]);
+    } finally {
+      setDivTxLoading(false);
+    }
+  }, [selectedDivision]);
+
   const refresh = async (page = currentPage) => {
     try {
       setLoading(true);
@@ -129,7 +183,8 @@ export default function AdminBank() {
       // Load paginated transactions for display
       const t = await getBankTransactions(page, transactionsPerPage);
       setTx(t.items || []);
-      setTotalPages(Math.ceil((t.total || t.items?.length || 0) / transactionsPerPage));
+      const txTotal = t.pagination?.total ?? t.total ?? (t.items?.length || 0);
+      setTotalPages(Math.max(1, Math.ceil(txTotal / transactionsPerPage)));
 
       // Load all transactions for metrics (first page with large limit)
       const allT = await getBankTransactions(1, 10000); // Load all transactions
@@ -178,6 +233,19 @@ export default function AdminBank() {
   };
 
   useEffect(() => { refresh(); }, []);
+
+  useEffect(() => {
+    if (activeTab === 3) loadDivisionOptions('');
+  }, [activeTab, loadDivisionOptions]);
+
+  useEffect(() => {
+    setDivTxPage(1);
+  }, [selectedDivision?._id]);
+
+  useEffect(() => {
+    if (activeTab !== 3 || !selectedDivision?._id) return;
+    loadDivisionTransactions(divTxPage, selectedDivision);
+  }, [activeTab, selectedDivision, divTxPage, loadDivisionTransactions]);
 
   const handlePageChange = (event, page) => {
     setCurrentPage(page);
@@ -249,6 +317,76 @@ export default function AdminBank() {
       }
     } finally {
       setDeductLoading(false);
+    }
+  };
+
+  const onSendToDivision = async () => {
+    if (!selectedDivision?._id) {
+      setErr('Select a division');
+      return;
+    }
+    const n = Number(divToAmount);
+    if (!Number.isFinite(n) || n <= 0) {
+      setErr('Enter a valid amount');
+      return;
+    }
+    setDivToLoading(true);
+    setErr('');
+    setMsg('');
+    try {
+      await bankCreditDivision(selectedDivision._id, {
+        amount: n,
+        reason: divToReason || 'Transfer from central bank',
+        idempotencyKey: `ui-bank-div-credit:${selectedDivision._id}:${Date.now()}`,
+      });
+      setMsg(`Sent ${formatCurrency(n)} to division “${selectedDivision.name}”.`);
+      setDivToAmount('');
+      setDivToReason('');
+      await refresh(currentPage);
+      const listData = await getBankDivisions('');
+      const found = listData.items?.find((d) => String(d._id) === String(selectedDivision._id));
+      if (found) setSelectedDivision(found);
+      setDivTxPage(1);
+      await loadDivisionTransactions(1, found || selectedDivision);
+    } catch (e) {
+      setErr(e.response?.data?.message || e.message || 'Transfer failed');
+    } finally {
+      setDivToLoading(false);
+    }
+  };
+
+  const onCollectFromDivision = async () => {
+    if (!selectedDivision?._id) {
+      setErr('Select a division');
+      return;
+    }
+    const n = Number(divFromAmount);
+    if (!Number.isFinite(n) || n <= 0) {
+      setErr('Enter a valid amount');
+      return;
+    }
+    setDivFromLoading(true);
+    setErr('');
+    setMsg('');
+    try {
+      await bankDebitDivision(selectedDivision._id, {
+        amount: n,
+        reason: divFromReason || 'Collection to central bank',
+        idempotencyKey: `ui-bank-div-debit:${selectedDivision._id}:${Date.now()}`,
+      });
+      setMsg(`Collected ${formatCurrency(n)} from division “${selectedDivision.name}”.`);
+      setDivFromAmount('');
+      setDivFromReason('');
+      await refresh(currentPage);
+      const listData = await getBankDivisions('');
+      const found = listData.items?.find((d) => String(d._id) === String(selectedDivision._id));
+      if (found) setSelectedDivision(found);
+      setDivTxPage(1);
+      await loadDivisionTransactions(1, found || selectedDivision);
+    } catch (e) {
+      setErr(e.response?.data?.message || e.message || 'Collection failed');
+    } finally {
+      setDivFromLoading(false);
     }
   };
 
@@ -501,6 +639,12 @@ export default function AdminBank() {
                 iconPosition="start"
                 sx={{ textTransform: 'none', fontWeight: 500 }}
               />
+              <Tab
+                label="Division wallets"
+                icon={<Groups />}
+                iconPosition="start"
+                sx={{ textTransform: 'none', fontWeight: 500 }}
+              />
             </Tabs>
           </Box>
 
@@ -552,7 +696,9 @@ export default function AdminBank() {
                                   {transaction.title}
                                 </Typography>
                                 <Typography variant="body2" sx={{ color: '#666', mb: 1 }}>
-                                  {transaction.riderInfo?.name || transaction.riderName || 'Unknown Rider'}
+                                  {transaction.divisionName
+                                    ? `Division: ${transaction.divisionName}`
+                                    : (transaction.riderInfo?.name || transaction.riderName || '—')}
                                 </Typography>
                                 <Stack direction="row" spacing={1}>
                                   <Chip
@@ -935,6 +1081,201 @@ export default function AdminBank() {
                 </Grid>
               </Box>
             )}
+
+            {activeTab === 3 && (
+              <Box sx={{ p: 3 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                  Division wallet transfers
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  Send funds from the central bank to a division wallet, or collect from a division back into the bank.
+                  Both sides are recorded on the bank ledger and the division wallet.
+                </Typography>
+
+                <Autocomplete
+                  options={divisionOptions}
+                  value={selectedDivision}
+                  onChange={(_, v) => setSelectedDivision(v)}
+                  getOptionLabel={(d) => (d ? `${d.name}${d.slug ? ` · ${d.slug}` : ''}` : '')}
+                  isOptionEqualToValue={(a, b) => String(a?._id) === String(b?._id)}
+                  onInputChange={(_, v, reason) => {
+                    if (reason === 'reset') return;
+                    if (divisionSearchTimer.current) clearTimeout(divisionSearchTimer.current);
+                    divisionSearchTimer.current = setTimeout(() => {
+                      loadDivisionOptions(String(v || '').trim());
+                    }, 300);
+                  }}
+                  renderOption={(props, d) => (
+                    <li {...props} key={d._id}>
+                      <Stack>
+                        <Typography fontWeight={600}>{d.name}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {d.slug || '—'} · Wallet {formatCurrency(d.walletBalance ?? 0)}
+                        </Typography>
+                      </Stack>
+                    </li>
+                  )}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Division"
+                      placeholder="Search by name or slug…"
+                      helperText={selectedDivision ? `Current wallet: ${formatCurrency(selectedDivision.walletBalance ?? 0)}` : ' '}
+                    />
+                  )}
+                  sx={{ maxWidth: 560, mb: 3 }}
+                />
+
+                <Grid container spacing={3}>
+                  <Grid item xs={12} md={6}>
+                    <Card variant="outlined" sx={{ borderRadius: 2, height: '100%' }}>
+                      <CardContent>
+                        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+                          <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'success.light', color: 'success.dark' }}>
+                            <TrendingUp />
+                          </Box>
+                          <Typography variant="h6" fontWeight={600}>
+                            Send to division
+                          </Typography>
+                        </Stack>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                          Debits the central bank and credits the selected division wallet.
+                        </Typography>
+                        <Stack spacing={2}>
+                          <TextField
+                            label="Amount"
+                            type="number"
+                            value={divToAmount}
+                            onChange={(e) => setDivToAmount(e.target.value)}
+                            InputProps={{ startAdornment: <InputAdornment position="start"><AttachMoney /></InputAdornment> }}
+                            fullWidth
+                          />
+                          <TextField
+                            label="Reason / note"
+                            value={divToReason}
+                            onChange={(e) => setDivToReason(e.target.value)}
+                            fullWidth
+                          />
+                          <Button
+                            variant="contained"
+                            color="success"
+                            onClick={onSendToDivision}
+                            disabled={divToLoading || !selectedDivision}
+                            sx={{ textTransform: 'none' }}
+                          >
+                            {divToLoading ? 'Processing…' : 'Send to division wallet'}
+                          </Button>
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+
+                  <Grid item xs={12} md={6}>
+                    <Card variant="outlined" sx={{ borderRadius: 2, height: '100%' }}>
+                      <CardContent>
+                        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+                          <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'warning.light', color: 'warning.dark' }}>
+                            <AccountBalanceWallet />
+                          </Box>
+                          <Typography variant="h6" fontWeight={600}>
+                            Collect from division
+                          </Typography>
+                        </Stack>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                          Debits the division wallet and credits the central bank.
+                        </Typography>
+                        <Stack spacing={2}>
+                          <TextField
+                            label="Amount"
+                            type="number"
+                            value={divFromAmount}
+                            onChange={(e) => setDivFromAmount(e.target.value)}
+                            InputProps={{ startAdornment: <InputAdornment position="start"><AttachMoney /></InputAdornment> }}
+                            fullWidth
+                          />
+                          <TextField
+                            label="Reason / note"
+                            value={divFromReason}
+                            onChange={(e) => setDivFromReason(e.target.value)}
+                            fullWidth
+                          />
+                          <Button
+                            variant="contained"
+                            color="warning"
+                            onClick={onCollectFromDivision}
+                            disabled={divFromLoading || !selectedDivision}
+                            sx={{ textTransform: 'none' }}
+                          >
+                            {divFromLoading ? 'Processing…' : 'Collect to central bank'}
+                          </Button>
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+
+                {selectedDivision && (
+                  <Box sx={{ mt: 4 }}>
+                    <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
+                      Division wallet activity — {selectedDivision.name}
+                    </Typography>
+                    {divTxLoading ? (
+                      <LinearProgress />
+                    ) : (
+                      <>
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow>
+                              <TableCell>Date</TableCell>
+                              <TableCell>Type</TableCell>
+                              <TableCell>Source</TableCell>
+                              <TableCell align="right">Amount</TableCell>
+                              <TableCell align="right">Balance after</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {divTx.map((row) => (
+                              <TableRow key={row._id}>
+                                <TableCell>{new Date(row.createdAt).toLocaleString()}</TableCell>
+                                <TableCell>
+                                  <Chip
+                                    size="small"
+                                    label={row.type}
+                                    color={row.type === 'credit' ? 'success' : 'default'}
+                                  />
+                                </TableCell>
+                                <TableCell>{row.source?.kind || '—'}</TableCell>
+                                <TableCell align="right">{formatCurrency(row.amount ?? 0)}</TableCell>
+                                <TableCell align="right">{formatCurrency(row.balanceAfter ?? 0)}</TableCell>
+                              </TableRow>
+                            ))}
+                            {!divTx.length && (
+                              <TableRow>
+                                <TableCell colSpan={5} align="center">
+                                  <Typography color="text.secondary" variant="body2" sx={{ py: 2 }}>
+                                    No transactions yet for this division.
+                                  </Typography>
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
+                        {divTxTotalPages > 1 && (
+                          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                            <Pagination
+                              count={divTxTotalPages}
+                              page={divTxPage}
+                              onChange={(_, p) => setDivTxPage(p)}
+                              color="primary"
+                            />
+                          </Box>
+                        )}
+                      </>
+                    )}
+                  </Box>
+                )}
+              </Box>
+            )}
           </CardContent>
         </Card>
 
@@ -970,10 +1311,18 @@ export default function AdminBank() {
                     {selectedTransaction.type === 'credit' ? '+' : '-'}{formatCurrency(Math.abs(selectedTransaction.amount))}
                   </Typography>
                 </Box>
+                {(selectedTransaction.divisionName || selectedTransaction.metadata?.divisionName) && (
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ color: '#666', mb: 1 }}>Division</Typography>
+                    <Typography variant="body1">
+                      {selectedTransaction.divisionName || selectedTransaction.metadata?.divisionName}
+                    </Typography>
+                  </Box>
+                )}
                 <Box>
                   <Typography variant="subtitle2" sx={{ color: '#666', mb: 1 }}>Rider</Typography>
                   <Typography variant="body1">
-                    {selectedTransaction.riderInfo?.name || selectedTransaction.riderName || 'Unknown'}
+                    {selectedTransaction.riderInfo?.name || selectedTransaction.riderName || (selectedTransaction.divisionName ? '—' : 'Unknown')}
                   </Typography>
                 </Box>
                 <Box>

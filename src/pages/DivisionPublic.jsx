@@ -353,6 +353,15 @@ export default function DivisionPublic() {
                           Distance
                         </TableSortLabel>
                       </TableCell>
+                      <TableCell align="right" sortDirection={memberSort === 'attendance' ? memberDir : false}>
+                        <TableSortLabel
+                          active={memberSort === 'attendance'}
+                          direction={memberSort === 'attendance' ? memberDir : 'desc'}
+                          onClick={() => toggleMemberSort('attendance')}
+                        >
+                          Attendance
+                        </TableSortLabel>
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -368,11 +377,19 @@ export default function DivisionPublic() {
                         <TableCell align="right">{r.jobs}</TableCell>
                         <TableCell align="right">{r.revenue?.toLocaleString() || 0}</TableCell>
                         <TableCell align="right">{r.distance?.toLocaleString() || 0} km</TableCell>
+                        <TableCell align="right">
+                          <Chip
+                            size="small"
+                            color={r.attendance > 0 ? 'success' : 'default'}
+                            variant={r.attendance > 0 ? 'filled' : 'outlined'}
+                            label={`${r.attendance || 0} event${r.attendance === 1 ? '' : 's'}`}
+                          />
+                        </TableCell>
                       </TableRow>
                     ))}
                     {!leaderboard?.length && (
                       <TableRow>
-                        <TableCell colSpan={5} align="center">
+                        <TableCell colSpan={6} align="center">
                           <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
                             No jobs logged yet.
                           </Typography>

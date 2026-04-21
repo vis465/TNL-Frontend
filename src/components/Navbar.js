@@ -133,7 +133,6 @@ const Navbar = () => {
         { label: 'Events', path: '/events', icon: <Event /> },
         { label: 'Servers', path: '/servers', icon: <FireTruckOutlined /> },
         { label: 'Dashboard', path: '/dashboard', icon: <Dashboard /> },
-        { label: 'Fleet', path: '/fleet', icon: <GarageOutlined /> },
         { label: 'Event calendar', path: '/calendar', icon: <CalendarMonth /> },
         ...(hasStaffRole ? [{ label: 'Admin', path: '/admin', icon: <AdminPanelSettings /> }] : []),
       ];
@@ -293,12 +292,12 @@ const Navbar = () => {
         </MenuItem>
         <MenuItem
           component={RouterLink}
-          to="/fleet"
+          to="/division"
           onClick={handleUserMenuClose}
           sx={{ gap: 1.5 }}
         >
-          <GarageOutlined fontSize="small" />
-          Fleet
+          <Groups fontSize="small" />
+          Division
         </MenuItem>
         <MenuItem onClick={handleLogout} sx={{ gap: 1.5 }}>
           <Logout fontSize="small" />

@@ -6,7 +6,32 @@ export async function getBankBalance() {
 }
 
 export async function getBankTransactions(page = 1, limit = 20) {
-  const { data } = await axiosInstance.get(`/bank/transactions?page=${page}&limit=${limit}`);
+  const { data } = await axiosInstance.get('/bank/transactions', { params: { page, limit } });
+  return data;
+}
+
+/** List divisions for bank ops (id, name, slug, walletBalance, …) */
+export async function getBankDivisions(q) {
+  const { data } = await axiosInstance.get('/bank/divisions', { params: q ? { q } : {} });
+  return data;
+}
+
+/** Move funds from central bank → division wallet */
+export async function bankCreditDivision(divisionId, payload) {
+  const { data } = await axiosInstance.post(`/bank/division/${divisionId}/credit`, payload);
+  return data;
+}
+
+/** Move funds from division wallet → central bank */
+export async function bankDebitDivision(divisionId, payload) {
+  const { data } = await axiosInstance.post(`/bank/division/${divisionId}/debit`, payload);
+  return data;
+}
+
+export async function getDivisionWalletTransactions(divisionId, page = 1, limit = 20) {
+  const { data } = await axiosInstance.get(`/bank/division/${divisionId}/transactions`, {
+    params: { page, limit },
+  });
   return data;
 }
 

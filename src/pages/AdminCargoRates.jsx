@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Autocomplete,
@@ -15,6 +15,7 @@ import {
   IconButton,
   LinearProgress,
   MenuItem,
+  Pagination,
   Stack,
   Table,
   TableBody,
@@ -30,22 +31,47 @@ import EditOutlined from '@mui/icons-material/EditOutlined';
 import axiosInstance from '../utils/axios';
 
 const CLASSES = ['default', 'general', 'heavy', 'liquid', 'food', 'fragile', 'hazardous'];
+const RATES_PAGE_SIZE = 25;
+const CATALOG_PAGE_SIZE = 50;
 
 const emptyPricing = {
   cargoId: '',
   cargoName: '',
   cargoClass: 'general',
-  pricePerKm: '22',
-  minPrice: '1200',
+  pricePerKm: '',
+  minPrice: '0',
   active: true,
 };
 
+function useDebounced(value, delay = 300) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const h = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(h);
+  }, [value, delay]);
+  return debounced;
+}
+
 export default function AdminCargoRates() {
-  const [rates, setRates] = useState([]);
-  const [catalog, setCatalog] = useState([]);
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Rates pagination & search
+  const [rates, setRates] = useState([]);
+  const [ratesTotal, setRatesTotal] = useState(0);
+  const [ratesPage, setRatesPage] = useState(1);
+  const [ratesSearch, setRatesSearch] = useState('');
+  const debouncedRatesSearch = useDebounced(ratesSearch, 300);
+  const [ratesLoading, setRatesLoading] = useState(false);
+
+  // Catalog pagination & search
+  const [catalog, setCatalog] = useState([]);
+  const [catalogTotal, setCatalogTotal] = useState(0);
+  const [catalogPage, setCatalogPage] = useState(1);
+  const [catalogSearch, setCatalogSearch] = useState('');
+  const debouncedCatalogSearch = useDebounced(catalogSearch, 300);
+  const [catalogLoading, setCatalogLoading] = useState(false);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState('create'); // create | edit
@@ -53,28 +79,94 @@ export default function AdminCargoRates() {
   const [form, setForm] = useState(emptyPricing);
   const [submitting, setSubmitting] = useState(false);
 
-  const load = async () => {
-    setLoading(true);
-    setError('');
+  const reqRef = useRef({ rates: 0, catalog: 0 });
+
+  const loadConfig = async () => {
     try {
-      const [r, c, cat] = await Promise.all([
-        axiosInstance.get('/admin/cargo-rates/rates'),
-        axiosInstance.get('/admin/cargo-rates/revenue-config'),
-        axiosInstance.get('/admin/cargo-rates/cargo-catalog', { params: { limit: 500 } }),
-      ]);
-      setRates(r.data.rates || []);
-      setConfig(c.data);
-      setCatalog(cat.data.items || []);
+      const { data } = await axiosInstance.get('/admin/cargo-rates/revenue-config');
+      setConfig(data);
     } catch (e) {
-      setError(e?.response?.data?.message || 'Failed to load');
+      setError(e?.response?.data?.message || 'Failed to load config');
+    }
+  };
+
+  const loadRates = async () => {
+    const seq = ++reqRef.current.rates;
+    setRatesLoading(true);
+    try {
+      const { data } = await axiosInstance.get('/admin/cargo-rates/rates', {
+        params: {
+          page: ratesPage,
+          limit: RATES_PAGE_SIZE,
+          q: debouncedRatesSearch || undefined,
+        },
+      });
+      if (seq !== reqRef.current.rates) return; // stale
+      setRates(data.items || data.rates || []);
+      setRatesTotal(data.total ?? (data.items?.length || 0));
+    } catch (e) {
+      if (seq !== reqRef.current.rates) return;
+      setError(e?.response?.data?.message || 'Failed to load rates');
+    } finally {
+      if (seq === reqRef.current.rates) setRatesLoading(false);
+    }
+  };
+
+  const loadCatalog = async () => {
+    const seq = ++reqRef.current.catalog;
+    setCatalogLoading(true);
+    try {
+      const { data } = await axiosInstance.get('/admin/cargo-rates/cargo-catalog', {
+        params: {
+          page: catalogPage,
+          limit: CATALOG_PAGE_SIZE,
+          q: debouncedCatalogSearch || undefined,
+        },
+      });
+      if (seq !== reqRef.current.catalog) return;
+      setCatalog(data.items || []);
+      setCatalogTotal(data.total ?? (data.items?.length || 0));
+    } catch (e) {
+      if (seq !== reqRef.current.catalog) return;
+      setError(e?.response?.data?.message || 'Failed to load catalog');
+    } finally {
+      if (seq === reqRef.current.catalog) setCatalogLoading(false);
+    }
+  };
+
+  const initialLoad = async () => {
+    setLoading(true);
+    try {
+      await Promise.all([loadConfig(), loadRates(), loadCatalog()]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    load();
+    initialLoad();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    loadRates();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ratesPage, debouncedRatesSearch]);
+
+  useEffect(() => {
+    if (debouncedRatesSearch) setRatesPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedRatesSearch]);
+
+  useEffect(() => {
+    loadCatalog();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [catalogPage, debouncedCatalogSearch]);
+
+  useEffect(() => {
+    if (debouncedCatalogSearch) setCatalogPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedCatalogSearch]);
 
   const saveConfig = async () => {
     try {
@@ -100,7 +192,7 @@ export default function AdminCargoRates() {
       cargoName: rate.cargoName || '',
       cargoClass: rate.cargoClass || 'general',
       pricePerKm: String(rate.pricePerKm ?? ''),
-      minPrice: String(rate.minPrice ?? ''),
+      minPrice: String(rate.minPrice ?? '0'),
       active: rate.active !== false,
       _id: rate._id,
     });
@@ -115,7 +207,12 @@ export default function AdminCargoRates() {
       cargoId: val.cargoId || '',
       cargoName: val.cargoName || '',
       cargoClass: val.cargoClass || p.cargoClass || 'general',
-      pricePerKm: val.pricePerKm != null ? String(val.pricePerKm) : p.pricePerKm,
+      pricePerKm:
+        val.pricePerKm != null
+          ? String(val.pricePerKm)
+          : val.nexon?.price != null
+          ? String(val.nexon.price)
+          : p.pricePerKm,
       minPrice: val.minPrice != null ? String(val.minPrice) : p.minPrice,
       active: val.active !== false,
       _id: val.rateId || undefined,
@@ -148,7 +245,8 @@ export default function AdminCargoRates() {
       }
       setDialogOpen(false);
       setForm(emptyPricing);
-      load();
+      loadRates();
+      loadCatalog();
     } catch (e) {
       setError(e?.response?.data?.message || 'Save failed');
     } finally {
@@ -160,7 +258,8 @@ export default function AdminCargoRates() {
     if (!window.confirm('Delete this rate?')) return;
     try {
       await axiosInstance.delete(`/admin/cargo-rates/rates/${id}`);
-      load();
+      loadRates();
+      loadCatalog();
     } catch (e) {
       setError(e?.response?.data?.message || 'Delete failed');
     }
@@ -168,11 +267,16 @@ export default function AdminCargoRates() {
 
   const unpricedCatalog = useMemo(() => catalog.filter((c) => !c.hasRate), [catalog]);
 
+  const ratesPageCount = Math.max(1, Math.ceil(ratesTotal / RATES_PAGE_SIZE));
+  const catalogPageCount = Math.max(1, Math.ceil(catalogTotal / CATALOG_PAGE_SIZE));
+
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
       <Typography variant="h5" fontWeight={800} sx={{ mb: 1 }}>Cargo market rates</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Configure per-cargo pricing used by the revenue normalization engine. Rates marked as default/general apply when no specific rate matches.
+        Configure per-cargo pricing used by the revenue normalization engine. Revenue is computed as
+        <code style={{ margin: '0 4px' }}>distanceKm × pricePerKm</code>
+        (no min-price floor or damage/auto-park penalty is applied).
       </Typography>
       {loading && <LinearProgress sx={{ mb: 2 }} />}
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
@@ -183,8 +287,6 @@ export default function AdminCargoRates() {
             <Typography fontWeight={700} sx={{ mb: 2 }}>Revenue & division policy</Typography>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} flexWrap="wrap" useFlexGap>
               <TextField size="small" label="Default €/km" type="number" value={config.defaultPricePerKm ?? ''} onChange={(e) => setConfig((p) => ({ ...p, defaultPricePerKm: Number(e.target.value) }))} />
-              <TextField size="small" label="Default min price" type="number" value={config.defaultMinPrice ?? ''} onChange={(e) => setConfig((p) => ({ ...p, defaultMinPrice: Number(e.target.value) }))} />
-              <TextField size="small" label="Auto-park penalty (0-1)" type="number" value={config.autoParkPenalty ?? ''} onChange={(e) => setConfig((p) => ({ ...p, autoParkPenalty: Number(e.target.value) }))} />
               <TextField size="small" label="Max division tax %" type="number" value={config.maxDivisionTaxPercent ?? ''} onChange={(e) => setConfig((p) => ({ ...p, maxDivisionTaxPercent: Number(e.target.value) }))} />
               <TextField size="small" label="Exit cooldown (days)" type="number" value={config.exitCooldownDays ?? ''} onChange={(e) => setConfig((p) => ({ ...p, exitCooldownDays: Number(e.target.value) }))} />
               <TextField size="small" label="Invite expiry (days)" type="number" value={config.inviteExpiryDays ?? ''} onChange={(e) => setConfig((p) => ({ ...p, inviteExpiryDays: Number(e.target.value) }))} />
@@ -195,54 +297,24 @@ export default function AdminCargoRates() {
         </Card>
       )}
 
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'center' }} spacing={1} sx={{ mb: 2 }}>
-            <Box>
-              <Typography fontWeight={700}>Price a cargo</Typography>
-              <Typography variant="caption" color="text.secondary">
-                Pick from cargos observed in recent jobs or enter a custom one. Unpriced cargos: {unpricedCatalog.length}
-              </Typography>
-            </Box>
-            <Button variant="contained" onClick={openCreate}>Add / edit rate</Button>
-          </Stack>
-          {!!unpricedCatalog.length && (
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-              {unpricedCatalog.slice(0, 15).map((c) => (
-                <Chip
-                  key={`${c.cargoId}|${c.cargoName}`}
-                  size="small"
-                  label={`${c.cargoName || c.cargoId || '?'} · ${c.count} jobs`}
-                  onClick={() => {
-                    setDialogMode('create');
-                    setSelectedCargo(c);
-                    setForm({
-                      cargoId: c.cargoId || '',
-                      cargoName: c.cargoName || '',
-                      cargoClass: c.cargoClass || 'general',
-                      pricePerKm: String(config?.defaultPricePerKm ?? 20),
-                      minPrice: String(config?.defaultMinPrice ?? 1000),
-                      active: true,
-                    });
-                    setDialogOpen(true);
-                  }}
-                />
-              ))}
-            </Stack>
-          )}
-        </CardContent>
-      </Card>
-
       <Card>
         <CardContent>
-          <Typography fontWeight={700} sx={{ mb: 1 }}>Configured rates ({rates.length})</Typography>
+          <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'center' }} spacing={1} sx={{ mb: 1 }}>
+            <Typography fontWeight={700}>Configured rates ({ratesTotal})</Typography>
+            <TextField
+              size="small"
+              placeholder="Search rates…"
+              value={ratesSearch}
+              onChange={(e) => setRatesSearch(e.target.value)}
+            />
+          </Stack>
+          {ratesLoading && <LinearProgress sx={{ mb: 1 }} />}
           <Table size="small">
             <TableHead>
               <TableRow>
                 <TableCell>Cargo</TableCell>
                 <TableCell>Class</TableCell>
                 <TableCell align="right">€/km</TableCell>
-                <TableCell align="right">Min price</TableCell>
                 <TableCell>Active</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
@@ -256,7 +328,6 @@ export default function AdminCargoRates() {
                   </TableCell>
                   <TableCell><Chip size="small" label={r.cargoClass} /></TableCell>
                   <TableCell align="right">{r.pricePerKm}</TableCell>
-                  <TableCell align="right">{r.minPrice}</TableCell>
                   <TableCell>{r.active ? <Chip size="small" color="success" label="Yes" /> : <Chip size="small" label="No" />}</TableCell>
                   <TableCell align="right">
                     <Tooltip title="Edit">
@@ -268,17 +339,28 @@ export default function AdminCargoRates() {
                   </TableCell>
                 </TableRow>
               ))}
-              {!rates.length && (
+              {!rates.length && !ratesLoading && (
                 <TableRow>
-                  <TableCell colSpan={6} align="center">
+                  <TableCell colSpan={5} align="center">
                     <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
-                      No rates yet. Use “Add / edit rate” or pick a cargo from above.
+                      No rates match. Use “Add / edit rate” or pick a cargo from above.
                     </Typography>
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
+          {ratesPageCount > 1 && (
+            <Stack direction="row" justifyContent="flex-end" sx={{ mt: 2 }}>
+              <Pagination
+                size="small"
+                count={ratesPageCount}
+                page={ratesPage}
+                onChange={(_, p) => setRatesPage(p)}
+                color="primary"
+              />
+            </Stack>
+          )}
         </CardContent>
       </Card>
 
@@ -289,9 +371,11 @@ export default function AdminCargoRates() {
             <Autocomplete
               options={catalog}
               value={selectedCargo}
-              getOptionLabel={(o) => o ? `${o.cargoName || o.cargoId || '?'}${o.count ? ` · ${o.count} jobs` : ''}` : ''}
+              getOptionLabel={(o) => (o ? `${o.cargoName || o.cargoId || '?'}${o.count ? ` · ${o.count} jobs` : ''}` : '')}
               isOptionEqualToValue={(a, b) => a?.cargoId === b?.cargoId && a?.cargoName === b?.cargoName}
               onChange={(_, v) => onCatalogPick(v)}
+              onInputChange={(_, v) => setCatalogSearch(v)}
+              filterOptions={(x) => x}
               renderOption={(props, o) => (
                 <li {...props}>
                   <Stack>
@@ -299,12 +383,12 @@ export default function AdminCargoRates() {
                       {o.cargoName || '(unknown)'} {o.hasRate && <Chip size="small" color="success" label="priced" sx={{ ml: 1 }} />}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {o.cargoId || 'no id'} · {o.count} jobs{o.pricePerKm ? ` · €${o.pricePerKm}/km` : ''}
+                      {o.cargoId || 'no id'}{o.count ? ` · ${o.count} jobs` : ''}{o.pricePerKm ? ` · €${o.pricePerKm}/km` : o.nexon?.price ? ` · €${o.nexon.price}/km (nexon)` : ''}
                     </Typography>
                   </Stack>
                 </li>
               )}
-              renderInput={(params) => <TextField {...params} label="Pick cargo from jobs catalog" helperText="Select to auto-fill name/id, or type below to create a custom entry" />}
+              renderInput={(params) => <TextField {...params} label="Pick cargo from catalog" helperText="Type to search; auto-fills name/id/class. You can still enter a custom cargo below." />}
             />
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <TextField label="Cargo ID" value={form.cargoId} onChange={(e) => setForm((p) => ({ ...p, cargoId: e.target.value }))} fullWidth />
@@ -313,10 +397,15 @@ export default function AdminCargoRates() {
             <TextField select label="Class" value={form.cargoClass} onChange={(e) => setForm((p) => ({ ...p, cargoClass: e.target.value }))} fullWidth>
               {CLASSES.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
             </TextField>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField label="Price per km" type="number" value={form.pricePerKm} onChange={(e) => setForm((p) => ({ ...p, pricePerKm: e.target.value }))} fullWidth required />
-              <TextField label="Min price" type="number" value={form.minPrice} onChange={(e) => setForm((p) => ({ ...p, minPrice: e.target.value }))} fullWidth required />
-            </Stack>
+            <TextField
+              label="Price per km (€)"
+              type="number"
+              value={form.pricePerKm}
+              onChange={(e) => setForm((p) => ({ ...p, pricePerKm: e.target.value }))}
+              fullWidth
+              required
+              helperText="Revenue = distanceKm × pricePerKm"
+            />
             <TextField select label="Active" value={form.active ? 'yes' : 'no'} onChange={(e) => setForm((p) => ({ ...p, active: e.target.value === 'yes' }))} fullWidth>
               <MenuItem value="yes">Yes</MenuItem>
               <MenuItem value="no">No</MenuItem>
@@ -325,7 +414,11 @@ export default function AdminCargoRates() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDialogOpen(false)} disabled={submitting}>Cancel</Button>
-          <Button variant="contained" onClick={saveDialog} disabled={submitting || (!form.cargoId.trim() && !form.cargoName.trim()) || !(Number(form.pricePerKm) >= 0)}>
+          <Button
+            variant="contained"
+            onClick={saveDialog}
+            disabled={submitting || (!form.cargoId.trim() && !form.cargoName.trim()) || !(Number(form.pricePerKm) >= 0)}
+          >
             Save
           </Button>
         </DialogActions>
