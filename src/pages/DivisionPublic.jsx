@@ -75,6 +75,7 @@ export default function DivisionPublic() {
   const user = getItemWithExpiry('user');
   const isAuthed = Boolean(user?.token || user?.id || user?._id);
   const leadsDivision = user?.leadsDivision || null;
+  const userId = String(user?.id || user?._id || '');
 
   const load = async () => {
     setLoading(true);
@@ -230,7 +231,13 @@ export default function DivisionPublic() {
                   const divId = String(data?.division?._id || '');
                   const inThisDivision = myDivision && String(myDivision._id) === divId;
                   const inAnotherDivision = myDivision && !inThisDivision;
-                  const leadsThisDivision = leadsDivision && String(leadsDivision._id || '') === divId;
+                  const leaderId = String(
+                    data?.division?.leader?._id || data?.division?.leaderId || ''
+                  );
+                  const leadsThisDivision = Boolean(
+                    (leadsDivision && String(leadsDivision._id || '') === divId) ||
+                    (userId && leaderId && userId === leaderId)
+                  );
                   const leadsAnotherDivision = leadsDivision && !leadsThisDivision;
                   const pendingForThis = myRequests.some((r) => String(r.divisionId?._id || r.divisionId) === divId);
 

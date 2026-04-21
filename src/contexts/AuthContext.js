@@ -27,6 +27,7 @@ export const AuthProvider = ({ children }) => {
           const response = await axiosInstance.get('/auth/profile');
           // Update with fresh user data from the server
           setUser(response.data);
+          localStorage.setItem('user', JSON.stringify(response.data));
           setIsAuthenticated(true);
         } catch (error) {
           console.error('Token validation error:', error);

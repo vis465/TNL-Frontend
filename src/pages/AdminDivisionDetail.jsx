@@ -539,9 +539,9 @@ export default function AdminDivisionDetail() {
                               {!m.isLeader && (isLeader || user.role === 'admin') && (
                                 <Button size="small" color="error" onClick={() => kick(m._id)}>Kick</Button>
                               )}
-                              {!m.isLeader && user.role === 'communityManager' && !isLeader && (
+                              {!m.isLeader && (user.role === 'admin' || (user.role === 'communityManager' && !isLeader)) && (
                                 <Button size="small" color="warning" sx={{ ml: 1 }} onClick={() => staffRemove(m._id)}>
-                                  Staff remove
+                                  Remove
                                 </Button>
                               )}
                             </TableCell>

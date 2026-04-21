@@ -66,23 +66,46 @@ export default function MyDivision() {
   const [sentInvites, setSentInvites] = useState([]);
   const [activeTab, setActiveTab] = useState(0);
   const [leaderQueuesLoading, setLeaderQueuesLoading] = useState(false);
+  const [removingMemberId, setRemovingMemberId] = useState('');
 
   const load = async () => {
     setLoading(true);
     setError('');
     try {
       const { data: d } = await axiosInstance.get('/me/division');
-      setData(d);
-      if (d?.division?._id) {
+      let resolvedDivision = d?.division || null;
+      let leaderDivisionId = user?.leadsDivision?._id || null;
+
+      if (!leaderDivisionId) {
+        try {
+          const { data: profile } = await axiosInstance.get('/auth/profile');
+          leaderDivisionId = profile?.leadsDivision?._id || null;
+        } catch (_) {
+          leaderDivisionId = null;
+        }
+      }
+
+      if (!resolvedDivision && leaderDivisionId) {
+        try {
+          const { data: leaderDivisionRes } = await axiosInstance.get(`/divisions/${leaderDivisionId}`);
+          resolvedDivision = leaderDivisionRes?.division || null;
+        } catch (_) {
+          resolvedDivision = null;
+        }
+      }
+
+      const resolvedData = { ...(d || {}), division: resolvedDivision };
+      setData(resolvedData);
+      if (resolvedDivision?._id) {
         const [{ data: l }, { data: m }, fleet] = await Promise.all([
-          axiosInstance.get(`/divisions/${d.division._id}/leaderboard`, { params: { limit: 30 } }),
-          axiosInstance.get(`/divisions/${d.division._id}/members`).catch(() => ({ data: { members: [] } })),
-          getDivisionTrucks(d.division._id).catch(() => ({ trucks: [] })),
+          axiosInstance.get(`/divisions/${resolvedDivision._id}/leaderboard`, { params: { limit: 30 } }),
+          axiosInstance.get(`/divisions/${resolvedDivision._id}/members`).catch(() => ({ data: { members: [] } })),
+          getDivisionTrucks(resolvedDivision._id).catch(() => ({ trucks: [] })),
         ]);
         setLb(l.riders || []);
         setMembers(m.members || []);
         setFleetTrucks(Array.isArray(fleet?.trucks) ? fleet.trucks : []);
-        setTaxPct(String(d.division.taxPercent ?? 0));
+        setTaxPct(String(resolvedDivision.taxPercent ?? 0));
       } else {
         setLb([]);
         setMembers([]);
@@ -140,6 +163,27 @@ export default function MyDivision() {
     const fleetKm = fleetTrucks.reduce((s, t) => s + (Number(t.odometerKm) || 0), 0);
     return { total, blocked, wearHigh, fleetKm, maintenanceCost };
   }, [fleetTrucks]);
+
+  const peopleRows = useMemo(() => {
+    const base = Array.isArray(members) ? [...members] : [];
+    const leaderObj = div?.leader || null;
+    const leaderId = String(div?.leaderId || leaderObj?._id || '');
+    if (!leaderId) return base;
+
+    const hasLeader = base.some((m) => String(m?._id || m?.riderId || '') === leaderId);
+    if (!hasLeader) {
+      base.unshift({
+        _id: leaderId,
+        name: leaderObj?.name || leaderObj?.username || 'Division Leader',
+        username: leaderObj?.username || '',
+        employeeID: leaderObj?.employeeID || '',
+        avatar: leaderObj?.avatar || '',
+        isLeader: true,
+        totalJobs: null,
+      });
+    }
+    return base;
+  }, [members, div]);
 
   useEffect(() => {
     if (!isLeader || !div?._id) return;
@@ -250,6 +294,21 @@ export default function MyDivision() {
       load();
     } catch (e) {
       setError(e?.response?.data?.message || 'Failed to cancel invite');
+    }
+  };
+
+  const removeMember = async (member) => {
+    const memberId = String(member?._id || member?.riderId || '');
+    if (!memberId || !div?._id || member?.isLeader) return;
+    if (!window.confirm(`Remove ${member?.name || member?.username || 'this member'} from the division?`)) return;
+    setRemovingMemberId(memberId);
+    try {
+      await axiosInstance.post(`/divisions/${div._id}/members/${memberId}/remove`);
+      await load();
+    } catch (e) {
+      setError(e?.response?.data?.message || 'Failed to remove member');
+    } finally {
+      setRemovingMemberId('');
     }
   };
 
@@ -409,7 +468,7 @@ export default function MyDivision() {
                 scrollButtons="auto"
               >
                 <Tab label="Overview" />
-                <Tab label={`People (${members.length})`} />
+                <Tab label={`People (${peopleRows.length})`} />
                 <Tab label={`Fleet${fleetSummary.blocked ? ` (${fleetSummary.blocked} blocked)` : ''}`} />
                 <Tab label={`Leaderboard (${lb.length})`} />
               </Tabs>
@@ -553,6 +612,66 @@ export default function MyDivision() {
                       Distribute
                     </Button>
                   </Stack>
+                </Stack>
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === 1 && (
+            <Card>
+              <CardContent>
+                <Typography fontWeight={700} sx={{ mb: 1.5 }}>
+                  People ({peopleRows.length})
+                </Typography>
+                {!peopleRows.length && (
+                  <Typography variant="body2" color="text.secondary">No members listed yet.</Typography>
+                )}
+                <Stack spacing={1.25}>
+                  {peopleRows.map((m) => (
+                    (() => {
+                      const memberId = String(m._id || m.riderId || '');
+                      const canRemove = isLeader && !m.isLeader && memberId && memberId !== uid;
+                      const isRemoving = removingMemberId === memberId;
+                      return (
+                        <Stack
+                          key={m._id || m.riderId || m.username || m.name}
+                          direction="row"
+                          spacing={1.25}
+                          alignItems="center"
+                          sx={{ p: 1, borderRadius: 1.5, bgcolor: 'action.hover' }}
+                        >
+                          <Avatar src={m.avatar || undefined} sx={{ width: 30, height: 30 }}>
+                            {m.name?.[0] || m.username?.[0] || '?'}
+                          </Avatar>
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Stack direction="row" spacing={1} alignItems="center">
+                              <Typography variant="body2" fontWeight={600} noWrap>
+                                {m.name || m.username || 'Member'}
+                              </Typography>
+                              {m.isLeader && <Chip size="small" color="primary" label="Leader" />}
+                            </Stack>
+                            <Typography variant="caption" color="text.secondary" noWrap>
+                              {m.employeeID || m.username || '—'}
+                            </Typography>
+                          </Box>
+                          {Number.isFinite(Number(m.totalJobs)) && (
+                            <Chip size="small" label={`${Number(m.totalJobs)} jobs`} />
+                          )}
+                          {canRemove && (
+                            <Button
+                              size="small"
+                              color="error"
+                              variant="outlined"
+                              disabled={isRemoving}
+                              onClick={() => removeMember(m)}
+                            >
+                              {isRemoving ? 'Removing…' : 'Remove'}
+                            </Button>
+                          )}
+                        </Stack>
+                      );
+                    })()
+                  ))}
                 </Stack>
               </CardContent>
             </Card>
