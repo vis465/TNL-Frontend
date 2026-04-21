@@ -20,15 +20,17 @@ import {
   LinearProgress,
   Paper,
   Stack,
+  Tab,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableRow,
+  Tabs,
   TextField,
   Typography,
 } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import LocalShippingOutlined from '@mui/icons-material/LocalShippingOutlined';
 import BuildOutlined from '@mui/icons-material/BuildOutlined';
 import EditOutlined from '@mui/icons-material/EditOutlined';
@@ -36,7 +38,14 @@ import axiosInstance from '../utils/axios';
 import { getItemWithExpiry } from '../localStorageWithExpiry';
 import { getDivisionTrucks } from '../services/fleetService';
 
+const TAB_KEYS = ['overview', 'people', 'fleet', 'leaderboard'];
+const TAB_INDEX_BY_KEY = TAB_KEYS.reduce((acc, key, index) => {
+  acc[key] = index;
+  return acc;
+}, {});
+
 export default function MyDivision() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [data, setData] = useState(null);
   const [lb, setLb] = useState([]);
   const [members, setMembers] = useState([]);
@@ -55,6 +64,8 @@ export default function MyDivision() {
   const [taxDialogOpen, setTaxDialogOpen] = useState(false);
   const [joinRequests, setJoinRequests] = useState([]);
   const [sentInvites, setSentInvites] = useState([]);
+  const [activeTab, setActiveTab] = useState(0);
+  const [leaderQueuesLoading, setLeaderQueuesLoading] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -63,18 +74,14 @@ export default function MyDivision() {
       const { data: d } = await axiosInstance.get('/me/division');
       setData(d);
       if (d?.division?._id) {
-        const [{ data: l }, { data: m }, fleet, reqsRes, invitesRes] = await Promise.all([
+        const [{ data: l }, { data: m }, fleet] = await Promise.all([
           axiosInstance.get(`/divisions/${d.division._id}/leaderboard`, { params: { limit: 30 } }),
           axiosInstance.get(`/divisions/${d.division._id}/members`).catch(() => ({ data: { members: [] } })),
           getDivisionTrucks(d.division._id).catch(() => ({ trucks: [] })),
-          axiosInstance.get(`/divisions/${d.division._id}/join-requests`).catch(() => ({ data: { requests: [] } })),
-          axiosInstance.get(`/divisions/${d.division._id}/invites`).catch(() => ({ data: { invites: [] } })),
         ]);
         setLb(l.riders || []);
         setMembers(m.members || []);
         setFleetTrucks(Array.isArray(fleet?.trucks) ? fleet.trucks : []);
-        setJoinRequests(reqsRes?.data?.requests || []);
-        setSentInvites(invitesRes?.data?.invites || []);
         setTaxPct(String(d.division.taxPercent ?? 0));
       } else {
         setLb([]);
@@ -90,6 +97,25 @@ export default function MyDivision() {
     }
   };
 
+  const loadLeaderQueues = async (divisionId) => {
+    if (!divisionId || !isLeader) {
+      setJoinRequests([]);
+      setSentInvites([]);
+      return;
+    }
+    setLeaderQueuesLoading(true);
+    try {
+      const [reqsRes, invitesRes] = await Promise.all([
+        axiosInstance.get(`/divisions/${divisionId}/join-requests`).catch(() => ({ data: { requests: [] } })),
+        axiosInstance.get(`/divisions/${divisionId}/invites`).catch(() => ({ data: { invites: [] } })),
+      ]);
+      setJoinRequests(reqsRes?.data?.requests || []);
+      setSentInvites(invitesRes?.data?.invites || []);
+    } finally {
+      setLeaderQueuesLoading(false);
+    }
+  };
+
   useEffect(() => {
     load();
   }, []);
@@ -99,6 +125,7 @@ export default function MyDivision() {
   const uid = String(user.id || user._id || '');
   const leaderIdStr = String(div?.leaderId || div?.leader?._id || '');
   const isLeader = Boolean(div && uid && leaderIdStr && uid === leaderIdStr);
+  const isAdmin = user?.role === 'admin';
 
   const fleetSummary = useMemo(() => {
     const total = fleetTrucks.length;
@@ -131,6 +158,26 @@ export default function MyDivision() {
     }, 200);
     return () => clearTimeout(t);
   }, [isLeader, div?._id, inviteQuery]);
+
+  useEffect(() => {
+    loadLeaderQueues(div?._id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [div?._id, isLeader]);
+
+  useEffect(() => {
+    const tabKey = String(searchParams.get('tab') || '').toLowerCase();
+    const nextIndex = TAB_INDEX_BY_KEY[tabKey];
+    if (nextIndex == null || nextIndex === activeTab) return;
+    setActiveTab(nextIndex);
+  }, [searchParams, activeTab]);
+
+  const setTabAndSyncQuery = (tabIndex) => {
+    setActiveTab(tabIndex);
+    const next = new URLSearchParams(searchParams);
+    if (tabIndex <= 0) next.delete('tab');
+    else next.set('tab', TAB_KEYS[tabIndex]);
+    setSearchParams(next, { replace: true });
+  };
 
   const leave = async () => {
     if (!window.confirm('Leave this division?')) return;
@@ -287,8 +334,8 @@ export default function MyDivision() {
                   </Button>
                   {isLeader && (
                     <>
-                      <Button component={RouterLink} to="/fleet" variant="outlined">
-                        Fleet
+                      <Button variant="outlined" onClick={() => setTabAndSyncQuery(2)}>
+                        Fleet tab
                       </Button>
                       <Button component={RouterLink} to="/trucks/marketplace" variant="contained">
                         Buy truck
@@ -330,7 +377,80 @@ export default function MyDivision() {
             </Grid>
           </Grid>
 
-          {isLeader && (() => {
+          <Card variant="outlined">
+            <CardContent>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} alignItems={{ sm: 'center' }}>
+                <Typography fontWeight={700} sx={{ flex: 1 }}>
+                  Division workspace
+                </Typography>
+                {isLeader && (
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    <Chip
+                      size="small"
+                      color={joinRequests.length ? 'warning' : 'default'}
+                      label={`Applications ${joinRequests.length}`}
+                    />
+                    <Chip
+                      size="small"
+                      color={sentInvites.filter((i) => i.status === 'pending').length ? 'info' : 'default'}
+                      label={`Invites ${sentInvites.filter((i) => i.status === 'pending').length}`}
+                    />
+                    {fleetSummary.blocked > 0 && (
+                      <Chip size="small" color="error" label={`${fleetSummary.blocked} trucks blocked`} />
+                    )}
+                  </Stack>
+                )}
+              </Stack>
+              <Tabs
+                value={activeTab}
+                onChange={(_, v) => setTabAndSyncQuery(v)}
+                sx={{ mt: 1.5, borderBottom: 1, borderColor: 'divider' }}
+                variant="scrollable"
+                scrollButtons="auto"
+              >
+                <Tab label="Overview" />
+                <Tab label={`People (${members.length})`} />
+                <Tab label={`Fleet${fleetSummary.blocked ? ` (${fleetSummary.blocked} blocked)` : ''}`} />
+                <Tab label={`Leaderboard (${lb.length})`} />
+              </Tabs>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: 1.5 }}>
+                <Chip size="small" variant={activeTab === 1 ? 'filled' : 'outlined'} label="People queue" onClick={() => setTabAndSyncQuery(1)} />
+                <Chip size="small" variant={activeTab === 2 ? 'filled' : 'outlined'} label="Fleet health" onClick={() => setTabAndSyncQuery(2)} />
+                <Chip size="small" variant={activeTab === 3 ? 'filled' : 'outlined'} label="Performance board" onClick={() => setTabAndSyncQuery(3)} />
+              </Stack>
+            </CardContent>
+          </Card>
+
+          {activeTab === 0 && isAdmin && (
+            <Card variant="outlined" sx={{ borderColor: 'info.light' }}>
+              <CardContent>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} alignItems={{ sm: 'center' }}>
+                  <Typography fontWeight={700} sx={{ flex: 1 }}>
+                    Admin quick actions
+                  </Typography>
+                  <Chip size="small" color="info" label="Admin mode" />
+                </Stack>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 1.5 }}>
+                  Keep operations in one place: open division admin console only when deeper moderation is required.
+                </Typography>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                  {div?._id && (
+                    <Button component={RouterLink} to={`/admin/divisions/${div._id}`} variant="outlined">
+                      Division admin console
+                    </Button>
+                  )}
+                  <Button variant="outlined" onClick={() => setTabAndSyncQuery(1)}>
+                    Review people
+                  </Button>
+                  <Button variant="outlined" onClick={() => setTabAndSyncQuery(2)}>
+                    Review fleet
+                  </Button>
+                </Stack>
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === 0 && isLeader && (() => {
             const inactiveMembers = members.filter((m) => m.inactive && !m.isLeader);
             if (!inactiveMembers.length) return null;
             return (
@@ -369,7 +489,7 @@ export default function MyDivision() {
             );
           })()}
 
-          {isLeader && (
+          {activeTab === 1 && isLeader && (
             <Card>
               <CardContent>
                 <Typography fontWeight={700} sx={{ mb: 2 }}>Leader tools</Typography>
@@ -383,10 +503,11 @@ export default function MyDivision() {
                       color={sentInvites.filter((i) => i.status === 'pending').length ? 'info' : 'default'}
                       label={`Pending invites: ${sentInvites.filter((i) => i.status === 'pending').length}`}
                     />
-                    <Button component={RouterLink} to="/fleet" size="small" variant="outlined">
-                      Fleet maintenance
+                    <Button size="small" variant="outlined" onClick={() => setTabAndSyncQuery(2)}>
+                      Fleet maintenance tab
                     </Button>
                   </Stack>
+                  {leaderQueuesLoading && <LinearProgress />}
                   <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                     <Autocomplete
                       options={inviteOptions}
@@ -437,7 +558,7 @@ export default function MyDivision() {
             </Card>
           )}
 
-          {isLeader && (
+          {activeTab === 1 && isLeader && (
             <Card>
               <CardContent>
                 <Typography fontWeight={700} sx={{ mb: 1.5 }}>
@@ -477,7 +598,7 @@ export default function MyDivision() {
             </Card>
           )}
 
-          {isLeader && (
+          {activeTab === 1 && isLeader && (
             <Card>
               <CardContent>
                 <Typography fontWeight={700} sx={{ mb: 1.5 }}>
@@ -509,6 +630,11 @@ export default function MyDivision() {
             </Card>
           )}
 
+          {activeTab === 1 && !isLeader && (
+            <Alert severity="info">People management is available for division leaders.</Alert>
+          )}
+
+          {activeTab === 2 && (
           <Card variant="outlined">
             <CardContent>
               <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
@@ -571,7 +697,9 @@ export default function MyDivision() {
               )}
             </CardContent>
           </Card>
+          )}
 
+          {activeTab === 3 && (
           <Card>
             <CardContent>
               <Typography fontWeight={700} sx={{ mb: 2 }}>Division leaderboard</Typography>
@@ -608,6 +736,7 @@ export default function MyDivision() {
               </Table>
             </CardContent>
           </Card>
+          )}
             </Stack>
           </Grid>
 
@@ -698,8 +827,8 @@ export default function MyDivision() {
                     )}
                   </Stack>
                   <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-                    <Button size="small" component={RouterLink} to="/fleet" variant="outlined">
-                      Open fleet
+                    <Button size="small" variant="outlined" onClick={() => setTabAndSyncQuery(2)}>
+                      Fleet tab
                     </Button>
                     {isLeader && (
                       <Button size="small" component={RouterLink} to="/trucks/marketplace" variant="contained">
@@ -707,6 +836,17 @@ export default function MyDivision() {
                       </Button>
                     )}
                   </Stack>
+                  {isAdmin && div?._id && (
+                    <Button
+                      size="small"
+                      component={RouterLink}
+                      to={`/admin/divisions/${div._id}`}
+                      variant="text"
+                      sx={{ mt: 1 }}
+                    >
+                      Open admin division tools
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             </Stack>

@@ -22,8 +22,11 @@ import GroupsOutlined from '@mui/icons-material/GroupsOutlined';
 import EmojiEventsOutlined from '@mui/icons-material/EmojiEventsOutlined';
 import LocalAtmOutlined from '@mui/icons-material/LocalAtmOutlined';
 import axiosInstance from '../utils/axios';
+import { getItemWithExpiry } from '../localStorageWithExpiry';
 
 export default function DivisionsIndex() {
+  const user = getItemWithExpiry('user');
+  const isAuthed = Boolean(user?.token || user?.id || user?._id);
   const [divisions, setDivisions] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -102,11 +105,11 @@ export default function DivisionsIndex() {
             </Button>
             <Button
               component={RouterLink}
-              to="/division"
+              to={isAuthed ? '/division' : '/login?next=/division'}
               variant="outlined"
-              sx={{ color: 'common.white', borderColor: 'rgba(255,255,255,0.5)' }}
+              sx={{ borderColor: 'divider' }}
             >
-              My division
+              {isAuthed ? 'My division' : 'Sign in'}
             </Button>
           </Stack>
         </Container>
