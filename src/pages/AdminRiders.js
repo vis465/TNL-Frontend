@@ -52,6 +52,83 @@ const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
+// Activity thresholds (in days) based on the rider's last in-game delivery.
+const ACTIVITY_ACTIVE_DAYS = 7;
+const ACTIVITY_RECENT_DAYS = 14;
+const ACTIVITY_IDLE_DAYS = 30;
+
+function getDaysSince(date) {
+  if (!date) return null;
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return null;
+  const diffMs = Date.now() - d.getTime();
+  if (diffMs < 0) return 0;
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+}
+
+function formatRelativeDays(days) {
+  if (days == null) return 'never';
+  if (days <= 0) return 'today';
+  if (days === 1) return '1 day ago';
+  return `${days} days ago`;
+}
+
+function getActivityStatus(rider) {
+  if (!rider?.active) {
+    return {
+      label: 'Disabled',
+      color: 'default',
+      caption: 'Manually disabled',
+      days: null,
+    };
+  }
+
+  const days = getDaysSince(rider?.lastDeliveryAt);
+
+  if (days == null) {
+    return {
+      label: 'No Activity',
+      color: 'default',
+      caption: 'No deliveries yet',
+      days: null,
+    };
+  }
+
+  if (days <= ACTIVITY_ACTIVE_DAYS) {
+    return {
+      label: 'Active',
+      color: 'success',
+      caption: `Last delivery ${formatRelativeDays(days)}`,
+      days,
+    };
+  }
+
+  if (days <= ACTIVITY_RECENT_DAYS) {
+    return {
+      label: 'Recently Active',
+      color: 'info',
+      caption: `Last delivery ${formatRelativeDays(days)}`,
+      days,
+    };
+  }
+
+  if (days <= ACTIVITY_IDLE_DAYS) {
+    return {
+      label: `Idle ${days}d`,
+      color: 'warning',
+      caption: `Inactive since ${days} days`,
+      days,
+    };
+  }
+
+  return {
+    label: `Inactive ${days}d`,
+    color: 'error',
+    caption: `Inactive since ${days} days`,
+    days,
+  };
+}
+
 const initialForm = {
   name: '',
   username: '',
@@ -148,7 +225,17 @@ export default function AdminRiders() {
       return acc + (stats ? Number(stats.totalJobs) || 0 : Number(r.totalJobs) || 0);
     }, 0);
     const activeCount = riders.filter(r => r.active).length;
-    return { totalKm, totalRevenue, totalJobs, activeCount };
+    const activeInGameCount = riders.filter(r => {
+      if (!r.active) return false;
+      const d = getDaysSince(r.lastDeliveryAt);
+      return d != null && d <= ACTIVITY_ACTIVE_DAYS;
+    }).length;
+    const inactiveCount = riders.filter(r => {
+      if (!r.active) return false;
+      const d = getDaysSince(r.lastDeliveryAt);
+      return d == null || d > ACTIVITY_IDLE_DAYS;
+    }).length;
+    return { totalKm, totalRevenue, totalJobs, activeCount, activeInGameCount, inactiveCount };
   }, [riders, riderStats]);
 
   const filtered = useMemo(() => {
@@ -320,16 +407,21 @@ export default function AdminRiders() {
             </Card>
           </Grid>
           <Grid item xs={6} sm={3}>
-            <Card sx={{ textAlign: 'center', bgcolor: 'success.50' }}>
-              <CardContent sx={{ py: 2 }}>
-                <Typography variant="h5" fontWeight={700} color="success.main">
-                  {totals.activeCount}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Active
-                </Typography>
-              </CardContent>
-            </Card>
+            <Tooltip title={`Delivered a job in the last ${ACTIVITY_ACTIVE_DAYS} days`} arrow>
+              <Card sx={{ textAlign: 'center', bgcolor: 'success.50' }}>
+                <CardContent sx={{ py: 2 }}>
+                  <Typography variant="h5" fontWeight={700} color="success.main">
+                    {totals.activeInGameCount}
+                    <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                      / {totals.activeCount}
+                    </Typography>
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Active in-game
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Tooltip>
           </Grid>
           <Grid item xs={6} sm={3}>
             <Card sx={{ textAlign: 'center', bgcolor: 'info.50' }}>
@@ -465,6 +557,7 @@ export default function AdminRiders() {
                 <TableCell align="right" sx={{ fontWeight: 700,  }}>KM</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 700,  }}>Revenue</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 700,  }}>Jobs</TableCell>
+                <TableCell sx={{ fontWeight: 700,  }}>Last Delivery</TableCell>
                 <TableCell sx={{ fontWeight: 700,  }}>Status</TableCell>
                 <TableCell sx={{ fontWeight: 700,  }}>Actions</TableCell>
               </TableRow>
@@ -523,11 +616,42 @@ export default function AdminRiders() {
                     </Typography>
                   </TableCell>
                   <TableCell>
-                    <Chip
-                      label={rider.active ? 'Active' : 'Inactive'}
-                      color={rider.active ? 'success' : 'default'}
-                      size="small"
-                    />
+                    {(() => {
+                      const days = getDaysSince(rider.lastDeliveryAt);
+                      if (days == null) {
+                        return (
+                          <Typography variant="body2" color="text.secondary">
+                            Never
+                          </Typography>
+                        );
+                      }
+                      const dateStr = new Date(rider.lastDeliveryAt).toLocaleDateString();
+                      return (
+                        <Box>
+                          <Typography variant="body2" fontWeight={600}>
+                            {formatRelativeDays(days)}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {dateStr}
+                          </Typography>
+                        </Box>
+                      );
+                    })()}
+                  </TableCell>
+                  <TableCell>
+                    {(() => {
+                      const status = getActivityStatus(rider);
+                      return (
+                        <Tooltip title={status.caption} arrow>
+                          <Chip
+                            label={status.label}
+                            color={status.color}
+                            size="small"
+                            variant={status.color === 'default' ? 'outlined' : 'filled'}
+                          />
+                        </Tooltip>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell>
                     <Stack direction="row" spacing={1}>
@@ -555,7 +679,7 @@ export default function AdminRiders() {
               ))}
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} sx={{ textAlign: 'center', py: 4 }}>
+                  <TableCell colSpan={9} sx={{ textAlign: 'center', py: 4 }}>
                     <Typography color="text.secondary">
                       {search || showActiveOnly ? 'No riders match your search criteria' : 'No riders found'}
                     </Typography>

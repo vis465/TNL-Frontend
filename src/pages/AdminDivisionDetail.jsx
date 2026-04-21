@@ -76,6 +76,7 @@ export default function AdminDivisionDetail() {
 
   const [trucks, setTrucks] = useState([]);
   const [trucksLoading, setTrucksLoading] = useState(false);
+  const [attendanceSummary, setAttendanceSummary] = useState(null);
 
   const user = getItemWithExpiry('user') || {};
   const uid = String(user.id || user._id || '');
@@ -92,6 +93,7 @@ export default function AdminDivisionDetail() {
     try {
       const { data } = await axiosInstance.get(`/divisions/${id}`);
       setDivision(data.division);
+      setAttendanceSummary(data.attendanceSummary || null);
       setTaxPct(String(data.division?.taxPercent ?? 0));
       const [m, l, t, inv, jr] = await Promise.all([
         axiosInstance.get(`/divisions/${id}/members`),
@@ -421,6 +423,18 @@ export default function AdminDivisionDetail() {
               <Box><Typography variant="caption" color="text.secondary">Members</Typography><Typography variant="h6">{division.memberCount ?? 0}</Typography></Box>
               <Box><Typography variant="caption" color="text.secondary">Wallet balance</Typography><Typography variant="h6">{(division.walletBalance ?? 0).toLocaleString()} tokens</Typography></Box>
               <Box><Typography variant="caption" color="text.secondary">Tax rate</Typography><Typography variant="h6">{division.taxPercent ?? 0}%</Typography></Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary">Unique events (members)</Typography>
+                <Typography variant="h6">{attendanceSummary?.uniqueEventsAttended ?? '—'}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Internal events: {attendanceSummary?.uniqueAttendanceEvents ?? 0} · TMP HR: {attendanceSummary?.uniqueHrEvents ?? 0}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary">Recorded attendances</Typography>
+                <Typography variant="h6">{attendanceSummary?.totalAttendancesRecorded ?? division.stats?.totalEventsAttended ?? 0}</Typography>
+                <Typography variant="caption" color="text.secondary">Approved marks while in division</Typography>
+              </Box>
               <Box><Typography variant="caption" color="text.secondary">Leader</Typography><Typography variant="h6">{division.leader?.username || '—'}</Typography></Box>
               <Box><Typography variant="caption" color="text.secondary">Created</Typography><Typography variant="h6">{new Date(division.createdAt).toLocaleDateString()}</Typography></Box>
             </Stack>
@@ -458,6 +472,8 @@ export default function AdminDivisionDetail() {
                         <TableCell>Name</TableCell>
                         <TableCell>Employee ID</TableCell>
                         <TableCell>Activity</TableCell>
+                        <TableCell align="right" title="While in this division">Attend. (div.)</TableCell>
+                        <TableCell align="right" title="All approved events on rider profile">Events (all-time)</TableCell>
                         <TableCell align="right">Balance</TableCell>
                         {canManageMembers && <TableCell align="right">Actions</TableCell>}
                       </TableRow>
@@ -501,6 +517,8 @@ export default function AdminDivisionDetail() {
                               <Typography variant="caption" color="text.secondary">No jobs yet</Typography>
                             )}
                           </TableCell>
+                          <TableCell align="right">{m.eventsAttendedInDivision ?? 0}</TableCell>
+                          <TableCell align="right">{m.lifetimeEventsAttended ?? 0}</TableCell>
                           <TableCell align="right">{(m.balance ?? 0).toLocaleString()}</TableCell>
                           {canManageMembers && (
                             <TableCell align="right">
@@ -518,7 +536,7 @@ export default function AdminDivisionDetail() {
                       ))}
                       {!visible.length && (
                         <TableRow>
-                          <TableCell colSpan={canManageMembers ? 5 : 4} align="center">
+                          <TableCell colSpan={canManageMembers ? 7 : 6} align="center">
                             <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
                               {onlyInactive ? 'No inactive members.' : 'No members yet.'}
                             </Typography>
@@ -544,6 +562,8 @@ export default function AdminDivisionDetail() {
                   <TableCell align="right">Jobs</TableCell>
                   <TableCell align="right">Revenue</TableCell>
                   <TableCell align="right">Tax</TableCell>
+                  <TableCell align="right">Attend. (div.)</TableCell>
+                  <TableCell align="right">Events (all-time)</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -553,11 +573,13 @@ export default function AdminDivisionDetail() {
                     <TableCell align="right">{r.jobs}</TableCell>
                     <TableCell align="right">{Math.round(r.revenue || 0).toLocaleString()}</TableCell>
                     <TableCell align="right">{Math.round(r.taxContributed || 0).toLocaleString()}</TableCell>
+                    <TableCell align="right">{r.attendance ?? 0}</TableCell>
+                    <TableCell align="right">{r.lifetimeEventsAttended ?? 0}</TableCell>
                   </TableRow>
                 ))}
                 {!lb.length && (
                   <TableRow>
-                    <TableCell colSpan={4} align="center">
+                    <TableCell colSpan={6} align="center">
                       <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>No jobs yet.</Typography>
                     </TableCell>
                   </TableRow>

@@ -10,7 +10,12 @@ import {
   CardMedia,
   Chip,
   Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
+  IconButton,
   LinearProgress,
   Stack,
   Table,
@@ -24,6 +29,7 @@ import {
 import { Link as RouterLink } from 'react-router-dom';
 import LocalShippingOutlined from '@mui/icons-material/LocalShippingOutlined';
 import BuildOutlined from '@mui/icons-material/BuildOutlined';
+import EditOutlined from '@mui/icons-material/EditOutlined';
 import axiosInstance from '../utils/axios';
 import { getItemWithExpiry } from '../localStorageWithExpiry';
 import { getDivisionTrucks } from '../services/fleetService';
@@ -44,6 +50,7 @@ export default function MyDivision() {
   const [inviteLoading, setInviteLoading] = useState(false);
 
   const [fleetTrucks, setFleetTrucks] = useState([]);
+  const [taxDialogOpen, setTaxDialogOpen] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -78,6 +85,7 @@ export default function MyDivision() {
   }, []);
 
   const div = data?.division;
+  const attendanceSummary = data?.attendanceSummary;
   const uid = String(user.id || user._id || '');
   const leaderIdStr = String(div?.leaderId || div?.leader?._id || '');
   const isLeader = Boolean(div && uid && leaderIdStr && uid === leaderIdStr);
@@ -136,6 +144,7 @@ export default function MyDivision() {
   const saveTax = async () => {
     try {
       await axiosInstance.patch(`/divisions/${div._id}/tax`, { taxPercent: Number(taxPct) });
+      setTaxDialogOpen(false);
       load();
     } catch (e) {
       setError(e?.response?.data?.message || 'Failed to update tax');
@@ -197,11 +206,38 @@ export default function MyDivision() {
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography variant="h6" fontWeight={700}>{div.name}</Typography>
                   <Typography variant="body2" color="text.secondary">{div.description}</Typography>
-                  <Stack direction="row" spacing={1} sx={{ mt: 1 }} flexWrap="wrap" useFlexGap>
+                  <Stack direction="row" spacing={1} sx={{ mt: 1 }} flexWrap="wrap" useFlexGap alignItems="center">
                     <Chip size="small" label={`Tax ${div.taxPercent}%`} />
+                    {isLeader && (
+                      <IconButton
+                        size="small"
+                        aria-label="Edit division tax"
+                        onClick={() => {
+                          setTaxPct(String(div.taxPercent ?? 0));
+                          setTaxDialogOpen(true);
+                        }}
+                      >
+                        <EditOutlined fontSize="small" />
+                      </IconButton>
+                    )}
                     <Chip size="small" label={`Wallet ${(div.walletBalance ?? 0).toLocaleString()}`} />
                     <Chip size="small" label={`Members ${div.memberCount ?? 0}`} />
                   </Stack>
+                  {(attendanceSummary || div.stats?.totalEventsAttended != null) && (
+                    <Stack direction="row" spacing={1} sx={{ mt: 1 }} flexWrap="wrap" useFlexGap>
+                      <Chip
+                        size="small"
+                        variant="outlined"
+                        color="info"
+                        label={`Unique events (members): ${attendanceSummary?.uniqueEventsAttended ?? '—'}`}
+                      />
+                      <Chip
+                        size="small"
+                        variant="outlined"
+                        label={`Recorded attendances: ${attendanceSummary?.totalAttendancesRecorded ?? div.stats?.totalEventsAttended ?? 0}`}
+                      />
+                    </Stack>
+                  )}
                 </Box>
                 <Stack direction="row" spacing={1}>
                   <Button component={RouterLink} to={`/divisions/${div.slug}`} variant="outlined">
@@ -283,10 +319,6 @@ export default function MyDivision() {
                     <Button variant="contained" onClick={invite} disabled={!inviteRider?._id}>
                       Send invite
                     </Button>
-                  </Stack>
-                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
-                    <TextField label="Tax %" type="number" value={taxPct} onChange={(e) => setTaxPct(e.target.value)} sx={{ width: 120 }} />
-                    <Button variant="contained" onClick={saveTax}>Update tax</Button>
                   </Stack>
                   <Divider />
                   <Typography variant="subtitle2">Pay member from division wallet</Typography>
@@ -377,6 +409,8 @@ export default function MyDivision() {
                     <TableCell align="right">Jobs</TableCell>
                     <TableCell align="right">Revenue</TableCell>
                     <TableCell align="right">Tax to wallet</TableCell>
+                    <TableCell align="right" title="While in this division">Attend. (div.)</TableCell>
+                    <TableCell align="right" title="All approved events (rider profile)">Events (all-time)</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -386,11 +420,13 @@ export default function MyDivision() {
                       <TableCell align="right">{r.jobs}</TableCell>
                       <TableCell align="right">{Math.round(r.revenue || 0).toLocaleString()}</TableCell>
                       <TableCell align="right">{Math.round(r.taxContributed || 0).toLocaleString()}</TableCell>
+                      <TableCell align="right">{r.attendance ?? 0}</TableCell>
+                      <TableCell align="right">{r.lifetimeEventsAttended ?? 0}</TableCell>
                     </TableRow>
                   ))}
                   {!lb.length && (
                     <TableRow>
-                      <TableCell colSpan={4} align="center">
+                      <TableCell colSpan={6} align="center">
                         <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>No jobs yet.</Typography>
                       </TableCell>
                     </TableRow>
@@ -401,6 +437,30 @@ export default function MyDivision() {
           </Card>
         </Stack>
       )}
+
+      <Dialog open={taxDialogOpen} onClose={() => setTaxDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Division tax rate</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Job revenue tax percentage credited to the division wallet. Must be within the server maximum.
+          </Typography>
+          <TextField
+            autoFocus
+            fullWidth
+            label="Tax %"
+            type="number"
+            value={taxPct}
+            onChange={(e) => setTaxPct(e.target.value)}
+            inputProps={{ min: 0, max: 100, step: 0.5 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setTaxDialogOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={saveTax} disabled={!div?._id}>
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 }
