@@ -78,7 +78,10 @@ export default function DivisionInvites() {
 
   return (
     <Container maxWidth="sm" sx={{ py: 3 }}>
-      <Button component={RouterLink} to="/dashboard" sx={{ mb: 2 }}>Back to dashboard</Button>
+      <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+        <Button component={RouterLink} to="/dashboard">Back to dashboard</Button>
+        <Button component={RouterLink} to="/division" variant="outlined">My division</Button>
+      </Stack>
       <Typography variant="h5" fontWeight={700} sx={{ mb: 2 }}>Division invitations</Typography>
       {loading && <LinearProgress sx={{ mb: 2 }} />}
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}

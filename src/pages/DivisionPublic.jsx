@@ -40,6 +40,7 @@ export default function DivisionPublic() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [myStateLoading, setMyStateLoading] = useState(false);
   const [myDivision, setMyDivision] = useState(null);
   const [myRequests, setMyRequests] = useState([]);
 
@@ -73,6 +74,7 @@ export default function DivisionPublic() {
 
   const user = getItemWithExpiry('user');
   const isAuthed = Boolean(user?.token || user?.id || user?._id);
+  const leadsDivision = user?.leadsDivision || null;
 
   const load = async () => {
     setLoading(true);
@@ -90,6 +92,7 @@ export default function DivisionPublic() {
 
   const loadMyState = async () => {
     if (!isAuthed) return;
+    setMyStateLoading(true);
     try {
       const [divRes, reqRes] = await Promise.all([
         axiosInstance.get('/me/division').catch(() => ({ data: { division: null } })),
@@ -99,6 +102,8 @@ export default function DivisionPublic() {
       setMyRequests(reqRes.data?.requests || []);
     } catch (_) {
       /* ignored for public page */
+    } finally {
+      setMyStateLoading(false);
     }
   };
 
@@ -211,6 +216,8 @@ export default function DivisionPublic() {
                   const divId = String(data?.division?._id || '');
                   const inThisDivision = myDivision && String(myDivision._id) === divId;
                   const inAnotherDivision = myDivision && !inThisDivision;
+                  const leadsThisDivision = leadsDivision && String(leadsDivision._id || '') === divId;
+                  const leadsAnotherDivision = leadsDivision && !leadsThisDivision;
                   const pendingForThis = myRequests.some((r) => String(r.divisionId?._id || r.divisionId) === divId);
 
                   if (!isAuthed) {
@@ -232,6 +239,18 @@ export default function DivisionPublic() {
                       </Button>
                     );
                   }
+                  if (leadsThisDivision) {
+                    return (
+                      <Button component={RouterLink} to="/division" variant="contained" color="warning">
+                        Manage your division
+                      </Button>
+                    );
+                  }
+                  if (leadsAnotherDivision) {
+                    return (
+                      <Chip label={`Leader of ${leadsDivision.name}`} color="warning" variant="outlined" />
+                    );
+                  }
                   if (inAnotherDivision) {
                     return (
                       <Chip label={`Member of ${myDivision.name}`} color="default" variant="outlined" />
@@ -239,6 +258,9 @@ export default function DivisionPublic() {
                   }
                   if (pendingForThis) {
                     return <Chip label="Application pending" color="warning" variant="outlined" />;
+                  }
+                  if (myStateLoading) {
+                    return <Chip label="Checking membership..." variant="outlined" />;
                   }
                   return (
                     <Button
