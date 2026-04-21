@@ -158,17 +158,30 @@ export default function DivisionsIndex() {
                     <CardActionArea component={RouterLink} to={`/divisions/${d.slug}`}>
                       <Box
                         sx={{
-                          height: 120,
-                          backgroundImage: d.bannerUrl ? `url(${d.bannerUrl})` : undefined,
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center',
-                          background: d.bannerUrl
-                            ? undefined
-                            : (t) =>
-                                `linear-gradient(135deg, ${t.palette.primary.main}, ${t.palette.secondary.main})`,
+                          width: '100%',
+                          aspectRatio: '1920 / 500',
+                          bgcolor: 'common.black',
                           position: 'relative',
+                          overflow: 'hidden',
                         }}
                       >
+                        {d.bannerUrl ? (
+                          <Box
+                            component="img"
+                            src={d.bannerUrl}
+                            alt={`${d.name} banner`}
+                            sx={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }}
+                          />
+                        ) : (
+                          <Box
+                            sx={{
+                              width: '100%',
+                              height: '100%',
+                              background: (t) =>
+                                `linear-gradient(135deg, ${t.palette.primary.main}, ${t.palette.secondary.main})`,
+                            }}
+                          />
+                        )}
                         <Box
                           sx={{
                             position: 'absolute',

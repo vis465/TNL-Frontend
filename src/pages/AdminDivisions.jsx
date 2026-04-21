@@ -348,14 +348,27 @@ export default function AdminDivisions() {
                 value={createForm.bannerUrl}
                 onChange={(e) => setCreateForm((p) => ({ ...p, bannerUrl: e.target.value }))}
                 fullWidth
+                helperText="Recommended banner ratio: 1920x500"
               />
             </Stack>
             {(createForm.logoUrl || createForm.bannerUrl) && (
               <Box sx={{ position: 'relative', borderRadius: 2, overflow: 'hidden', border: '1px dashed', borderColor: 'divider' }}>
                 {createForm.bannerUrl ? (
-                  <Box component="img" src={createForm.bannerUrl} alt="Banner preview" sx={{ width: '100%', height: 120, objectFit: 'cover', display: 'block' }} />
+                  <Box
+                    component="img"
+                    src={createForm.bannerUrl}
+                    alt="Banner preview"
+                    sx={{
+                      width: '100%',
+                      aspectRatio: '1920 / 500',
+                      objectFit: 'cover',
+                      objectPosition: 'center',
+                      display: 'block',
+                      bgcolor: 'common.black',
+                    }}
+                  />
                 ) : (
-                  <Box sx={{ height: 120, bgcolor: 'action.hover' }} />
+                  <Box sx={{ width: '100%', aspectRatio: '1920 / 500', bgcolor: 'action.hover' }} />
                 )}
                 <Avatar
                   src={createForm.logoUrl || undefined}
@@ -470,14 +483,27 @@ export default function AdminDivisions() {
                 value={editForm.bannerUrl}
                 onChange={(e) => setEditForm((p) => ({ ...p, bannerUrl: e.target.value }))}
                 fullWidth
+                helperText="Recommended banner ratio: 1920x500"
               />
             </Stack>
             {(editForm.logoUrl || editForm.bannerUrl) && (
               <Box sx={{ position: 'relative', borderRadius: 2, overflow: 'hidden', border: '1px dashed', borderColor: 'divider' }}>
                 {editForm.bannerUrl ? (
-                  <Box component="img" src={editForm.bannerUrl} alt="Banner preview" sx={{ width: '100%', height: 120, objectFit: 'cover', display: 'block' }} />
+                  <Box
+                    component="img"
+                    src={editForm.bannerUrl}
+                    alt="Banner preview"
+                    sx={{
+                      width: '100%',
+                      aspectRatio: '1920 / 500',
+                      objectFit: 'cover',
+                      objectPosition: 'center',
+                      display: 'block',
+                      bgcolor: 'common.black',
+                    }}
+                  />
                 ) : (
-                  <Box sx={{ height: 120, bgcolor: 'action.hover' }} />
+                  <Box sx={{ width: '100%', aspectRatio: '1920 / 500', bgcolor: 'action.hover' }} />
                 )}
                 <Avatar
                   src={editForm.logoUrl || undefined}

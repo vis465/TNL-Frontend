@@ -163,13 +163,27 @@ export default function DivisionPublic() {
         sx={{
           position: 'relative',
           width: '100%',
-          height: { xs: 180, sm: 260, md: 320 },
-          backgroundImage: division.bannerUrl ? `url(${division.bannerUrl})` : undefined,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          background: division.bannerUrl ? undefined : (t) => `linear-gradient(135deg, ${t.palette.primary.dark}, ${t.palette.secondary.dark})`,
+          aspectRatio: '1920 / 500',
+          bgcolor: 'common.black',
+          overflow: 'hidden',
         }}
       >
+        {division.bannerUrl ? (
+          <Box
+            component="img"
+            src={division.bannerUrl}
+            alt={`${division.name} banner`}
+            sx={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }}
+          />
+        ) : (
+          <Box
+            sx={{
+              width: '100%',
+              height: '100%',
+              background: (t) => `linear-gradient(135deg, ${t.palette.primary.dark}, ${t.palette.secondary.dark})`,
+            }}
+          />
+        )}
         <Box sx={{ position: 'absolute', inset: 0 }} />
       </Box>
 

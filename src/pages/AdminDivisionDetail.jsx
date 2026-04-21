@@ -342,11 +342,25 @@ export default function AdminDivisionDetail() {
 
       {division && (
         <Card sx={{ mb: 3, overflow: 'hidden' }} variant="outlined">
-          {division.bannerUrl ? (
-            <CardMedia component="img" image={division.bannerUrl} alt="banner" sx={{ height: 180, objectFit: 'cover' }} />
-          ) : (
-            <Box sx={{ height: 140, background: (t) => `linear-gradient(135deg, ${t.palette.primary.dark}, ${t.palette.secondary.dark})` }} />
-          )}
+          <Box
+            sx={{
+              width: '100%',
+              aspectRatio: '1920 / 500',
+              bgcolor: 'common.black',
+              overflow: 'hidden',
+            }}
+          >
+            {division.bannerUrl ? (
+              <CardMedia
+                component="img"
+                image={division.bannerUrl}
+                alt="banner"
+                sx={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }}
+              />
+            ) : (
+              <Box sx={{ width: '100%', height: '100%', background: (t) => `linear-gradient(135deg, ${t.palette.primary.dark}, ${t.palette.secondary.dark})` }} />
+            )}
+          </Box>
           <CardContent>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }}>
               <Avatar

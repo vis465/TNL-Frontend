@@ -107,11 +107,18 @@ export default function DivisionLeaderboard() {
                       }}
                     >
                       <CardActionArea component={RouterLink} to={d?.slug ? `/divisions/${d.slug}` : '#'}>
-                        {d?.bannerUrl ? (
-                          <Box component="img" src={d.bannerUrl} alt="banner" sx={{ width: '100%', height: 90, objectFit: 'cover' }} />
-                        ) : (
-                          <Box sx={{ height: 90, background: (t) => `linear-gradient(135deg, ${t.palette.primary.dark}, ${t.palette.secondary.dark})` }} />
-                        )}
+                        <Box sx={{ width: '100%', aspectRatio: '1920 / 500', bgcolor: 'common.black', overflow: 'hidden' }}>
+                          {d?.bannerUrl ? (
+                            <Box
+                              component="img"
+                              src={d.bannerUrl}
+                              alt="banner"
+                              sx={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }}
+                            />
+                          ) : (
+                            <Box sx={{ width: '100%', height: '100%', background: (t) => `linear-gradient(135deg, ${t.palette.primary.dark}, ${t.palette.secondary.dark})` }} />
+                          )}
+                        </Box>
                         <CardContent>
                           <Stack direction="row" spacing={2} alignItems="center">
                             <Avatar src={d?.logoUrl || undefined} sx={{ width: 56, height: 56, mt: -5, border: '3px solid', borderColor: medal }}>
@@ -253,11 +260,18 @@ export default function DivisionLeaderboard() {
             <Grid item xs={12} sm={6} md={4} key={d._id}>
               <Card variant="outlined" sx={{ height: '100%' }}>
                 <CardActionArea component={RouterLink} to={`/divisions/${d.slug}`}>
-                  {d.bannerUrl ? (
-                    <Box component="img" src={d.bannerUrl} alt="banner" sx={{ width: '100%', height: 100, objectFit: 'cover' }} />
-                  ) : (
-                    <Box sx={{ height: 100, background: (t) => `linear-gradient(135deg, ${t.palette.primary.dark}, ${t.palette.secondary.dark})` }} />
-                  )}
+                  <Box sx={{ width: '100%', aspectRatio: '1920 / 500', bgcolor: 'common.black', overflow: 'hidden' }}>
+                    {d.bannerUrl ? (
+                      <Box
+                        component="img"
+                        src={d.bannerUrl}
+                        alt="banner"
+                        sx={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }}
+                      />
+                    ) : (
+                      <Box sx={{ width: '100%', height: '100%', background: (t) => `linear-gradient(135deg, ${t.palette.primary.dark}, ${t.palette.secondary.dark})` }} />
+                    )}
+                  </Box>
                   <CardContent>
                     <Stack direction="row" spacing={2} alignItems="center">
                       <Avatar src={d.logoUrl || undefined} sx={{ width: 40, height: 40, mt: -4, border: '2px solid', borderColor: 'background.paper' }}>
