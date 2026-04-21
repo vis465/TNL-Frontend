@@ -139,6 +139,7 @@ const Navbar = () => {
 
   const secondaryRoles = Array.isArray(user?.secondaryRoles) ? user.secondaryRoles : [];
   const isDivisionLeader = secondaryRoles.includes('divisionLeader');
+  const hasDivision = Boolean(user?.riderId?.divisionId || user?.divisionId || user?.leadsDivision?._id);
 
   return (
     <StyledAppBar position="sticky" elevation={0}>
@@ -299,6 +300,28 @@ const Navbar = () => {
           <Groups fontSize="small" />
           Division
         </MenuItem>
+        {isAuthenticated && (
+          <MenuItem
+            component={RouterLink}
+            to="/division/invites"
+            onClick={handleUserMenuClose}
+            sx={{ gap: 1.5 }}
+          >
+            <ContactMail fontSize="small" />
+            Division invites
+          </MenuItem>
+        )}
+        {hasDivision && (
+          <MenuItem
+            component={RouterLink}
+            to="/fleet"
+            onClick={handleUserMenuClose}
+            sx={{ gap: 1.5 }}
+          >
+            <GarageOutlined fontSize="small" />
+            Fleet
+          </MenuItem>
+        )}
         <MenuItem onClick={handleLogout} sx={{ gap: 1.5 }}>
           <Logout fontSize="small" />
           Logout
@@ -377,6 +400,45 @@ const Navbar = () => {
               </ListItemButton>
             </ListItem>
           ))}
+          {isAuthenticated && (
+            <ListItem disablePadding>
+              <ListItemButton
+                component={RouterLink}
+                to="/division"
+                onClick={handleMobileDrawerClose}
+                sx={{ borderRadius: 1 }}
+              >
+                <ListItemIcon sx={{ minWidth: 40 }}><Groups /></ListItemIcon>
+                <ListItemText primary="Division" primaryTypographyProps={{ fontWeight: 500 }} />
+              </ListItemButton>
+            </ListItem>
+          )}
+          {isAuthenticated && (
+            <ListItem disablePadding>
+              <ListItemButton
+                component={RouterLink}
+                to="/division/invites"
+                onClick={handleMobileDrawerClose}
+                sx={{ borderRadius: 1 }}
+              >
+                <ListItemIcon sx={{ minWidth: 40 }}><ContactMail /></ListItemIcon>
+                <ListItemText primary="Division invites" primaryTypographyProps={{ fontWeight: 500 }} />
+              </ListItemButton>
+            </ListItem>
+          )}
+          {hasDivision && (
+            <ListItem disablePadding>
+              <ListItemButton
+                component={RouterLink}
+                to="/fleet"
+                onClick={handleMobileDrawerClose}
+                sx={{ borderRadius: 1 }}
+              >
+                <ListItemIcon sx={{ minWidth: 40 }}><GarageOutlined /></ListItemIcon>
+                <ListItemText primary="Fleet" primaryTypographyProps={{ fontWeight: 500 }} />
+              </ListItemButton>
+            </ListItem>
+          )}
         </List>
 
         {isAuthenticated && (

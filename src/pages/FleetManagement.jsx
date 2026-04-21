@@ -105,9 +105,14 @@ export default function FleetManagement() {
 
   const user = useMemo(() => getItemWithExpiry('user') || {}, []);
   const secondaryRoles = Array.isArray(user?.secondaryRoles) ? user.secondaryRoles : [];
+  const hasDivisionLeaderRole = secondaryRoles.includes('divisionLeader');
   const leadsDivisionId = user?.leadsDivision?._id || null;
   const isLeaderOfThis =
-    !!divisionId && leadsDivisionId && String(leadsDivisionId) === String(divisionId);
+    !!divisionId &&
+    ((leadsDivisionId && String(leadsDivisionId) === String(divisionId)) ||
+      (!leadsDivisionId && hasDivisionLeaderRole));
+  const canManageMaintenance =
+    isLeaderOfThis || user?.role === 'admin' || user?.role === 'communityManager';
 
   const loadTrucks = useCallback(async () => {
     setLoading(true);
@@ -312,12 +317,12 @@ export default function FleetManagement() {
           </Alert>
         )}
 
-        {!loading && divisionId && !trucks.length && !error && (
+          {!loading && divisionId && !trucks.length && !error && (
           <Alert
             severity="info"
             sx={{ mb: 2, bgcolor: T.surface, border: `1px solid ${T.border}`, color: T.text }}
             action={
-              isLeaderOfThis ? (
+              canManageMaintenance ? (
                 <Button
                   color="inherit"
                   size="small"
@@ -331,7 +336,7 @@ export default function FleetManagement() {
             }
           >
             Your division does not own any trucks yet.
-            {isLeaderOfThis
+            {canManageMaintenance
               ? ' As the leader, you can purchase trucks from the marketplace using the division wallet.'
               : ' Your leader can purchase trucks from the marketplace using the division wallet.'}
           </Alert>
@@ -408,6 +413,7 @@ export default function FleetManagement() {
                   const secondsLeft = truckSecondsRemaining(t, nowMs);
                   const inService = t.blocked && secondsLeft > 0;
                   const needsMaintenance = t.blocked && !inService;
+                  const maintenanceCost = Math.max(0, Number(t.maintenanceCost) || 0);
                   return (
                     <Card
                       key={id || t.displayName}
@@ -474,6 +480,14 @@ export default function FleetManagement() {
                               label={`${Number(t.deliveriesCount) || 0} jobs`}
                               sx={{ bgcolor: 'rgba(255,255,255,0.06)', color: T.text }}
                             />
+                            {needsMaintenance && (
+                              <Chip
+                                size="small"
+                                color="warning"
+                                variant="outlined"
+                                label={`Maintenance ${maintenanceCost.toLocaleString()} tokens`}
+                              />
+                            )}
                             <Tooltip
                               title={`Wear ${Number(t.wearKm || 0).toLocaleString()} / ${Number(
                                 t.wearThresholdKm || 0
@@ -518,7 +532,7 @@ export default function FleetManagement() {
                               </Typography>
                             </Box>
                           )}
-                          {isLeaderOfThis && needsMaintenance && (
+                          {canManageMaintenance && needsMaintenance && (
                             <Button
                               size="small"
                               variant="contained"
@@ -530,10 +544,10 @@ export default function FleetManagement() {
                               }}
                               sx={{ mt: 1 }}
                             >
-                              Pay maintenance
+                              Pay maintenance ({maintenanceCost.toLocaleString()})
                             </Button>
                           )}
-                          {!isLeaderOfThis && needsMaintenance && (
+                          {!canManageMaintenance && needsMaintenance && (
                             <Typography
                               variant="caption"
                               sx={{ color: T.textMuted, display: 'block', mt: 1 }}
