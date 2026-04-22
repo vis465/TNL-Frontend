@@ -134,6 +134,12 @@ export default function RiderJobs() {
               </TableHead>
               <TableBody>
                 {items.map((j) => (
+                  (() => {
+                    const revenueValue = Number(j?.normalized?.revenueValue);
+                    const displayRevenue = Number.isFinite(revenueValue)
+                      ? revenueValue
+                      : Number(j?.revenue ?? j?.income ?? 0);
+                    return (
                   <TableRow key={j._id} hover component={RouterLink} to={`/jobs/${j.jobID || j._id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                     <TableCell>{j.jobID || '-'}</TableCell>
                     <TableCell>
@@ -142,9 +148,11 @@ export default function RiderJobs() {
                     <TableCell>{j.driver?.username || '-'}</TableCell>
                     <TableCell>{j.source?.city?.name || '-'} → {j.destination?.city?.name || '-'}</TableCell>
                     <TableCell align="right">{j.distanceDriven || 0}</TableCell>
-                    <TableCell align="right">${j.revenue || j.income || 0}</TableCell>
+                    <TableCell align="right">${Math.round(displayRevenue).toLocaleString()}</TableCell>
                     <TableCell>{new Date(j.createdAt).toLocaleString()}</TableCell>
                   </TableRow>
+                    );
+                  })()
                 ))}
                 {!loading && items.length === 0 && (
                   <TableRow>

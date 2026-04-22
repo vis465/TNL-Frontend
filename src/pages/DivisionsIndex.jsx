@@ -241,13 +241,6 @@ export default function DivisionsIndex() {
                             <>
                               <Chip
                                 size="small"
-                                icon={<LocalAtmOutlined sx={{ fontSize: 16 }} />}
-                                label={`${Math.round(stats.totalRevenue || 0).toLocaleString()}`}
-                                color="success"
-                                variant="outlined"
-                              />
-                              <Chip
-                                size="small"
                                 label={`${stats.totalJobs || 0} jobs`}
                                 variant="outlined"
                               />

@@ -184,6 +184,7 @@ export default function MyDivision() {
     }
     return base;
   }, [members, div]);
+  const effectiveMemberCount = peopleRows.length || Number(div?.memberCount || 0);
 
   useEffect(() => {
     if (!isLeader || !div?._id) return;
@@ -369,7 +370,7 @@ export default function MyDivision() {
                       </IconButton>
                     )}
                     <Chip size="small" label={`Wallet ${(div.walletBalance ?? 0).toLocaleString()}`} />
-                    <Chip size="small" label={`Members ${div.memberCount ?? 0}`} />
+                    <Chip size="small" label={`Members ${effectiveMemberCount}`} />
                   </Stack>
                   {(attendanceSummary || div.stats?.totalEventsAttended != null) && (
                     <Stack direction="row" spacing={1} sx={{ mt: 1 }} flexWrap="wrap" useFlexGap>
@@ -411,7 +412,7 @@ export default function MyDivision() {
             <Grid item xs={6} md={3}>
               <Paper variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>
                 <Typography variant="caption" color="text.secondary">Members</Typography>
-                <Typography variant="h6" fontWeight={800}>{div.memberCount ?? 0}</Typography>
+                <Typography variant="h6" fontWeight={800}>{effectiveMemberCount}</Typography>
               </Paper>
             </Grid>
             <Grid item xs={6} md={3}>
@@ -598,7 +599,7 @@ export default function MyDivision() {
                   <Typography variant="subtitle2">Pay member from division wallet</Typography>
                   <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                     <Autocomplete
-                      options={members}
+                      options={peopleRows}
                       value={walletForm.rider}
                       onChange={(_, v) => setWalletForm((p) => ({ ...p, rider: v }))}
                       getOptionLabel={(o) => o ? `${o.name} (${o.employeeID || ''})` : ''}
@@ -828,7 +829,6 @@ export default function MyDivision() {
                     <TableCell>Rider</TableCell>
                     <TableCell align="right">Jobs</TableCell>
                     <TableCell align="right">Revenue</TableCell>
-                    <TableCell align="right">Tax to wallet</TableCell>
                     <TableCell align="right" title="While in this division">Attend. (div.)</TableCell>
                     <TableCell align="right" title="All approved events (rider profile)">Events (all-time)</TableCell>
                   </TableRow>
@@ -839,14 +839,13 @@ export default function MyDivision() {
                       <TableCell>{r.name || r.username}</TableCell>
                       <TableCell align="right">{r.jobs}</TableCell>
                       <TableCell align="right">{Math.round(r.revenue || 0).toLocaleString()}</TableCell>
-                      <TableCell align="right">{Math.round(r.taxContributed || 0).toLocaleString()}</TableCell>
                       <TableCell align="right">{r.attendance ?? 0}</TableCell>
                       <TableCell align="right">{r.lifetimeEventsAttended ?? 0}</TableCell>
                     </TableRow>
                   ))}
                   {!lb.length && (
                     <TableRow>
-                      <TableCell colSpan={6} align="center">
+                      <TableCell colSpan={5} align="center">
                         <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>No jobs yet.</Typography>
                       </TableCell>
                     </TableRow>

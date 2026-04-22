@@ -133,7 +133,6 @@ export default function DivisionLeaderboard() {
                             </Box>
                           </Stack>
                           <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
-                            <Chip size="small" color="success" label={`Revenue ${Math.round(r.totalRevenue || 0).toLocaleString()}`} />
                             <Chip size="small" label={`Wallet ${Math.round(r.totalTaxTokens || 0).toLocaleString()}`} />
                           </Stack>
                         </CardContent>

@@ -157,6 +157,7 @@ export default function DivisionPublic() {
   }
 
   const { division, members, recentJobs = [] } = data;
+  const effectiveMemberCount = Math.max(Number(division.memberCount || 0), members.length || 0);
 
   return (
     <Box sx={{ minHeight: '100vh', pb: 6 }}>
@@ -185,11 +186,27 @@ export default function DivisionPublic() {
             }}
           />
         )}
-        <Box sx={{ position: 'absolute', inset: 0 }} />
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(180deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.7) 100%)',
+          }}
+        />
       </Box>
 
-      <Container maxWidth="lg">
-        <Card variant="outlined" sx={{ mt: -8, position: 'relative', zIndex: 1 }}>
+      <Container maxWidth="xl" sx={{ px: { xs: 1, sm: 1.5, md: 2 } }}>
+        <Card
+          variant="outlined"
+          sx={{
+            mt: -8,
+            position: 'relative',
+            zIndex: 1,
+            borderRadius: 3,
+            backdropFilter: 'blur(6px)',
+            boxShadow: (t) => t.shadows[8],
+          }}
+        >
           <CardContent>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} alignItems={{ sm: 'center' }}>
               <Avatar
@@ -199,12 +216,12 @@ export default function DivisionPublic() {
                 {division.name?.[0] || 'D'}
               </Avatar>
               <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography variant="h4" fontWeight={800}>{division.name}</Typography>
+                <Typography variant="h4" fontWeight={900}>{division.name}</Typography>
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
                   {division.description || 'A division in our community.'}
                 </Typography>
                 <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                  <Chip icon={<GroupsOutlined />} label={`${division.memberCount ?? members.length} members`} />
+                  <Chip icon={<GroupsOutlined />} label={`${effectiveMemberCount} members`} />
                   <Chip icon={<AccountBalanceWalletOutlined />} label={`Wallet ${(division.walletBalance ?? 0).toLocaleString()}`} />
                   <Chip icon={<LocalAtmOutlined />} label={`Tax ${division.taxPercent ?? 0}%`} />
                   {division.leader && (
@@ -301,6 +318,41 @@ export default function DivisionPublic() {
           </CardContent>
         </Card>
 
+        <Grid container spacing={1.5} sx={{ mt: 1.5 }}>
+          <Grid item xs={6} md={3}>
+            <Card variant="outlined" sx={{ borderRadius: 2.5 }}>
+              <CardContent sx={{ py: 1.5 }}>
+                <Typography variant="caption" color="text.secondary">Members</Typography>
+                <Typography variant="h6" fontWeight={800}>{effectiveMemberCount}</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={6} md={3}>
+            <Card variant="outlined" sx={{ borderRadius: 2.5 }}>
+              <CardContent sx={{ py: 1.5 }}>
+                <Typography variant="caption" color="text.secondary">Division wallet</Typography>
+                <Typography variant="h6" fontWeight={800}>{(division.walletBalance || 0).toLocaleString()}</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={6} md={3}>
+            <Card variant="outlined" sx={{ borderRadius: 2.5 }}>
+              <CardContent sx={{ py: 1.5 }}>
+                <Typography variant="caption" color="text.secondary">Tax rate</Typography>
+                <Typography variant="h6" fontWeight={800}>{division.taxPercent ?? 0}%</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={6} md={3}>
+            <Card variant="outlined" sx={{ borderRadius: 2.5 }}>
+              <CardContent sx={{ py: 1.5 }}>
+                <Typography variant="caption" color="text.secondary">Recent jobs</Typography>
+                <Typography variant="h6" fontWeight={800}>{recentJobs.length}</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
         {recentJobs.length > 0 && (
           <Card sx={{ mt: 3 }}>
             <CardContent>
@@ -347,108 +399,110 @@ export default function DivisionPublic() {
           </Card>
         )}
 
-        <Grid container spacing={3} sx={{ mt: 1 }}>
-          <Grid item xs={12} md={7}>
-            <Card>
+        <Grid container spacing={2} sx={{ mt: 1 }}>
+          <Grid item xs={12} md={8}>
+            <Card sx={{ borderRadius: 2.5 }}>
               <CardContent>
                 <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
                   <EmojiEvents sx={{ color: 'warning.main' }} />
                   <Typography variant="h6" fontWeight={700}>Top members</Typography>
                 </Stack>
                 <Divider sx={{ mb: 1 }} />
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>#</TableCell>
-                      <TableCell sortDirection={memberSort === 'name' ? memberDir : false}>
-                        <TableSortLabel
-                          active={memberSort === 'name'}
-                          direction={memberSort === 'name' ? memberDir : 'asc'}
-                          onClick={() => toggleMemberSort('name')}
-                        >
-                          Rider
-                        </TableSortLabel>
-                      </TableCell>
-                      <TableCell align="right" sortDirection={memberSort === 'jobs' ? memberDir : false}>
-                        <TableSortLabel
-                          active={memberSort === 'jobs'}
-                          direction={memberSort === 'jobs' ? memberDir : 'desc'}
-                          onClick={() => toggleMemberSort('jobs')}
-                        >
-                          Jobs
-                        </TableSortLabel>
-                      </TableCell>
-                      <TableCell align="right" sortDirection={memberSort === 'revenue' ? memberDir : false}>
-                        <TableSortLabel
-                          active={memberSort === 'revenue'}
-                          direction={memberSort === 'revenue' ? memberDir : 'desc'}
-                          onClick={() => toggleMemberSort('revenue')}
-                        >
-                          Revenue
-                        </TableSortLabel>
-                      </TableCell>
-                      <TableCell align="right" sortDirection={memberSort === 'distance' ? memberDir : false}>
-                        <TableSortLabel
-                          active={memberSort === 'distance'}
-                          direction={memberSort === 'distance' ? memberDir : 'desc'}
-                          onClick={() => toggleMemberSort('distance')}
-                        >
-                          Distance
-                        </TableSortLabel>
-                      </TableCell>
-                      <TableCell align="right" sortDirection={memberSort === 'attendance' ? memberDir : false}>
-                        <TableSortLabel
-                          active={memberSort === 'attendance'}
-                          direction={memberSort === 'attendance' ? memberDir : 'desc'}
-                          onClick={() => toggleMemberSort('attendance')}
-                        >
-                          Attendance
-                        </TableSortLabel>
-                      </TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {sortedLeaderboard.map((r, idx) => (
-                      <TableRow key={r.riderId} hover>
-                        <TableCell>{idx + 1}</TableCell>
-                        <TableCell>
-                          <Stack direction="row" spacing={1.5} alignItems="center">
-                            <Avatar src={r.avatar || undefined} sx={{ width: 28, height: 28 }}>{r.name?.[0]}</Avatar>
-                            <Typography variant="body2" fontWeight={600}>{r.name}</Typography>
-                          </Stack>
-                        </TableCell>
-                        <TableCell align="right">{r.jobs}</TableCell>
-                        <TableCell align="right">{r.revenue?.toLocaleString() || 0}</TableCell>
-                        <TableCell align="right">{r.distance?.toLocaleString() || 0} km</TableCell>
-                        <TableCell align="right">
-                          <Chip
-                            size="small"
-                            color={r.attendance > 0 ? 'success' : 'default'}
-                            variant={r.attendance > 0 ? 'filled' : 'outlined'}
-                            label={`${r.attendance || 0} event${r.attendance === 1 ? '' : 's'}`}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {!leaderboard?.length && (
+                <Box sx={{ width: '100%', overflowX: 'auto' }}>
+                  <Table size="small" sx={{ minWidth: 760 }}>
+                    <TableHead>
                       <TableRow>
-                        <TableCell colSpan={6} align="center">
-                          <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
-                            No jobs logged yet.
-                          </Typography>
+                        <TableCell>#</TableCell>
+                        <TableCell sortDirection={memberSort === 'name' ? memberDir : false}>
+                          <TableSortLabel
+                            active={memberSort === 'name'}
+                            direction={memberSort === 'name' ? memberDir : 'asc'}
+                            onClick={() => toggleMemberSort('name')}
+                          >
+                            Rider
+                          </TableSortLabel>
+                        </TableCell>
+                        <TableCell align="right" sortDirection={memberSort === 'jobs' ? memberDir : false}>
+                          <TableSortLabel
+                            active={memberSort === 'jobs'}
+                            direction={memberSort === 'jobs' ? memberDir : 'desc'}
+                            onClick={() => toggleMemberSort('jobs')}
+                          >
+                            Jobs
+                          </TableSortLabel>
+                        </TableCell>
+                        <TableCell align="right" sortDirection={memberSort === 'revenue' ? memberDir : false}>
+                          <TableSortLabel
+                            active={memberSort === 'revenue'}
+                            direction={memberSort === 'revenue' ? memberDir : 'desc'}
+                            onClick={() => toggleMemberSort('revenue')}
+                          >
+                            Revenue
+                          </TableSortLabel>
+                        </TableCell>
+                        <TableCell align="right" sortDirection={memberSort === 'distance' ? memberDir : false}>
+                          <TableSortLabel
+                            active={memberSort === 'distance'}
+                            direction={memberSort === 'distance' ? memberDir : 'desc'}
+                            onClick={() => toggleMemberSort('distance')}
+                          >
+                            Distance
+                          </TableSortLabel>
+                        </TableCell>
+                        <TableCell align="right" sortDirection={memberSort === 'attendance' ? memberDir : false}>
+                          <TableSortLabel
+                            active={memberSort === 'attendance'}
+                            direction={memberSort === 'attendance' ? memberDir : 'desc'}
+                            onClick={() => toggleMemberSort('attendance')}
+                          >
+                            Attendance
+                          </TableSortLabel>
                         </TableCell>
                       </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                    </TableHead>
+                    <TableBody>
+                      {sortedLeaderboard.map((r, idx) => (
+                        <TableRow key={r.riderId} hover>
+                          <TableCell>{idx + 1}</TableCell>
+                          <TableCell>
+                            <Stack direction="row" spacing={1.5} alignItems="center">
+                              <Avatar src={r.avatar || undefined} sx={{ width: 28, height: 28 }}>{r.name?.[0]}</Avatar>
+                              <Typography variant="body2" fontWeight={600}>{r.name}</Typography>
+                            </Stack>
+                          </TableCell>
+                          <TableCell align="right">{r.jobs}</TableCell>
+                          <TableCell align="right">{r.revenue?.toLocaleString() || 0}</TableCell>
+                          <TableCell align="right">{r.distance?.toLocaleString() || 0} km</TableCell>
+                          <TableCell align="right">
+                            <Chip
+                              size="small"
+                              color={r.attendance > 0 ? 'success' : 'default'}
+                              variant={r.attendance > 0 ? 'filled' : 'outlined'}
+                              label={`${r.attendance || 0} event${r.attendance === 1 ? '' : 's'}`}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {!leaderboard?.length && (
+                        <TableRow>
+                          <TableCell colSpan={6} align="center">
+                            <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
+                              No jobs logged yet.
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </Box>
               </CardContent>
             </Card>
           </Grid>
 
-          <Grid item xs={12} md={5}>
-            <Card>
+          <Grid item xs={12} md={4}>
+            <Card sx={{ borderRadius: 2.5 }}>
               <CardContent>
-                <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>Members ({members.length})</Typography>
+                <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>Members ({effectiveMemberCount})</Typography>
                 <Divider sx={{ mb: 2 }} />
                 <Stack spacing={1.25} sx={{ maxHeight: 520, overflow: 'auto', pr: 1 }}>
                   {members.map((m) => (
