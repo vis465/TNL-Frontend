@@ -827,6 +827,7 @@ export default function MyDivision() {
                 <TableHead>
                   <TableRow>
                     <TableCell>Rider</TableCell>
+                    <TableCell>Route (latest)</TableCell>
                     <TableCell align="right">Jobs</TableCell>
                     <TableCell align="right">Revenue</TableCell>
                     <TableCell align="right" title="While in this division">Attend. (div.)</TableCell>
@@ -837,6 +838,11 @@ export default function MyDivision() {
                   {lb.map((r) => (
                     <TableRow key={r.riderId}>
                       <TableCell>{r.name || r.username}</TableCell>
+                      <TableCell>
+                        {(r.startCity || r.startCompany || r.destinationCity || r.destinationCompany)
+                          ? `${r.startCity || '—'}${r.startCompany ? ` (${r.startCompany})` : ''} → ${r.destinationCity || '—'}${r.destinationCompany ? ` (${r.destinationCompany})` : ''}`
+                          : '—'}
+                      </TableCell>
                       <TableCell align="right">{r.jobs}</TableCell>
                       <TableCell align="right">{Math.round(r.revenue || 0).toLocaleString()}</TableCell>
                       <TableCell align="right">{r.attendance ?? 0}</TableCell>
@@ -845,7 +851,7 @@ export default function MyDivision() {
                   ))}
                   {!lb.length && (
                     <TableRow>
-                      <TableCell colSpan={5} align="center">
+                      <TableCell colSpan={6} align="center">
                         <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>No jobs yet.</Typography>
                       </TableCell>
                     </TableRow>
