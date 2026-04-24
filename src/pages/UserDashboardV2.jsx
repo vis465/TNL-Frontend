@@ -692,7 +692,7 @@ export default function UserDashboard() {
                                 {j.mine ? 'You' : j.riderName}
                               </Typography>
                               <Typography variant="caption" sx={{ color: T.textSecondary, fontFamily: font, flex: 1 }} noWrap>
-                                {j.cargo || 'cargo'}
+                                {j.cargo || 'cargo'} {j.sourceCity && j.destinationCity ? `(${j.sourceCity} → ${j.destinationCity})` : ''}
                               </Typography>
                               <Typography variant="caption" sx={{ color: T.textSecondary, fontFamily: font }}>
                                 {j.distanceKm.toLocaleString()} km

@@ -367,6 +367,7 @@ export default function DivisionPublic() {
                   <TableRow>
                     <TableCell>Rider</TableCell>
                     <TableCell>Cargo</TableCell>
+                    <TableCell>Route</TableCell>
                     <TableCell align="right">Distance</TableCell>
                     <TableCell align="right">Revenue</TableCell>
                     <TableCell align="right">When</TableCell>
@@ -384,6 +385,14 @@ export default function DivisionPublic() {
                         </Stack>
                       </TableCell>
                       <TableCell>{j.cargo || '—'}</TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {j.sourceCity && j.sourceCompany ? `${j.sourceCity} - ${j.sourceCompany}` : '—'}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {j.destinationCity && j.destinationCompany ? `${j.destinationCity} - ${j.destinationCompany}` : ''}
+                        </Typography>
+                      </TableCell>
                       <TableCell align="right">{(j.distanceKm || 0).toLocaleString()} km</TableCell>
                       <TableCell align="right">{(j.revenue || 0).toLocaleString()}</TableCell>
                       <TableCell align="right">
