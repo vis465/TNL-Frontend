@@ -85,16 +85,18 @@ export default function MyDivision() {
         }
       }
 
+      let isLeaderFromApi = d?.isLeader;
       if (!resolvedDivision && leaderDivisionId) {
         try {
           const { data: leaderDivisionRes } = await axiosInstance.get(`/divisions/${leaderDivisionId}`);
           resolvedDivision = leaderDivisionRes?.division || null;
+          if (typeof leaderDivisionRes?.isLeader === 'boolean') isLeaderFromApi = leaderDivisionRes.isLeader;
         } catch (_) {
           resolvedDivision = null;
         }
       }
 
-      const resolvedData = { ...(d || {}), division: resolvedDivision };
+      const resolvedData = { ...(d || {}), division: resolvedDivision, isLeader: isLeaderFromApi };
       setData(resolvedData);
       if (resolvedDivision?._id) {
         const [{ data: l }, { data: m }, fleet] = await Promise.all([
@@ -147,7 +149,8 @@ export default function MyDivision() {
   const attendanceSummary = data?.attendanceSummary;
   const uid = String(user.id || user._id || '');
   const leaderIdStr = String(div?.leaderId || div?.leader?._id || '');
-  const isLeader = Boolean(div && uid && leaderIdStr && uid === leaderIdStr);
+  const isLeader =
+    data?.isLeader === true || Boolean(div && uid && leaderIdStr && uid === leaderIdStr);
   const isAdmin = user?.role === 'admin';
 
   const fleetSummary = useMemo(() => {
@@ -304,7 +307,7 @@ export default function MyDivision() {
     if (!window.confirm(`Remove ${member?.name || member?.username || 'this member'} from the division?`)) return;
     setRemovingMemberId(memberId);
     try {
-      await axiosInstance.post(`/divisions/${div._id}/members/${memberId}/remove`);
+      await axiosInstance.post(`/divisions/${div._id}/members/${memberId}/kick`);
       await load();
     } catch (e) {
       setError(e?.response?.data?.message || 'Failed to remove member');

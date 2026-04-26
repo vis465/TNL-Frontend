@@ -45,7 +45,8 @@ import {
   People as AttendanceIcon,
   List as RecentIcon,
   CalendarMonth as CalendarMonthIcon,
-  LocalShipping as LocalShippingIcon
+  LocalShipping as LocalShippingIcon,
+  Inventory2 as Inventory2Icon
 } from '@mui/icons-material';
 
 const COLORS = ['#2196F3', '#4CAF50', '#FFC107', '#F44336', '#9C27B0', '#00BCD4'];
@@ -97,7 +98,8 @@ const AnalyticsDashboard = () => {
       topHostVtcs: [],
       inviteBookings: { pending: 0, approved: 0, rejected: 0, cancelled: 0, total: 0, approvalRatePercent: 0 }
     },
-    truckAnalytics: null
+    truckAnalytics: null,
+    cargoAnalytics: null
   });
   const [activeTab, setActiveTab] = useState(0);
 
@@ -164,7 +166,8 @@ const AnalyticsDashboard = () => {
           topHostVtcs: [],
           inviteBookings: { pending: 0, approved: 0, rejected: 0, cancelled: 0, total: 0, approvalRatePercent: 0 }
         },
-        truckAnalytics: response.data.truckAnalytics ?? null
+        truckAnalytics: response.data.truckAnalytics ?? null,
+        cargoAnalytics: response.data.cargoAnalytics ?? null
       });
     } catch (err) {
       console.error('Error fetching analytics:', err);
@@ -238,6 +241,7 @@ const AnalyticsDashboard = () => {
   const ext = stats.externalAttendance || {};
   const extInvite = ext.inviteBookings || {};
   const ta = stats.truckAnalytics;
+  const ca = stats.cargoAnalytics;
   const ownershipByTruckChart = (ta?.ownership?.byTruck || [])
     .slice(0, 12)
     .map((r) => {
@@ -253,6 +257,10 @@ const AnalyticsDashboard = () => {
   const topBrandsChart = (ta?.jobUsage?.topBrands || []).map((b) => ({
     name: String(formatAnalyticsScalar(b.brand, '—')).slice(0, 20),
     jobs: Number(b.jobsCount) || 0,
+  }));
+  const cargoChartRows = (ca && !ca.error && Array.isArray(ca.items) ? ca.items : []).map((row) => ({
+    name: String(row.label || row.cargoName || row.cargoId || '—').slice(0, 28),
+    jobs: Number(row.jobCount) || 0,
   }));
   const eventAttendanceList = attendanceStats.eventAttendance && attendanceStats.eventAttendance.length
     ? attendanceStats.eventAttendance
@@ -297,6 +305,7 @@ const AnalyticsDashboard = () => {
           <Tab icon={<RecentIcon />} label="Recent Bookings" />
           <Tab icon={<CalendarMonthIcon />} label="External attendance" />
           <Tab icon={<LocalShippingIcon />} label="Trucks" />
+          <Tab icon={<Inventory2Icon />} label="Cargo" />
         </Tabs>
       </Box>
 
@@ -1132,6 +1141,96 @@ const AnalyticsDashboard = () => {
                         {(!ta.jobUsage?.usageByTruck || ta.jobUsage.usageByTruck.length === 0) && (
                           <TableRow>
                             <TableCell colSpan={6}>No job usage breakdown</TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Paper>
+              </Grid>
+            </Grid>
+          )}
+        </Box>
+      )}
+
+      {activeTab === 9 && (
+        <Box>
+          {!ca && (
+            <Typography color="text.secondary">No cargo analytics in this response.</Typography>
+          )}
+          {ca?.error && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              Cargo delivery aggregates could not be loaded: {ca.message || 'Unknown error'}
+            </Alert>
+          )}
+          {ca && !ca.error && (
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6} md={4}>
+                <Paper elevation={2} sx={{ p: 2 }}>
+                  <Typography color="textSecondary" variant="body2">
+                    Recorded deliveries (dedupe by job)
+                  </Typography>
+                  <Typography variant="h4">{ca.totalRecordedJobs ?? 0}</Typography>
+                  <Typography variant="caption" display="block" color="text.secondary">
+                    Top {ca.topLimit ?? 50} cargos shown below — persists if Jobs collection is cleared.
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} md={8}>
+                <Paper sx={{ p: 2 }}>
+                  <Typography variant="h6" gutterBottom>
+                    Jobs by cargo (top {Math.min(cargoChartRows.length, ca.topLimit ?? 50)})
+                  </Typography>
+                  <Box sx={{ height: 360 }}>
+                    {cargoChartRows.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={cargoChartRows} layout="vertical" margin={{ left: 8, right: 20 }}>
+                          <CartesianGrid strokeDasharray="3 3" horizontal vertical={false} />
+                          <XAxis type="number" />
+                          <YAxis type="category" dataKey="name" width={160} tick={{ fontSize: 10 }} />
+                          <Tooltip />
+                          <Bar dataKey="jobs" name="Jobs" fill="#7b1fa2" radius={[0, 4, 4, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <Typography color="text.secondary">No cargo stats yet. Deliveries will populate after webhooks or backfill.</Typography>
+                    )}
+                  </Box>
+                </Paper>
+              </Grid>
+              <Grid item xs={12}>
+                <Paper sx={{ p: 2 }}>
+                  <Typography variant="h6" gutterBottom>
+                    Cargo rollup (stored aggregate)
+                  </Typography>
+                  <TableContainer>
+                    <Table size="small" stickyHeader>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Cargo</TableCell>
+                          <TableCell>Cargo ID</TableCell>
+                          <TableCell align="right">Jobs</TableCell>
+                          <TableCell align="right">Total km</TableCell>
+                          <TableCell>Last delivery</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {(ca.items || []).map((row) => (
+                          <TableRow key={row.cargoKey || row.label}>
+                            <TableCell>{row.label || row.cargoName || '—'}</TableCell>
+                            <TableCell sx={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {row.cargoId || '—'}
+                            </TableCell>
+                            <TableCell align="right">{row.jobCount}</TableCell>
+                            <TableCell align="right">{Math.round(Number(row.totalDistanceKm) || 0)}</TableCell>
+                            <TableCell>
+                              {row.lastDeliveredAt ? new Date(row.lastDeliveredAt).toLocaleString() : '—'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {(!ca.items || ca.items.length === 0) && (
+                          <TableRow>
+                            <TableCell colSpan={5}>No rows</TableCell>
                           </TableRow>
                         )}
                       </TableBody>

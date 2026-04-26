@@ -185,8 +185,8 @@ export default function AdminDivisionDetail() {
     const t = setTimeout(async () => {
       setLeaderLoading(true);
       try {
-        const { data } = await axiosInstance.get('/divisions/eligible-leaders', {
-          params: { q: leaderQuery || undefined, excludeDivisionId: id },
+        const { data } = await axiosInstance.get('/divisions/leaders/search', {
+          params: { q: leaderQuery || undefined, excludeDivisionId: id, limit: 25 },
         });
         setLeaderOptions(data.users || []);
       } catch (_) {
@@ -391,13 +391,15 @@ export default function AdminDivisionDetail() {
                     <OpenInNewOutlined />
                   </IconButton>
                 </Tooltip>
+                {(isLeader || canEditSettings) && (
+                  <Button size="small" startIcon={<SwapHorizOutlined />} onClick={() => setTransferOpen(true)} variant="outlined">
+                    Transfer leader
+                  </Button>
+                )}
                 {canEditSettings && (
                   <>
                     <Button size="small" startIcon={<EditOutlined />} onClick={openEdit} variant="outlined">
                       Edit
-                    </Button>
-                    <Button size="small" startIcon={<SwapHorizOutlined />} onClick={() => setTransferOpen(true)} variant="outlined">
-                      Transfer leader
                     </Button>
                     <Button
                       size="small"
