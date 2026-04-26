@@ -741,9 +741,9 @@ const HRDashboard = () => {
                             <IconButton
                               size="small"
                               onClick={() => handleToggleAttendance(event._id, !event.isAttendanceOpen)}
-                              color={event.isAttendanceOpen ? 'warning' : 'success'}
+                              sx={{ color: event.isAttendanceOpen ? 'success.main' : 'error.main' }}
                             >
-                              {event.isAttendanceOpen ? <LockIcon /> : <LockOpenIcon />}
+                              {event.isAttendanceOpen ? <LockOpenIcon /> : <LockIcon />}
                             </IconButton>
                           </Tooltip>
                           <Tooltip title="View Details">
