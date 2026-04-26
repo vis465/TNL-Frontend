@@ -1,20 +1,12 @@
 import axios from "../utils/axios";
 
-const CARGO_API_URL = "https://hub.nexonlogistics.com/api/gamedata/cargos";
-
+/** Distinct cargo names from our jobs + rate table (see GET /api/cargos/names). */
 export const fetchCargos = async () => {
   try {
-    const response = await axios.get(CARGO_API_URL);
-    if (response.data && response.data.success && response.data.cargos) {
-      return [
-        ...new Set(
-          response.data.cargos.map((cargo) => cargo.cargoName).filter(Boolean)
-        ),
-      ].sort();
-    }
-    return [];
+    const { data } = await axios.get("/cargos/names");
+    return Array.isArray(data) ? data : [];
   } catch (error) {
-    console.error("Error fetching cargos:", error);
+    console.error("Error fetching cargo names:", error);
     return [];
   }
 };

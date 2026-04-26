@@ -31,7 +31,7 @@ import PrivateRoute from "./components/PrivateRoute";
 import AdminLayout from "./components/AdminLayout";
 import Others from "./pages/Others";
 import AttendingEvents from "./components/AttendingEvents";
-import AnalyticsDashboard from "./pages/AnalyticsDashboard";
+import AnalyticsV2Page from "./pages/analytics/AnalyticsV2Page";
 import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
 import NotFoundPage from "./components/404";
 import Footer from "./components/Footer";
@@ -455,7 +455,7 @@ function App() {
                         path="analytics"
                         element={
                           <PrivateRoute allowedRoles={["admin", "eventteam"]}>
-                            <AnalyticsDashboard />
+                            <AnalyticsV2Page />
                           </PrivateRoute>
                         }
                       />

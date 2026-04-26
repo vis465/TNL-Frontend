@@ -51,7 +51,6 @@ import GroupsIcon from "@mui/icons-material/Groups";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import AddIcon from "@mui/icons-material/Add";
 import LabelIcon from "@mui/icons-material/Label";
-import { format, addHours } from "date-fns";
 import axiosInstance from "../utils/axios";
 import ReactMarkdown from "react-markdown";
 import { useAuth } from "../contexts/AuthContext";
@@ -158,6 +157,13 @@ const EventDetails = () => {
     link: {
       textDecoration: "underline",
     },
+  };
+
+  const formatTmpDateTime = (value) => {
+    if (!value) return "Not specified";
+    const d = dayjs.utc(value);
+    if (!d.isValid()) return String(value);
+    return d.local().format("DD-MMM-YYYY HH:mm");
   };
 
   const handleDescriptionChange = (index, value) => {
@@ -593,29 +599,22 @@ const EventDetails = () => {
                         mb: 2,
                       }}
                     >
-                      {/* <AccessTimeIcon color="primary" /> */}
-                      {/* <Typography
+                      <AccessTimeIcon color="primary" />
+                      <Typography
                         variant="h6"
                         sx={{
                           fontFamily: "Montserrat, sans-serif",
                           fontWeight: 600,
                         }}
                       >
-                        Event Schedule
-                      </Typography> */}
+                        Event Schedule & Details
+                      </Typography>
                     </Box>
-                    {/* <List>
+                    <List>
                       <ListItem>
                         <ListItemText
-                          primary="Meetup Time "
-                          secondary={
-                            event.startDate
-                              ? format(
-                                  new Date(event.startDate),
-                                  "dd-MMM-yyyy HH:mm"
-                                )
-                              : "Not specified"
-                          }
+                          primary="Language"
+                          secondary={event.language || "Not specified"}
                           primaryTypographyProps={{
                             fontFamily: "Montserrat, sans-serif",
                           }}
@@ -624,19 +623,35 @@ const EventDetails = () => {
                           }}
                         />
                       </ListItem>
-
-                      {event.endtime && (
+                      <ListItem>
+                        <ListItemText
+                          primary="Meetup At"
+                          secondary={formatTmpDateTime(event.tmpMeetupAt || event.meetup_at || event.startDate)}
+                          primaryTypographyProps={{
+                            fontFamily: "Montserrat, sans-serif",
+                          }}
+                          secondaryTypographyProps={{
+                            fontFamily: "Montserrat, sans-serif",
+                          }}
+                        />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemText
+                          primary="Start At"
+                          secondary={formatTmpDateTime(event.tmpDepartureAt || event.start_at || event.endtime)}
+                          primaryTypographyProps={{
+                            fontFamily: "Montserrat, sans-serif",
+                          }}
+                          secondaryTypographyProps={{
+                            fontFamily: "Montserrat, sans-serif",
+                          }}
+                        />
+                      </ListItem>
+                      {(event.tmpEventEndAt || event.end_at) && (
                         <ListItem>
                           <ListItemText
-                            primary="Departure Time "
-                            secondary={
-                              event.endtime
-                                ? format(
-                                    new Date(event.endtime),
-                                    "dd-MMM-yyyy HH:mm"
-                                  )
-                                : "Not specified"
-                            }
+                            primary="End At"
+                            secondary={formatTmpDateTime(event.tmpEventEndAt || event.end_at)}
                             primaryTypographyProps={{
                               fontFamily: "Montserrat, sans-serif",
                             }}
@@ -646,7 +661,7 @@ const EventDetails = () => {
                           />
                         </ListItem>
                       )}
-                    </List> */}
+                    </List>
                   </Grid>
 
                   <Grid item xs={12} sm={6}>
@@ -673,7 +688,12 @@ const EventDetails = () => {
                       <ListItem>
                         <ListItemText
                           primary="Departure"
-                          secondary={event.departurePoint}
+                          secondary={
+                            event.departure?.location ||
+                            event.departure?.city ||
+                            event.departurePoint ||
+                            "Not specified"
+                          }
                           primaryTypographyProps={{
                             fontFamily: "Montserrat, sans-serif",
                           }}
@@ -685,7 +705,12 @@ const EventDetails = () => {
                       <ListItem>
                         <ListItemText
                           primary="Arrival"
-                          secondary={event.arrivalPoint}
+                          secondary={
+                            event.arrive?.location ||
+                            event.arrive?.city ||
+                            event.arrivalPoint ||
+                            "Not specified"
+                          }
                           primaryTypographyProps={{
                             fontFamily: "Montserrat, sans-serif",
                           }}

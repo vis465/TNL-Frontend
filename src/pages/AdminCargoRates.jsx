@@ -9,9 +9,11 @@ import {
   Chip,
   Container,
   Dialog,
+  Divider,
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControlLabel,
   IconButton,
   LinearProgress,
   MenuItem,
@@ -25,9 +27,12 @@ import {
   TextField,
   Tooltip,
   Typography,
+  Switch,
 } from '@mui/material';
+import AddOutlined from '@mui/icons-material/AddOutlined';
 import DeleteOutline from '@mui/icons-material/DeleteOutline';
 import EditOutlined from '@mui/icons-material/EditOutlined';
+import RefreshOutlined from '@mui/icons-material/RefreshOutlined';
 import axiosInstance from '../utils/axios';
 
 const CLASSES = ['default', 'general', 'heavy', 'liquid', 'food', 'fragile', 'hazardous'];
@@ -39,7 +44,6 @@ const emptyPricing = {
   cargoName: '',
   cargoClass: 'general',
   pricePerKm: '',
-  minPrice: '0',
   active: true,
 };
 
@@ -78,6 +82,8 @@ export default function AdminCargoRates() {
   const [selectedCargo, setSelectedCargo] = useState(null);
   const [form, setForm] = useState(emptyPricing);
   const [submitting, setSubmitting] = useState(false);
+  const [savingConfig, setSavingConfig] = useState(false);
+  const [configSaved, setConfigSaved] = useState(false);
 
   const reqRef = useRef({ rates: 0, catalog: 0 });
 
@@ -169,12 +175,23 @@ export default function AdminCargoRates() {
   }, [debouncedCatalogSearch]);
 
   const saveConfig = async () => {
+    setSavingConfig(true);
+    setConfigSaved(false);
+    setError('');
     try {
       const { data } = await axiosInstance.patch('/admin/cargo-rates/revenue-config', config);
       setConfig(data);
+      setConfigSaved(true);
     } catch (e) {
       setError(e?.response?.data?.message || 'Save failed');
+    } finally {
+      setSavingConfig(false);
     }
+  };
+
+  const refreshAll = () => {
+    setConfigSaved(false);
+    initialLoad();
   };
 
   const openCreate = () => {
@@ -192,7 +209,6 @@ export default function AdminCargoRates() {
       cargoName: rate.cargoName || '',
       cargoClass: rate.cargoClass || 'general',
       pricePerKm: String(rate.pricePerKm ?? ''),
-      minPrice: String(rate.minPrice ?? '0'),
       active: rate.active !== false,
       _id: rate._id,
     });
@@ -207,13 +223,7 @@ export default function AdminCargoRates() {
       cargoId: val.cargoId || '',
       cargoName: val.cargoName || '',
       cargoClass: val.cargoClass || p.cargoClass || 'general',
-      pricePerKm:
-        val.pricePerKm != null
-          ? String(val.pricePerKm)
-          : val.nexon?.price != null
-          ? String(val.nexon.price)
-          : p.pricePerKm,
-      minPrice: val.minPrice != null ? String(val.minPrice) : p.minPrice,
+      pricePerKm: val.pricePerKm != null ? String(val.pricePerKm) : p.pricePerKm,
       active: val.active !== false,
       _id: val.rateId || undefined,
     }));
@@ -230,7 +240,6 @@ export default function AdminCargoRates() {
           cargoName: form.cargoName.trim(),
           cargoClass: form.cargoClass,
           pricePerKm: Number(form.pricePerKm) || 0,
-          minPrice: Number(form.minPrice) || 0,
           active: !!form.active,
         });
       } else {
@@ -239,7 +248,6 @@ export default function AdminCargoRates() {
           cargoName: form.cargoName.trim(),
           cargoClass: form.cargoClass,
           pricePerKm: Number(form.pricePerKm) || 0,
-          minPrice: Number(form.minPrice) || 0,
           active: !!form.active,
         });
       }
@@ -272,42 +280,132 @@ export default function AdminCargoRates() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
-      <Typography variant="h5" fontWeight={800} sx={{ mb: 1 }}>Cargo market rates</Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Configure per-cargo pricing used by the revenue normalization engine. Revenue is computed as
-        <code style={{ margin: '0 4px' }}>distanceKm × pricePerKm</code>
-        (no min-price floor or damage/auto-park penalty is applied).
-      </Typography>
+      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'flex-start' }} spacing={1} sx={{ mb: 2 }}>
+        <Box>
+          <Typography variant="h5" fontWeight={800} sx={{ mb: 0.5 }}>Cargo rates</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 720 }}>
+            All €/km values come from this admin config: global defaults, optional per-cargo or class rates in the table below, then platform
+            volume pricing.             Normalized revenue is strictly
+            <code style={{ margin: '0 4px' }}>distance × effective €/km</code> (volume curve may apply) — no job minimum. Token deductions are handled later.
+          </Typography>
+        </Box>
+        <Button variant="outlined" startIcon={<RefreshOutlined />} onClick={refreshAll} disabled={loading}>
+          Refresh data
+        </Button>
+      </Stack>
       {loading && <LinearProgress sx={{ mb: 2 }} />}
+      {configSaved && (
+        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setConfigSaved(false)}>
+          Revenue settings saved.
+        </Alert>
+      )}
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
       {config && (
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Typography fontWeight={700} sx={{ mb: 2 }}>Revenue & division policy</Typography>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} flexWrap="wrap" useFlexGap>
-              <TextField size="small" label="Default €/km" type="number" value={config.defaultPricePerKm ?? ''} onChange={(e) => setConfig((p) => ({ ...p, defaultPricePerKm: Number(e.target.value) }))} />
-              <TextField size="small" label="Max division tax %" type="number" value={config.maxDivisionTaxPercent ?? ''} onChange={(e) => setConfig((p) => ({ ...p, maxDivisionTaxPercent: Number(e.target.value) }))} />
-              <TextField size="small" label="Exit cooldown (days)" type="number" value={config.exitCooldownDays ?? ''} onChange={(e) => setConfig((p) => ({ ...p, exitCooldownDays: Number(e.target.value) }))} />
-              <TextField size="small" label="Invite expiry (days)" type="number" value={config.inviteExpiryDays ?? ''} onChange={(e) => setConfig((p) => ({ ...p, inviteExpiryDays: Number(e.target.value) }))} />
-              <TextField size="small" label="Inactivity threshold (days)" type="number" value={config.inactivityDays ?? ''} onChange={(e) => setConfig((p) => ({ ...p, inactivityDays: Number(e.target.value) }))} />
-              <Button variant="contained" onClick={saveConfig}>Save policy</Button>
-            </Stack>
-          </CardContent>
-        </Card>
+        <>
+          <Card sx={{ mb: 2 }}>
+            <CardContent>
+              <Typography fontWeight={700} sx={{ mb: 0.5 }}>Global defaults & division policy</Typography>
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
+                Fallback €/km when no rate row matches the job; other fields are used by divisions and member flows.
+              </Typography>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} flexWrap="wrap" useFlexGap>
+                <TextField size="small" label="Default €/km" type="number" value={config.defaultPricePerKm ?? ''} onChange={(e) => setConfig((p) => ({ ...p, defaultPricePerKm: Number(e.target.value) }))} />
+                <TextField size="small" label="Max division tax %" type="number" value={config.maxDivisionTaxPercent ?? ''} onChange={(e) => setConfig((p) => ({ ...p, maxDivisionTaxPercent: Number(e.target.value) }))} />
+                <TextField size="small" label="Exit cooldown (days)" type="number" value={config.exitCooldownDays ?? ''} onChange={(e) => setConfig((p) => ({ ...p, exitCooldownDays: Number(e.target.value) }))} />
+                <TextField size="small" label="Invite expiry (days)" type="number" value={config.inviteExpiryDays ?? ''} onChange={(e) => setConfig((p) => ({ ...p, inviteExpiryDays: Number(e.target.value) }))} />
+                <TextField size="small" label="Inactivity (days)" type="number" value={config.inactivityDays ?? ''} onChange={(e) => setConfig((p) => ({ ...p, inactivityDays: Number(e.target.value) }))} />
+                <Button variant="contained" onClick={saveConfig} disabled={savingConfig}>
+                  {savingConfig ? 'Saving…' : 'Save'}
+                </Button>
+              </Stack>
+            </CardContent>
+          </Card>
+
+          <Card sx={{ mb: 2 }}>
+            <CardContent>
+              <Typography fontWeight={700} sx={{ mb: 0.5 }}>Platform volume pricing (fleet-wide)</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, maxWidth: 720 }}>
+                Uses <strong>platform-wide</strong> completed deliveries in a rolling window ending when each job completes (not per driver).
+                Higher fleet-wide activity lowers €/km for that normalization. Same controls as above—save with the main Save button.
+              </Typography>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} flexWrap="wrap" useFlexGap alignItems={{ sm: 'center' }}>
+                <FormControlLabel
+                  control={(
+                    <Switch
+                      checked={config.volumePricingEnabled !== false}
+                      onChange={(_, c) => setConfig((p) => ({ ...p, volumePricingEnabled: c }))}
+                    />
+                  )}
+                  label="Enable platform volume pricing"
+                />
+                <TextField
+                  size="small"
+                  label="Lookback window (days)"
+                  type="number"
+                  value={config.volumePricingWindowDays ?? 7}
+                  onChange={(e) => setConfig((p) => ({ ...p, volumePricingWindowDays: Number(e.target.value) }))}
+                  inputProps={{ min: 0.1, step: 0.1 }}
+                />
+                <TextField
+                  size="small"
+                  label="Min multiplier (floor)"
+                  type="number"
+                  value={config.volumePricingMinMultiplier ?? 0.75}
+                  onChange={(e) => setConfig((p) => ({ ...p, volumePricingMinMultiplier: Number(e.target.value) }))}
+                  inputProps={{ min: 0.01, max: 1, step: 0.01 }}
+                />
+                <TextField
+                  size="small"
+                  label="Reference job count (global)"
+                  type="number"
+                  value={config.volumePricingReferenceJobs ?? 1000}
+                  onChange={(e) => setConfig((p) => ({ ...p, volumePricingReferenceJobs: Math.max(1, Math.floor(Number(e.target.value) || 1)) }))}
+                  inputProps={{ min: 1, step: 1 }}
+                />
+                <Button variant="outlined" onClick={saveConfig} disabled={savingConfig}>
+                  {savingConfig ? 'Saving…' : 'Save volume settings'}
+                </Button>
+              </Stack>
+            </CardContent>
+          </Card>
+        </>
       )}
+
+      <Alert severity="info" sx={{ mb: 2 }}>
+        <Typography variant="body2" fontWeight={600} sx={{ mb: 0.5 }}>Per-cargo price history</Typography>
+        <Typography variant="body2" component="div">
+          The app only stores the <strong>current</strong> values on each <code>CargoMarketRate</code> row.
+          A full <strong>audit history</strong> (who changed which cargo to which €/km, and when) is not onerous to add: append-only collection or
+          versioned documents plus a small hook on create/update, plus a read API and this page could show a timeline. Expect ongoing storage growth
+          and a bit of admin UI work; it is a moderate feature, not a rewrite.
+        </Typography>
+      </Alert>
 
       <Card>
         <CardContent>
           <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'center' }} spacing={1} sx={{ mb: 1 }}>
-            <Typography fontWeight={700}>Configured rates ({ratesTotal})</Typography>
-            <TextField
-              size="small"
-              placeholder="Search rates…"
-              value={ratesSearch}
-              onChange={(e) => setRatesSearch(e.target.value)}
-            />
+            <Box>
+              <Typography fontWeight={700}>Override rates ({ratesTotal})</Typography>
+              {unpricedCatalog.length > 0 && (
+                <Typography variant="caption" color="text.secondary">
+                  {unpricedCatalog.length} catalog cargo{unpricedCatalog.length === 1 ? '' : 's'} without a row yet—add one below.
+                </Typography>
+              )}
+            </Box>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              <Button size="small" variant="contained" startIcon={<AddOutlined />} onClick={openCreate}>
+                Add rate
+              </Button>
+              <TextField
+                size="small"
+                placeholder="Search rates…"
+                value={ratesSearch}
+                onChange={(e) => setRatesSearch(e.target.value)}
+              />
+            </Stack>
           </Stack>
+          <Divider sx={{ my: 1.5 }} />
           {ratesLoading && <LinearProgress sx={{ mb: 1 }} />}
           <Table size="small">
             <TableHead>
@@ -327,7 +425,7 @@ export default function AdminCargoRates() {
                     <Typography variant="caption" color="text.secondary">{r.cargoId || '—'}</Typography>
                   </TableCell>
                   <TableCell><Chip size="small" label={r.cargoClass} /></TableCell>
-                  <TableCell align="right">{r.pricePerKm}</TableCell>
+                  <TableCell align="right">{r.pricePerKm != null ? Number(r.pricePerKm).toLocaleString() : '—'}</TableCell>
                   <TableCell>{r.active ? <Chip size="small" color="success" label="Yes" /> : <Chip size="small" label="No" />}</TableCell>
                   <TableCell align="right">
                     <Tooltip title="Edit">
@@ -343,7 +441,7 @@ export default function AdminCargoRates() {
                 <TableRow>
                   <TableCell colSpan={5} align="center">
                     <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
-                      No rates match. Use “Add / edit rate” or pick a cargo from above.
+                      No rates match. Add a row or clear search.
                     </Typography>
                   </TableCell>
                 </TableRow>
@@ -383,7 +481,7 @@ export default function AdminCargoRates() {
                       {o.cargoName || '(unknown)'} {o.hasRate && <Chip size="small" color="success" label="priced" sx={{ ml: 1 }} />}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {o.cargoId || 'no id'}{o.count ? ` · ${o.count} jobs` : ''}{o.pricePerKm ? ` · €${o.pricePerKm}/km` : o.nexon?.price ? ` · €${o.nexon.price}/km (nexon)` : ''}
+                      {o.cargoId || 'no id'}{o.count ? ` · ${o.count} jobs` : ''}{o.pricePerKm != null ? ` · €${o.pricePerKm}/km` : ''}
                     </Typography>
                   </Stack>
                 </li>
@@ -404,7 +502,7 @@ export default function AdminCargoRates() {
               onChange={(e) => setForm((p) => ({ ...p, pricePerKm: e.target.value }))}
               fullWidth
               required
-              helperText="Revenue = distanceKm × pricePerKm"
+              helperText="Earnings scale with distance × this rate (after volume pricing when enabled)"
             />
             <TextField select label="Active" value={form.active ? 'yes' : 'no'} onChange={(e) => setForm((p) => ({ ...p, active: e.target.value === 'yes' }))} fullWidth>
               <MenuItem value="yes">Yes</MenuItem>
