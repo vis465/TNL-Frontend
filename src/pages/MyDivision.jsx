@@ -37,6 +37,7 @@ import EditOutlined from '@mui/icons-material/EditOutlined';
 import axiosInstance from '../utils/axios';
 import { getItemWithExpiry } from '../localStorageWithExpiry';
 import { getDivisionTrucks } from '../services/fleetService';
+import DivisionGlobalBanner from '../components/DivisionGlobalBanner';
 
 const TAB_KEYS = ['overview', 'people', 'fleet', 'leaderboard'];
 const TAB_INDEX_BY_KEY = TAB_KEYS.reduce((acc, key, index) => {
@@ -321,6 +322,7 @@ export default function MyDivision() {
       <Typography variant="h5" fontWeight={800} sx={{ mb: 2 }}>My division</Typography>
       {loading && <LinearProgress sx={{ mb: 2 }} />}
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
+      <DivisionGlobalBanner globalAnnouncement={data?.globalAnnouncement} />
 
       {!div && !loading && (
         <Card variant="outlined">

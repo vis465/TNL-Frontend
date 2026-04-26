@@ -34,6 +34,7 @@ import EmojiEvents from '@mui/icons-material/EmojiEvents';
 import PersonAddOutlined from '@mui/icons-material/PersonAddOutlined';
 import axiosInstance from '../utils/axios';
 import { getItemWithExpiry } from '../localStorageWithExpiry';
+import DivisionGlobalBanner from '../components/DivisionGlobalBanner';
 
 export default function DivisionPublic() {
   const { slug } = useParams();
@@ -161,6 +162,7 @@ export default function DivisionPublic() {
 
   return (
     <Box sx={{ minHeight: '100vh', pb: 6 }}>
+      <DivisionGlobalBanner globalAnnouncement={data.globalAnnouncement} variant="fullBleed" />
       <Box
         sx={{
           position: 'relative',

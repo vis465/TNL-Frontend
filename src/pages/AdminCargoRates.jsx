@@ -14,6 +14,7 @@ import {
   DialogContent,
   DialogTitle,
   FormControlLabel,
+  Grid,
   IconButton,
   LinearProgress,
   MenuItem,
@@ -83,7 +84,10 @@ export default function AdminCargoRates() {
   const [form, setForm] = useState(emptyPricing);
   const [submitting, setSubmitting] = useState(false);
   const [savingConfig, setSavingConfig] = useState(false);
+  const [savingBanner, setSavingBanner] = useState(false);
+  const [clearingBroadcast, setClearingBroadcast] = useState(false);
   const [configSaved, setConfigSaved] = useState(false);
+  const [rateExtremes, setRateExtremes] = useState({ highest: null, lowest: null });
 
   const reqRef = useRef({ rates: 0, catalog: 0 });
 
@@ -118,6 +122,15 @@ export default function AdminCargoRates() {
     }
   };
 
+  const loadRateExtremes = async () => {
+    try {
+      const { data } = await axiosInstance.get('/admin/cargo-rates/rates/extremes');
+      setRateExtremes({ highest: data.highest || null, lowest: data.lowest || null });
+    } catch (_) {
+      setRateExtremes({ highest: null, lowest: null });
+    }
+  };
+
   const loadCatalog = async () => {
     const seq = ++reqRef.current.catalog;
     setCatalogLoading(true);
@@ -143,7 +156,7 @@ export default function AdminCargoRates() {
   const initialLoad = async () => {
     setLoading(true);
     try {
-      await Promise.all([loadConfig(), loadRates(), loadCatalog()]);
+      await Promise.all([loadConfig(), loadRates(), loadCatalog(), loadRateExtremes()]);
     } finally {
       setLoading(false);
     }
@@ -186,6 +199,38 @@ export default function AdminCargoRates() {
       setError(e?.response?.data?.message || 'Save failed');
     } finally {
       setSavingConfig(false);
+    }
+  };
+
+  const saveGlobalBannerOnly = async () => {
+    setSavingBanner(true);
+    setConfigSaved(false);
+    setError('');
+    try {
+      const { data } = await axiosInstance.patch('/admin/cargo-rates/revenue-config', {
+        globalMemberAnnouncement: config.globalMemberAnnouncement ?? '',
+      });
+      setConfig(data);
+      setConfigSaved(true);
+    } catch (e) {
+      setError(e?.response?.data?.message || 'Save failed');
+    } finally {
+      setSavingBanner(false);
+    }
+  };
+
+  const dismissCargoBroadcast = async () => {
+    setClearingBroadcast(true);
+    setError('');
+    try {
+      const { data } = await axiosInstance.patch('/admin/cargo-rates/revenue-config', {
+        clearCargoRatesRefreshBroadcast: true,
+      });
+      setConfig(data);
+    } catch (e) {
+      setError(e?.response?.data?.message || 'Dismiss failed');
+    } finally {
+      setClearingBroadcast(false);
     }
   };
 
@@ -255,6 +300,7 @@ export default function AdminCargoRates() {
       setForm(emptyPricing);
       loadRates();
       loadCatalog();
+      loadRateExtremes();
     } catch (e) {
       setError(e?.response?.data?.message || 'Save failed');
     } finally {
@@ -268,6 +314,7 @@ export default function AdminCargoRates() {
       await axiosInstance.delete(`/admin/cargo-rates/rates/${id}`);
       loadRates();
       loadCatalog();
+      loadRateExtremes();
     } catch (e) {
       setError(e?.response?.data?.message || 'Delete failed');
     }
@@ -301,8 +348,129 @@ export default function AdminCargoRates() {
       )}
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
+      <Card sx={{ mb: 2 }}>
+        <CardContent>
+          <Typography fontWeight={700} sx={{ mb: 1.5 }}>Active rate range</Typography>
+          {!rateExtremes.highest && !rateExtremes.lowest ? (
+            <Typography variant="body2" color="text.secondary">No active cargo rate rows yet.</Typography>
+          ) : (
+            <>
+              <Grid container spacing={2}>
+                <Grid item xs={12} md={6}>
+                  <Box
+                    sx={{
+                      p: 2,
+                      borderRadius: 1,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      bgcolor: 'action.hover',
+                    }}
+                  >
+                    <Typography variant="caption" color="text.secondary" fontWeight={600}>Highest €/km (active)</Typography>
+                    {rateExtremes.highest ? (
+                      <>
+                        <Typography variant="h5" fontWeight={800} sx={{ my: 0.5 }}>
+                          {Number(rateExtremes.highest.pricePerKm).toLocaleString()} €/km
+                        </Typography>
+                        <Typography variant="body2" fontWeight={600}>{rateExtremes.highest.cargoName || rateExtremes.highest.cargoId || '—'}</Typography>
+                        <Chip size="small" label={rateExtremes.highest.cargoClass} sx={{ mt: 1 }} />
+                      </>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>No data</Typography>
+                    )}
+                  </Box>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <Box
+                    sx={{
+                      p: 2,
+                      borderRadius: 1,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      bgcolor: 'action.hover',
+                    }}
+                  >
+                    <Typography variant="caption" color="text.secondary" fontWeight={600}>Lowest €/km (active)</Typography>
+                    {rateExtremes.lowest ? (
+                      <>
+                        <Typography variant="h5" fontWeight={800} sx={{ my: 0.5 }}>
+                          {Number(rateExtremes.lowest.pricePerKm).toLocaleString()} €/km
+                        </Typography>
+                        <Typography variant="body2" fontWeight={600}>{rateExtremes.lowest.cargoName || rateExtremes.lowest.cargoId || '—'}</Typography>
+                        <Chip size="small" label={rateExtremes.lowest.cargoClass} sx={{ mt: 1 }} />
+                      </>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>No data</Typography>
+                    )}
+                  </Box>
+                </Grid>
+              </Grid>
+              {rateExtremes.highest &&
+                rateExtremes.lowest &&
+                String(rateExtremes.highest._id) === String(rateExtremes.lowest._id) && (
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1.5 }}>
+                    Only one active rate row — highest and lowest are the same.
+                  </Typography>
+                )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
       {config && (
         <>
+          <Card sx={{ mb: 2 }}>
+            <CardContent>
+              <Typography fontWeight={700} sx={{ mb: 0.5 }}>Site-wide division banner</Typography>
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
+                One message for every division’s public page and for My division. The volume snapshot scheduler also writes a short notice here after each run (dismissible below).
+              </Typography>
+              <TextField
+                multiline
+                minRows={2}
+                fullWidth
+                label="Announcement"
+                placeholder="e.g. Convoy Sunday 20:00 CET — see Discord."
+                value={config.globalMemberAnnouncement ?? ''}
+                onChange={(e) => setConfig((p) => ({ ...p, globalMemberAnnouncement: e.target.value }))}
+                inputProps={{ maxLength: 4000 }}
+              />
+              {config.globalMemberAnnouncementUpdatedAt && (
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                  Last saved {new Date(config.globalMemberAnnouncementUpdatedAt).toLocaleString()}
+                </Typography>
+              )}
+              <Button
+                variant="outlined"
+                sx={{ mt: 1.5 }}
+                onClick={saveGlobalBannerOnly}
+                disabled={savingBanner}
+              >
+                {savingBanner ? 'Saving…' : 'Save announcement'}
+              </Button>
+              {config.cargoRatesRefreshBroadcast?.trim() && (
+                <Alert
+                  severity="info"
+                  sx={{ mt: 2 }}
+                  action={(
+                    <Button color="inherit" size="small" onClick={dismissCargoBroadcast} disabled={clearingBroadcast}>
+                      {clearingBroadcast ? '…' : 'Dismiss'}
+                    </Button>
+                  )}
+                >
+                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                    {config.cargoRatesRefreshBroadcast}
+                  </Typography>
+                  {config.cargoRatesRefreshBroadcastAt && (
+                    <Typography variant="caption" display="block" sx={{ mt: 1, opacity: 0.9 }}>
+                      {new Date(config.cargoRatesRefreshBroadcastAt).toLocaleString()}
+                    </Typography>
+                  )}
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+
           <Card sx={{ mb: 2 }}>
             <CardContent>
               <Typography fontWeight={700} sx={{ mb: 0.5 }}>Global defaults & division policy</Typography>
@@ -363,10 +531,39 @@ export default function AdminCargoRates() {
                   onChange={(e) => setConfig((p) => ({ ...p, volumePricingReferenceJobs: Math.max(1, Math.floor(Number(e.target.value) || 1)) }))}
                   inputProps={{ min: 1, step: 1 }}
                 />
+                <TextField
+                  select
+                  size="small"
+                  label="Fleet job count for multiplier"
+                  value={config.volumePricingJobCountMode || 'live'}
+                  onChange={(e) => setConfig((p) => ({ ...p, volumePricingJobCountMode: e.target.value }))}
+                  sx={{ minWidth: 260 }}
+                >
+                  <MenuItem value="live">Live (recount each job)</MenuItem>
+                  <MenuItem value="weekly_snapshot">Weekly snapshot (scheduler / cron)</MenuItem>
+                </TextField>
                 <Button variant="outlined" onClick={saveConfig} disabled={savingConfig}>
                   {savingConfig ? 'Saving…' : 'Save volume settings'}
                 </Button>
               </Stack>
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1.5 }}>
+                {config.volumePricingJobCountMode === 'weekly_snapshot' ? (
+                  <>
+                    Uses the last platform job count written by the in-process scheduler (same pattern as the loan scheduler:
+                    runs once at startup, then every <code>CARGO_RATE_SNAPSHOT_INTERVAL_HOURS</code> hours, default 168). You can
+                    also run <code>npm run cargo-rates:weekly-snapshot</code> manually or from system cron. If the snapshot is
+                    older than ~9 days, payouts fall back to live counts until the next run.
+                    {config.volumePricingWeeklySnapshotAt
+                      ? ` Last snapshot: ${new Date(config.volumePricingWeeklySnapshotAt).toLocaleString()} · ${config.volumePricingWeeklySnapshotCount ?? 0} jobs.`
+                      : ' No snapshot yet — run the script once or wait for the scheduler.'}
+                  </>
+                ) : (
+                  <>
+                    Optional: switch to weekly snapshot to avoid counting delivered jobs on every payout. Enable weekly mode here, then keep the
+                    scheduler or external cron running.
+                  </>
+                )}
+              </Typography>
             </CardContent>
           </Card>
         </>
