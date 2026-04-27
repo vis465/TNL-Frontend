@@ -444,6 +444,26 @@ export default function MyDivision() {
 
           <Card variant="outlined">
             <CardContent>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }}>
+                <Box sx={{ flex: 1 }}>
+                  <Typography fontWeight={700} sx={{ mb: 0.5 }}>
+                    Division fuel
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Premium {(Number(div.fuelTankPremiumLiters) || 0).toLocaleString()} L · Standard{' '}
+                    {(Number(div.fuelTankNormalLiters ?? div.fuelTankLiters) || 0).toLocaleString()} L. Same prices for all
+                    divisions; premium is used first on jobs and each liter lasts longer than standard.
+                  </Typography>
+                </Box>
+                <Button component={RouterLink} to="/division/fuel" variant={isLeader ? 'contained' : 'outlined'}>
+                  {isLeader ? 'Fuel marketplace' : 'Fuel market'}
+                </Button>
+              </Stack>
+            </CardContent>
+          </Card>
+
+          <Card variant="outlined">
+            <CardContent>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} alignItems={{ sm: 'center' }}>
                 <Typography fontWeight={700} sx={{ flex: 1 }}>
                   Division workspace

@@ -102,7 +102,9 @@ import AdminTrucks from "./pages/AdminTrucks";
 import AdminDivisions from "./pages/AdminDivisions";
 import AdminDivisionDetail from "./pages/AdminDivisionDetail";
 import AdminCargoRates from "./pages/AdminCargoRates";
+import AdminFuelMarket from "./pages/AdminFuelMarket";
 import MyDivision from "./pages/MyDivision";
+import FuelMarketplace from "./pages/FuelMarketplace";
 import DivisionInvites from "./pages/DivisionInvites";
 import DivisionLeaderboard from "./pages/DivisionLeaderboard";
 import DivisionPublic from "./pages/DivisionPublic";
@@ -402,6 +404,7 @@ function App() {
                         <Route path="/jobs/:id" element={<JobDetails />} />
                         <Route path="/calendar" element={<EventCalendarPage />} />
                         <Route path="/division" element={<MyDivision />} />
+                        <Route path="/division/fuel" element={<FuelMarketplace />} />
                         <Route path="/division/invites" element={<DivisionInvites />} />
                       </Route>
                     </Route>
@@ -594,6 +597,14 @@ function App() {
                         element={
                           <PrivateRoute allowedRoles={["admin"]}>
                             <AdminCargoRates />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="fuel-market"
+                        element={
+                          <PrivateRoute allowedRoles={["admin"]}>
+                            <AdminFuelMarket />
                           </PrivateRoute>
                         }
                       />
