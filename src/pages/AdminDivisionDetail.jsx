@@ -585,7 +585,9 @@ export default function AdminDivisionDetail() {
               <TableBody>
                 {lb.map((r) => (
                   <TableRow key={r.riderId}>
-                    <TableCell>{r.name || r.username}</TableCell>
+                    <TableCell>
+                      {`${r.name || r.username || 'Unknown rider'}${r.inDivision === false ? ' (not in division)' : ''}`}
+                    </TableCell>
                     <TableCell align="right">{r.jobs}</TableCell>
                     <TableCell align="right">{Math.round(r.revenue || 0).toLocaleString()}</TableCell>
                     <TableCell align="right">{Math.round(r.taxContributed || 0).toLocaleString()}</TableCell>

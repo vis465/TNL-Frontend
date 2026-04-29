@@ -842,7 +842,9 @@ export default function MyDivision() {
                 <TableBody>
                   {lb.map((r) => (
                     <TableRow key={r.riderId}>
-                      <TableCell>{r.name || r.username}</TableCell>
+                      <TableCell>
+                        {`${r.name || r.username || 'Unknown rider'}${r.inDivision === false ? ' (not in division)' : ''}`}
+                      </TableCell>
                       <TableCell>
                         {(r.startCity || r.startCompany || r.destinationCity || r.destinationCompany)
                           ? `${r.startCity || '—'}${r.startCompany ? ` (${r.startCompany})` : ''} → ${r.destinationCity || '—'}${r.destinationCompany ? ` (${r.destinationCompany})` : ''}`
