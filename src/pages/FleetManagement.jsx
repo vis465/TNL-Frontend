@@ -5,7 +5,6 @@ import {
   Typography,
   Card,
   CardContent,
-  Grid,
   Stack,
   Chip,
   Alert,
@@ -35,40 +34,39 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { Link as RouterLink } from 'react-router-dom';
 import TruckThumbAvatar from '../components/TruckThumbAvatar';
+import axiosInstance from '../utils/axios';
 import {
   getOwnedTrucksFleet,
   getFleetDeliveries,
+  getDivisionTrucks,
   payTruckMaintenance,
 } from '../services/fleetService';
 import { getItemWithExpiry } from '../localStorageWithExpiry';
+import { useTheme, alpha } from '@mui/material/styles';
+import { motion } from 'framer-motion';
+import DashboardHero from '../components/magicui/DashboardHero';
+import MagicPageShell from '../components/magicui/MagicPageShell';
+import { BentoGrid, BentoItem } from '../components/magicui/BentoGrid';
 
-const T = {
-  surface: '#111113',
-  border: '#27272A',
-  text: '#FAFAFA',
-  textMuted: '#71717A',
-  textFaint: '#52525B',
-  accent: '#E4FF1A',
-  accentDim: 'rgba(228,255,26,0.08)',
-  success: '#22C55E',
-  info: '#38BDF8',
-  danger: '#ef4444',
-};
-
-const sxCard = {
-  bgcolor: T.surface,
-  border: `1px solid ${T.border}`,
-  borderRadius: '8px',
-  boxShadow: 'none',
-};
-
-const sxLabel = {
-  fontSize: '10px',
-  fontWeight: 700,
-  letterSpacing: '0.1em',
-  textTransform: 'uppercase',
-  color: T.textMuted,
-};
+function useFleetPalette(theme) {
+  const p = theme.palette.primary.main;
+  return React.useMemo(
+    () => ({
+      surface: alpha(theme.palette.background.paper, theme.palette.mode === 'dark' ? 0.94 : 0.98),
+      border: alpha(p, theme.palette.mode === 'dark' ? 0.42 : 0.5),
+      text: theme.palette.text.primary,
+      textMuted: theme.palette.text.secondary,
+      textFaint: alpha(theme.palette.text.secondary, 0.9),
+      accent: p,
+      accentDim: alpha(p, 0.14),
+      success: theme.palette.success.main,
+      info: theme.palette.info.light,
+      danger: theme.palette.error.main,
+      glow: alpha(p, theme.palette.mode === 'dark' ? 0.2 : 0.28),
+    }),
+    [theme, p],
+  );
+}
 
 function formatDuration(totalSeconds) {
   const s = Math.max(0, Math.floor(Number(totalSeconds) || 0));
@@ -88,6 +86,28 @@ function truckSecondsRemaining(truck, nowMs) {
 }
 
 export default function FleetManagement() {
+  const theme = useTheme();
+  const T = useFleetPalette(theme);
+  const sxLabel = useMemo(
+    () => ({
+      fontSize: '10px',
+      fontWeight: 700,
+      letterSpacing: '0.1em',
+      textTransform: 'uppercase',
+      color: T.textMuted,
+    }),
+    [T],
+  );
+  const sxCard = useMemo(
+    () => ({
+      bgcolor: T.surface,
+      border: `1px solid ${T.border}`,
+      borderRadius: '18px',
+      boxShadow: `0 16px 48px ${alpha('#000000', theme.palette.mode === 'dark' ? 0.45 : 0.12)}, 0 0 0 1px ${alpha(T.accent, 0.08)}`,
+      transition: 'box-shadow 260ms ease, transform 260ms ease, border-color 260ms ease',
+    }),
+    [T, theme.palette.mode],
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [trucks, setTrucks] = useState([]);
@@ -102,6 +122,7 @@ export default function FleetManagement() {
   const [feedback, setFeedback] = useState('');
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [repairMinutes, setRepairMinutes] = useState(120);
+  const [resolvedDivisionName, setResolvedDivisionName] = useState('');
 
   const user = useMemo(() => getItemWithExpiry('user') || {}, []);
   const secondaryRoles = Array.isArray(user?.secondaryRoles) ? user.secondaryRoles : [];
@@ -120,8 +141,32 @@ export default function FleetManagement() {
     try {
       const data = await getOwnedTrucksFleet();
       const list = Array.isArray(data?.ownedTrucks) ? data.ownedTrucks : [];
-      setTrucks(list);
-      setDivisionId(data?.divisionId || null);
+      let resolvedDivisionId = data?.divisionId || null;
+      let resolvedDivisionLabel = '';
+      if (!resolvedDivisionId) {
+        try {
+          const { data: meDivision } = await axiosInstance.get('/me/division');
+          resolvedDivisionId = meDivision?.division?._id || null;
+          resolvedDivisionLabel = meDivision?.division?.name || '';
+        } catch (_) {
+          resolvedDivisionId = null;
+        }
+      }
+      // If the owned endpoint resolves division but returns no trucks for this
+      // session, fallback to canonical division trucks endpoint.
+      if (resolvedDivisionId && list.length === 0) {
+        try {
+          const fallback = await getDivisionTrucks(resolvedDivisionId);
+          const fallbackTrucks = Array.isArray(fallback?.trucks) ? fallback.trucks : [];
+          setTrucks(fallbackTrucks);
+        } catch (_) {
+          setTrucks(list);
+        }
+      } else {
+        setTrucks(list);
+      }
+      setDivisionId(resolvedDivisionId);
+      setResolvedDivisionName(resolvedDivisionLabel);
       if (Number.isFinite(Number(data?.config?.maintRepairMinutes))) {
         setRepairMinutes(Number(data.config.maintRepairMinutes));
       }
@@ -231,48 +276,59 @@ export default function FleetManagement() {
   };
 
   return (
-    <Box sx={{ minHeight: '100%', py: 3 }}>
-      <Container maxWidth="lg">
-        <Stack
-          direction="row"
-          alignItems="flex-start"
-          justifyContent="space-between"
-          flexWrap="wrap"
-          gap={2}
-          sx={{ mb: 3 }}
-        >
-          <Box>
-            <Stack direction="row" alignItems="center" gap={1.5} sx={{ mb: 1 }}>
-              <Box
+    <MagicPageShell>
+    <Box
+      sx={{
+        minHeight: '100%',
+        py: { xs: 2, md: 3 },
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          inset: '-20% -10% auto -10%',
+          height: '55%',
+          background: `radial-gradient(ellipse 70% 60% at 50% -5%, ${alpha(
+            theme.palette.primary.main,
+            0.16,
+          )} 0%, transparent 65%)`,
+          pointerEvents: 'none',
+          zIndex: 0,
+        },
+      }}
+    >
+      <Container maxWidth={false} sx={{ px: { xs: 1.5, sm: 2, md: 3 }, position: 'relative', zIndex: 1 }}>
+        <DashboardHero
+          title="Division Fleet"
+          subtitle="Monitor shared trucks, maintenance pressure, and utilization. Keep delivery capacity healthy before blockers slow down rider operations."
+          stats={[
+            { label: 'Fleet Size', value: trucks.length },
+            { label: 'Blocked', value: blockedCount },
+            { label: 'In Service', value: inServiceCount },
+            { label: 'Deliveries', value: totalDeliveries },
+          ]}
+        />
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2.25 }}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <GarageOutlinedIcon sx={{ color: T.accent }} />
+            {isLeaderOfThis && (
+              <Chip
+                size="small"
+                label="You lead this division"
                 sx={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 2,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  bgcolor: T.accentDim,
+                  fontWeight: 800,
+                  bgcolor: alpha(T.accent, 0.12),
+                  border: `1px solid ${alpha(T.accent, 0.45)}`,
                   color: T.accent,
                 }}
-              >
-                <GarageOutlinedIcon />
-              </Box>
-              <Typography
-                variant="h4"
-                sx={{ fontWeight: 800, color: T.text, letterSpacing: '-0.02em' }}
-              >
-                Division fleet
+              />
+            )}
+            {divisionId && (
+              <Typography sx={{ color: T.textFaint, fontSize: '0.82rem' }}>
+                Garage access: {resolvedDivisionName || 'Active division'} ({String(divisionId)})
               </Typography>
-              {isLeaderOfThis && (
-                <Chip size="small" color="warning" label="You lead this division" />
-              )}
-            </Stack>
-            <Typography sx={{ color: T.textMuted, maxWidth: 620, fontSize: '0.95rem' }}>
-              Trucks are owned by your division. Every member can drive them and their deliveries
-              add to the fleet odometer. Wear accumulates with kilometers driven and triggers
-              maintenance, which the division leader pays from the division wallet.
-            </Typography>
-          </Box>
+            )}
+          </Stack>
           <Button
             variant="outlined"
             size="small"
@@ -343,38 +399,62 @@ export default function FleetManagement() {
         )}
 
         {trucks.length > 0 && (
-          <Grid container spacing={2} sx={{ mb: 2 }}>
-            <Grid item xs={12} sm={6} md={3}>
+          <BentoGrid minItemWidth={240} gap={2} sx={{ mb: 2.25 }}>
+            <BentoItem>
               <Card sx={sxCard}>
                 <CardContent>
                   <Typography sx={sxLabel}>Trucks in fleet</Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 800, color: T.text }}>
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontWeight: 900,
+                      color: T.accent,
+                      textShadow: `0 0 28px ${alpha(T.accent, 0.45)}`,
+                      letterSpacing: '-0.02em',
+                    }}
+                  >
                     {trucks.length}
                   </Typography>
                 </CardContent>
               </Card>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            </BentoItem>
+            <BentoItem>
               <Card sx={sxCard}>
                 <CardContent>
                   <Typography sx={sxLabel}>Fleet odometer</Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 800, color: T.text }}>
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontWeight: 900,
+                      color: T.accent,
+                      textShadow: `0 0 28px ${alpha(T.accent, 0.45)}`,
+                      letterSpacing: '-0.02em',
+                    }}
+                  >
                     {Math.round(totalOdo).toLocaleString()} km
                   </Typography>
                 </CardContent>
               </Card>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            </BentoItem>
+            <BentoItem>
               <Card sx={sxCard}>
                 <CardContent>
                   <Typography sx={sxLabel}>Matched deliveries</Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 800, color: T.text }}>
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontWeight: 900,
+                      color: T.accent,
+                      textShadow: `0 0 28px ${alpha(T.accent, 0.45)}`,
+                      letterSpacing: '-0.02em',
+                    }}
+                  >
                     {totalDeliveries.toLocaleString()}
                   </Typography>
                 </CardContent>
               </Card>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            </BentoItem>
+            <BentoItem>
               <Card sx={sxCard}>
                 <CardContent>
                   <Typography sx={sxLabel}>Needs maintenance</Typography>
@@ -394,16 +474,38 @@ export default function FleetManagement() {
                   )}
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </BentoItem>
+          </BentoGrid>
         )}
 
         {trucks.length > 0 && (
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={5}>
-              <Typography sx={{ ...sxLabel, mb: 1.5 }}>Fleet</Typography>
+          <BentoGrid
+            minItemWidth={320}
+            gap={2}
+            sx={{ gridTemplateColumns: { xs: '1fr', lg: 'minmax(420px, 1.1fr) minmax(0, 1.9fr)' } }}
+          >
+            <BentoItem span={1}>
+              <Stack
+                direction="row"
+                alignItems="center"
+                justifyContent="space-between"
+                sx={{
+                  mb: 1.5,
+                  px: 1.5,
+                  py: 1,
+                  border: `1px solid ${alpha(T.accent, 0.35)}`,
+                  borderRadius: 2,
+                  bgcolor: alpha(T.accent, 0.07),
+                  boxShadow: `0 0 40px ${alpha(T.accent, 0.08)}`,
+                }}
+              >
+                <Typography sx={{ ...sxLabel, mb: 0 }}>Garage bays</Typography>
+                <Typography sx={{ fontSize: '0.75rem', color: T.textMuted }}>
+                  {trucks.length} active slot{trucks.length === 1 ? '' : 's'}
+                </Typography>
+              </Stack>
               <Stack spacing={1.5}>
-                {trucks.map((t) => {
+                {trucks.map((t, idx) => {
                   const id = String(t._id || t.divisionTruckId || '');
                   const active = id === String(selectedId);
                   const wearPercent = Math.min(
@@ -415,17 +517,49 @@ export default function FleetManagement() {
                   const needsMaintenance = t.blocked && !inService;
                   const maintenanceCost = Math.max(0, Number(t.maintenanceCost) || 0);
                   return (
-                    <Card
-                      key={id || t.displayName}
+                    <motion.div
+                      key={id || `${idx}-${t.displayName || ''}`}
+                      initial={{ opacity: 0, y: 18 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.06, duration: 0.42, ease: [0.25, 0.46, 0.45, 0.94] }}
+                    >
+                      <Card
                       onClick={() => id && setSelectedId(id)}
                       sx={{
                         ...sxCard,
                         cursor: id ? 'pointer' : 'default',
                         outline: active ? `2px solid ${T.accent}` : 'none',
-                        '&:hover': id ? { borderColor: T.textMuted } : {},
+                        background: `linear-gradient(135deg, ${alpha(
+                          T.accent,
+                          0.16
+                        )} 0%, ${alpha(T.accent, 0.04)} 42%, rgba(10,10,10,0.35) 100%)`,
+                        '&:hover': id
+                          ? {
+                              borderColor: alpha(T.accent, 0.75),
+                              transform: 'translateY(-6px)',
+                              boxShadow: `0 28px 56px rgba(0,0,0,0.45), 0 0 48px ${alpha(T.accent, 0.2)}`,
+                            }
+                          : {},
                       }}
                     >
-                      <CardContent sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                      <CardContent
+                        sx={{
+                          display: 'flex',
+                          gap: 2,
+                          alignItems: 'center',
+                          position: 'relative',
+                          '&::before': {
+                            content: '""',
+                            position: 'absolute',
+                            left: 0,
+                            top: 10,
+                            bottom: 10,
+                            width: 4,
+                            borderRadius: 2,
+                            bgcolor: active ? T.accent : 'rgba(100,116,139,0.22)',
+                          },
+                        }}
+                      >
                         <TruckThumbAvatar
                           key={`${id}-${t.image || ''}-${t.brandLogo || ''}`}
                           image={t.image}
@@ -472,13 +606,21 @@ export default function FleetManagement() {
                               size="small"
                               icon={<StraightenIcon sx={{ fontSize: '16px !important' }} />}
                               label={`${Math.round(Number(t.odometerKm) || 0).toLocaleString()} km`}
-                              sx={{ bgcolor: 'rgba(255,255,255,0.06)', color: T.text }}
+                              sx={{
+                                bgcolor: alpha(T.accent, 0.1),
+                                border: `1px solid ${alpha(T.accent, 0.26)}`,
+                                color: T.text,
+                              }}
                             />
                             <Chip
                               size="small"
                               icon={<LocalShippingIcon sx={{ fontSize: '16px !important' }} />}
                               label={`${Number(t.deliveriesCount) || 0} jobs`}
-                              sx={{ bgcolor: 'rgba(255,255,255,0.06)', color: T.text }}
+                              sx={{
+                                bgcolor: alpha(T.accent, 0.1),
+                                border: `1px solid ${alpha(T.accent, 0.26)}`,
+                                color: T.text,
+                              }}
                             />
                             {needsMaintenance && (
                               <Chip
@@ -536,7 +678,7 @@ export default function FleetManagement() {
                             <Button
                               size="small"
                               variant="contained"
-                              color="warning"
+                              color="primary"
                               startIcon={<BuildIcon />}
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -544,7 +686,7 @@ export default function FleetManagement() {
                               }}
                               sx={{ mt: 1 }}
                             >
-                              Pay maintenance ({maintenanceCost.toLocaleString()})
+                              Service now ({maintenanceCost.toLocaleString()})
                             </Button>
                           )}
                           {!canManageMaintenance && needsMaintenance && (
@@ -558,16 +700,27 @@ export default function FleetManagement() {
                         </Box>
                       </CardContent>
                     </Card>
+                    </motion.div>
                   );
                 })}
               </Stack>
-            </Grid>
+            </BentoItem>
 
-            <Grid item xs={12} md={7}>
-              <Typography sx={{ ...sxLabel, mb: 1.5 }}>Delivery log (matched)</Typography>
+            <BentoItem span={1}>
+              <Typography sx={{ ...sxLabel, mb: 1.5 }}>Live delivery log</Typography>
               <Paper sx={{ ...sxCard, overflow: 'hidden' }}>
                 {selected && (
-                  <Box sx={{ px: 2, py: 1.5, borderBottom: `1px solid ${T.border}` }}>
+                  <Box
+                    sx={{
+                      px: 2,
+                      py: 1.5,
+                      borderBottom: `1px solid ${T.border}`,
+                      background: `linear-gradient(90deg, ${alpha(T.accent, 0.16)} 0%, ${alpha(
+                          T.accent,
+                          0.04,
+                        )} 55%, transparent 100%)`,
+                    }}
+                  >
                     <Typography sx={{ fontWeight: 700, color: T.text }}>
                       {selected.displayName || selected.brandName || 'Truck'}
                     </Typography>
@@ -626,7 +779,7 @@ export default function FleetManagement() {
                               </Typography>
                             ) : null}
                           </TableCell>
-                          <TableCell align="right" sx={{ color: T.info, fontWeight: 600 }}>
+                          <TableCell align="right" sx={{ color: T.accent, fontWeight: 800 }}>
                             {Math.round(Number(row.distanceKm) || 0).toLocaleString()}
                           </TableCell>
                           <TableCell sx={{ color: T.textMuted }}>
@@ -638,8 +791,8 @@ export default function FleetManagement() {
                   </Table>
                 </TableContainer>
               </Paper>
-            </Grid>
-          </Grid>
+            </BentoItem>
+          </BentoGrid>
         )}
       </Container>
 
@@ -684,5 +837,6 @@ export default function FleetManagement() {
         </DialogActions>
       </Dialog>
     </Box>
+    </MagicPageShell>
   );
 }

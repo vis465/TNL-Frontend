@@ -3,7 +3,6 @@ import { Link as RouterLink } from 'react-router-dom';
 import {
   Box,
   Typography,
-  Grid,
   Card,
   CardContent,
   CardActions,
@@ -38,6 +37,9 @@ import {
 } from '../services/truckMarketplaceService';
 import { getOwnedTrucksFleet } from '../services/fleetService';
 import axiosInstance from '../utils/axios';
+import DashboardHero from '../components/magicui/DashboardHero';
+import MagicPageShell from '../components/magicui/MagicPageShell';
+import { BentoGrid, BentoItem } from '../components/magicui/BentoGrid';
 
 const T = {
   surface: '#111113',
@@ -223,55 +225,37 @@ export default function TruckMarketplace() {
   const canAffordConfirm = divisionId && payable <= divisionBalance;
 
   return (
-    <Box sx={{ py: 1 }}>
-      <Stack
-        direction="row"
-        alignItems="flex-start"
-        justifyContent="space-between"
-        flexWrap="wrap"
-        gap={2}
-        sx={{ mb: 3 }}
-      >
-        <Box>
-          <Stack direction="row" alignItems="center" gap={1.5} sx={{ mb: 1 }}>
-            <Box
-              sx={{
-                width: 44,
-                height: 44,
-                borderRadius: 2,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                bgcolor: T.accentDim,
-                color: T.accent,
-              }}
-            >
-              <StorefrontOutlinedIcon />
-            </Box>
-            <Typography variant="h4" sx={{ fontWeight: 800, color: 'text.primary', letterSpacing: '-0.02em' }}>
-              Truck marketplace
-            </Typography>
-          </Stack>
+    <MagicPageShell>
+    <Box sx={{ py: 2 }}>
+      <DashboardHero
+        title="Truck Marketplace"
+        subtitle="Compare models, validate affordability, and expand your shared fleet. Purchased trucks become available to division members in Fleet."
+        stats={[
+          { label: 'Brands', value: brands.length },
+          { label: 'Owned Trucks', value: ownedTrucks.length },
+          { label: 'Division Wallet', value: divisionBalance },
+          { label: 'Leader Access', value: isLeader ? 1 : 0 },
+        ]}
+      />
+      <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1} sx={{ mb: 2 }}>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <StorefrontOutlinedIcon sx={{ color: T.accent }} />
           <Typography sx={{ color: T.textMuted, maxWidth: 640, fontSize: '0.95rem' }}>
-            Division leaders buy trucks for the entire division from here. The price is paid from the{' '}
-            <strong>division wallet</strong> and the truck is usable by every active member. Purchased
-            trucks show up in{' '}
+            Division leaders buy trucks for the entire division from here. Purchased trucks show up in{' '}
             <Link component={RouterLink} to="/fleet" underline="hover" sx={{ color: T.info, fontWeight: 600 }}>
               Fleet
             </Link>
             .
           </Typography>
-          {sourceLabel ? (
-            <Typography variant="caption" sx={{ color: T.textMuted, display: 'block', mt: 0.5 }}>
-              Catalogue source: {sourceLabel}
-            </Typography>
-          ) : null}
-        </Box>
+        </Stack>
         <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+          {sourceLabel ? (
+            <Chip label={`Source: ${sourceLabel}`} size="small" variant="outlined" />
+          ) : null}
           {divisionId ? (
             <Chip
               icon={<AccountBalanceWalletOutlined sx={{ fontSize: '18px !important' }} />}
-              label={`Division wallet: ${divisionBalance.toLocaleString()}`}
+              label={`Wallet: ${divisionBalance.toLocaleString()}`}
               variant="outlined"
               sx={{ fontWeight: 700 }}
             />
@@ -355,7 +339,7 @@ export default function TruckMarketplace() {
                   {brand.name}
                 </Typography>
               )}
-              <Grid container spacing={2}>
+              <BentoGrid minItemWidth={270} gap={2}>
                 {(brand.models || []).map((model) => {
                   const price = Math.max(0, Number(model.purchasePriceTokens) || 0);
                   const rent = Math.max(0, Number(model.rentPerJobTokens) || 0);
@@ -363,7 +347,7 @@ export default function TruckMarketplace() {
                   const canBuy = isLeader && !!divisionId;
                   const canAfford = price <= divisionBalance;
                   return (
-                    <Grid item xs={12} sm={6} md={4} key={`${brand.id}-${model.id}`}>
+                    <BentoItem key={`${brand.id}-${model.id}`}>
                       <Card sx={sxCard}>
                         <CardContent sx={{ flex: 1 }}>
                           <Stack direction="row" spacing={1.5} alignItems="flex-start" sx={{ mb: 1.5 }}>
@@ -413,10 +397,10 @@ export default function TruckMarketplace() {
                           </Button>
                         </CardActions>
                       </Card>
-                    </Grid>
+                    </BentoItem>
                   );
                 })}
-              </Grid>
+              </BentoGrid>
             </Box>
           ))}
         </>
@@ -517,5 +501,6 @@ export default function TruckMarketplace() {
         </DialogActions>
       </Dialog>
     </Box>
+    </MagicPageShell>
   );
 }

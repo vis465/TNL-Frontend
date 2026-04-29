@@ -34,6 +34,11 @@ import {
 } from 'recharts';
 import axiosInstance from '../utils/axios';
 import { getItemWithExpiry } from '../localStorageWithExpiry';
+import DashboardHero from '../components/magicui/DashboardHero';
+import MagicPageShell from '../components/magicui/MagicPageShell';
+import { BentoGrid, BentoItem } from '../components/magicui/BentoGrid';
+
+const DIVISION_FUEL_CAPACITY_L = 20_000;
 
 function formatDay(iso) {
   if (!iso) return '';
@@ -172,6 +177,10 @@ export default function FuelMarketplace() {
 
   const normalTank = Number(div?.fuelTankNormalLiters ?? div?.fuelTankLiters ?? 0) || 0;
   const premiumTank = Number(div?.fuelTankPremiumLiters ?? 0) || 0;
+  const totalTank = Math.max(0, normalTank + premiumTank);
+  const remainingCapacity = Math.max(0, DIVISION_FUEL_CAPACITY_L - totalTank);
+  const buyLitersFloor = Math.max(0, Math.floor(Number(buyLiters) || 0));
+  const buyOverCapacity = buyLitersFloor > remainingCapacity;
 
   const buy = async () => {
     if (!div?._id || !isLeader) return;
@@ -179,7 +188,7 @@ export default function FuelMarketplace() {
     setError('');
     try {
       await axiosInstance.post(`/divisions/${div._id}/fuel/buy`, {
-        liters: Math.floor(Number(buyLiters) || 0),
+        liters: buyLitersFloor,
         fuelType: buyType,
       });
       await reloadDivisionAndHistory();
@@ -191,11 +200,22 @@ export default function FuelMarketplace() {
   };
 
   return (
+    <MagicPageShell>
     <Container maxWidth="lg" sx={{ py: 3 }}>
+      <DashboardHero
+        title="Division Fuel Marketplace"
+        subtitle="Track standard and premium pricing, estimate orders, and protect wallet balance while keeping tank capacity ready for job demand."
+        stats={[
+          { label: 'Wallet', value: walletBal },
+          { label: 'Tank Fill (L)', value: totalTank },
+          { label: 'Capacity Left', value: remainingCapacity },
+          { label: 'Est. Order Cost', value: estCost },
+        ]}
+      />
       <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
         <LocalGasStationOutlined color="primary" />
-        <Typography variant="h5" fontWeight={800}>
-          Division fuel marketplace
+        <Typography variant="h6" fontWeight={800}>
+          Fuel planning and purchase
         </Typography>
       </Stack>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2, maxWidth: 720 }}>
@@ -273,8 +293,9 @@ export default function FuelMarketplace() {
         </Card>
       )}
 
-      <GridTwoCol>
-        <Card variant="outlined">
+      <BentoGrid minItemWidth={320} gap={2}>
+        <BentoItem>
+          <Card variant="outlined">
           <CardContent>
             <Typography fontWeight={700} gutterBottom>
               Global prices & benefits
@@ -333,9 +354,11 @@ export default function FuelMarketplace() {
               <Typography color="text.secondary">No market data.</Typography>
             )}
           </CardContent>
-        </Card>
+          </Card>
+        </BentoItem>
 
-        <Card variant="outlined">
+        <BentoItem>
+          <Card variant="outlined">
           <CardContent>
             <Typography fontWeight={700} gutterBottom>
               Your division tanks
@@ -352,6 +375,8 @@ export default function FuelMarketplace() {
                 <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
                   <ChipStat label="Premium tank" value={`${premiumTank.toLocaleString()} L`} />
                   <ChipStat label="Standard tank" value={`${normalTank.toLocaleString()} L`} />
+                  <ChipStat label="Capacity" value={`${DIVISION_FUEL_CAPACITY_L.toLocaleString()} L`} />
+                  <ChipStat label="Available space" value={`${remainingCapacity.toLocaleString()} L`} />
                 </Stack>
                 <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
                   Wallet balance is shown above for quick verification.
@@ -381,12 +406,22 @@ export default function FuelMarketplace() {
                         type="number"
                         value={buyLiters}
                         onChange={(e) => setBuyLiters(e.target.value)}
-                        inputProps={{ min: 1, step: 1 }}
+                        inputProps={{ min: 1, max: Math.max(1, Math.floor(remainingCapacity)), step: 1 }}
                       />
                       <Typography variant="body2" color="text.secondary">
                         Estimated cost: <strong>{estCost.toLocaleString()}</strong> tokens (ceiling of liters × price)
                       </Typography>
-                      <Button variant="contained" onClick={buy} disabled={buying || !tier}>
+                      {buyOverCapacity && (
+                        <Alert severity="warning">
+                          Requested liters exceed capacity. You can add up to{' '}
+                          <strong>{Math.floor(remainingCapacity).toLocaleString()} L</strong>.
+                        </Alert>
+                      )}
+                      <Button
+                        variant="contained"
+                        onClick={buy}
+                        disabled={buying || !tier || buyOverCapacity || remainingCapacity <= 0}
+                      >
                         {buying ? 'Processing…' : 'Purchase'}
                       </Button>
                     </Stack>
@@ -402,8 +437,9 @@ export default function FuelMarketplace() {
               </>
             )}
           </CardContent>
-        </Card>
-      </GridTwoCol>
+          </Card>
+        </BentoItem>
+      </BentoGrid>
 
       {!!chartData.length && (
         <Card variant="outlined" sx={{ mt: 2 }}>
@@ -461,21 +497,7 @@ export default function FuelMarketplace() {
         </Typography>
       )}
     </Container>
-  );
-}
-
-function GridTwoCol({ children }) {
-  return (
-    <Box
-      sx={{
-        display: 'grid',
-        gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-        gap: 2,
-        alignItems: 'stretch',
-      }}
-    >
-      {children}
-    </Box>
+    </MagicPageShell>
   );
 }
 

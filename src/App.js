@@ -130,10 +130,10 @@ function App() {
         palette: {
           mode: isDarkMode ? "dark" : "light",
           primary: {
-            main: isDarkMode ? "#90caf9" : "#1976d2",
-            light: isDarkMode ? "#e3f2fd" : "#63a4ff",
-            dark: isDarkMode ? "#42a5f5" : "#004ba0",
-            contrastText: "#ffffff",
+            main: "#ffff00",
+            light: "#ffff66",
+            dark: "#c4c400",
+            contrastText: "#0a0a0a",
           },
           secondary: {
             main: isDarkMode ? "#f48fb1" : "#d81b60",
@@ -212,9 +212,14 @@ function App() {
                 textTransform: "none",
                 fontWeight: 500,
               },
-              contained: {
-                color: "#ffffff",
-              },
+              containedPrimary: ({ theme }) => ({
+                color: `${theme.palette.primary.contrastText} !important`,
+                backgroundColor: theme.palette.primary.main,
+                '&:hover': {
+                  backgroundColor: theme.palette.primary.dark,
+                  color: `${theme.palette.primary.contrastText} !important`,
+                },
+              }),
               outlined: {
                 borderColor: isDarkMode
                   ? "rgba(255, 255, 255, 0.3)"

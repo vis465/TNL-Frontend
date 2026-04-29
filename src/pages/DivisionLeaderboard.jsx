@@ -8,7 +8,6 @@ import {
   CardContent,
   Chip,
   Container,
-  Grid,
   LinearProgress,
   Stack,
   Table,
@@ -24,6 +23,9 @@ import {
 import EmojiEvents from '@mui/icons-material/EmojiEvents';
 import { Link as RouterLink } from 'react-router-dom';
 import axiosInstance from '../utils/axios';
+import DashboardHero from '../components/magicui/DashboardHero';
+import MagicPageShell from '../components/magicui/MagicPageShell';
+import { BentoGrid, BentoItem } from '../components/magicui/BentoGrid';
 
 export default function DivisionLeaderboard() {
   const [rows, setRows] = useState([]);
@@ -69,16 +71,25 @@ export default function DivisionLeaderboard() {
   const top = rows.slice(0, 3);
 
   return (
+    <MagicPageShell>
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Stack spacing={1} sx={{ mb: 3 }}>
-        <Stack direction="row" alignItems="center" spacing={1.5}>
-          <EmojiEvents sx={{ fontSize: 36, color: 'warning.main' }} />
-          <Typography variant="h4" fontWeight={800}>Division leaderboard</Typography>
-        </Stack>
-        <Typography variant="body1" color="text.secondary">
-          Inter-division ranking by total revenue generated from normalized job data.
-        </Typography>
+      <DashboardHero
+        title="Division Leaderboard"
+        subtitle="Live inter-division rankings by revenue, scale, and execution. Explore top contenders or drill into the complete ecosystem."
+        stats={[
+          { label: 'Tracked Divisions', value: divisions.length },
+          { label: 'Ranked Divisions', value: rows.length },
+          { label: 'Top Revenue', value: Number(rows[0]?.totalRevenue || 0) },
+          { label: 'Top Wallet', value: Number(rows[0]?.totalTaxTokens || 0) },
+        ]}
+      />
+      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1 }}>
+        <EmojiEvents sx={{ fontSize: 30, color: 'warning.main' }} />
+        <Typography variant="h5" fontWeight={800}>Global standings</Typography>
       </Stack>
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+        Inter-division ranking by total revenue generated from normalized job data.
+      </Typography>
 
       {loading && <LinearProgress sx={{ mb: 2 }} />}
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -91,12 +102,12 @@ export default function DivisionLeaderboard() {
       {tab === 0 && (
         <>
           {!!top.length && (
-            <Grid container spacing={2} sx={{ mb: 3 }}>
+            <BentoGrid minItemWidth={280} gap={2} sx={{ mb: 3 }}>
               {top.map((r, idx) => {
                 const medal = ['#FFD700', '#C0C0C0', '#CD7F32'][idx];
                 const d = divBySlug.get(String(r.divisionId));
                 return (
-                  <Grid item xs={12} md={4} key={r.divisionId}>
+                  <BentoItem key={r.divisionId}>
                     <Card
                       variant="outlined"
                       sx={{
@@ -138,10 +149,10 @@ export default function DivisionLeaderboard() {
                         </CardContent>
                       </CardActionArea>
                     </Card>
-                  </Grid>
+                  </BentoItem>
                 );
               })}
-            </Grid>
+            </BentoGrid>
           )}
 
           <Card>
@@ -254,9 +265,9 @@ export default function DivisionLeaderboard() {
       )}
 
       {tab === 1 && (
-        <Grid container spacing={2}>
+        <BentoGrid minItemWidth={260} gap={2}>
           {divisions.map((d) => (
-            <Grid item xs={12} sm={6} md={4} key={d._id}>
+            <BentoItem key={d._id}>
               <Card variant="outlined" sx={{ height: '100%' }}>
                 <CardActionArea component={RouterLink} to={`/divisions/${d.slug}`}>
                   <Box sx={{ width: '100%', aspectRatio: '1920 / 500', bgcolor: 'common.black', overflow: 'hidden' }}>
@@ -287,15 +298,16 @@ export default function DivisionLeaderboard() {
                   </CardContent>
                 </CardActionArea>
               </Card>
-            </Grid>
+            </BentoItem>
           ))}
           {!divisions.length && !loading && (
-            <Grid item xs={12}>
+            <BentoItem span={2}>
               <Card variant="outlined"><CardContent><Typography color="text.secondary">No divisions yet.</Typography></CardContent></Card>
-            </Grid>
+            </BentoItem>
           )}
-        </Grid>
+        </BentoGrid>
       )}
     </Container>
+    </MagicPageShell>
   );
 }
