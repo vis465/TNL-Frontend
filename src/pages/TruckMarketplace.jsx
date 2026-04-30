@@ -15,10 +15,6 @@ import {
   InputAdornment,
   Tabs,
   Tab,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Link,
   Divider,
 } from '@mui/material';
@@ -40,6 +36,7 @@ import axiosInstance from '../utils/axios';
 import DashboardHero from '../components/magicui/DashboardHero';
 import MagicPageShell from '../components/magicui/MagicPageShell';
 import { BentoGrid, BentoItem } from '../components/magicui/BentoGrid';
+import PurchaseSidebar from '../components/magicui/PurchaseSidebar';
 
 const T = {
   surface: '#111113',
@@ -406,22 +403,25 @@ export default function TruckMarketplace() {
         </>
       )}
 
-      <Dialog open={Boolean(confirmModel)} onClose={closeConfirm} maxWidth="xs" fullWidth>
-        <DialogTitle>Confirm division purchase</DialogTitle>
-        <DialogContent>
-          {confirmModel && (
+      <PurchaseSidebar
+        open={Boolean(confirmModel)}
+        onClose={closeConfirm}
+        title="Confirm division purchase"
+        subtitle={
+          confirmModel
+            ? `Buying ${confirmModel.model.name} (${confirmModel.brandName}) for ${myDivisionInfo?.division?.name || 'your division'}.`
+            : ''
+        }
+        width={460}
+      >
+        {confirmModel && (
+          <Box>
             <Stack spacing={1.5}>
-              <Typography variant="body2" color="text.secondary">
-                Buying <strong>{confirmModel.model.name}</strong> ({confirmModel.brandName}) for your division
-                <strong> {myDivisionInfo?.division?.name || ''}</strong>.
-              </Typography>
               <Stack direction="row" justifyContent="space-between">
                 <Typography variant="body2">Base price</Typography>
                 <Typography variant="body2">{basePrice.toLocaleString()} tokens</Typography>
               </Stack>
-
               <Divider />
-
               <TextField
                 size="small"
                 label="Coupon code (optional)"
@@ -439,67 +439,32 @@ export default function TruckMarketplace() {
                 }}
               />
               <Stack direction="row" spacing={1}>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  disabled={!couponCode.trim() || couponChecking}
-                  onClick={handleCouponCheck}
-                >
+                <Button size="small" variant="outlined" disabled={!couponCode.trim() || couponChecking} onClick={handleCouponCheck}>
                   {couponChecking ? 'Checking…' : 'Apply coupon'}
                 </Button>
-                {couponPreview?.valid ? (
-                  <Chip
-                    size="small"
-                    color="success"
-                    label={`-${Number(couponPreview.discount).toLocaleString()} tokens`}
-                  />
-                ) : null}
-                {couponPreview && !couponPreview.valid ? (
-                  <Chip
-                    size="small"
-                    color="warning"
-                    label={couponPreview.reason || 'INVALID'}
-                  />
-                ) : null}
+                {couponPreview?.valid ? <Chip size="small" color="success" label={`-${Number(couponPreview.discount).toLocaleString()} tokens`} /> : null}
+                {couponPreview && !couponPreview.valid ? <Chip size="small" color="warning" label={couponPreview.reason || 'INVALID'} /> : null}
               </Stack>
-
               <Divider />
-
               <Stack direction="row" justifyContent="space-between">
-                <Typography variant="body2" fontWeight={600}>
-                  Division pays
-                </Typography>
-                <Typography variant="body2" fontWeight={600}>
-                  {payable.toLocaleString()} tokens
-                </Typography>
+                <Typography variant="body2" fontWeight={700}>Division pays</Typography>
+                <Typography variant="body2" fontWeight={700}>{payable.toLocaleString()} tokens</Typography>
               </Stack>
               <Typography variant="caption" sx={{ color: T.textMuted }}>
                 Division wallet balance: {divisionBalance.toLocaleString()} tokens
               </Typography>
-              {!canAffordConfirm && (
-                <Alert severity="warning">Insufficient division wallet balance for this purchase.</Alert>
-              )}
+              {!canAffordConfirm ? <Alert severity="warning">Insufficient division wallet balance for this purchase.</Alert> : null}
+              {purchaseError ? <Alert severity="error">{purchaseError}</Alert> : null}
+              <Stack direction="row" spacing={1} sx={{ pt: 1 }}>
+                <Button onClick={closeConfirm} disabled={purchaseLoading} variant="outlined" fullWidth>Cancel</Button>
+                <Button variant="contained" onClick={handlePurchase} disabled={purchaseLoading || !canAffordConfirm || !isLeader} fullWidth>
+                  {purchaseLoading ? 'Processing…' : 'Buy'}
+                </Button>
+              </Stack>
             </Stack>
-          )}
-          {purchaseError && (
-            <Alert severity="error" sx={{ mt: 2 }}>
-              {purchaseError}
-            </Alert>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={closeConfirm} disabled={purchaseLoading}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handlePurchase}
-            disabled={purchaseLoading || !canAffordConfirm || !isLeader}
-          >
-            {purchaseLoading ? 'Processing…' : 'Buy'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+          </Box>
+        )}
+      </PurchaseSidebar>
     </Box>
     </MagicPageShell>
   );

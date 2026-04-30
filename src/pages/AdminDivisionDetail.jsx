@@ -37,6 +37,8 @@ import SwapHorizOutlined from '@mui/icons-material/SwapHorizOutlined';
 import DeleteOutlineOutlined from '@mui/icons-material/DeleteOutlineOutlined';
 import axiosInstance from '../utils/axios';
 import { getItemWithExpiry } from '../localStorageWithExpiry';
+import MagicPageShell from '../components/magicui/MagicPageShell';
+import AnimatedTabPanel from '../components/magicui/AnimatedTabPanel';
 
 export default function AdminDivisionDetail() {
   const { id } = useParams();
@@ -332,6 +334,7 @@ export default function AdminDivisionDetail() {
   const memberById = useMemo(() => new Map(members.map((m) => [String(m._id), m])), [members]);
 
   return (
+    <MagicPageShell>
     <Container maxWidth="lg" sx={{ py: 3 }}>
       <Button component={RouterLink} to="/admin/divisions" sx={{ mb: 2 }}>
         Back to divisions
@@ -430,6 +433,7 @@ export default function AdminDivisionDetail() {
         <Tab label={`Trucks${trucks.length ? ` (${trucks.length})` : ''}`} />
       </Tabs>
 
+      <AnimatedTabPanel panelKey={`admin-division-tab-${tab}`}>
       {tab === 0 && division && (
         <Card>
           <CardContent>
@@ -1074,6 +1078,7 @@ export default function AdminDivisionDetail() {
           </CardContent>
         </Card>
       )}
+      </AnimatedTabPanel>
 
       <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle>Edit division</DialogTitle>
@@ -1178,5 +1183,6 @@ export default function AdminDivisionDetail() {
         </DialogActions>
       </Dialog>
     </Container>
+    </MagicPageShell>
   );
 }

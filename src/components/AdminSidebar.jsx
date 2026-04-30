@@ -4,12 +4,12 @@ import {
   Box,
   Typography,
   List,
+  Collapse,
   ListItem,
   ListItemButton,
   ListItemIcon,
   ListItemText,
   Divider,
-  SwipeableDrawer,
   IconButton,
   Tooltip,
   Chip,
@@ -26,6 +26,16 @@ import {
   userCanSeeNavItem,
   isNavPathActive,
 } from "../config/adminNavigation";
+import {
+  SidebarProvider,
+  Sidebar,
+  SidebarHeader,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarMenu,
+} from "./ui/sidebar";
 
 function NavListItem({ item, user, onClose, collapsed }) {
   const location = useLocation();
@@ -88,15 +98,58 @@ function SectionHeader({ label, collapsed }) {
 
 function NavSection({ section, user, onClose, collapsed }) {
   const visible = section.items.some((item) => userCanSeeNavItem(user?.role, item.roles));
+  const [open, setOpen] = React.useState(true);
+  React.useEffect(() => {
+    if (!collapsed) setOpen(false);
+  }, [collapsed]);
   if (!visible) return null;
-  return (
-    <>
-      <SectionHeader label={section.label} collapsed={collapsed} />
+
+  if (collapsed) {
+    return (
       <List dense sx={{ pt: 0 }}>
         {section.items.map((item) => (
           <NavListItem key={`${section.id}-${item.to}`} item={item} user={user} onClose={onClose} collapsed={collapsed} />
         ))}
       </List>
+    );
+  }
+
+  return (
+    <>
+      <ListItem disablePadding sx={{ px: 1 }}>
+        <ListItemButton
+          onClick={() => setOpen((p) => !p)}
+          sx={{
+            borderRadius: 1,
+            mb: 0.25,
+            "&:hover": { bgcolor: "action.hover" },
+          }}
+        >
+          <ListItemText
+            primary={section.label}
+            primaryTypographyProps={{
+              variant: "body2",
+              fontWeight: 700,
+              color: "text.secondary",
+              sx: { letterSpacing: "0.04em", textTransform: "uppercase" },
+            }}
+          />
+          <ChevronRight
+            fontSize="small"
+            style={{
+              transform: open ? "rotate(90deg)" : "rotate(0deg)",
+              transition: "transform 180ms ease",
+            }}
+          />
+        </ListItemButton>
+      </ListItem>
+      <Collapse in={open} timeout={180} unmountOnExit>
+        <List dense sx={{ pt: 0 }}>
+          {section.items.map((item) => (
+            <NavListItem key={`${section.id}-${item.to}`} item={item} user={user} onClose={onClose} collapsed={collapsed} />
+          ))}
+        </List>
+      </Collapse>
     </>
   );
 }
@@ -126,9 +179,74 @@ const AdminSidebar = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const hasAdminAccess = user && STAFF_ROLES.includes(user.role);
-  const desktopWidth = collapsed ? 72 : 288;
 
-  const SidebarContent = ({ isCollapsed }) => (
+  return (
+    <SidebarProvider
+      open={!collapsed}
+      onOpenChange={(open) => onToggleCollapse?.(!open)}
+      openMobile={mobileDrawerOpen}
+      onOpenMobileChange={(open) => {
+        if (!open) handleMobileDrawerClose?.();
+      }}
+    >
+      <Sidebar
+        collapsible="icon"
+        widthExpanded={288}
+        widthCollapsed={72}
+        mobileWidth={320}
+        sx={{}}
+      >
+        <SidebarHeader>
+          <Box sx={{ p: 2, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            {!collapsed && (
+              <Typography variant="h6" fontWeight={700}>
+                {brandTitle}
+              </Typography>
+            )}
+            {isMobile && (
+              <IconButton onClick={handleMobileDrawerClose} aria-label="close menu">
+                <Close />
+              </IconButton>
+            )}
+          </Box>
+        </SidebarHeader>
+        <SidebarContent>
+          <SidebarContentInner
+            user={user}
+            isCollapsed={collapsed}
+            isMobile={isMobile}
+            onToggleCollapse={onToggleCollapse}
+            handleMobileDrawerClose={handleMobileDrawerClose}
+            hasAdminAccess={hasAdminAccess}
+            brandTitle={brandTitle}
+          />
+        </SidebarContent>
+        <SidebarFooter>
+          {!isMobile && onToggleCollapse && (
+            <Box sx={{ p: 1 }}>
+              <Tooltip title={collapsed ? "Expand sidebar" : "Collapse sidebar"} placement="right" arrow>
+                <IconButton onClick={onToggleCollapse} size="small" sx={{ width: "100%", borderRadius: 1 }}>
+                  {collapsed ? <ChevronRight /> : <ChevronLeft />}
+                </IconButton>
+              </Tooltip>
+            </Box>
+          )}
+        </SidebarFooter>
+      </Sidebar>
+    </SidebarProvider>
+  );
+};
+
+function SidebarContentInner({
+  user,
+  isCollapsed,
+  isMobile,
+  onToggleCollapse,
+  handleMobileDrawerClose,
+  hasAdminAccess,
+  brandTitle,
+}) {
+  return (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column", overflow: "auto" }}>
       <Box
         sx={{
@@ -157,23 +275,10 @@ const AdminSidebar = ({
         )}
       </Box>
       <Divider />
-
-      <SectionHeader label="MY AREA" collapsed={isCollapsed} />
-      {MY_AREA_SECTIONS.map((section) => (
-        <NavSection
-          key={section.id}
-          section={section}
-          user={user}
-          onClose={handleMobileDrawerClose}
-          collapsed={isCollapsed}
-        />
-      ))}
-
-      {hasAdminAccess && (
-        <>
-          <Divider sx={{ my: 0.5 }} />
-          <SectionHeader label="ADMIN" collapsed={isCollapsed} />
-          {ADMIN_SECTIONS.map((section) => (
+      <SidebarGroup>
+        {!isCollapsed ? <SidebarGroupLabel>MY AREA</SidebarGroupLabel> : <SectionHeader label="MY AREA" collapsed={isCollapsed} />}
+        <SidebarMenu>
+          {MY_AREA_SECTIONS.map((section) => (
             <NavSection
               key={section.id}
               section={section}
@@ -182,70 +287,30 @@ const AdminSidebar = ({
               collapsed={isCollapsed}
             />
           ))}
+        </SidebarMenu>
+      </SidebarGroup>
+      {hasAdminAccess && (
+        <>
+          <Divider sx={{ my: 0.5 }} />
+          <SidebarGroup>
+            {!isCollapsed ? <SidebarGroupLabel>ADMIN</SidebarGroupLabel> : <SectionHeader label="ADMIN" collapsed={isCollapsed} />}
+            <SidebarMenu>
+              {ADMIN_SECTIONS.map((section) => (
+                <NavSection
+                  key={section.id}
+                  section={section}
+                  user={user}
+                  onClose={handleMobileDrawerClose}
+                  collapsed={isCollapsed}
+                />
+              ))}
+            </SidebarMenu>
+          </SidebarGroup>
         </>
       )}
-
       <Box sx={{ flex: 1, minHeight: 24 }} />
-
-      {!isMobile && onToggleCollapse && (
-        <Box sx={{ p: 1, borderTop: 1, borderColor: "divider" }}>
-          <Tooltip title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"} placement="right" arrow>
-            <IconButton onClick={onToggleCollapse} size="small" sx={{ width: "100%", borderRadius: 1 }}>
-              {isCollapsed ? <ChevronRight /> : <ChevronLeft />}
-            </IconButton>
-          </Tooltip>
-        </Box>
-      )}
     </Box>
   );
-
-  return (
-    <>
-      <Box
-        component="aside"
-        sx={{
-          display: { xs: "none", md: "flex" },
-          width: desktopWidth,
-          flexShrink: 0,
-          flexDirection: "column",
-          borderRight: 1,
-          borderColor: "divider",
-          bgcolor: "background.paper",
-          overflow: "hidden",
-          transition: theme.transitions.create("width", { duration: theme.transitions.duration.short }),
-        }}
-      >
-        <SidebarContent isCollapsed={collapsed} />
-      </Box>
-
-      <SwipeableDrawer
-        anchor="left"
-        open={mobileDrawerOpen}
-        onClose={handleMobileDrawerClose}
-        sx={{
-          display: { xs: "block", md: "none" },
-          "& .MuiDrawer-paper": {
-            width: 320,
-            maxWidth: "100vw",
-            boxSizing: "border-box",
-            borderRight: 1,
-            borderColor: "divider",
-          },
-        }}
-      >
-        <Box sx={{ p: 2, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <Typography variant="h6" fontWeight={700}>
-            {brandTitle}
-          </Typography>
-          <IconButton onClick={handleMobileDrawerClose} aria-label="close menu">
-            <Close />
-          </IconButton>
-        </Box>
-        <Divider />
-        <SidebarContent isCollapsed={false} />
-      </SwipeableDrawer>
-    </>
-  );
-};
+}
 
 export default AdminSidebar;

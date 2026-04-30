@@ -26,6 +26,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TableSortLabel,
   Tabs,
   TextField,
   Typography,
@@ -44,6 +45,7 @@ import DivisionGlobalBanner from '../components/DivisionGlobalBanner';
 import DashboardHero from '../components/magicui/DashboardHero';
 import MagicPageShell from '../components/magicui/MagicPageShell';
 import { BentoGrid, BentoItem } from '../components/magicui/BentoGrid';
+import AnimatedTabPanel from '../components/magicui/AnimatedTabPanel';
 
 const DIVISION_FUEL_CAPACITY_L = 20_000;
 
@@ -76,6 +78,27 @@ export default function MyDivision() {
   const [activeTab, setActiveTab] = useState(0);
   const [leaderQueuesLoading, setLeaderQueuesLoading] = useState(false);
   const [removingMemberId, setRemovingMemberId] = useState('');
+  const [lbSortKey, setLbSortKey] = useState('jobs');
+  const [lbSortDir, setLbSortDir] = useState('desc');
+
+  const sortedLb = useMemo(() => {
+    const rows = [...lb];
+    rows.sort((a, b) => {
+      const av = Number(a?.[lbSortKey] ?? 0);
+      const bv = Number(b?.[lbSortKey] ?? 0);
+      return lbSortDir === 'asc' ? av - bv : bv - av;
+    });
+    return rows;
+  }, [lb, lbSortDir, lbSortKey]);
+
+  const toggleLbSort = (key) => {
+    if (lbSortKey === key) {
+      setLbSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+      return;
+    }
+    setLbSortKey(key);
+    setLbSortDir('desc');
+  };
 
   const load = async () => {
     setLoading(true);
@@ -655,6 +678,7 @@ export default function MyDivision() {
             </CardContent>
           </Card>
 
+          <AnimatedTabPanel panelKey={`my-division-tab-${activeTab}`}>
           {activeTab === 0 && isAdmin && (
             <Card variant="outlined" sx={{ borderColor: 'info.light' }}>
               <CardContent>
@@ -1050,15 +1074,55 @@ export default function MyDivision() {
                   <TableRow>
                     <TableCell>Rider</TableCell>
                     <TableCell>Route (latest)</TableCell>
-                    <TableCell align="right">Jobs</TableCell>
-                    <TableCell align="right">Revenue</TableCell>
-                    <TableCell align="right">Fuel burned (L)</TableCell>
-                    <TableCell align="right" title="While in this division">Attend. (div.)</TableCell>
-                    <TableCell align="right" title="All approved events (rider profile)">Events (all-time)</TableCell>
+                    <TableCell align="right" sortDirection={lbSortKey === 'jobs' ? lbSortDir : false}>
+                      <TableSortLabel
+                        active={lbSortKey === 'jobs'}
+                        direction={lbSortKey === 'jobs' ? lbSortDir : 'desc'}
+                        onClick={() => toggleLbSort('jobs')}
+                      >
+                        Jobs
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="right" sortDirection={lbSortKey === 'revenue' ? lbSortDir : false}>
+                      <TableSortLabel
+                        active={lbSortKey === 'revenue'}
+                        direction={lbSortKey === 'revenue' ? lbSortDir : 'desc'}
+                        onClick={() => toggleLbSort('revenue')}
+                      >
+                        Revenue
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="right" sortDirection={lbSortKey === 'fuelBurned' ? lbSortDir : false}>
+                      <TableSortLabel
+                        active={lbSortKey === 'fuelBurned'}
+                        direction={lbSortKey === 'fuelBurned' ? lbSortDir : 'desc'}
+                        onClick={() => toggleLbSort('fuelBurned')}
+                      >
+                        Fuel burned (L)
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="right" title="While in this division" sortDirection={lbSortKey === 'attendance' ? lbSortDir : false}>
+                      <TableSortLabel
+                        active={lbSortKey === 'attendance'}
+                        direction={lbSortKey === 'attendance' ? lbSortDir : 'desc'}
+                        onClick={() => toggleLbSort('attendance')}
+                      >
+                        Attend. (div.)
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="right" title="All approved events (rider profile)" sortDirection={lbSortKey === 'lifetimeEventsAttended' ? lbSortDir : false}>
+                      <TableSortLabel
+                        active={lbSortKey === 'lifetimeEventsAttended'}
+                        direction={lbSortKey === 'lifetimeEventsAttended' ? lbSortDir : 'desc'}
+                        onClick={() => toggleLbSort('lifetimeEventsAttended')}
+                      >
+                        Events (all-time)
+                      </TableSortLabel>
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {lb.map((r) => (
+                  {sortedLb.map((r) => (
                     <TableRow key={r.riderId}>
                       <TableCell>{r.name || r.username}</TableCell>
                       <TableCell>
@@ -1085,6 +1149,7 @@ export default function MyDivision() {
             </CardContent>
           </Card>
           )}
+          </AnimatedTabPanel>
             </Stack>
           </Grid>
 

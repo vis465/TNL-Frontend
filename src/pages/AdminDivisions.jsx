@@ -33,6 +33,8 @@ import OpenInNewOutlined from '@mui/icons-material/OpenInNewOutlined';
 import DeleteOutlineOutlined from '@mui/icons-material/DeleteOutlineOutlined';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import axiosInstance from '../utils/axios';
+import MagicPageShell from '../components/magicui/MagicPageShell';
+import RevealSection from '../components/magicui/RevealSection';
 
 const emptyForm = {
   name: '',
@@ -198,6 +200,7 @@ export default function AdminDivisions() {
   };
 
   return (
+    <MagicPageShell>
     <Container maxWidth="lg" sx={{ py: 3 }}>
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} sx={{ mb: 3 }}>
         <Box>
@@ -234,6 +237,7 @@ export default function AdminDivisions() {
         </Card>
       )}
 
+      <RevealSection>
       <Grid container spacing={2}>
         {filtered.map((d) => (
           <Grid item xs={12} sm={6} md={4} key={d._id}>
@@ -314,6 +318,7 @@ export default function AdminDivisions() {
           </Grid>
         ))}
       </Grid>
+      </RevealSection>
 
       <Dialog open={createOpen} onClose={() => setCreateOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Create division</DialogTitle>
@@ -570,5 +575,6 @@ export default function AdminDivisions() {
         </DialogActions>
       </Dialog>
     </Container>
+    </MagicPageShell>
   );
 }

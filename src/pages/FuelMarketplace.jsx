@@ -19,6 +19,7 @@ import {
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import LocalGasStationOutlined from '@mui/icons-material/LocalGasStationOutlined';
+import { motion } from 'framer-motion';
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -37,6 +38,9 @@ import { getItemWithExpiry } from '../localStorageWithExpiry';
 import DashboardHero from '../components/magicui/DashboardHero';
 import MagicPageShell from '../components/magicui/MagicPageShell';
 import { BentoGrid, BentoItem } from '../components/magicui/BentoGrid';
+import RevealSection from '../components/magicui/RevealSection';
+import SkeletonShell from '../components/magicui/SkeletonShell';
+import PurchaseSidebar from '../components/magicui/PurchaseSidebar';
 
 const DIVISION_FUEL_CAPACITY_L = 20_000;
 
@@ -57,6 +61,7 @@ export default function FuelMarketplace() {
   const [buyLiters, setBuyLiters] = useState('100');
   const [buyType, setBuyType] = useState('normal');
   const [buying, setBuying] = useState(false);
+  const [buyDrawerOpen, setBuyDrawerOpen] = useState(false);
 
   const user = getItemWithExpiry('user') || {};
   const uid = String(user.id || user._id || '');
@@ -224,7 +229,12 @@ export default function FuelMarketplace() {
         a job’s fuel, that job’s division payout goes to the bank instead of your division wallet.
       </Typography>
 
-      {loading && <LinearProgress sx={{ mb: 2 }} />}
+      {loading && (
+        <Box sx={{ mb: 2 }}>
+          <LinearProgress sx={{ mb: 1.5 }} />
+          <SkeletonShell cards={2} chart />
+        </Box>
+      )}
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
@@ -268,6 +278,7 @@ export default function FuelMarketplace() {
       )}
 
       {priceHistory.length > 0 && (
+        <RevealSection>
         <Card variant="outlined" sx={{ mb: 2 }}>
           <CardContent>
             <Typography fontWeight={700} gutterBottom>
@@ -291,10 +302,12 @@ export default function FuelMarketplace() {
             </Box>
           </CardContent>
         </Card>
+        </RevealSection>
       )}
 
       <BentoGrid minItemWidth={320} gap={2}>
         <BentoItem>
+          <RevealSection>
           <Card variant="outlined">
           <CardContent>
             <Typography fontWeight={700} gutterBottom>
@@ -355,9 +368,17 @@ export default function FuelMarketplace() {
             )}
           </CardContent>
           </Card>
+          </RevealSection>
         </BentoItem>
 
         <BentoItem>
+          <Box
+            component={motion.div}
+            initial={{ opacity: 0, x: 22 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: 0.32, ease: 'easeOut' }}
+          >
           <Card variant="outlined">
           <CardContent>
             <Typography fontWeight={700} gutterBottom>
@@ -384,47 +405,10 @@ export default function FuelMarketplace() {
                 <Divider sx={{ my: 1.5 }} />
                 {isLeader ? (
                   <>
-                    <Typography fontWeight={600} gutterBottom>
-                      Buy fuel (division wallet)
-                    </Typography>
-                    <Stack spacing={1.5} sx={{ maxWidth: 420 }}>
-                      <FormControl size="small" fullWidth>
-                        <InputLabel id="fuel-type-label">Fuel type</InputLabel>
-                        <Select
-                          labelId="fuel-type-label"
-                          label="Fuel type"
-                          value={buyType}
-                          onChange={(e) => setBuyType(e.target.value)}
-                        >
-                          <MenuItem value="normal">{market?.normal?.label || 'Standard'} (normal)</MenuItem>
-                          <MenuItem value="premium">{market?.premium?.label || 'Premium'} (premium)</MenuItem>
-                        </Select>
-                      </FormControl>
-                      <TextField
-                        size="small"
-                        label="Liters"
-                        type="number"
-                        value={buyLiters}
-                        onChange={(e) => setBuyLiters(e.target.value)}
-                        inputProps={{ min: 1, max: Math.max(1, Math.floor(remainingCapacity)), step: 1 }}
-                      />
-                      <Typography variant="body2" color="text.secondary">
-                        Estimated cost: <strong>{estCost.toLocaleString()}</strong> tokens (ceiling of liters × price)
-                      </Typography>
-                      {buyOverCapacity && (
-                        <Alert severity="warning">
-                          Requested liters exceed capacity. You can add up to{' '}
-                          <strong>{Math.floor(remainingCapacity).toLocaleString()} L</strong>.
-                        </Alert>
-                      )}
-                      <Button
-                        variant="contained"
-                        onClick={buy}
-                        disabled={buying || !tier || buyOverCapacity || remainingCapacity <= 0}
-                      >
-                        {buying ? 'Processing…' : 'Purchase'}
-                      </Button>
-                    </Stack>
+                    <Typography fontWeight={600} gutterBottom>Buy fuel (division wallet)</Typography>
+                    <Button variant="contained" onClick={() => setBuyDrawerOpen(true)} disabled={!tier || remainingCapacity <= 0}>
+                      Open purchase
+                    </Button>
                   </>
                 ) : (
                   <Typography variant="body2" color="text.secondary">
@@ -438,10 +422,12 @@ export default function FuelMarketplace() {
             )}
           </CardContent>
           </Card>
+          </Box>
         </BentoItem>
       </BentoGrid>
 
       {!!chartData.length && (
+        <RevealSection>
         <Card variant="outlined" sx={{ mt: 2 }}>
           <CardContent>
             <Typography fontWeight={700} gutterBottom>
@@ -466,9 +452,11 @@ export default function FuelMarketplace() {
             </Box>
           </CardContent>
         </Card>
+        </RevealSection>
       )}
 
       {!!chartData.length && chartData.some((d) => d.premiumL > 0 || d.normalL > 0) && (
+        <RevealSection>
         <Card variant="outlined" sx={{ mt: 2 }}>
           <CardContent>
             <Typography fontWeight={700} gutterBottom>
@@ -489,6 +477,7 @@ export default function FuelMarketplace() {
             </Box>
           </CardContent>
         </Card>
+        </RevealSection>
       )}
 
       {!loading && isLeader && !chartData.length && div && (
@@ -497,6 +486,45 @@ export default function FuelMarketplace() {
         </Typography>
       )}
     </Container>
+    <PurchaseSidebar
+      open={buyDrawerOpen}
+      onClose={() => !buying && setBuyDrawerOpen(false)}
+      title="Fuel purchase"
+      subtitle="Buy fuel directly from division wallet with live capacity and cost checks."
+      width={420}
+    >
+      <Stack spacing={1.5}>
+        <FormControl size="small" fullWidth>
+          <InputLabel id="fuel-type-label">Fuel type</InputLabel>
+          <Select labelId="fuel-type-label" label="Fuel type" value={buyType} onChange={(e) => setBuyType(e.target.value)}>
+            <MenuItem value="normal">{market?.normal?.label || 'Standard'} (normal)</MenuItem>
+            <MenuItem value="premium">{market?.premium?.label || 'Premium'} (premium)</MenuItem>
+          </Select>
+        </FormControl>
+        <TextField
+          size="small"
+          label="Liters"
+          type="number"
+          value={buyLiters}
+          onChange={(e) => setBuyLiters(e.target.value)}
+          inputProps={{ min: 1, max: Math.max(1, Math.floor(remainingCapacity)), step: 1 }}
+        />
+        <Typography variant="body2" color="text.secondary">
+          Estimated cost: <strong>{estCost.toLocaleString()}</strong> tokens
+        </Typography>
+        {buyOverCapacity ? (
+          <Alert severity="warning">
+            Requested liters exceed capacity. Max: <strong>{Math.floor(remainingCapacity).toLocaleString()} L</strong>.
+          </Alert>
+        ) : null}
+        <Stack direction="row" spacing={1}>
+          <Button variant="outlined" fullWidth onClick={() => setBuyDrawerOpen(false)} disabled={buying}>Cancel</Button>
+          <Button variant="contained" fullWidth onClick={buy} disabled={buying || !tier || buyOverCapacity || remainingCapacity <= 0}>
+            {buying ? 'Processing…' : 'Purchase'}
+          </Button>
+        </Stack>
+      </Stack>
+    </PurchaseSidebar>
     </MagicPageShell>
   );
 }
