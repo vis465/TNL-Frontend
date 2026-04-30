@@ -516,6 +516,11 @@ export default function FleetManagement() {
                   const inService = t.blocked && secondsLeft > 0;
                   const needsMaintenance = t.blocked && !inService;
                   const maintenanceCost = Math.max(0, Number(t.maintenanceCost) || 0);
+                  const maintenanceBorder = needsMaintenance
+                    ? theme.palette.error.main
+                    : inService
+                      ? theme.palette.info.main
+                      : alpha(T.accent, 0.42);
                   return (
                     <motion.div
                       key={id || `${idx}-${t.displayName || ''}`}
@@ -527,19 +532,10 @@ export default function FleetManagement() {
                       onClick={() => id && setSelectedId(id)}
                       sx={{
                         ...sxCard,
+                        borderColor: maintenanceBorder,
                         cursor: id ? 'pointer' : 'default',
-                        outline: active ? `2px solid ${T.accent}` : 'none',
-                        background: `linear-gradient(135deg, ${alpha(
-                          T.accent,
-                          0.16
-                        )} 0%, ${alpha(T.accent, 0.04)} 42%, rgba(10,10,10,0.35) 100%)`,
-                        '&:hover': id
-                          ? {
-                              borderColor: alpha(T.accent, 0.75),
-                              transform: 'translateY(-6px)',
-                              boxShadow: `0 28px 56px rgba(0,0,0,0.45), 0 0 48px ${alpha(T.accent, 0.2)}`,
-                            }
-                          : {},
+                        outline: active ? `2px solid ${maintenanceBorder}` : 'none',
+                       bgcolor: active ? T.accent : maintenanceBorder,
                       }}
                     >
                       <CardContent
@@ -556,7 +552,8 @@ export default function FleetManagement() {
                             bottom: 10,
                             width: 4,
                             borderRadius: 2,
-                            bgcolor: active ? T.accent : 'rgba(100,116,139,0.22)',
+                            borderColor: maintenanceBorder,
+                            bgcolor: active ? T.accent : maintenanceBorder,
                           },
                         }}
                       >
@@ -678,7 +675,7 @@ export default function FleetManagement() {
                             <Button
                               size="small"
                               variant="contained"
-                              color="primary"
+                              color="warning"
                               startIcon={<BuildIcon />}
                               onClick={(e) => {
                                 e.stopPropagation();

@@ -530,7 +530,7 @@ export default function MyDivision() {
                   >
                     <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.25}>
                       <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography variant="caption" sx={{ color: '#ce93d8', fontWeight: 700 }}>
+                        <Typography variant="caption" sx={{ color: '#FFFF1D', fontWeight: 700 }}>
                           Premium tank
                         </Typography>
                         <Box sx={{ mt: 0.6, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -540,7 +540,7 @@ export default function MyDivision() {
                               width: 44,
                               height: 84,
                               borderRadius: 999,
-                              border: '2px solid rgba(206,147,216,0.6)',
+                              border: '2px solid #FFFF1D',
                               bgcolor: 'rgba(156,39,176,0.08)',
                               overflow: 'hidden',
                             }}
@@ -553,7 +553,7 @@ export default function MyDivision() {
                                 bottom: 0,
                                 height: `${premiumFill}%`,
                                 background:
-                                  'linear-gradient(180deg, rgba(206,147,216,0.95) 0%, rgba(156,39,176,0.95) 100%)',
+                                  'linear-gradient(180deg, #FFFF1D 0%, #FFFF1D 100%)',
                                 transition: 'height .35s ease',
                               }}
                             />
@@ -1027,10 +1027,19 @@ export default function MyDivision() {
                           t.displayName ||
                           `${t.brandName || ''} ${t.modelName || ''}`.trim() ||
                           'Truck',
+                        inMaintenance:
+                          Boolean(t.blocked) &&
+                          Boolean(t.maintenanceReadyAt) &&
+                          new Date(t.maintenanceReadyAt).getTime() > Date.now(),
+                        needsMaintenance:
+                          Boolean(t.blocked) &&
+                          (!t.maintenanceReadyAt || new Date(t.maintenanceReadyAt).getTime() <= Date.now()),
                       }))
                     : Array.from({ length: Math.max(3, Math.min(8, fleetSummary.total || 3)) }).map((_, idx) => ({
                         key: `empty-${idx + 1}`,
                         label: `Empty bay ${idx + 1}`,
+                        inMaintenance: false,
+                        needsMaintenance: false,
                       }))).map((slot, idx) => (
                     <Box
                       key={slot.key}
@@ -1042,7 +1051,11 @@ export default function MyDivision() {
                         textAlign: 'center',
                         borderRadius: 1,
                         border: '1px solid',
-                        borderColor: 'divider',
+                        borderColor: slot.needsMaintenance
+                          ? 'error.main'
+                          : slot.inMaintenance
+                            ? 'info.main'
+                            : 'divider',
                         bgcolor: fleetTrucks.length ? 'background.paper' : 'transparent',
                         opacity: fleetTrucks.length ? 1 : 0.55,
                       }}
@@ -1050,6 +1063,19 @@ export default function MyDivision() {
                       <Typography variant="caption" sx={{ fontWeight: 700 }} noWrap>
                         {slot.label}
                       </Typography>
+                      {(slot.needsMaintenance || slot.inMaintenance) && (
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            display: 'block',
+                            mt: 0.25,
+                            fontWeight: 700,
+                            color: slot.needsMaintenance ? 'error.main' : 'info.main',
+                          }}
+                        >
+                          {slot.needsMaintenance ? 'Needs maintenance' : 'In maintenance'}
+                        </Typography>
+                      )}
                     </Box>
                   ))}
                 </Stack>
@@ -1189,10 +1215,10 @@ export default function MyDivision() {
                       const statusLabel = inMaintenance
                         ? 'In maintenance'
                         : needsMaintenance
-                          ? 'Blocked'
+                          ? 'Needs maintenance'
                           : 'Available';
                       const statusColor = inMaintenance
-                        ? 'warning'
+                        ? 'info'
                         : needsMaintenance
                           ? 'error'
                           : 'success';

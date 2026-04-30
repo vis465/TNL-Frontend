@@ -492,6 +492,14 @@ export default function FuelMarketplace() {
       title="Fuel purchase"
       subtitle="Buy fuel directly from division wallet with live capacity and cost checks."
       width={420}
+      footer={(
+        <Stack direction="row" spacing={1}>
+          <Button variant="outlined" fullWidth onClick={() => setBuyDrawerOpen(false)} disabled={buying}>Cancel</Button>
+          <Button variant="contained" fullWidth onClick={buy} disabled={buying || !tier || buyOverCapacity || remainingCapacity <= 0}>
+            {buying ? 'Processing…' : 'Purchase'}
+          </Button>
+        </Stack>
+      )}
     >
       <Stack spacing={1.5}>
         <FormControl size="small" fullWidth>
@@ -517,12 +525,6 @@ export default function FuelMarketplace() {
             Requested liters exceed capacity. Max: <strong>{Math.floor(remainingCapacity).toLocaleString()} L</strong>.
           </Alert>
         ) : null}
-        <Stack direction="row" spacing={1}>
-          <Button variant="outlined" fullWidth onClick={() => setBuyDrawerOpen(false)} disabled={buying}>Cancel</Button>
-          <Button variant="contained" fullWidth onClick={buy} disabled={buying || !tier || buyOverCapacity || remainingCapacity <= 0}>
-            {buying ? 'Processing…' : 'Purchase'}
-          </Button>
-        </Stack>
       </Stack>
     </PurchaseSidebar>
     </MagicPageShell>

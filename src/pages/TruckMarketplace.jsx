@@ -12,6 +12,7 @@ import {
   LinearProgress,
   Alert,
   TextField,
+  Skeleton,
   InputAdornment,
   Tabs,
   Tab,
@@ -277,6 +278,25 @@ export default function TruckMarketplace() {
       )}
 
       {loading && <LinearProgress sx={{ mb: 2, borderRadius: 1 }} />}
+      {loading && (
+        <BentoGrid minItemWidth={270} gap={2} sx={{ mb: 2 }}>
+          {Array.from({ length: 6 }).map((_, idx) => (
+            <BentoItem key={`truck-skeleton-${idx}`}>
+              <Card sx={sxCard}>
+                <CardContent>
+                  <Skeleton variant="rounded" height={22} sx={{ mb: 1 }} />
+                  <Skeleton variant="rounded" height={18} sx={{ mb: 2, width: '65%' }} />
+                  <Skeleton variant="rounded" height={60} sx={{ mb: 2 }} />
+                  <Stack direction="row" spacing={1}>
+                    <Skeleton variant="rounded" height={24} width={90} />
+                    <Skeleton variant="rounded" height={24} width={80} />
+                  </Stack>
+                </CardContent>
+              </Card>
+            </BentoItem>
+          ))}
+        </BentoGrid>
+      )}
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
@@ -413,6 +433,14 @@ export default function TruckMarketplace() {
             : ''
         }
         width={460}
+        footer={(
+          <Stack direction="row" spacing={1}>
+            <Button onClick={closeConfirm} disabled={purchaseLoading} variant="outlined" fullWidth>Cancel</Button>
+            <Button variant="contained" onClick={handlePurchase} disabled={purchaseLoading || !canAffordConfirm || !isLeader} fullWidth>
+              {purchaseLoading ? 'Processing…' : 'Buy'}
+            </Button>
+          </Stack>
+        )}
       >
         {confirmModel && (
           <Box>
@@ -455,12 +483,6 @@ export default function TruckMarketplace() {
               </Typography>
               {!canAffordConfirm ? <Alert severity="warning">Insufficient division wallet balance for this purchase.</Alert> : null}
               {purchaseError ? <Alert severity="error">{purchaseError}</Alert> : null}
-              <Stack direction="row" spacing={1} sx={{ pt: 1 }}>
-                <Button onClick={closeConfirm} disabled={purchaseLoading} variant="outlined" fullWidth>Cancel</Button>
-                <Button variant="contained" onClick={handlePurchase} disabled={purchaseLoading || !canAffordConfirm || !isLeader} fullWidth>
-                  {purchaseLoading ? 'Processing…' : 'Buy'}
-                </Button>
-              </Stack>
             </Stack>
           </Box>
         )}
