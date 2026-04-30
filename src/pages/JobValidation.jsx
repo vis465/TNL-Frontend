@@ -99,7 +99,7 @@ export default function JobValidation() {
       const results = resp.data?.results || [];
       const first = results[0];
 
-      if (first?.enqueued) {
+      if (first?.processed) {
         showMessage('Job submitted for validation. It may take a moment to appear below.', 'success');
         setJobId('');
         fetchValidatedJobs();

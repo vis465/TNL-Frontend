@@ -34,6 +34,7 @@ import AddOutlined from '@mui/icons-material/AddOutlined';
 import DeleteOutline from '@mui/icons-material/DeleteOutline';
 import EditOutlined from '@mui/icons-material/EditOutlined';
 import RefreshOutlined from '@mui/icons-material/RefreshOutlined';
+import { Link as RouterLink } from 'react-router-dom';
 import axiosInstance from '../utils/axios';
 
 const CLASSES = ['default', 'general', 'heavy', 'liquid', 'food', 'fragile', 'hazardous'];
@@ -487,6 +488,18 @@ export default function AdminCargoRates() {
                   {savingConfig ? 'Saving…' : 'Save'}
                 </Button>
               </Stack>
+            </CardContent>
+          </Card>
+
+          <Card sx={{ mb: 2 }}>
+            <CardContent>
+              <Typography fontWeight={700} sx={{ mb: 0.5 }}>Division fuel market</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2, maxWidth: 720 }}>
+                Standard and premium token prices, coverage, delivery grace, and price history are managed on a dedicated page so cargo rates stay focused on €/km and catalog.
+              </Typography>
+              <Button variant="contained" component={RouterLink} to="/admin/fuel-market">
+                Open division fuel pricing
+              </Button>
             </CardContent>
           </Card>
 

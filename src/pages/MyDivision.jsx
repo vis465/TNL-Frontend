@@ -26,6 +26,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TableSortLabel,
   Tabs,
   TextField,
   Typography,
@@ -34,10 +35,19 @@ import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import LocalShippingOutlined from '@mui/icons-material/LocalShippingOutlined';
 import BuildOutlined from '@mui/icons-material/BuildOutlined';
 import EditOutlined from '@mui/icons-material/EditOutlined';
+import LocalGasStationOutlined from '@mui/icons-material/LocalGasStationOutlined';
+import BoltOutlined from '@mui/icons-material/BoltOutlined';
+import SpeedOutlined from '@mui/icons-material/SpeedOutlined';
 import axiosInstance from '../utils/axios';
 import { getItemWithExpiry } from '../localStorageWithExpiry';
 import { getDivisionTrucks } from '../services/fleetService';
 import DivisionGlobalBanner from '../components/DivisionGlobalBanner';
+import DashboardHero from '../components/magicui/DashboardHero';
+import MagicPageShell from '../components/magicui/MagicPageShell';
+import { BentoGrid, BentoItem } from '../components/magicui/BentoGrid';
+import AnimatedTabPanel from '../components/magicui/AnimatedTabPanel';
+
+const DIVISION_FUEL_CAPACITY_L = 20_000;
 
 const TAB_KEYS = ['overview', 'people', 'fleet', 'leaderboard'];
 const TAB_INDEX_BY_KEY = TAB_KEYS.reduce((acc, key, index) => {
@@ -68,6 +78,27 @@ export default function MyDivision() {
   const [activeTab, setActiveTab] = useState(0);
   const [leaderQueuesLoading, setLeaderQueuesLoading] = useState(false);
   const [removingMemberId, setRemovingMemberId] = useState('');
+  const [lbSortKey, setLbSortKey] = useState('jobs');
+  const [lbSortDir, setLbSortDir] = useState('desc');
+
+  const sortedLb = useMemo(() => {
+    const rows = [...lb];
+    rows.sort((a, b) => {
+      const av = Number(a?.[lbSortKey] ?? 0);
+      const bv = Number(b?.[lbSortKey] ?? 0);
+      return lbSortDir === 'asc' ? av - bv : bv - av;
+    });
+    return rows;
+  }, [lb, lbSortDir, lbSortKey]);
+
+  const toggleLbSort = (key) => {
+    if (lbSortKey === key) {
+      setLbSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+      return;
+    }
+    setLbSortKey(key);
+    setLbSortDir('desc');
+  };
 
   const load = async () => {
     setLoading(true);
@@ -167,6 +198,19 @@ export default function MyDivision() {
     const fleetKm = fleetTrucks.reduce((s, t) => s + (Number(t.odometerKm) || 0), 0);
     return { total, blocked, wearHigh, fleetKm, maintenanceCost };
   }, [fleetTrucks]);
+  const premiumFuel = Math.max(0, Number(div?.fuelTankPremiumLiters) || 0);
+  const standardFuel = Math.max(0, Number(div?.fuelTankNormalLiters ?? div?.fuelTankLiters) || 0);
+  const totalFuel = premiumFuel + standardFuel;
+  const totalFuelBurned = Math.max(0, Number(div?.stats?.totalFuelBurned) || 0);
+  const avgFuelPerJob = (Number(div?.stats?.totalJobs) || 0) > 0
+    ? totalFuelBurned / Math.max(1, Number(div?.stats?.totalJobs) || 0)
+    : 0;
+  const capacityPct = Math.max(0, Math.min(100, Math.round((totalFuel / DIVISION_FUEL_CAPACITY_L) * 100)));
+  const premiumPct = Math.max(0, Math.min(100, Math.round((premiumFuel / DIVISION_FUEL_CAPACITY_L) * 100)));
+  const standardPct = Math.max(0, Math.min(100, Math.round((standardFuel / DIVISION_FUEL_CAPACITY_L) * 100)));
+  const premiumFill = Math.max(4, Math.min(100, premiumPct || 4));
+  const standardFill = Math.max(4, Math.min(100, standardPct || 4));
+  const remainingFuelCapacity = Math.max(0, DIVISION_FUEL_CAPACITY_L - totalFuel);
 
   const peopleRows = useMemo(() => {
     const base = Array.isArray(members) ? [...members] : [];
@@ -318,8 +362,18 @@ export default function MyDivision() {
   };
 
   return (
+    <MagicPageShell>
     <Container maxWidth="xl" sx={{ py: 3 }}>
-      <Typography variant="h5" fontWeight={800} sx={{ mb: 2 }}>My division</Typography>
+      <DashboardHero
+        title="My Division"
+        subtitle="Track people, fleet readiness, and token health in one place. Use this command center to manage everything your division needs to keep moving."
+        stats={[
+          { label: 'Members', value: effectiveMemberCount },
+          { label: 'Wallet', value: Number(div?.walletBalance || 0) },
+          { label: 'Fleet Trucks', value: fleetSummary.total },
+          { label: 'Blocked', value: fleetSummary.blocked },
+        ]}
+      />
       {loading && <LinearProgress sx={{ mb: 2 }} />}
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
       <DivisionGlobalBanner globalAnnouncement={data?.globalAnnouncement} />
@@ -413,34 +467,172 @@ export default function MyDivision() {
             </CardContent>
           </Card>
 
-          <Grid container spacing={1.25}>
-            <Grid item xs={6} md={3}>
+          <BentoGrid minItemWidth={180} gap={1.25}>
+            <BentoItem>
               <Paper variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>
                 <Typography variant="caption" color="text.secondary">Members</Typography>
                 <Typography variant="h6" fontWeight={800}>{effectiveMemberCount}</Typography>
               </Paper>
-            </Grid>
-            <Grid item xs={6} md={3}>
+            </BentoItem>
+            <BentoItem>
               <Paper variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>
                 <Typography variant="caption" color="text.secondary">Wallet</Typography>
                 <Typography variant="h6" fontWeight={800}>{(div.walletBalance ?? 0).toLocaleString()}</Typography>
               </Paper>
-            </Grid>
-            <Grid item xs={6} md={3}>
+            </BentoItem>
+            <BentoItem>
               <Paper variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>
                 <Typography variant="caption" color="text.secondary">Fleet trucks</Typography>
                 <Typography variant="h6" fontWeight={800}>{fleetSummary.total}</Typography>
               </Paper>
-            </Grid>
-            <Grid item xs={6} md={3}>
+            </BentoItem>
+            <BentoItem>
               <Paper variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>
                 <Typography variant="caption" color="text.secondary">Blocked trucks</Typography>
                 <Typography variant="h6" fontWeight={800} color={fleetSummary.blocked ? 'warning.main' : 'success.main'}>
                   {fleetSummary.blocked}
                 </Typography>
               </Paper>
-            </Grid>
-          </Grid>
+            </BentoItem>
+            <BentoItem>
+              <Paper variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>
+                <Typography variant="caption" color="text.secondary">Fuel burned (all jobs)</Typography>
+                <Typography variant="h6" fontWeight={800}>{Math.round(totalFuelBurned).toLocaleString()} L</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Avg {avgFuelPerJob.toFixed(1)} L/job
+                </Typography>
+              </Paper>
+            </BentoItem>
+          </BentoGrid>
+
+          <Card variant="outlined">
+            <CardContent>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}>
+                    <LocalGasStationOutlined color="primary" />
+                    <Typography fontWeight={700}>
+                      Division fuel
+                    </Typography>
+                  </Stack>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1.4 }}>
+                    Fuel ops are shared across the division. Premium gets consumed first and stretches farther per liter.
+                  </Typography>
+                  <Box
+                    sx={{
+                      p: 1.2,
+                      borderRadius: 2,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      bgcolor: 'rgba(255,255,255,0.02)',
+                      mb: 1,
+                    }}
+                  >
+                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.25}>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography variant="caption" sx={{ color: '#FFFF1D', fontWeight: 700 }}>
+                          Premium tank
+                        </Typography>
+                        <Box sx={{ mt: 0.6, display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Box
+                            sx={{
+                              position: 'relative',
+                              width: 44,
+                              height: 84,
+                              borderRadius: 999,
+                              border: '2px solid #FFFF1D',
+                              bgcolor: 'rgba(156,39,176,0.08)',
+                              overflow: 'hidden',
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                position: 'absolute',
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                height: `${premiumFill}%`,
+                                background:
+                                  'linear-gradient(180deg, #FFFF1D 0%, #FFFF1D 100%)',
+                                transition: 'height .35s ease',
+                              }}
+                            />
+                          </Box>
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="body2" fontWeight={700}>
+                              {premiumFuel.toLocaleString()} L
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {premiumPct}% of total capacity
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography variant="caption" sx={{ color: '#90caf9', fontWeight: 700 }}>
+                          Standard tank
+                        </Typography>
+                        <Box sx={{ mt: 0.6, display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Box
+                            sx={{
+                              position: 'relative',
+                              width: 44,
+                              height: 84,
+                              borderRadius: 999,
+                              border: '2px solid rgba(144,202,249,0.6)',
+                              bgcolor: 'rgba(25,118,210,0.08)',
+                              overflow: 'hidden',
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                position: 'absolute',
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                height: `${standardFill}%`,
+                                background:
+                                  'linear-gradient(180deg, rgba(144,202,249,0.95) 0%, rgba(25,118,210,0.95) 100%)',
+                                transition: 'height .35s ease',
+                              }}
+                            />
+                          </Box>
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="body2" fontWeight={700}>
+                              {standardFuel.toLocaleString()} L
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {standardPct}% of total capacity
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+                    </Stack>
+                  </Box>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    <Chip
+                      size="small"
+                      icon={<BoltOutlined sx={{ fontSize: 16 }} />}
+                      sx={{ bgcolor: 'rgba(156,39,176,0.1)' }}
+                      label="Premium consumed first"
+                    />
+                    <Chip
+                      size="small"
+                      icon={<SpeedOutlined sx={{ fontSize: 16 }} />}
+                      sx={{ bgcolor: 'rgba(25,118,210,0.1)' }}
+                      label="Premium gives longer coverage"
+                    />
+                    <Chip size="small" variant="outlined" label={`Total ${totalFuel.toLocaleString()} / ${DIVISION_FUEL_CAPACITY_L.toLocaleString()} L`} />
+                    <Chip size="small" variant="outlined" label={`Filled ${capacityPct}%`} />
+                    <Chip size="small" variant="outlined" label={`Free ${Math.round(remainingFuelCapacity).toLocaleString()} L`} />
+                  </Stack>
+                </Box>
+                <Button component={RouterLink} to="/division/fuel" variant={isLeader ? 'contained' : 'outlined'}>
+                  {isLeader ? 'Fuel marketplace' : 'Fuel market'}
+                </Button>
+              </Stack>
+            </CardContent>
+          </Card>
 
           <Card variant="outlined">
             <CardContent>
@@ -486,6 +678,7 @@ export default function MyDivision() {
             </CardContent>
           </Card>
 
+          <AnimatedTabPanel panelKey={`my-division-tab-${activeTab}`}>
           {activeTab === 0 && isAdmin && (
             <Card variant="outlined" sx={{ borderColor: 'info.light' }}>
               <CardContent>
@@ -813,6 +1006,80 @@ export default function MyDivision() {
                   label={`${Math.round(fleetSummary.fleetKm).toLocaleString()} km driven`}
                 />
               </Stack>
+              <Box
+                sx={{
+                  mt: 1.5,
+                  p: 1.25,
+                  borderRadius: 2,
+                  border: '1px dashed',
+                  borderColor: 'divider',
+                  bgcolor: 'action.hover',
+                }}
+              >
+                <Typography variant="caption" color="text.secondary">
+                  Garage layout
+                </Typography>
+                <Stack direction="row" spacing={1} sx={{ mt: 0.75 }} flexWrap="wrap" useFlexGap>
+                  {(fleetTrucks.length
+                    ? fleetTrucks.slice(0, 8).map((t, idx) => ({
+                        key: String(t._id || t.divisionTruckId || idx),
+                        label:
+                          t.displayName ||
+                          `${t.brandName || ''} ${t.modelName || ''}`.trim() ||
+                          'Truck',
+                        inMaintenance:
+                          Boolean(t.blocked) &&
+                          Boolean(t.maintenanceReadyAt) &&
+                          new Date(t.maintenanceReadyAt).getTime() > Date.now(),
+                        needsMaintenance:
+                          Boolean(t.blocked) &&
+                          (!t.maintenanceReadyAt || new Date(t.maintenanceReadyAt).getTime() <= Date.now()),
+                      }))
+                    : Array.from({ length: Math.max(3, Math.min(8, fleetSummary.total || 3)) }).map((_, idx) => ({
+                        key: `empty-${idx + 1}`,
+                        label: `Empty bay ${idx + 1}`,
+                        inMaintenance: false,
+                        needsMaintenance: false,
+                      }))).map((slot, idx) => (
+                    <Box
+                      key={slot.key}
+                      sx={{
+                        px: 1,
+                        py: 0.5,
+                        minWidth: 120,
+                        maxWidth: 190,
+                        textAlign: 'center',
+                        borderRadius: 1,
+                        border: '1px solid',
+                        borderColor: slot.needsMaintenance
+                          ? 'error.main'
+                          : slot.inMaintenance
+                            ? 'info.main'
+                            : 'divider',
+                        bgcolor: fleetTrucks.length ? 'background.paper' : 'transparent',
+                        opacity: fleetTrucks.length ? 1 : 0.55,
+                      }}
+                    >
+                      <Typography variant="caption" sx={{ fontWeight: 700 }} noWrap>
+                        {slot.label}
+                      </Typography>
+                      {(slot.needsMaintenance || slot.inMaintenance) && (
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            display: 'block',
+                            mt: 0.25,
+                            fontWeight: 700,
+                            color: slot.needsMaintenance ? 'error.main' : 'info.main',
+                          }}
+                        >
+                          {slot.needsMaintenance ? 'Needs maintenance' : 'In maintenance'}
+                        </Typography>
+                      )}
+                    </Box>
+                  ))}
+                </Stack>
+              </Box>
               {fleetSummary.blocked > 0 && isLeader && (
                 <Alert severity="warning" sx={{ mt: 1.5 }}>
                   {fleetSummary.blocked} truck{fleetSummary.blocked === 1 ? '' : 's'} need
@@ -833,14 +1100,55 @@ export default function MyDivision() {
                   <TableRow>
                     <TableCell>Rider</TableCell>
                     <TableCell>Route (latest)</TableCell>
-                    <TableCell align="right">Jobs</TableCell>
-                    <TableCell align="right">Revenue</TableCell>
-                    <TableCell align="right" title="While in this division">Attend. (div.)</TableCell>
-                    <TableCell align="right" title="All approved events (rider profile)">Events (all-time)</TableCell>
+                    <TableCell align="right" sortDirection={lbSortKey === 'jobs' ? lbSortDir : false}>
+                      <TableSortLabel
+                        active={lbSortKey === 'jobs'}
+                        direction={lbSortKey === 'jobs' ? lbSortDir : 'desc'}
+                        onClick={() => toggleLbSort('jobs')}
+                      >
+                        Jobs
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="right" sortDirection={lbSortKey === 'revenue' ? lbSortDir : false}>
+                      <TableSortLabel
+                        active={lbSortKey === 'revenue'}
+                        direction={lbSortKey === 'revenue' ? lbSortDir : 'desc'}
+                        onClick={() => toggleLbSort('revenue')}
+                      >
+                        Revenue
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="right" sortDirection={lbSortKey === 'fuelBurned' ? lbSortDir : false}>
+                      <TableSortLabel
+                        active={lbSortKey === 'fuelBurned'}
+                        direction={lbSortKey === 'fuelBurned' ? lbSortDir : 'desc'}
+                        onClick={() => toggleLbSort('fuelBurned')}
+                      >
+                        Fuel burned (L)
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="right" title="While in this division" sortDirection={lbSortKey === 'attendance' ? lbSortDir : false}>
+                      <TableSortLabel
+                        active={lbSortKey === 'attendance'}
+                        direction={lbSortKey === 'attendance' ? lbSortDir : 'desc'}
+                        onClick={() => toggleLbSort('attendance')}
+                      >
+                        Attend. (div.)
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="right" title="All approved events (rider profile)" sortDirection={lbSortKey === 'lifetimeEventsAttended' ? lbSortDir : false}>
+                      <TableSortLabel
+                        active={lbSortKey === 'lifetimeEventsAttended'}
+                        direction={lbSortKey === 'lifetimeEventsAttended' ? lbSortDir : 'desc'}
+                        onClick={() => toggleLbSort('lifetimeEventsAttended')}
+                      >
+                        Events (all-time)
+                      </TableSortLabel>
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {lb.map((r) => (
+                  {sortedLb.map((r) => (
                     <TableRow key={r.riderId}>
                       <TableCell>
                         {`${r.name || r.username || 'Unknown rider'}${r.inDivision === false ? ' (not in division)' : ''}`}
@@ -852,13 +1160,14 @@ export default function MyDivision() {
                       </TableCell>
                       <TableCell align="right">{r.jobs}</TableCell>
                       <TableCell align="right">{Math.round(r.revenue || 0).toLocaleString()}</TableCell>
+                      <TableCell align="right">{Math.round(r.fuelBurned || 0).toLocaleString()}</TableCell>
                       <TableCell align="right">{r.attendance ?? 0}</TableCell>
                       <TableCell align="right">{r.lifetimeEventsAttended ?? 0}</TableCell>
                     </TableRow>
                   ))}
                   {!lb.length && (
                     <TableRow>
-                      <TableCell colSpan={6} align="center">
+                      <TableCell colSpan={7} align="center">
                         <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>No jobs yet.</Typography>
                       </TableCell>
                     </TableRow>
@@ -868,6 +1177,7 @@ export default function MyDivision() {
             </CardContent>
           </Card>
           )}
+          </AnimatedTabPanel>
             </Stack>
           </Grid>
 
@@ -907,10 +1217,10 @@ export default function MyDivision() {
                       const statusLabel = inMaintenance
                         ? 'In maintenance'
                         : needsMaintenance
-                          ? 'Blocked'
+                          ? 'Needs maintenance'
                           : 'Available';
                       const statusColor = inMaintenance
-                        ? 'warning'
+                        ? 'info'
                         : needsMaintenance
                           ? 'error'
                           : 'success';
@@ -1009,5 +1319,6 @@ export default function MyDivision() {
         </DialogActions>
       </Dialog>
     </Container>
+    </MagicPageShell>
   );
 }

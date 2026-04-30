@@ -27,6 +27,7 @@ import {
 } from '@mui/material';
 import {
   AccountCircle,
+  LocalGasStation,
   Logout,
   People,
   Event,
@@ -311,6 +312,17 @@ const Navbar = () => {
             Division invites
           </MenuItem>
         )}
+        {isAuthenticated && (
+          <MenuItem
+            component={RouterLink}
+            to="/division/fuel"
+            onClick={handleUserMenuClose}
+            sx={{ gap: 1.5 }}
+          >
+            <LocalGasStation fontSize="small" />
+            Division fuel
+          </MenuItem>
+        )}
         {hasDivision && (
           <MenuItem
             component={RouterLink}
@@ -423,6 +435,19 @@ const Navbar = () => {
               >
                 <ListItemIcon sx={{ minWidth: 40 }}><ContactMail /></ListItemIcon>
                 <ListItemText primary="Division invites" primaryTypographyProps={{ fontWeight: 500 }} />
+              </ListItemButton>
+            </ListItem>
+          )}
+          {isAuthenticated && (
+            <ListItem disablePadding>
+              <ListItemButton
+                component={RouterLink}
+                to="/division/fuel"
+                onClick={handleMobileDrawerClose}
+                sx={{ borderRadius: 1 }}
+              >
+                <ListItemIcon sx={{ minWidth: 40 }}><LocalGasStation /></ListItemIcon>
+                <ListItemText primary="Division fuel" primaryTypographyProps={{ fontWeight: 500 }} />
               </ListItemButton>
             </ListItem>
           )}

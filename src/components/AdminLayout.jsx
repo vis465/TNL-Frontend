@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation, Link as RouterLink } from "react-router-dom";
 import Box from "@mui/material/Box";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import Container from "@mui/material/Container";
+import Breadcrumbs from "@mui/material/Breadcrumbs";
+import Link from "@mui/material/Link";
 import { useTheme, useMediaQuery } from "@mui/material";
 import { Menu as MenuIcon } from "@mui/icons-material";
 import AdminSidebar from "./AdminSidebar";
+import { ADMIN_SECTIONS, MY_AREA_SECTIONS, isNavPathActive } from "../config/adminNavigation";
 
 /**
  * Shared shell: sidebar + main (Outlet). Used for member routes and /admin.
@@ -25,6 +28,7 @@ export default function AdminLayout({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const location = useLocation();
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -44,6 +48,9 @@ export default function AdminLayout({
   const handleMobileDrawerClose = () => {
     setMobileDrawerOpen(false);
   };
+
+  const allItems = [...MY_AREA_SECTIONS, ...ADMIN_SECTIONS].flatMap((s) => s.items || []);
+  const currentNav = allItems.find((item) => isNavPathActive(location.pathname, item));
 
   return (
     <Box sx={{ flex: 1, minHeight: 0, display: "flex" }}>
@@ -85,6 +92,17 @@ export default function AdminLayout({
             pb: 3,
           }}
         >
+          <Box sx={{ mb: 2 }}>
+            <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 0.5 }}>
+              <Link component={RouterLink} to="/dashboard" underline="hover" color="inherit">
+                Account
+              </Link>
+              <Typography color="text.secondary">{currentNav?.label || barTitle}</Typography>
+            </Breadcrumbs>
+            <Typography variant="h6" fontWeight={800}>
+              {currentNav?.label || barTitle}
+            </Typography>
+          </Box>
           <Outlet />
         </Container>
       </Box>

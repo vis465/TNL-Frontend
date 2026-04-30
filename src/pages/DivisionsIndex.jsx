@@ -2,17 +2,14 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import {
   Alert,
-  Avatar,
   Box,
   Button,
-  Card,
-  CardActionArea,
-  CardContent,
   Chip,
   Container,
   Grid,
   InputAdornment,
   LinearProgress,
+  Paper,
   Stack,
   TextField,
   Typography,
@@ -20,9 +17,13 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import GroupsOutlined from '@mui/icons-material/GroupsOutlined';
 import EmojiEventsOutlined from '@mui/icons-material/EmojiEventsOutlined';
-import LocalAtmOutlined from '@mui/icons-material/LocalAtmOutlined';
+import { motion } from 'framer-motion';
 import axiosInstance from '../utils/axios';
 import { getItemWithExpiry } from '../localStorageWithExpiry';
+import MagicPageShell from '../components/magicui/MagicPageShell';
+import DivisionBrowseCard from '../components/magicui/DivisionBrowseCard';
+import RevealSection from '../components/magicui/RevealSection';
+import { staggerContainer, staggerItem } from '../components/magicui/motionPresets';
 
 export default function DivisionsIndex() {
   const user = getItemWithExpiry('user');
@@ -74,44 +75,38 @@ export default function DivisionsIndex() {
   }, [divisions, query]);
 
   return (
+    <MagicPageShell>
     <Box sx={{ minHeight: '100vh', pb: 6 }}>
       <Box
         sx={{
           position: 'relative',
-          py: { xs: 6, md: 10 },
-         
+          py: { xs: 6, md: 9 },
         }}
       >
         <Container maxWidth="lg">
-          <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
-            <GroupsOutlined sx={{ fontSize: 40 }} />
-            <Typography variant="h3" fontWeight={800}>
-              Divisions
+          <Paper
+            component={motion.div}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+            sx={{ p: { xs: 2.5, md: 4 }, borderRadius: 3 }}
+          >
+            <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 1.5 }}>
+              <GroupsOutlined sx={{ fontSize: 34 }} />
+              <Typography variant="h3" fontWeight={900}>Divisions</Typography>
+            </Stack>
+            <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 760 }}>
+              Browse every division, compare activity, and jump into public profiles with smoother card browsing.
             </Typography>
-          </Stack>
-          <Typography variant="h6" sx={{ opacity: 0.9, maxWidth: 720 }}>
-            Explore every division in the community. Join a division to share
-            wallet funds, trucks, and compete together on the leaderboard.
-          </Typography>
-          <Stack direction="row" spacing={1.5} sx={{ mt: 3 }} flexWrap="wrap" useFlexGap>
-            <Button
-              component={RouterLink}
-              to="/division-leaderboard"
-              variant="contained"
-              color="warning"
-              startIcon={<EmojiEventsOutlined />}
-            >
-              Leaderboard
-            </Button>
-            <Button
-              component={RouterLink}
-              to={isAuthed ? '/division' : '/login?next=/division'}
-              variant="outlined"
-              sx={{ borderColor: 'divider' }}
-            >
-              {isAuthed ? 'My division' : 'Sign in'}
-            </Button>
-          </Stack>
+            <Stack direction="row" spacing={1.5} sx={{ mt: 2.5 }} flexWrap="wrap" useFlexGap>
+              <Button component={RouterLink} to="/division-leaderboard" variant="contained" startIcon={<EmojiEventsOutlined />}>
+                Leaderboard
+              </Button>
+              <Button component={RouterLink} to={isAuthed ? '/division' : '/login?next=/division'} variant="outlined">
+                {isAuthed ? 'My division' : 'Sign in'}
+              </Button>
+            </Stack>
+          </Paper>
         </Container>
       </Box>
 
@@ -122,135 +117,48 @@ export default function DivisionsIndex() {
           </Alert>
         )}
 
-        <TextField
-          fullWidth
-          placeholder="Search divisions by name, slug, or description"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
-          sx={{ mb: 3 }}
-        />
+        <RevealSection sx={{ mb: 3 }}>
+          <TextField
+            fullWidth
+            placeholder="Search divisions by name, slug, or description"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </RevealSection>
+
+        {!loading && filtered.length > 0 && (
+          <RevealSection sx={{ mb: 3 }}>
+            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+              <Chip label={`${filtered.length} visible`} size="small" />
+              <Chip label={`${divisions.length} total`} size="small" variant="outlined" />
+              <Chip label="Public profiles + stats" size="small" variant="outlined" />
+            </Stack>
+          </RevealSection>
+        )}
 
         {loading ? (
           <LinearProgress />
         ) : (
-          <Grid container spacing={2.5}>
+          <Grid
+            container
+            spacing={2.5}
+            component={motion.div}
+            variants={staggerContainer}
+            initial="hidden"
+            animate="visible"
+          >
             {filtered.map((d) => {
               const stats = statsBySlug.get(String(d._id));
               return (
-                <Grid item xs={12} sm={6} md={4} key={d._id}>
-                  <Card
-                    variant="outlined"
-                    sx={{
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      transition: 'transform 0.15s, box-shadow 0.15s',
-                      '&:hover': { transform: 'translateY(-2px)', boxShadow: 4 },
-                    }}
-                  >
-                    <CardActionArea component={RouterLink} to={`/divisions/${d.slug}`}>
-                      <Box
-                        sx={{
-                          width: '100%',
-                          aspectRatio: '1920 / 500',
-                          bgcolor: 'common.black',
-                          position: 'relative',
-                          overflow: 'hidden',
-                        }}
-                      >
-                        {d.bannerUrl ? (
-                          <Box
-                            component="img"
-                            src={d.bannerUrl}
-                            alt={`${d.name} banner`}
-                            sx={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }}
-                          />
-                        ) : (
-                          <Box
-                            sx={{
-                              width: '100%',
-                              height: '100%',
-                              background: (t) =>
-                                `linear-gradient(135deg, ${t.palette.primary.main}, ${t.palette.secondary.main})`,
-                            }}
-                          />
-                        )}
-                        <Box
-                          sx={{
-                            position: 'absolute',
-                            inset: 0,
-                            background:
-                              'linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0))',
-                          }}
-                        />
-                      </Box>
-                      <CardContent sx={{ pt: 3, position: 'relative' }}>
-                        <Avatar
-                          src={d.logoUrl || undefined}
-                          sx={{
-                            width: 56,
-                            height: 56,
-                            border: '3px solid',
-                            borderColor: 'background.paper',
-                            mt: -7,
-                            boxShadow: 2,
-                          }}
-                        >
-                          {d.name?.[0]}
-                        </Avatar>
-                        <Typography variant="h6" fontWeight={700} sx={{ mt: 1 }}>
-                          {d.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          /{d.slug}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{
-                            mt: 1,
-                            minHeight: 40,
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden',
-                          }}
-                        >
-                          {d.description || 'A division in our community.'}
-                        </Typography>
-                        <Stack
-                          direction="row"
-                          spacing={1}
-                          sx={{ mt: 1.5 }}
-                          flexWrap="wrap"
-                          useFlexGap
-                        >
-                          <Chip
-                            size="small"
-                            icon={<GroupsOutlined sx={{ fontSize: 16 }} />}
-                            label={`${d.memberCount ?? 0}`}
-                          />
-                          {stats && (
-                            <>
-                              <Chip
-                                size="small"
-                                label={`${stats.totalJobs || 0} jobs`}
-                                variant="outlined"
-                              />
-                            </>
-                          )}
-                          <Chip size="small" label={`Tax ${d.taxPercent ?? 0}%`} variant="outlined" />
-                        </Stack>
-                      </CardContent>
-                    </CardActionArea>
-                  </Card>
+                <Grid item xs={12} sm={6} md={4} key={d._id} component={motion.div} variants={staggerItem}>
+                  <DivisionBrowseCard division={d} stats={stats} />
                 </Grid>
               );
             })}
@@ -263,5 +171,6 @@ export default function DivisionsIndex() {
         )}
       </Container>
     </Box>
+    </MagicPageShell>
   );
 }

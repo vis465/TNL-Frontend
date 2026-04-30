@@ -37,6 +37,7 @@ import DirectionsCar from '@mui/icons-material/DirectionsCar';
 import GarageOutlined from '@mui/icons-material/GarageOutlined';
 import GroupsOutlined from '@mui/icons-material/GroupsOutlined';
 import LocalOfferOutlined from '@mui/icons-material/LocalOfferOutlined';
+import LocalGasStation from '@mui/icons-material/LocalGasStation';
 
 /** Staff roles that can open /admin (matches App.js admin layout gate). */
 export const STAFF_ROLES = ['admin', 'eventteam', 'hrteam', 'financeteam', 'communityManager'];
@@ -214,6 +215,12 @@ export const ADMIN_SECTIONS = [
         roles: ['admin'],
       },
       {
+        to: '/admin/fuel-market',
+        label: 'Division fuel pricing',
+        Icon: LocalGasStation,
+        roles: ['admin'],
+      },
+      {
         to: '/admin/coupons',
         label: 'Marketplace coupons',
         Icon: LocalOfferOutlined,
@@ -381,6 +388,15 @@ export const ADMIN_DASHBOARD_CARDS = [
     to: '/admin/cargo-rates',
     icon: LocalOfferOutlined,
     color: 'secondary',
+    roles: ['admin'],
+  },
+  {
+    group: 'Divisions',
+    title: 'Division fuel pricing',
+    description: 'Global standard and premium token prices, coverage, and delivery grace.',
+    to: '/admin/fuel-market',
+    icon: LocalGasStation,
+    color: 'info',
     roles: ['admin'],
   },
   {

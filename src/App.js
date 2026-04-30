@@ -102,7 +102,9 @@ import AdminTrucks from "./pages/AdminTrucks";
 import AdminDivisions from "./pages/AdminDivisions";
 import AdminDivisionDetail from "./pages/AdminDivisionDetail";
 import AdminCargoRates from "./pages/AdminCargoRates";
+import AdminFuelMarket from "./pages/AdminFuelMarket";
 import MyDivision from "./pages/MyDivision";
+import FuelMarketplace from "./pages/FuelMarketplace";
 import DivisionInvites from "./pages/DivisionInvites";
 import DivisionLeaderboard from "./pages/DivisionLeaderboard";
 import DivisionPublic from "./pages/DivisionPublic";
@@ -128,10 +130,10 @@ function App() {
         palette: {
           mode: isDarkMode ? "dark" : "light",
           primary: {
-            main: isDarkMode ? "#90caf9" : "#1976d2",
-            light: isDarkMode ? "#e3f2fd" : "#63a4ff",
-            dark: isDarkMode ? "#42a5f5" : "#004ba0",
-            contrastText: "#ffffff",
+            main: "#ffff00",
+            light: "#ffff66",
+            dark: "#c4c400",
+            contrastText: "#0a0a0a",
           },
           secondary: {
             main: isDarkMode ? "#f48fb1" : "#d81b60",
@@ -210,9 +212,14 @@ function App() {
                 textTransform: "none",
                 fontWeight: 500,
               },
-              contained: {
-                color: "#ffffff",
-              },
+              containedPrimary: ({ theme }) => ({
+                color: `${theme.palette.primary.contrastText} !important`,
+                backgroundColor: theme.palette.primary.main,
+                '&:hover': {
+                  backgroundColor: theme.palette.primary.dark,
+                  color: `${theme.palette.primary.contrastText} !important`,
+                },
+              }),
               outlined: {
                 borderColor: isDarkMode
                   ? "rgba(255, 255, 255, 0.3)"
@@ -402,6 +409,7 @@ function App() {
                         <Route path="/jobs/:id" element={<JobDetails />} />
                         <Route path="/calendar" element={<EventCalendarPage />} />
                         <Route path="/division" element={<MyDivision />} />
+                        <Route path="/division/fuel" element={<FuelMarketplace />} />
                         <Route path="/division/invites" element={<DivisionInvites />} />
                       </Route>
                     </Route>
@@ -594,6 +602,14 @@ function App() {
                         element={
                           <PrivateRoute allowedRoles={["admin"]}>
                             <AdminCargoRates />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="fuel-market"
+                        element={
+                          <PrivateRoute allowedRoles={["admin"]}>
+                            <AdminFuelMarket />
                           </PrivateRoute>
                         }
                       />

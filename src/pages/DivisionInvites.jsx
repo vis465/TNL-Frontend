@@ -13,8 +13,11 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Link as RouterLink } from 'react-router-dom';
 import axiosInstance from '../utils/axios';
+import MagicPageShell from '../components/magicui/MagicPageShell';
+import RevealSection from '../components/magicui/RevealSection';
 
 export default function DivisionInvites() {
   const [invites, setInvites] = useState([]);
@@ -77,12 +80,15 @@ export default function DivisionInvites() {
   };
 
   return (
+    <MagicPageShell>
     <Container maxWidth="sm" sx={{ py: 3 }}>
       <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
         <Button component={RouterLink} to="/dashboard">Back to dashboard</Button>
         <Button component={RouterLink} to="/division" variant="outlined">My division</Button>
       </Stack>
-      <Typography variant="h5" fontWeight={700} sx={{ mb: 2 }}>Division invitations</Typography>
+      <RevealSection>
+        <Typography variant="h5" fontWeight={800} sx={{ mb: 2 }}>Division invitations</Typography>
+      </RevealSection>
       {loading && <LinearProgress sx={{ mb: 2 }} />}
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
       {msg && <Alert severity="success" sx={{ mb: 2 }}>{msg}</Alert>}
@@ -95,10 +101,18 @@ export default function DivisionInvites() {
       )}
 
       <Stack spacing={2}>
+        <AnimatePresence>
         {invites.map((inv) => {
           const d = inv.divisionId;
           return (
-            <Card key={inv._id}>
+            <Card
+              key={inv._id}
+              component={motion.div}
+              layout
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
               <CardContent>
                 <Typography fontWeight={700}>{d?.name || 'Division'}</Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
@@ -116,6 +130,7 @@ export default function DivisionInvites() {
             </Card>
           );
         })}
+        </AnimatePresence>
       </Stack>
 
       <Divider sx={{ my: 3 }} />
@@ -131,10 +146,19 @@ export default function DivisionInvites() {
       )}
 
       <Stack spacing={2}>
+        <AnimatePresence>
         {requests.map((r) => {
           const d = r.divisionId || {};
           return (
-            <Card key={r._id} variant="outlined">
+            <Card
+              key={r._id}
+              variant="outlined"
+              component={motion.div}
+              layout
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
               <CardContent>
                 <Stack direction="row" spacing={2} alignItems="center">
                   <Avatar src={d.logoUrl || undefined}>{d.name?.[0] || 'D'}</Avatar>
@@ -159,7 +183,9 @@ export default function DivisionInvites() {
             </Card>
           );
         })}
+        </AnimatePresence>
       </Stack>
     </Container>
+    </MagicPageShell>
   );
 }

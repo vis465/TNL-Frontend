@@ -3,7 +3,6 @@ import { Link as RouterLink } from 'react-router-dom';
 import {
   Box,
   Typography,
-  Grid,
   Card,
   CardContent,
   CardActions,
@@ -13,13 +12,10 @@ import {
   LinearProgress,
   Alert,
   TextField,
+  Skeleton,
   InputAdornment,
   Tabs,
   Tab,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Link,
   Divider,
 } from '@mui/material';
@@ -38,6 +34,10 @@ import {
 } from '../services/truckMarketplaceService';
 import { getOwnedTrucksFleet } from '../services/fleetService';
 import axiosInstance from '../utils/axios';
+import DashboardHero from '../components/magicui/DashboardHero';
+import MagicPageShell from '../components/magicui/MagicPageShell';
+import { BentoGrid, BentoItem } from '../components/magicui/BentoGrid';
+import PurchaseSidebar from '../components/magicui/PurchaseSidebar';
 
 const T = {
   surface: '#111113',
@@ -223,55 +223,37 @@ export default function TruckMarketplace() {
   const canAffordConfirm = divisionId && payable <= divisionBalance;
 
   return (
-    <Box sx={{ py: 1 }}>
-      <Stack
-        direction="row"
-        alignItems="flex-start"
-        justifyContent="space-between"
-        flexWrap="wrap"
-        gap={2}
-        sx={{ mb: 3 }}
-      >
-        <Box>
-          <Stack direction="row" alignItems="center" gap={1.5} sx={{ mb: 1 }}>
-            <Box
-              sx={{
-                width: 44,
-                height: 44,
-                borderRadius: 2,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                bgcolor: T.accentDim,
-                color: T.accent,
-              }}
-            >
-              <StorefrontOutlinedIcon />
-            </Box>
-            <Typography variant="h4" sx={{ fontWeight: 800, color: 'text.primary', letterSpacing: '-0.02em' }}>
-              Truck marketplace
-            </Typography>
-          </Stack>
+    <MagicPageShell>
+    <Box sx={{ py: 2 }}>
+      <DashboardHero
+        title="Truck Marketplace"
+        subtitle="Compare models, validate affordability, and expand your shared fleet. Purchased trucks become available to division members in Fleet."
+        stats={[
+          { label: 'Brands', value: brands.length },
+          { label: 'Owned Trucks', value: ownedTrucks.length },
+          { label: 'Division Wallet', value: divisionBalance },
+          { label: 'Leader Access', value: isLeader ? 1 : 0 },
+        ]}
+      />
+      <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1} sx={{ mb: 2 }}>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <StorefrontOutlinedIcon sx={{ color: T.accent }} />
           <Typography sx={{ color: T.textMuted, maxWidth: 640, fontSize: '0.95rem' }}>
-            Division leaders buy trucks for the entire division from here. The price is paid from the{' '}
-            <strong>division wallet</strong> and the truck is usable by every active member. Purchased
-            trucks show up in{' '}
+            Division leaders buy trucks for the entire division from here. Purchased trucks show up in{' '}
             <Link component={RouterLink} to="/fleet" underline="hover" sx={{ color: T.info, fontWeight: 600 }}>
               Fleet
             </Link>
             .
           </Typography>
-          {sourceLabel ? (
-            <Typography variant="caption" sx={{ color: T.textMuted, display: 'block', mt: 0.5 }}>
-              Catalogue source: {sourceLabel}
-            </Typography>
-          ) : null}
-        </Box>
+        </Stack>
         <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+          {sourceLabel ? (
+            <Chip label={`Source: ${sourceLabel}`} size="small" variant="outlined" />
+          ) : null}
           {divisionId ? (
             <Chip
               icon={<AccountBalanceWalletOutlined sx={{ fontSize: '18px !important' }} />}
-              label={`Division wallet: ${divisionBalance.toLocaleString()}`}
+              label={`Wallet: ${divisionBalance.toLocaleString()}`}
               variant="outlined"
               sx={{ fontWeight: 700 }}
             />
@@ -296,6 +278,25 @@ export default function TruckMarketplace() {
       )}
 
       {loading && <LinearProgress sx={{ mb: 2, borderRadius: 1 }} />}
+      {loading && (
+        <BentoGrid minItemWidth={270} gap={2} sx={{ mb: 2 }}>
+          {Array.from({ length: 6 }).map((_, idx) => (
+            <BentoItem key={`truck-skeleton-${idx}`}>
+              <Card sx={sxCard}>
+                <CardContent>
+                  <Skeleton variant="rounded" height={22} sx={{ mb: 1 }} />
+                  <Skeleton variant="rounded" height={18} sx={{ mb: 2, width: '65%' }} />
+                  <Skeleton variant="rounded" height={60} sx={{ mb: 2 }} />
+                  <Stack direction="row" spacing={1}>
+                    <Skeleton variant="rounded" height={24} width={90} />
+                    <Skeleton variant="rounded" height={24} width={80} />
+                  </Stack>
+                </CardContent>
+              </Card>
+            </BentoItem>
+          ))}
+        </BentoGrid>
+      )}
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
@@ -355,7 +356,7 @@ export default function TruckMarketplace() {
                   {brand.name}
                 </Typography>
               )}
-              <Grid container spacing={2}>
+              <BentoGrid minItemWidth={270} gap={2}>
                 {(brand.models || []).map((model) => {
                   const price = Math.max(0, Number(model.purchasePriceTokens) || 0);
                   const rent = Math.max(0, Number(model.rentPerJobTokens) || 0);
@@ -363,7 +364,7 @@ export default function TruckMarketplace() {
                   const canBuy = isLeader && !!divisionId;
                   const canAfford = price <= divisionBalance;
                   return (
-                    <Grid item xs={12} sm={6} md={4} key={`${brand.id}-${model.id}`}>
+                    <BentoItem key={`${brand.id}-${model.id}`}>
                       <Card sx={sxCard}>
                         <CardContent sx={{ flex: 1 }}>
                           <Stack direction="row" spacing={1.5} alignItems="flex-start" sx={{ mb: 1.5 }}>
@@ -413,31 +414,42 @@ export default function TruckMarketplace() {
                           </Button>
                         </CardActions>
                       </Card>
-                    </Grid>
+                    </BentoItem>
                   );
                 })}
-              </Grid>
+              </BentoGrid>
             </Box>
           ))}
         </>
       )}
 
-      <Dialog open={Boolean(confirmModel)} onClose={closeConfirm} maxWidth="xs" fullWidth>
-        <DialogTitle>Confirm division purchase</DialogTitle>
-        <DialogContent>
-          {confirmModel && (
+      <PurchaseSidebar
+        open={Boolean(confirmModel)}
+        onClose={closeConfirm}
+        title="Confirm division purchase"
+        subtitle={
+          confirmModel
+            ? `Buying ${confirmModel.model.name} (${confirmModel.brandName}) for ${myDivisionInfo?.division?.name || 'your division'}.`
+            : ''
+        }
+        width={460}
+        footer={(
+          <Stack direction="row" spacing={1}>
+            <Button onClick={closeConfirm} disabled={purchaseLoading} variant="outlined" fullWidth>Cancel</Button>
+            <Button variant="contained" onClick={handlePurchase} disabled={purchaseLoading || !canAffordConfirm || !isLeader} fullWidth>
+              {purchaseLoading ? 'Processing…' : 'Buy'}
+            </Button>
+          </Stack>
+        )}
+      >
+        {confirmModel && (
+          <Box>
             <Stack spacing={1.5}>
-              <Typography variant="body2" color="text.secondary">
-                Buying <strong>{confirmModel.model.name}</strong> ({confirmModel.brandName}) for your division
-                <strong> {myDivisionInfo?.division?.name || ''}</strong>.
-              </Typography>
               <Stack direction="row" justifyContent="space-between">
                 <Typography variant="body2">Base price</Typography>
                 <Typography variant="body2">{basePrice.toLocaleString()} tokens</Typography>
               </Stack>
-
               <Divider />
-
               <TextField
                 size="small"
                 label="Coupon code (optional)"
@@ -455,67 +467,27 @@ export default function TruckMarketplace() {
                 }}
               />
               <Stack direction="row" spacing={1}>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  disabled={!couponCode.trim() || couponChecking}
-                  onClick={handleCouponCheck}
-                >
+                <Button size="small" variant="outlined" disabled={!couponCode.trim() || couponChecking} onClick={handleCouponCheck}>
                   {couponChecking ? 'Checking…' : 'Apply coupon'}
                 </Button>
-                {couponPreview?.valid ? (
-                  <Chip
-                    size="small"
-                    color="success"
-                    label={`-${Number(couponPreview.discount).toLocaleString()} tokens`}
-                  />
-                ) : null}
-                {couponPreview && !couponPreview.valid ? (
-                  <Chip
-                    size="small"
-                    color="warning"
-                    label={couponPreview.reason || 'INVALID'}
-                  />
-                ) : null}
+                {couponPreview?.valid ? <Chip size="small" color="success" label={`-${Number(couponPreview.discount).toLocaleString()} tokens`} /> : null}
+                {couponPreview && !couponPreview.valid ? <Chip size="small" color="warning" label={couponPreview.reason || 'INVALID'} /> : null}
               </Stack>
-
               <Divider />
-
               <Stack direction="row" justifyContent="space-between">
-                <Typography variant="body2" fontWeight={600}>
-                  Division pays
-                </Typography>
-                <Typography variant="body2" fontWeight={600}>
-                  {payable.toLocaleString()} tokens
-                </Typography>
+                <Typography variant="body2" fontWeight={700}>Division pays</Typography>
+                <Typography variant="body2" fontWeight={700}>{payable.toLocaleString()} tokens</Typography>
               </Stack>
               <Typography variant="caption" sx={{ color: T.textMuted }}>
                 Division wallet balance: {divisionBalance.toLocaleString()} tokens
               </Typography>
-              {!canAffordConfirm && (
-                <Alert severity="warning">Insufficient division wallet balance for this purchase.</Alert>
-              )}
+              {!canAffordConfirm ? <Alert severity="warning">Insufficient division wallet balance for this purchase.</Alert> : null}
+              {purchaseError ? <Alert severity="error">{purchaseError}</Alert> : null}
             </Stack>
-          )}
-          {purchaseError && (
-            <Alert severity="error" sx={{ mt: 2 }}>
-              {purchaseError}
-            </Alert>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={closeConfirm} disabled={purchaseLoading}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handlePurchase}
-            disabled={purchaseLoading || !canAffordConfirm || !isLeader}
-          >
-            {purchaseLoading ? 'Processing…' : 'Buy'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+          </Box>
+        )}
+      </PurchaseSidebar>
     </Box>
+    </MagicPageShell>
   );
 }

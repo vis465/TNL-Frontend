@@ -1,4 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import '@fontsource/montserrat/700.css';
+import '@fontsource/montserrat/600.css';
+import '@fontsource/montserrat/500.css';
+import '@fontsource/montserrat/400.css';
 import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, AreaChart, Area
@@ -30,6 +34,9 @@ import WalletTransactions from '../components/WalletTransactions';
 import ActiveContracts from '../components/ActiveContracts';
 import CompletedContracts from '../components/CompletedContracts';
 import LicenseCard from '../components/LicenseCard';
+import MagicPageShell from '../components/magicui/MagicPageShell';
+import { BentoGrid, BentoItem } from '../components/magicui/BentoGrid';
+import { motion } from 'framer-motion';
 
 const font = "'Montserrat', sans-serif";
 
@@ -238,6 +245,7 @@ export default function UserDashboard() {
   const [externalUpcoming, setExternalUpcoming] = useState([]);
   const [pendingDivisionInvites, setPendingDivisionInvites] = useState(0);
   const [divisionSummary, setDivisionSummary] = useState(null);
+  const [currentDivision, setCurrentDivision] = useState(null);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -292,6 +300,17 @@ export default function UserDashboard() {
         setDivisionSummary(data?.division ? data : null);
       } catch {
         setDivisionSummary(null);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await axiosInstance.get('/me/division');
+        setCurrentDivision(data?.division || null);
+      } catch {
+        setCurrentDivision(null);
       }
     })();
   }, []);
@@ -439,19 +458,13 @@ export default function UserDashboard() {
 
   const displayName = rider?.name || user?.username || 'Driver';
   const firstName = displayName.split(' ')[0];
+  const activeDivision = divisionSummary?.division || currentDivision;
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', bgcolor: T.bg, fontFamily: font }}>
-      <style>{`
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: ${T.border}; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: ${T.borderHover}; }
-      `}</style>
-
-      <Box sx={{ flex: 1, minWidth: 0 }}>
+    <MagicPageShell>
+      <Box sx={{ minHeight: '100vh', bgcolor: 'transparent', fontFamily: font }}>
         {pendingDivisionInvites > 0 && (
-          <Box sx={{ px: { xs: 2, md: 3 }, pt: 2 }}>
+          <Container maxWidth="xl" sx={{ pt: 2 }}>
             <Alert
               severity="info"
               action={(
@@ -462,120 +475,104 @@ export default function UserDashboard() {
             >
               You have {pendingDivisionInvites} division invitation(s).
             </Alert>
-          </Box>
-        )}
-        {/* Mobile top bar */}
-        {isMobile && (
-          <AppBar position="sticky" elevation={0} sx={{
-            bgcolor: alpha(T.bg, 0.85), backdropFilter: 'blur(16px)',
-            borderBottom: `1px solid ${T.border}`,
-          }}>
-            <Toolbar sx={{ minHeight: '54px !important' }}>
-              <IconButton edge="start" onClick={() => setMobileDrawerOpen(!mobileDrawerOpen)}
-                sx={{ color: T.text, mr: 1.5 }}>
-                <MenuIcon sx={{ fontSize: 20 }} />
-              </IconButton>
-              <Typography sx={{ fontFamily: font, fontWeight: 600, fontSize: '1rem', color: T.text, flex: 1 }}>
-                Dashboard
-              </Typography>
-              <Typography sx={{ fontFamily: font, fontSize: '0.85rem', color: T.textMuted }}>
-                {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-              </Typography>
-            </Toolbar>
-          </AppBar>
+          </Container>
         )}
 
-        {/* Identity / greeting bar */}
-        <Box sx={{
-          position: 'sticky', top: 0, zIndex: 10,
-          bgcolor: alpha(T.bg, 0.8), backdropFilter: 'blur(16px)',
-          borderBottom: `1px solid ${T.border}`,
-          px: { xs: 2, md: 4 }, py: 2,
-        }}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between">
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Avatar
-                src={rider?.avatar}
-                sx={{
-                  width: 42, height: 42,
-                  border: `2px solid ${T.border}`,
-                  bgcolor: T.surfaceElevated,
-                  fontFamily: font, fontSize: '1.05rem', fontWeight: 700,
-                }}
-              >
-                {firstName.charAt(0)}
-              </Avatar>
-              <Box>
-                <Typography sx={{
-                  fontFamily: font, fontWeight: 700, fontSize: '1.15rem',
-                  color: T.text, lineHeight: 1.3, letterSpacing: '-0.01em',
-                }}>
-                  {greeting}, {firstName}
-                </Typography>
-                <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.5 }}>
-                  <TagChip label={user?.role || 'Member'} color={T.accent} filled />
-                  {rider?.employeeID && <TagChip label={rider.employeeID} color={T.textSecondary} />}
-                  <Stack direction="row" spacing={0.25} alignItems="center">
-                    <Typography sx={{ fontSize: '0.85rem', color: T.warning }}>
-                      {'★'.repeat(Math.min(5, Math.floor(rider?.rating || 4.8)))}
-                    </Typography>
-                    <Typography sx={{ fontFamily: font, fontSize: '0.8rem', color: T.textMuted, ml: 0.25 }}>
-                      {rider?.rating || 4.8}
+        <Container maxWidth="xl" sx={{ pt: { xs: 2, md: 3 }, pb: 4 }}>
+          <Box
+            component={motion.div}
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+            sx={{
+              p: { xs: 2.25, md: 3 },
+              borderRadius: 3,
+              border: `1px solid ${alpha(T.accent, 0.24)}`,
+              background: `linear-gradient(150deg, ${alpha(T.accent, 0.14)} 0%, ${alpha(T.info, 0.08)} 40%, ${alpha('#000', 0.08)} 100%)`,
+              mb: 3,
+            }}
+          >
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2.5} alignItems={{ md: 'center' }} justifyContent="space-between">
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Avatar src={rider?.avatar} sx={{ width: 54, height: 54, border: `2px solid ${alpha(T.accent, 0.55)}` }}>
+                  {firstName.charAt(0)}
+                </Avatar>
+                <Box>
+                  <Typography sx={{ fontFamily: font, fontWeight: 900, fontSize: { xs: '1.15rem', md: '1.45rem' } }}>
+                    {greeting}, {firstName}
+                  </Typography>
+                  <Stack direction="row" spacing={1} alignItems="center" useFlexGap flexWrap="wrap" sx={{ mt: 0.5 }}>
+                    <TagChip label={user?.role || 'Member'} color={T.accent} filled />
+                    {rider?.employeeID && <TagChip label={rider.employeeID} color={T.textSecondary} />}
+                    <Typography sx={{ fontFamily: font, fontSize: '0.8rem', color: T.textMuted }}>
+                      Rating {rider?.rating || 4.8}
                     </Typography>
                   </Stack>
-                </Stack>
-              </Box>
+                </Box>
+              </Stack>
+              <Stack direction={{ xs: 'row', md: 'row' }} spacing={1}>
+                <Button component={RouterLink} to="/contracts/me" variant="outlined" size="small">Contracts</Button>
+                <Button component={RouterLink} to="/wallet" variant="outlined" size="small">Wallet</Button>
+                <Button component={RouterLink} to="/leaderboard" variant="contained" size="small">Leaderboard</Button>
+              </Stack>
             </Stack>
-            {!isMobile && (
-              <Typography sx={{ fontFamily: font, fontSize: '0.85rem', fontWeight: 500, color: T.textMuted }}>
-                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-              </Typography>
-            )}
-          </Stack>
-        </Box>
+          </Box>
 
-        <Container maxWidth="xl" disableGutters sx={{ px: { xs: 2, md: 4 }, py: 3 }}>
-          <Fade in timeout={500}>
+          <Fade in timeout={380}>
             <Box>
+              <BentoGrid minItemWidth={220} gap={2} sx={{ mb: 3 }}>
+                {[
+                  { icon: <AccountBalanceWallet sx={{ fontSize: 17 }} />, label: 'Token Balance', value: Number(wallet?.balance || 0).toLocaleString(), accent: true, tint: null },
+                  { icon: <LocalShippingOutlinedIcon sx={{ fontSize: 17 }} />, label: 'Total Jobs', value: thTotals.totalJobs.toLocaleString(), tint: T.infoDim },
+                  { icon: <AttachMoneyOutlinedIcon sx={{ fontSize: 17 }} />, label: 'Total Income', value: thTotals.totalRevenue.toLocaleString(), tint: T.successDim },
+                  { icon: <PlaceOutlinedIcon sx={{ fontSize: 17 }} />, label: 'Distance (km)', value: thTotals.totalDistance.toLocaleString(), tint: T.warningDim },
+                ].map((kpi, idx) => (
+                  <BentoItem key={kpi.label} sx={{ gridColumn: { xs: 'span 1', md: 'span 1' } }}>
+                    <Box component={motion.div} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.06, duration: 0.25 }}>
+                      <StatCard {...kpi} />
+                    </Box>
+                  </BentoItem>
+                ))}
+              </BentoGrid>
 
-              {/* ── Stat cards ──────────────────────────────────── */}
-              <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={6} sm={3}>
-                  <StatCard
-                    icon={<AccountBalanceWallet sx={{ fontSize: 17 }} />}
-                    label="Token Balance"
-                    value={Number(wallet?.balance || 0).toLocaleString()}
-                    accent
-                  />
-                </Grid>
-                <Grid item xs={6} sm={3}>
-                  <StatCard
-                    icon={<LocalShippingOutlinedIcon sx={{ fontSize: 17 }} />}
-                    label="Total Jobs"
-                    value={thTotals.totalJobs.toLocaleString()}
-                    tint={T.infoDim}
-                  />
-                </Grid>
-                <Grid item xs={6} sm={3}>
-                  <StatCard
-                    icon={<AttachMoneyOutlinedIcon sx={{ fontSize: 17 }} />}
-                    label="Total Income"
-                    value={thTotals.totalRevenue.toLocaleString()}
-                    tint={T.successDim}
-                  />
-                </Grid>
-                <Grid item xs={6} sm={3}>
-                  <StatCard
-                    icon={<PlaceOutlinedIcon sx={{ fontSize: 17 }} />}
-                    label="Distance (km)"
-                    value={thTotals.totalDistance.toLocaleString()}
-                    tint={T.warningDim}
-                  />
-                </Grid>
-              </Grid>
+              {activeDivision && (
+                <Card sx={{ ...sxCard, mb: 3 }}>
+                  <CardContent sx={{ p: '16px !important' }}>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }}>
+                      <Stack direction="row" spacing={1.25} alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
+                        <Avatar src={activeDivision.logoUrl || undefined} sx={{ width: 38, height: 38 }}>
+                          {activeDivision.name?.[0] || 'D'}
+                        </Avatar>
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography variant="caption" sx={{ ...sxLabel, display: 'block' }}>Current Division</Typography>
+                          <Typography sx={{ fontFamily: font, fontWeight: 700, color: T.text }} noWrap>
+                            {activeDivision.name}
+                          </Typography>
+                        </Box>
+                      </Stack>
+                      <Stack direction="row" spacing={1}>
+                        {activeDivision.slug && (
+                          <Button size="small" variant="outlined" component={RouterLink} to={`/divisions/${activeDivision.slug}`}>
+                            Public page
+                          </Button>
+                        )}
+                        <Button size="small" variant="contained" component={RouterLink} to="/division">
+                          Open division
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  </CardContent>
+                </Card>
+              )}
 
               {divisionSummary?.division && (
-                <Card sx={{ ...sxCard, mb: 3 }}>
+                <Card
+                  component={motion.div}
+                  initial={{ opacity: 0, y: 12 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.25 }}
+                  sx={{ ...sxCard, mb: 3 }}
+                >
                   <Box
                     sx={{
                       position: 'relative',
@@ -709,10 +706,9 @@ export default function UserDashboard() {
                 </Card>
               )}
 
-              {/* ── Charts ──────────────────────────────────────── */}
-              {/* <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} md={7}>
-                  <Card sx={sxCard}>
+              <BentoGrid minItemWidth={360} gap={2} sx={{ mb: 3 }}>
+                <BentoItem span={2}>
+                  <Card component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} sx={sxCard}>
                     <CardContent sx={{ p: '20px !important' }}>
                       <SectionTitle>Revenue & Distance — 6 Months</SectionTitle>
                       <Box sx={{ height: 220 }}>
@@ -749,9 +745,9 @@ export default function UserDashboard() {
                       </Stack>
                     </CardContent>
                   </Card>
-                </Grid>
-                <Grid item xs={12} md={5}>
-                  <Card sx={sxCard}>
+                </BentoItem>
+                <BentoItem span={1}>
+                  <Card component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} sx={sxCard}>
                     <CardContent sx={{ p: '20px !important' }}>
                       <SectionTitle>Jobs by Weekday</SectionTitle>
                       <Box sx={{ height: 220 }}>
@@ -767,13 +763,13 @@ export default function UserDashboard() {
                       </Box>
                     </CardContent>
                   </Card>
-                </Grid>
-              </Grid> */}
+                </BentoItem>
+              </BentoGrid>
 
               {/* ── Quick actions + Job validator ───────────────── */}
-              <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} md={6}>
-                  <Card sx={sxCard}>
+              <BentoGrid minItemWidth={320} gap={2} sx={{ mb: 3 }}>
+                <BentoItem span={1}>
+                  <Card component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} sx={sxCard}>
                     <CardContent sx={{ p: '20px !important' }}>
                       <SectionTitle>Quick Actions</SectionTitle>
                       <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
@@ -805,9 +801,9 @@ export default function UserDashboard() {
                       </Stack>
                     </CardContent>
                   </Card>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <Card sx={sxCard}>
+                </BentoItem>
+                <BentoItem span={1}>
+                  <Card component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} sx={sxCard}>
                     <CardContent sx={{ p: '20px !important' }}>
                       <SectionTitle>Manual Job Validation</SectionTitle>
                       {jobmessage && (
@@ -859,14 +855,14 @@ export default function UserDashboard() {
                       </Typography>
                     </CardContent>
                   </Card>
-                </Grid>
-              </Grid>
+                </BentoItem>
+              </BentoGrid>
 
               {/* ── Upcoming events (calendar) ──────────────────── */}
               {externalUpcoming.length > 0 && (
                 <Grid container spacing={2} sx={{ mb: 3 }}>
                   <Grid item xs={12}>
-                    <Card sx={sxCard}>
+                    <Card component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} sx={sxCard}>
                       <CardContent sx={{ p: '20px !important' }}>
                         <SectionTitle
                           action={
@@ -919,28 +915,34 @@ export default function UserDashboard() {
               )}
 
               {/* ── Wallet + Contracts ──────────────────────────── */}
-              <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} md={7}>
-                  <WalletTransactions
-                    wallet={wallet}
-                    onRefresh={() => getMyWallet().then((w) => setWallet({
-                      balance: Number(w.balance || 0),
-                      transactions: Array.isArray(w.transactions) ? w.transactions : [],
-                    }))}
-                  />
-                </Grid>
-                <Grid item xs={12} md={5}>
+              <BentoGrid minItemWidth={360} gap={2} sx={{ mb: 3 }}>
+                <BentoItem span={2}>
+                  <Box component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }}>
+                    <WalletTransactions
+                      wallet={wallet}
+                      onRefresh={() => getMyWallet().then((w) => setWallet({
+                        balance: Number(w.balance || 0),
+                        transactions: Array.isArray(w.transactions) ? w.transactions : [],
+                      }))}
+                    />
+                  </Box>
+                </BentoItem>
+                <BentoItem span={1}>
                   <Stack spacing={2}>
-                    <ActiveContracts onRefresh={() => myContracts().then((res) => setContracts(res))} />
-                    <CompletedContracts onRefresh={() => myContracts().then((res) => setContracts(res))} />
+                    <Box component={motion.div} initial={{ opacity: 0, x: 14 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+                      <ActiveContracts onRefresh={() => myContracts().then((res) => setContracts(res))} />
+                    </Box>
+                    <Box component={motion.div} initial={{ opacity: 0, x: 14 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+                      <CompletedContracts onRefresh={() => myContracts().then((res) => setContracts(res))} />
+                    </Box>
                   </Stack>
-                </Grid>
-              </Grid>
+                </BentoItem>
+              </BentoGrid>
 
               {/* ── Profile & TruckersHub ───────────────────────── */}
               <Grid container spacing={2} sx={{ mb: 3 }}>
                 <Grid item xs={12} lg={7}>
-                  <Card sx={sxCard}>
+                  <Card component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} sx={sxCard}>
                     <CardContent sx={{ p: '20px !important' }}>
                       <SectionTitle>
                         Profile & Game Details
@@ -1005,7 +1007,7 @@ export default function UserDashboard() {
                 </Grid>
 
                 <Grid item xs={12} lg={5}>
-                  <Card sx={sxCard}>
+                  <Card component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} sx={sxCard}>
                     <CardContent sx={{ p: '20px !important' }}>
                       <SectionTitle>TruckersHub Snapshot</SectionTitle>
                       {truckershubStats && thSnapshot ? (
@@ -1044,7 +1046,7 @@ export default function UserDashboard() {
               {/* ── Events & Attendance + Achievements ──────────── */}
               <Grid container spacing={2} sx={{ mb: 3 }}>
                 <Grid item xs={12} lg={7}>
-                  <Card sx={sxCard}>
+                  <Card component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} sx={sxCard}>
                     <CardContent sx={{ p: '20px !important' }}>
                       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
                         <Typography sx={{
@@ -1171,7 +1173,7 @@ export default function UserDashboard() {
                 </Grid>
 
                 <Grid item xs={12} lg={5}>
-                  <Card sx={sxCard}>
+                  <Card component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} sx={sxCard}>
                     <CardContent sx={{ p: '20px !important' }}>
                       <SectionTitle>Achievements</SectionTitle>
                       {achievements.length === 0 ? (
@@ -1216,7 +1218,9 @@ export default function UserDashboard() {
               {/* ── License Card ────────────────────────────────── */}
               <Grid container spacing={2} sx={{ mb: 3 }}>
                 <Grid item xs={12}>
-                  <LicenseCard userData={user} riderData={rider} />
+                  <Box component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+                    <LicenseCard userData={user} riderData={rider} />
+                  </Box>
                 </Grid>
               </Grid>
 
@@ -1310,6 +1314,6 @@ export default function UserDashboard() {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </MagicPageShell>
   );
 }

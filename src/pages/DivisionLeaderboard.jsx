@@ -4,12 +4,10 @@ import {
   Avatar,
   Box,
   Card,
-  CardActionArea,
   CardContent,
-  Chip,
   Container,
-  Grid,
   LinearProgress,
+  Paper,
   Stack,
   Table,
   TableBody,
@@ -23,7 +21,15 @@ import {
 } from '@mui/material';
 import EmojiEvents from '@mui/icons-material/EmojiEvents';
 import { Link as RouterLink } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import axiosInstance from '../utils/axios';
+import DashboardHero from '../components/magicui/DashboardHero';
+import MagicPageShell from '../components/magicui/MagicPageShell';
+import { BentoGrid, BentoItem } from '../components/magicui/BentoGrid';
+import AnimatedTabPanel from '../components/magicui/AnimatedTabPanel';
+import DivisionBrowseCard from '../components/magicui/DivisionBrowseCard';
+import RevealSection from '../components/magicui/RevealSection';
+import NumberTicker from '../components/magicui/NumberTicker';
 
 export default function DivisionLeaderboard() {
   const [rows, setRows] = useState([]);
@@ -69,16 +75,25 @@ export default function DivisionLeaderboard() {
   const top = rows.slice(0, 3);
 
   return (
+    <MagicPageShell>
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Stack spacing={1} sx={{ mb: 3 }}>
-        <Stack direction="row" alignItems="center" spacing={1.5}>
-          <EmojiEvents sx={{ fontSize: 36, color: 'warning.main' }} />
-          <Typography variant="h4" fontWeight={800}>Division leaderboard</Typography>
-        </Stack>
-        <Typography variant="body1" color="text.secondary">
-          Inter-division ranking by total revenue generated from normalized job data.
-        </Typography>
+      <DashboardHero
+        title="Division Leaderboard"
+        subtitle="Live inter-division rankings by revenue, scale, and execution. Explore top contenders or drill into the complete ecosystem."
+        stats={[
+          { label: 'Tracked Divisions', value: divisions.length },
+          { label: 'Ranked Divisions', value: rows.length },
+          { label: 'Top Revenue', value: Number(rows[0]?.totalRevenue || 0) },
+          { label: 'Top Wallet', value: Number(rows[0]?.totalTaxTokens || 0) },
+        ]}
+      />
+      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1 }}>
+        <EmojiEvents sx={{ fontSize: 30, color: 'warning.main' }} />
+        <Typography variant="h5" fontWeight={800}>Global standings</Typography>
       </Stack>
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+        Inter-division ranking by total revenue generated from normalized job data.
+      </Typography>
 
       {loading && <LinearProgress sx={{ mb: 2 }} />}
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -88,63 +103,45 @@ export default function DivisionLeaderboard() {
         <Tab label="All divisions" />
       </Tabs>
 
+      <AnimatedTabPanel panelKey={`division-lb-${tab}`}>
       {tab === 0 && (
         <>
           {!!top.length && (
-            <Grid container spacing={2} sx={{ mb: 3 }}>
+            <BentoGrid minItemWidth={280} gap={2} sx={{ mb: 4, position: 'relative', zIndex: 2, overflow: 'visible' }}>
               {top.map((r, idx) => {
-                const medal = ['#FFD700', '#C0C0C0', '#CD7F32'][idx];
                 const d = divBySlug.get(String(r.divisionId));
                 return (
-                  <Grid item xs={12} md={4} key={r.divisionId}>
-                    <Card
-                      variant="outlined"
-                      sx={{
-                        borderColor: medal,
-                        borderWidth: 2,
-                        overflow: 'hidden',
-                        height: '100%',
+                  <BentoItem key={r.divisionId}>
+                    <DivisionBrowseCard
+                      division={{
+                        _id: d?._id || r.divisionId,
+                        slug: d?.slug || '',
+                        name: r.name,
+                        logoUrl: d?.logoUrl,
+                        bannerUrl: d?.bannerUrl,
+                        description: d?.description || `Rank #${idx + 1} division`,
+                        memberCount: r.memberCount,
+                        taxPercent: d?.taxPercent ?? 0,
                       }}
-                    >
-                      <CardActionArea component={RouterLink} to={d?.slug ? `/divisions/${d.slug}` : '#'}>
-                        <Box sx={{ width: '100%', aspectRatio: '1920 / 500', bgcolor: 'common.black', overflow: 'hidden' }}>
-                          {d?.bannerUrl ? (
-                            <Box
-                              component="img"
-                              src={d.bannerUrl}
-                              alt="banner"
-                              sx={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }}
-                            />
-                          ) : (
-                            <Box sx={{ width: '100%', height: '100%', background: (t) => `linear-gradient(135deg, ${t.palette.primary.dark}, ${t.palette.secondary.dark})` }} />
-                          )}
-                        </Box>
-                        <CardContent>
-                          <Stack direction="row" spacing={2} alignItems="center">
-                            <Avatar src={d?.logoUrl || undefined} sx={{ width: 56, height: 56, mt: -5, border: '3px solid', borderColor: medal }}>
-                              {r.name?.[0]}
-                            </Avatar>
-                            <Box sx={{ flex: 1, minWidth: 0 }}>
-                              <Typography variant="overline" sx={{ color: medal }}>Rank #{idx + 1}</Typography>
-                              <Typography variant="h6" fontWeight={800} noWrap>{r.name}</Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                {r.memberCount} members · {r.totalJobs} jobs
-                              </Typography>
-                            </Box>
-                          </Stack>
-                          <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
-                            <Chip size="small" label={`Wallet ${Math.round(r.totalTaxTokens || 0).toLocaleString()}`} />
-                          </Stack>
-                        </CardContent>
-                      </CardActionArea>
-                    </Card>
-                  </Grid>
+                      stats={r}
+                      compact
+                    />
+                    <Paper sx={{ mt: 1, p: 1.25, borderRadius: 2 }}>
+                      <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        <Typography variant="caption" color="text.secondary">Rank #{idx + 1}</Typography>
+                        <Typography variant="body2" fontWeight={800}>
+                          <NumberTicker value={Math.round(r.totalRevenue || 0)} /> rev
+                        </Typography>
+                      </Stack>
+                    </Paper>
+                  </BentoItem>
                 );
               })}
-            </Grid>
+            </BentoGrid>
           )}
 
-          <Card>
+          <RevealSection>
+          <Card component={motion.div} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }} sx={{ position: 'relative', zIndex: 1 }}>
             <CardContent>
               <Table size="small">
                 <TableHead>
@@ -210,7 +207,7 @@ export default function DivisionLeaderboard() {
                   {rows.map((r, idx) => {
                     const d = divBySlug.get(String(r.divisionId));
                     return (
-                      <TableRow key={r.divisionId} hover>
+                      <TableRow key={r.divisionId} hover component={motion.tr} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, delay: idx * 0.012 }}>
                         <TableCell>{idx + 1}</TableCell>
                         <TableCell>
                           <Stack direction="row" spacing={1.5} alignItems="center">
@@ -250,52 +247,26 @@ export default function DivisionLeaderboard() {
               </Table>
             </CardContent>
           </Card>
+          </RevealSection>
         </>
       )}
 
       {tab === 1 && (
-        <Grid container spacing={2}>
+        <BentoGrid minItemWidth={260} gap={2}>
           {divisions.map((d) => (
-            <Grid item xs={12} sm={6} md={4} key={d._id}>
-              <Card variant="outlined" sx={{ height: '100%' }}>
-                <CardActionArea component={RouterLink} to={`/divisions/${d.slug}`}>
-                  <Box sx={{ width: '100%', aspectRatio: '1920 / 500', bgcolor: 'common.black', overflow: 'hidden' }}>
-                    {d.bannerUrl ? (
-                      <Box
-                        component="img"
-                        src={d.bannerUrl}
-                        alt="banner"
-                        sx={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }}
-                      />
-                    ) : (
-                      <Box sx={{ width: '100%', height: '100%', background: (t) => `linear-gradient(135deg, ${t.palette.primary.dark}, ${t.palette.secondary.dark})` }} />
-                    )}
-                  </Box>
-                  <CardContent>
-                    <Stack direction="row" spacing={2} alignItems="center">
-                      <Avatar src={d.logoUrl || undefined} sx={{ width: 40, height: 40, mt: -4, border: '2px solid', borderColor: 'background.paper' }}>
-                        {d.name?.[0]}
-                      </Avatar>
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography variant="subtitle1" fontWeight={700} noWrap>{d.name}</Typography>
-                        <Typography variant="caption" color="text.secondary">{d.memberCount ?? 0} members</Typography>
-                      </Box>
-                    </Stack>
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                      {d.description || 'No description yet.'}
-                    </Typography>
-                  </CardContent>
-                </CardActionArea>
-              </Card>
-            </Grid>
+            <BentoItem key={d._id}>
+              <DivisionBrowseCard division={d} stats={null} compact />
+            </BentoItem>
           ))}
           {!divisions.length && !loading && (
-            <Grid item xs={12}>
+            <BentoItem span={2}>
               <Card variant="outlined"><CardContent><Typography color="text.secondary">No divisions yet.</Typography></CardContent></Card>
-            </Grid>
+            </BentoItem>
           )}
-        </Grid>
+        </BentoGrid>
       )}
+      </AnimatedTabPanel>
     </Container>
+    </MagicPageShell>
   );
 }
