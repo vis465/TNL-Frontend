@@ -1109,6 +1109,15 @@ export default function MyDivision() {
                         Jobs
                       </TableSortLabel>
                     </TableCell>
+                    <TableCell align="right" sortDirection={lbSortKey === 'distance' ? lbSortDir : false}>
+                      <TableSortLabel
+                        active={lbSortKey === 'distance'}
+                        direction={lbSortKey === 'distance' ? lbSortDir : 'desc'}
+                        onClick={() => toggleLbSort('distance')}
+                      >
+                        Distance (km)
+                      </TableSortLabel>
+                    </TableCell>
                     <TableCell align="right" sortDirection={lbSortKey === 'revenue' ? lbSortDir : false}>
                       <TableSortLabel
                         active={lbSortKey === 'revenue'}
@@ -1159,6 +1168,7 @@ export default function MyDivision() {
                           : '—'}
                       </TableCell>
                       <TableCell align="right">{r.jobs}</TableCell>
+                      <TableCell align="right">{Math.round(r.distance || 0).toLocaleString()}</TableCell>
                       <TableCell align="right">{Math.round(r.revenue || 0).toLocaleString()}</TableCell>
                       <TableCell align="right">{Math.round(r.fuelBurned || 0).toLocaleString()}</TableCell>
                       <TableCell align="right">{r.attendance ?? 0}</TableCell>
@@ -1167,7 +1177,7 @@ export default function MyDivision() {
                   ))}
                   {!lb.length && (
                     <TableRow>
-                      <TableCell colSpan={7} align="center">
+                      <TableCell colSpan={8} align="center">
                         <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>No jobs yet.</Typography>
                       </TableCell>
                     </TableRow>
