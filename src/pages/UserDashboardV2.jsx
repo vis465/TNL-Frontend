@@ -897,43 +897,56 @@ export default function UserDashboard() {
                           Today&apos;s Events
                         </SectionTitle>
                         <Stack spacing={0}>
-                          {todayEvents.map((ev, idx) => (
-                            <Stack
-                              key={ev.id || `${ev.title}-${idx}`} direction="row" alignItems="center" justifyContent="space-between"
-                              sx={{
-                                py: 1.25,
-                                borderBottom: idx < todayEvents.length - 1 ? `1px solid ${T.border}` : 'none',
-                              }}
-                            >
-                              <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 0 }}>
-                                {ev.slotImageUrl ? (
-                                  <Avatar
-                                    src={ev.slotImageUrl}
-                                    variant="rounded"
-                                    sx={{ width: 40, height: 28, borderRadius: 1, border: `1px solid ${T.border}` }}
-                                  />
-                                ) : (
-                                  <Box sx={{
-                                    width: 6, height: 6, borderRadius: '50%',
-                                    bgcolor: T.accent, flexShrink: 0,
-                                  }} />
-                                )}
-                                <Box sx={{ minWidth: 0 }}>
-                                  <Typography sx={{ fontFamily: font, fontSize: '0.95rem', color: T.text, fontWeight: 500 }} noWrap>
-                                    {ev.title}
-                                  </Typography>
-                                  <Typography sx={{ fontFamily: font, fontSize: '0.78rem', color: T.textMuted }}>
-                                    {ev.slotNumber != null ? `Slot ${ev.slotNumber}` : 'Slot TBD'}
-                                    {ev.slotName ? ` · ${ev.slotName}` : ''}
-                                  </Typography>
-                                </Box>
+                          {todayEvents.map((ev, idx) => {
+                            const meetupDate = ev.meetupTime ? new Date(ev.meetupTime) : null;
+                            const departureDate = ev.departureTime ? new Date(ev.departureTime) : null;
+                            const meetupLabel =
+                              meetupDate && !Number.isNaN(meetupDate.getTime())
+                                ? meetupDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                : 'TBD';
+                            const departureLabel =
+                              departureDate && !Number.isNaN(departureDate.getTime())
+                                ? departureDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                : '';
+                            return (
+                              <Stack
+                                key={ev.id || `${ev.title}-${idx}`} direction="row" alignItems="center" justifyContent="space-between"
+                                sx={{
+                                  py: 1.25,
+                                  borderBottom: idx < todayEvents.length - 1 ? `1px solid ${T.border}` : 'none',
+                                }}
+                              >
+                                <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 0 }}>
+                                  {ev.slotImageUrl ? (
+                                    <Avatar
+                                      src={ev.slotImageUrl}
+                                      variant="rounded"
+                                      sx={{ width: 40, height: 28, borderRadius: 1, border: `1px solid ${T.border}` }}
+                                    />
+                                  ) : (
+                                    <Box sx={{
+                                      width: 6, height: 6, borderRadius: '50%',
+                                      bgcolor: T.accent, flexShrink: 0,
+                                    }} />
+                                  )}
+                                  <Box sx={{ minWidth: 0 }}>
+                                    <Typography sx={{ fontFamily: font, fontSize: '0.95rem', color: T.text, fontWeight: 500 }} noWrap>
+                                      {ev.title}
+                                    </Typography>
+                                    <Typography sx={{ fontFamily: font, fontSize: '0.78rem', color: T.textMuted }}>
+                                      {ev.slotNumber != null ? `Slot ${ev.slotNumber}` : 'Slot TBD'}
+                                      {ev.slotName ? ` · ${ev.slotName}` : ''}
+                                      {ev.source ? ` · ${ev.source}` : ''}
+                                    </Typography>
+                                  </Box>
+                                </Stack>
+                                <Typography sx={{ fontFamily: font, fontSize: '0.82rem', color: T.textMuted }}>
+                                  {meetupLabel}
+                                  {departureLabel ? ` - ${departureLabel}` : ''}
+                                </Typography>
                               </Stack>
-                              <Typography sx={{ fontFamily: font, fontSize: '0.82rem', color: T.textMuted }}>
-                                {new Date(ev.meetupTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                {ev.departureTime ? ` - ${new Date(ev.departureTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
-                              </Typography>
-                            </Stack>
-                          ))}
+                            );
+                          })}
                         </Stack>
                       </CardContent>
                     </Card>

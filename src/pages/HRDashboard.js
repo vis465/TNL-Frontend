@@ -30,6 +30,7 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Pagination,
   FormControl,
   InputLabel,
   Select,
@@ -88,6 +89,9 @@ const HRDashboard = () => {
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [attendanceSearchTerm, setAttendanceSearchTerm] = useState('');
+  const [attendanceEventDateFilter, setAttendanceEventDateFilter] = useState('');
+  const [attendanceEventPage, setAttendanceEventPage] = useState(1);
+  const [expandedAttendanceMonths, setExpandedAttendanceMonths] = useState({});
   
   // Edit event dialog state
   const [editEventOpen, setEditEventOpen] = useState(false);
@@ -391,6 +395,61 @@ const HRDashboard = () => {
     setTabValue(newValue);
   };
 
+  const ATTENDANCE_EVENTS_PER_PAGE = 10;
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const upcomingAttendanceEvents = attendanceEvents
+    .filter((event) => {
+      const eventDate = new Date(event.eventDate);
+      return eventDate >= todayStart;
+    })
+    .sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate));
+
+  const attendanceEventsBaseList =
+    upcomingAttendanceEvents.length > 0
+      ? upcomingAttendanceEvents
+      : [...attendanceEvents].sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate));
+
+  const attendanceEventsFilteredByDate = attendanceEventDateFilter
+    ? attendanceEventsBaseList.filter((event) => {
+        const eventDate = new Date(event.eventDate);
+        const eventDateOnly = eventDate.toISOString().slice(0, 10);
+        return eventDateOnly === attendanceEventDateFilter;
+      })
+    : attendanceEventsBaseList;
+
+  const totalAttendancePages = Math.max(
+    1,
+    Math.ceil(attendanceEventsFilteredByDate.length / ATTENDANCE_EVENTS_PER_PAGE)
+  );
+  const safeAttendancePage = Math.min(attendanceEventPage, totalAttendancePages);
+  const paginatedAttendanceEvents = attendanceEventsFilteredByDate.slice(
+    (safeAttendancePage - 1) * ATTENDANCE_EVENTS_PER_PAGE,
+    safeAttendancePage * ATTENDANCE_EVENTS_PER_PAGE
+  );
+
+  const groupedAttendanceEvents = paginatedAttendanceEvents.reduce((acc, event) => {
+    const eventDate = new Date(event.eventDate);
+    const monthKey = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}`;
+    if (!acc[monthKey]) {
+      acc[monthKey] = {
+        monthLabel: eventDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+        events: []
+      };
+    }
+    acc[monthKey].events.push(event);
+    return acc;
+  }, {});
+
+  const groupedAttendanceEntries = Object.entries(groupedAttendanceEvents).sort(
+    ([a], [b]) => a.localeCompare(b)
+  );
+
+  useEffect(() => {
+    setAttendanceEventPage(1);
+  }, [attendanceEventDateFilter, attendanceEvents.length]);
+
   const handleViewEventDetails = async (event) => {
     try {
       setLoading(true);
@@ -648,24 +707,10 @@ const HRDashboard = () => {
               <TextField
                 type="date"
                 size="small"
+                value={attendanceEventDateFilter}
                 InputLabelProps={{ shrink: true }}
                 sx={{ minWidth: 180 }}
-                onChange={(e) => {
-                  const selected = e.target.value ? new Date(e.target.value) : null;
-                  if (!selected) {
-                    fetchAttendanceEvents();
-                    return;
-                  }
-                  const start = new Date(selected);
-                  start.setHours(0,0,0,0);
-                  const end = new Date(selected);
-                  end.setHours(23,59,59,999);
-                  const filtered = attendanceEvents.filter(ev => {
-                    const d = new Date(ev.eventDate);
-                    return d >= start && d <= end;
-                  });
-                  setAttendanceEvents(filtered);
-                }}
+                onChange={(e) => setAttendanceEventDateFilter(e.target.value)}
                 placeholder="Filter by date"
                 InputProps={{ startAdornment: <CalendarTodayIcon sx={{ mr: 1, color: 'text.secondary' }} /> }}
               />
@@ -694,73 +739,126 @@ const HRDashboard = () => {
               </Typography>
             </Paper>
           ) : (
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Event Title</TableCell>
-                    <TableCell>Description</TableCell>
-                    <TableCell>Event Date</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Attendance Open</TableCell>
-                    <TableCell>Attendance Entries</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {attendanceEvents.map((event) => (
-                    <TableRow key={event._id}>
-                      <TableCell>{event.title}</TableCell>
-                      <TableCell>{event.description || 'No description'}</TableCell>
-                      <TableCell>{formatDate(event.eventDate)}</TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={event.status} 
-                          color={getStatusColor(event.status)}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={event.isAttendanceOpen ? 'Open' : 'Closed'} 
-                          color={event.isAttendanceOpen ? 'success' : 'default'}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={`${event.attendanceEntries?.length || 0} entries`}
-                          color="primary"
-                          size="small"
-                        />
-                      </TableCell>
-                      
-                      <TableCell>
+            <Box>
+              {groupedAttendanceEntries.map(([monthKey, monthData], monthIndex) => {
+                const monthEvents = monthData.events || [];
+                const approvedCount = monthEvents.reduce(
+                  (sum, event) =>
+                    sum +
+                    (event.attendanceEntries || []).filter((entry) => entry.status === 'approved').length,
+                  0
+                );
+                const pendingCount = monthEvents.reduce(
+                  (sum, event) =>
+                    sum +
+                    (event.attendanceEntries || []).filter((entry) => entry.status === 'pending').length,
+                  0
+                );
+                return (
+                  <Accordion
+                    key={monthKey}
+                    disableGutters
+                    expanded={expandedAttendanceMonths[monthKey] ?? monthIndex === 0}
+                    onChange={(_, isExpanded) =>
+                      setExpandedAttendanceMonths((prev) => ({ ...prev, [monthKey]: isExpanded }))
+                    }
+                    sx={{ mb: 1 }}
+                  >
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', pr: 1 }}>
+                        <Typography variant="subtitle1" fontWeight="bold">
+                          {monthData.monthLabel} ({monthEvents.length} events)
+                        </Typography>
                         <Box sx={{ display: 'flex', gap: 1 }}>
-                          <Tooltip title={event.isAttendanceOpen ? 'Close Attendance' : 'Open Attendance'}>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleToggleAttendance(event._id, !event.isAttendanceOpen)}
-                              sx={{ color: event.isAttendanceOpen ? 'success.main' : 'error.main' }}
-                            >
-                              {event.isAttendanceOpen ? <LockOpenIcon /> : <LockIcon />}
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="View Details">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleViewEventDetails(event)}
-                            >
-                              <EventIcon />
-                            </IconButton>
-                          </Tooltip>
+                          <Chip label={`${approvedCount} Approved`} color="success" size="small" />
+                          <Chip label={`${pendingCount} Pending`} color="warning" size="small" />
                         </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                      </Box>
+                    </AccordionSummary>
+                    <AccordionDetails sx={{ pt: 0 }}>
+                      <TableContainer component={Paper} variant="outlined">
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow>
+                              <TableCell>Event Title</TableCell>
+                              <TableCell>Description</TableCell>
+                              <TableCell>Event Date</TableCell>
+                              <TableCell>Status</TableCell>
+                              <TableCell>Attendance Open</TableCell>
+                              <TableCell>Attendance Entries</TableCell>
+                              <TableCell>Actions</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {monthEvents.map((event) => (
+                              <TableRow key={event._id}>
+                                <TableCell>{event.title}</TableCell>
+                                <TableCell>{event.description || 'No description'}</TableCell>
+                                <TableCell>{formatDate(event.eventDate)}</TableCell>
+                                <TableCell>
+                                  <Chip
+                                    label={event.status}
+                                    color={getStatusColor(event.status)}
+                                    size="small"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Chip
+                                    label={event.isAttendanceOpen ? 'Open' : 'Closed'}
+                                    color={event.isAttendanceOpen ? 'success' : 'default'}
+                                    size="small"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Chip
+                                    label={`${event.attendanceEntries?.length || 0} entries`}
+                                    color="primary"
+                                    size="small"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Box sx={{ display: 'flex', gap: 1 }}>
+                                    <Tooltip title={event.isAttendanceOpen ? 'Close Attendance' : 'Open Attendance'}>
+                                      <IconButton
+                                        size="small"
+                                        onClick={() => handleToggleAttendance(event._id, !event.isAttendanceOpen)}
+                                        sx={{ color: event.isAttendanceOpen ? 'success.main' : 'error.main' }}
+                                      >
+                                        {event.isAttendanceOpen ? <LockOpenIcon /> : <LockIcon />}
+                                      </IconButton>
+                                    </Tooltip>
+                                    <Tooltip title="View Details">
+                                      <IconButton
+                                        size="small"
+                                        onClick={() => handleViewEventDetails(event)}
+                                      >
+                                        <EventIcon />
+                                      </IconButton>
+                                    </Tooltip>
+                                  </Box>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    </AccordionDetails>
+                  </Accordion>
+                );
+              })}
+
+              {totalAttendancePages > 1 && (
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                  <Pagination
+                    page={safeAttendancePage}
+                    count={totalAttendancePages}
+                    onChange={(_, page) => setAttendanceEventPage(page)}
+                    color="primary"
+                    size="small"
+                  />
+                </Box>
+              )}
+            </Box>
           )}
         </Box>
       )}
