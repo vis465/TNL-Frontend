@@ -40,6 +40,8 @@ import { getItemWithExpiry } from '../localStorageWithExpiry';
 import MagicPageShell from '../components/magicui/MagicPageShell';
 import AnimatedTabPanel from '../components/magicui/AnimatedTabPanel';
 
+const DIVISION_FUEL_CAPACITY_L = 20_000;
+
 export default function AdminDivisionDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -332,6 +334,20 @@ export default function AdminDivisionDetail() {
   };
 
   const memberById = useMemo(() => new Map(members.map((m) => [String(m._id), m])), [members]);
+  const premiumFuel = Math.max(0, Number(division?.fuelTankPremiumLiters) || 0);
+  const standardFuel = Math.max(0, Number(division?.fuelTankNormalLiters ?? division?.fuelTankLiters) || 0);
+  const totalFuel = premiumFuel + standardFuel;
+  const fuelFillPct = Math.max(
+    0,
+    Math.min(100, Math.round((totalFuel / DIVISION_FUEL_CAPACITY_L) * 100))
+  );
+  const fuelStatus = totalFuel <= 0
+    ? { label: 'Empty', color: 'error' }
+    : fuelFillPct < 20
+      ? { label: 'Low', color: 'warning' }
+      : fuelFillPct < 80
+        ? { label: 'Healthy', color: 'success' }
+        : { label: 'Near full', color: 'info' };
 
   return (
     <MagicPageShell>
@@ -385,6 +401,9 @@ export default function AdminDivisionDetail() {
                   <Chip size="small" label={`Members: ${division.memberCount ?? 0}${division.maxMembers ? ` / ${division.maxMembers}` : ''}`} />
                   <Chip size="small" label={`Wallet: ${(division.walletBalance ?? 0).toLocaleString()}`} />
                   <Chip size="small" label={`Tax: ${division.taxPercent ?? 0}%`} />
+                  <Chip size="small" color={fuelStatus.color} label={`Fuel: ${fuelStatus.label} (${fuelFillPct}%)`} />
+                  <Chip size="small" variant="outlined" label={`Total fuel: ${Math.round(totalFuel).toLocaleString()} / ${DIVISION_FUEL_CAPACITY_L.toLocaleString()} L`} />
+                  <Chip size="small" variant="outlined" label={`Premium ${Math.round(premiumFuel).toLocaleString()} L · Standard ${Math.round(standardFuel).toLocaleString()} L`} />
                   <Chip size="small" label={`Leader: ${division.leader?.username || '—'}`} />
                 </Stack>
               </Box>
@@ -443,6 +462,13 @@ export default function AdminDivisionDetail() {
               <Box><Typography variant="caption" color="text.secondary">Members</Typography><Typography variant="h6">{division.memberCount ?? 0}</Typography></Box>
               <Box><Typography variant="caption" color="text.secondary">Wallet balance</Typography><Typography variant="h6">{(division.walletBalance ?? 0).toLocaleString()} tokens</Typography></Box>
               <Box><Typography variant="caption" color="text.secondary">Tax rate</Typography><Typography variant="h6">{division.taxPercent ?? 0}%</Typography></Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary">Fuel status</Typography>
+                <Typography variant="h6">{fuelStatus.label} ({fuelFillPct}%)</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {Math.round(totalFuel).toLocaleString()} / {DIVISION_FUEL_CAPACITY_L.toLocaleString()} L · Premium {Math.round(premiumFuel).toLocaleString()} L
+                </Typography>
+              </Box>
               <Box>
                 <Typography variant="caption" color="text.secondary">Unique events (members)</Typography>
                 <Typography variant="h6">{attendanceSummary?.uniqueEventsAttended ?? '—'}</Typography>
