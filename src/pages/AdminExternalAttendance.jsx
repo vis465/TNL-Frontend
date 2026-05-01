@@ -22,10 +22,15 @@ import {
   IconButton,
   Autocomplete,
   Chip,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Pagination,
 } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import axiosInstance from '../utils/axios';
 import { AVAILABLE_DLCS } from '../constants/dlcs';
 
@@ -104,6 +109,10 @@ export default function AdminExternalAttendance() {
   const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [editForm, setEditForm] = useState({});
+  const [entriesPage, setEntriesPage] = useState(1);
+  const [expandedMonths, setExpandedMonths] = useState({});
+
+  const ENTRIES_PER_PAGE = 10;
 
   const loadList = useCallback(async () => {
     try {
@@ -275,6 +284,40 @@ export default function AdminExternalAttendance() {
     }
   };
 
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const sortedRows = [...rows].sort((a, b) => {
+    const aTime = new Date(a.meetupAt || a.startUtc || a.createdAt || 0).getTime();
+    const bTime = new Date(b.meetupAt || b.startUtc || b.createdAt || 0).getTime();
+    return aTime - bTime;
+  });
+  const upcomingRows = sortedRows.filter((row) => {
+    const when = new Date(row.meetupAt || row.startUtc || row.createdAt || 0).getTime();
+    return Number.isFinite(when) && when >= todayStart.getTime();
+  });
+  const baseRows = upcomingRows.length > 0 ? upcomingRows : sortedRows;
+  const totalPages = Math.max(1, Math.ceil(baseRows.length / ENTRIES_PER_PAGE));
+  const safePage = Math.min(entriesPage, totalPages);
+  const pageRows = baseRows.slice((safePage - 1) * ENTRIES_PER_PAGE, safePage * ENTRIES_PER_PAGE);
+  const groupedRows = pageRows.reduce((acc, row) => {
+    const d = new Date(row.meetupAt || row.startUtc || row.createdAt || 0);
+    const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    if (!acc[monthKey]) {
+      acc[monthKey] = {
+        monthLabel: d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' }),
+        items: [],
+      };
+    }
+    acc[monthKey].items.push(row);
+    return acc;
+  }, {});
+  const groupedEntries = Object.entries(groupedRows).sort(([a], [b]) => a.localeCompare(b));
+
+  useEffect(() => {
+    setEntriesPage(1);
+  }, [rows.length]);
+
   return (
     <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
       <Typography variant="h5" fontWeight={700} gutterBottom>
@@ -423,62 +466,114 @@ export default function AdminExternalAttendance() {
       {loading ? (
         <CircularProgress />
       ) : (
-        <TableContainer component={Paper}>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Title</TableCell>
-                <TableCell>TMP ID</TableCell>
-                <TableCell>Slot</TableCell>
-                <TableCell>Linked attendance</TableCell>
-                <TableCell>Slot image</TableCell>
-                <TableCell>Meetup (local)</TableCell>
-                <TableCell>Departure (local)</TableCell>
-                <TableCell>Notes</TableCell>
-                <TableCell>Created by</TableCell>
-                <TableCell>Created</TableCell>
-                <TableCell align="right">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {rows.map((r) => (
-                <TableRow key={r._id}>
-                  <TableCell>{r.title}</TableCell>
-                  <TableCell>{r.truckersmpEventId}</TableCell>
-                  <TableCell>{r.slotNumber}</TableCell>
-                  <TableCell>
-                    {r.linkedAttendanceEventId ? (
-                      <Chip size="small" color="success" label="Linked" />
-                    ) : (
-                      <Chip size="small" label="Pending" />
-                    )}
-                  </TableCell>
-                  <a href={r.slotImageUrl} target="_blank" rel="noopener noreferrer">
-                    <TableCell sx={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.slotImageUrl}</TableCell>
-                  </a>
-                  <TableCell>{formatLocal(r.meetupAt || r.startUtc)}</TableCell>
-                  <TableCell>{formatLocal(r.departureAt || r.endUtc)}</TableCell>
-                  <TableCell sx={{ maxWidth: 140 }}>{notesSnippet(r.notes)}</TableCell>
-                  <TableCell>{r.createdByUsername || '—'}</TableCell>
-                  <TableCell>{formatLocal(r.createdAt)}</TableCell>
-                  <TableCell align="right">
-                    <IconButton size="small" onClick={() => openEdit(r)} aria-label="edit">
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton size="small" onClick={() => removeRow(r._id)} aria-label="delete">
-                      <DeleteOutlineIcon fontSize="small" />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {rows.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={11}>No entries yet.</TableCell>
-                </TableRow>
+        <Box>
+          {rows.length === 0 ? (
+            <TableContainer component={Paper}>
+              <Table size="small">
+                <TableBody>
+                  <TableRow>
+                    <TableCell>No entries yet.</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : (
+            <>
+              {groupedEntries.map(([monthKey, monthData], monthIndex) => {
+                const linkedCount = monthData.items.filter((item) => Boolean(item.linkedAttendanceEventId)).length;
+                return (
+                  <Accordion
+                    key={monthKey}
+                    disableGutters
+                    expanded={expandedMonths[monthKey] ?? monthIndex === 0}
+                    onChange={(_, isExpanded) =>
+                      setExpandedMonths((prev) => ({ ...prev, [monthKey]: isExpanded }))
+                    }
+                    sx={{ mb: 1 }}
+                  >
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                      <Box sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', pr: 1 }}>
+                        <Typography variant="subtitle1" fontWeight={700}>
+                          {monthData.monthLabel} ({monthData.items.length})
+                        </Typography>
+                        <Stack direction="row" spacing={1}>
+                          <Chip size="small" color="success" label={`${linkedCount} Linked`} />
+                          <Chip size="small" label={`${monthData.items.length - linkedCount} Pending`} />
+                        </Stack>
+                      </Box>
+                    </AccordionSummary>
+                    <AccordionDetails sx={{ pt: 0 }}>
+                      <TableContainer component={Paper} variant="outlined">
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow>
+                              <TableCell>Title</TableCell>
+                              <TableCell>TMP ID</TableCell>
+                              <TableCell>Slot</TableCell>
+                              <TableCell>Linked attendance</TableCell>
+                              <TableCell>Slot image</TableCell>
+                              <TableCell>Meetup (local)</TableCell>
+                              <TableCell>Departure (local)</TableCell>
+                              <TableCell>Notes</TableCell>
+                              <TableCell>Created by</TableCell>
+                              <TableCell>Created</TableCell>
+                              <TableCell align="right">Actions</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {monthData.items.map((r) => (
+                              <TableRow key={r._id}>
+                                <TableCell>{r.title}</TableCell>
+                                <TableCell>{r.truckersmpEventId}</TableCell>
+                                <TableCell>{r.slotNumber}</TableCell>
+                                <TableCell>
+                                  {r.linkedAttendanceEventId ? (
+                                    <Chip size="small" color="success" label="Linked" />
+                                  ) : (
+                                    <Chip size="small" label="Pending" />
+                                  )}
+                                </TableCell>
+                                <TableCell sx={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  <a href={r.slotImageUrl} target="_blank" rel="noopener noreferrer">
+                                    {r.slotImageUrl}
+                                  </a>
+                                </TableCell>
+                                <TableCell>{formatLocal(r.meetupAt || r.startUtc)}</TableCell>
+                                <TableCell>{formatLocal(r.departureAt || r.endUtc)}</TableCell>
+                                <TableCell sx={{ maxWidth: 140 }}>{notesSnippet(r.notes)}</TableCell>
+                                <TableCell>{r.createdByUsername || '—'}</TableCell>
+                                <TableCell>{formatLocal(r.createdAt)}</TableCell>
+                                <TableCell align="right">
+                                  <IconButton size="small" onClick={() => openEdit(r)} aria-label="edit">
+                                    <EditIcon fontSize="small" />
+                                  </IconButton>
+                                  <IconButton size="small" onClick={() => removeRow(r._id)} aria-label="delete">
+                                    <DeleteOutlineIcon fontSize="small" />
+                                  </IconButton>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    </AccordionDetails>
+                  </Accordion>
+                );
+              })}
+              {totalPages > 1 && (
+                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                  <Pagination
+                    page={safePage}
+                    count={totalPages}
+                    onChange={(_, page) => setEntriesPage(page)}
+                    size="small"
+                    color="primary"
+                  />
+                </Box>
               )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+            </>
+          )}
+        </Box>
       )}
 
       <Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="sm" fullWidth>
