@@ -668,9 +668,14 @@ const AttendanceManagement = () => {
                   <TableRow key={event._id}>
                     <TableCell>
                       <Box>
-                        <Typography variant="subtitle2" fontWeight="bold">
-                          {event.title}
-                        </Typography>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Typography variant="subtitle2" fontWeight="bold">
+                            {event.title}
+                          </Typography>
+                          {event.sourceType === 'external' && (
+                            <Chip label="External" color="info" size="small" />
+                          )}
+                        </Stack>
                         {event.description && (
                           <Typography variant="caption" color="text.secondary">
                             {event.description}
@@ -714,6 +719,11 @@ const AttendanceManagement = () => {
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={1}>
+                        {event.sourceType === 'external' && (
+                          <Tooltip title="Core fields are locked. Edit in Admin External Attendance.">
+                            <Chip label="Locked source" size="small" />
+                          </Tooltip>
+                        )}
                         <Tooltip title="Toggle Attendance">
                           <IconButton
                             size="small"

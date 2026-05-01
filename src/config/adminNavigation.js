@@ -38,6 +38,7 @@ import GarageOutlined from '@mui/icons-material/GarageOutlined';
 import GroupsOutlined from '@mui/icons-material/GroupsOutlined';
 import LocalOfferOutlined from '@mui/icons-material/LocalOfferOutlined';
 import LocalGasStation from '@mui/icons-material/LocalGasStation';
+import BarChartOutlined from '@mui/icons-material/BarChartOutlined';
 
 /** Staff roles that can open /admin (matches App.js admin layout gate). */
 export const STAFF_ROLES = ['admin', 'eventteam', 'hrteam', 'financeteam', 'communityManager'];
@@ -174,6 +175,12 @@ export const ADMIN_SECTIONS = [
         to: '/admin/attendance',
         label: 'Attendance management',
         Icon: TimelineOutlined,
+        roles: ['admin', 'hrteam'],
+      },
+      {
+        to: '/admin/vtc-monthly-stats',
+        label: 'VTC monthly stats',
+        Icon: BarChartOutlined,
         roles: ['admin', 'hrteam'],
       },
       // { to: '/admin/riders', label: 'Riders', Icon: Group, roles: ['admin', 'eventteam', 'hrteam'] },
@@ -334,6 +341,15 @@ export const ADMIN_DASHBOARD_CARDS = [
     to: '/admin/attendance',
     icon: TimelineOutlined,
     color: 'success',
+    roles: ['admin', 'hrteam'],
+  },
+  {
+    group: 'People & HR',
+    title: 'VTC monthly stats',
+    description: 'TruckersHub monthly VTC performance with cached fallback.',
+    to: '/admin/vtc-monthly-stats',
+    icon: BarChartOutlined,
+    color: 'info',
     roles: ['admin', 'hrteam'],
   },
   {

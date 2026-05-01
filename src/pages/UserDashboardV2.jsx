@@ -243,6 +243,7 @@ export default function UserDashboard() {
   const [wallet, setWallet] = useState({ balance: 0, transactions: [] });
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [externalUpcoming, setExternalUpcoming] = useState([]);
+  const [todayEvents, setTodayEvents] = useState([]);
   const [pendingDivisionInvites, setPendingDivisionInvites] = useState(0);
   const [divisionSummary, setDivisionSummary] = useState(null);
   const [currentDivision, setCurrentDivision] = useState(null);
@@ -311,6 +312,19 @@ export default function UserDashboard() {
         setCurrentDivision(data?.division || null);
       } catch {
         setCurrentDivision(null);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await axiosInstance.get('/calendar/today-events');
+        const list = Array.isArray(data) ? data : [];
+        list.sort((a, b) => new Date(a.meetupTime || 0).getTime() - new Date(b.meetupTime || 0).getTime());
+        setTodayEvents(list);
+      } catch {
+        setTodayEvents([]);
       }
     })();
   }, []);
@@ -859,7 +873,7 @@ export default function UserDashboard() {
               </BentoGrid>
 
               {/* ── Upcoming events (calendar) ──────────────────── */}
-              {externalUpcoming.length > 0 && (
+              {todayEvents.length > 0 && (
                 <Grid container spacing={2} sx={{ mb: 3 }}>
                   <Grid item xs={12}>
                     <Card component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} sx={sxCard}>
@@ -880,8 +894,59 @@ export default function UserDashboard() {
                             </Button>
                           }
                         >
-                          Upcoming Events
+                          Today&apos;s Events
                         </SectionTitle>
+                        <Stack spacing={0}>
+                          {todayEvents.map((ev, idx) => (
+                            <Stack
+                              key={ev.id || `${ev.title}-${idx}`} direction="row" alignItems="center" justifyContent="space-between"
+                              sx={{
+                                py: 1.25,
+                                borderBottom: idx < todayEvents.length - 1 ? `1px solid ${T.border}` : 'none',
+                              }}
+                            >
+                              <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 0 }}>
+                                {ev.slotImageUrl ? (
+                                  <Avatar
+                                    src={ev.slotImageUrl}
+                                    variant="rounded"
+                                    sx={{ width: 40, height: 28, borderRadius: 1, border: `1px solid ${T.border}` }}
+                                  />
+                                ) : (
+                                  <Box sx={{
+                                    width: 6, height: 6, borderRadius: '50%',
+                                    bgcolor: T.accent, flexShrink: 0,
+                                  }} />
+                                )}
+                                <Box sx={{ minWidth: 0 }}>
+                                  <Typography sx={{ fontFamily: font, fontSize: '0.95rem', color: T.text, fontWeight: 500 }} noWrap>
+                                    {ev.title}
+                                  </Typography>
+                                  <Typography sx={{ fontFamily: font, fontSize: '0.78rem', color: T.textMuted }}>
+                                    {ev.slotNumber != null ? `Slot ${ev.slotNumber}` : 'Slot TBD'}
+                                    {ev.slotName ? ` · ${ev.slotName}` : ''}
+                                  </Typography>
+                                </Box>
+                              </Stack>
+                              <Typography sx={{ fontFamily: font, fontSize: '0.82rem', color: T.textMuted }}>
+                                {new Date(ev.meetupTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                {ev.departureTime ? ` - ${new Date(ev.departureTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
+                              </Typography>
+                            </Stack>
+                          ))}
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+              )}
+
+              {externalUpcoming.length > 0 && (
+                <Grid container spacing={2} sx={{ mb: 3 }}>
+                  <Grid item xs={12}>
+                    <Card sx={sxCard}>
+                      <CardContent sx={{ p: '20px !important' }}>
+                        <SectionTitle>Upcoming Events</SectionTitle>
                         <Stack spacing={0}>
                           {externalUpcoming.map((ev, idx) => (
                             <Stack
@@ -891,16 +956,10 @@ export default function UserDashboard() {
                                 borderBottom: idx < externalUpcoming.length - 1 ? `1px solid ${T.border}` : 'none',
                               }}
                             >
-                              <Stack direction="row" spacing={1.5} alignItems="center">
-                                <Box sx={{
-                                  width: 6, height: 6, borderRadius: '50%',
-                                  bgcolor: T.accent, flexShrink: 0,
-                                }} />
-                                <Typography sx={{ fontFamily: font, fontSize: '0.95rem', color: T.text, fontWeight: 500 }}>
-                                  {ev.title}
-                                </Typography>
-                              </Stack>
-                              <Typography sx={{ fontFamily: font, fontSize: '0.82rem', color: T.textMuted }}>
+                              <Typography sx={{ fontFamily: font, fontSize: '0.92rem', color: T.text }}>
+                                {ev.title}
+                              </Typography>
+                              <Typography sx={{ fontFamily: font, fontSize: '0.8rem', color: T.textMuted }}>
                                 {new Date(ev.start).toLocaleString(undefined, {
                                   month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
                                 })}

@@ -110,6 +110,7 @@ import DivisionLeaderboard from "./pages/DivisionLeaderboard";
 import DivisionPublic from "./pages/DivisionPublic";
 import DivisionsIndex from "./pages/DivisionsIndex";
 import AdminCoupons from "./pages/AdminCoupons";
+import AdminVtcMonthlyStats from "./pages/AdminVtcMonthlyStats";
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -618,6 +619,14 @@ function App() {
                         element={
                           <PrivateRoute allowedRoles={["admin"]}>
                             <AdminCoupons />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="vtc-monthly-stats"
+                        element={
+                          <PrivateRoute allowedRoles={["admin", "hrteam"]}>
+                            <AdminVtcMonthlyStats />
                           </PrivateRoute>
                         }
                       />

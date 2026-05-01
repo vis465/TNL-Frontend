@@ -194,7 +194,7 @@ export default function AdminExternalAttendance() {
         meetupAt: meetupAt || undefined,
         departureAt: departureAt || undefined,
       });
-      setSubmitMsg({ type: 'success', text: 'Entry created.' });
+      setSubmitMsg({ type: 'success', text: 'Entry created and linked to attendance event.' });
       setForm((f) => ({
         ...f,
         slotNumber: '',
@@ -257,6 +257,7 @@ export default function AdminExternalAttendance() {
             : null,
         notes: editForm.notes,
       });
+      setSubmitMsg({ type: 'success', text: 'Entry updated and attendance link synced.' });
       setEditOpen(false);
       loadList();
     } catch (e) {
@@ -429,6 +430,7 @@ export default function AdminExternalAttendance() {
                 <TableCell>Title</TableCell>
                 <TableCell>TMP ID</TableCell>
                 <TableCell>Slot</TableCell>
+                <TableCell>Linked attendance</TableCell>
                 <TableCell>Slot image</TableCell>
                 <TableCell>Meetup (local)</TableCell>
                 <TableCell>Departure (local)</TableCell>
@@ -444,6 +446,13 @@ export default function AdminExternalAttendance() {
                   <TableCell>{r.title}</TableCell>
                   <TableCell>{r.truckersmpEventId}</TableCell>
                   <TableCell>{r.slotNumber}</TableCell>
+                  <TableCell>
+                    {r.linkedAttendanceEventId ? (
+                      <Chip size="small" color="success" label="Linked" />
+                    ) : (
+                      <Chip size="small" label="Pending" />
+                    )}
+                  </TableCell>
                   <a href={r.slotImageUrl} target="_blank" rel="noopener noreferrer">
                     <TableCell sx={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.slotImageUrl}</TableCell>
                   </a>
@@ -464,7 +473,7 @@ export default function AdminExternalAttendance() {
               ))}
               {rows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={10}>No entries yet.</TableCell>
+                  <TableCell colSpan={11}>No entries yet.</TableCell>
                 </TableRow>
               )}
             </TableBody>
