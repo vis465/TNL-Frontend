@@ -31,12 +31,9 @@ import {
   AccordionSummary,
   AccordionDetails,
   Pagination,
-  FormControl,
-  InputLabel,
-  Select,
   MenuItem,
-  Checkbox,
-  ListItemText
+  Switch,
+  FormControlLabel
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -121,6 +118,19 @@ const HRDashboard = () => {
   const [confirmAddRiderOpen, setConfirmAddRiderOpen] = useState(false);
   const [removeAttendanceOpen, setRemoveAttendanceOpen] = useState(false);
   const [selectedRiderIds, setSelectedRiderIds] = useState([]);
+  const [riderSearchTerm, setRiderSearchTerm] = useState('');
+  const [riderSearchLoading, setRiderSearchLoading] = useState(false);
+  const [riderSearchOptions, setRiderSearchOptions] = useState([]);
+  const [editAttendanceOpen, setEditAttendanceOpen] = useState(false);
+  const [editingAttendanceEvent, setEditingAttendanceEvent] = useState(null);
+  const [editAttendanceData, setEditAttendanceData] = useState({
+    title: '',
+    description: '',
+    eventDate: '',
+    endDate: '',
+    status: 'open',
+    isAttendanceOpen: true
+  });
   const [riderToRemove, setRiderToRemove] = useState(null);
 
   useEffect(() => {
@@ -476,6 +486,8 @@ const HRDashboard = () => {
 
   const openAddRiderDialog = async () => {
     setSelectedRiderIds([]);
+    setRiderSearchTerm('');
+    setRiderSearchOptions([]);
     await fetchRiders();
     setAddRiderOpen(true);
   };
@@ -486,7 +498,84 @@ const HRDashboard = () => {
       .filter(Boolean)
   );
   const availableRiders = riders.filter((rider) => !existingRiderIds.has(rider._id));
-  const selectedRiders = availableRiders.filter((rider) => selectedRiderIds.includes(rider._id));
+  const selectedRiders = riders.filter((rider) => selectedRiderIds.includes(rider._id));
+  const availableSearchOptions = riderSearchOptions.filter((rider) => !existingRiderIds.has(rider._id));
+  const selectedSearchOptions = selectedRiders.filter((rider) => !existingRiderIds.has(rider._id));
+
+  useEffect(() => {
+    if (!addRiderOpen) return;
+    if (!riderSearchTerm || riderSearchTerm.trim().length < 2) {
+      setRiderSearchOptions([]);
+      setRiderSearchLoading(false);
+      return;
+    }
+    let active = true;
+    const timer = setTimeout(async () => {
+      setRiderSearchLoading(true);
+      try {
+        const items = await ridersService.search(riderSearchTerm.trim(), 25);
+        if (!active) return;
+        const normalized = Array.isArray(items) ? items : [];
+        setRiderSearchOptions(normalized);
+        // Keep the local rider cache fresh for selected chip rendering.
+        setRiders((prev) => {
+          const byId = new Map(prev.map((r) => [String(r._id), r]));
+          normalized.forEach((r) => {
+            if (r?._id) byId.set(String(r._id), r);
+          });
+          return Array.from(byId.values());
+        });
+      } catch (err) {
+        if (active) setRiderSearchOptions([]);
+      } finally {
+        if (active) setRiderSearchLoading(false);
+      }
+    }, 250);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [addRiderOpen, riderSearchTerm]);
+
+  const handleEditAttendanceEvent = (event) => {
+    setEditingAttendanceEvent(event);
+    setEditAttendanceData({
+      title: event.title || '',
+      description: event.description || '',
+      eventDate: event.eventDate ? new Date(event.eventDate).toISOString().slice(0, 16) : '',
+      endDate: event.endDate ? new Date(event.endDate).toISOString().slice(0, 16) : '',
+      status: event.status || 'open',
+      isAttendanceOpen: Boolean(event.isAttendanceOpen)
+    });
+    setEditAttendanceOpen(true);
+  };
+
+  const handleSaveEditedAttendanceEvent = async () => {
+    if (!editingAttendanceEvent?._id) return;
+    try {
+      setLoading(true);
+      await axiosInstance.put(`/attendance-events/${editingAttendanceEvent._id}`, {
+        title: editAttendanceData.title?.trim(),
+        description: editAttendanceData.description,
+        eventDate: editAttendanceData.eventDate ? new Date(editAttendanceData.eventDate).toISOString() : undefined,
+        endDate: editAttendanceData.endDate ? new Date(editAttendanceData.endDate).toISOString() : null,
+        status: editAttendanceData.status,
+        isAttendanceOpen: editAttendanceData.isAttendanceOpen
+      });
+      setSuccess('Attendance event updated successfully');
+      setEditAttendanceOpen(false);
+      setEditingAttendanceEvent(null);
+      fetchAttendanceEvents();
+      if (selectedEventDetails?._id === editingAttendanceEvent._id) {
+        const response = await axiosInstance.get(`/attendance-events/${editingAttendanceEvent._id}`);
+        setSelectedEventDetails(response.data);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to update attendance event');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleManualAddRider = async () => {
     if (!selectedEventDetails?._id || selectedRiderIds.length === 0) {
@@ -818,6 +907,21 @@ const HRDashboard = () => {
                                 </TableCell>
                                 <TableCell>
                                   <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Tooltip title={event.sourceType === 'external' ? 'Edit imported source entry' : 'Edit event'}>
+                            <IconButton
+                              size="small"
+                              onClick={() => {
+                                if (event.sourceType === 'external') {
+                                  window.location.href = '/admin/external-attendance';
+                                  return;
+                                }
+                                handleEditAttendanceEvent(event);
+                              }}
+                              color="primary"
+                            >
+                              <EditIcon />
+                            </IconButton>
+                          </Tooltip>
                                     <Tooltip title={event.isAttendanceOpen ? 'Close Attendance' : 'Open Attendance'}>
                                       <IconButton
                                         size="small"
@@ -1304,27 +1408,32 @@ const HRDashboard = () => {
               ))}
             </Box>
           )}
-          <FormControl fullWidth sx={{ mt: 1 }}>
-            <InputLabel id="add-rider-select-label">Select riders</InputLabel>
-            <Select
-              labelId="add-rider-select-label"
-              multiple
-              value={selectedRiderIds}
-              label="Select riders"
-              onChange={(e) => setSelectedRiderIds(e.target.value)}
-              renderValue={(selected) => `${selected.length} selected`}
-            >
-              {availableRiders.map((rider) => (
-                <MenuItem key={rider._id} value={rider._id}>
-                  <Checkbox checked={selectedRiderIds.includes(rider._id)} />
-                  <ListItemText
-                    primary={rider.name || rider.username}
-                    secondary={`${rider.username || '-'} (${rider.employeeID || 'No ID'})`}
-                  />
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <Autocomplete
+            multiple
+            options={availableSearchOptions}
+            value={selectedSearchOptions}
+            loading={riderSearchLoading}
+            onInputChange={(_, value) => setRiderSearchTerm(value)}
+            onChange={(_, selected) => setSelectedRiderIds(selected.map((r) => r._id))}
+            getOptionLabel={(option) =>
+              `${option.name || option.username || 'Unknown'} (${option.employeeID || 'No ID'})`
+            }
+            isOptionEqualToValue={(option, value) => option?._id === value?._id}
+            filterOptions={(options) => options}
+            noOptionsText={
+              riderSearchTerm.trim().length < 2
+                ? 'Type at least 2 characters to search riders globally'
+                : 'No riders found'
+            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Search riders globally"
+                placeholder="Name, username, or employee ID"
+                sx={{ mt: 1 }}
+              />
+            )}
+          />
           {availableRiders.length > 0 && (
             <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
               <Button size="small" onClick={() => setSelectedRiderIds(availableRiders.map((r) => r._id))}>
@@ -1383,6 +1492,76 @@ const HRDashboard = () => {
             startIcon={<PersonAddIcon />}
           >
             {loading ? <CircularProgress size={20} /> : `Confirm Add ${selectedRiderIds.length} Rider(s)`}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Attendance Event Dialog */}
+      <Dialog open={editAttendanceOpen} onClose={() => setEditAttendanceOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Edit Attendance Event</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              label="Event title"
+              value={editAttendanceData.title}
+              onChange={(e) => setEditAttendanceData((prev) => ({ ...prev, title: e.target.value }))}
+              fullWidth
+              required
+            />
+            <TextField
+              label="Description"
+              value={editAttendanceData.description}
+              onChange={(e) => setEditAttendanceData((prev) => ({ ...prev, description: e.target.value }))}
+              fullWidth
+              multiline
+              minRows={2}
+            />
+            <TextField
+              label="Event date"
+              type="datetime-local"
+              value={editAttendanceData.eventDate}
+              onChange={(e) => setEditAttendanceData((prev) => ({ ...prev, eventDate: e.target.value }))}
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+            />
+            <TextField
+              label="End date (optional)"
+              type="datetime-local"
+              value={editAttendanceData.endDate}
+              onChange={(e) => setEditAttendanceData((prev) => ({ ...prev, endDate: e.target.value }))}
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+            />
+            <TextField
+              select
+              label="Status"
+              value={editAttendanceData.status}
+              onChange={(e) => setEditAttendanceData((prev) => ({ ...prev, status: e.target.value }))}
+              fullWidth
+            >
+              <MenuItem value="open">Open</MenuItem>
+              <MenuItem value="closed">Closed</MenuItem>
+              <MenuItem value="cancelled">Cancelled</MenuItem>
+            </TextField>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={editAttendanceData.isAttendanceOpen}
+                  onChange={(e) => setEditAttendanceData((prev) => ({ ...prev, isAttendanceOpen: e.target.checked }))}
+                />
+              }
+              label="Attendance open for rider submissions"
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditAttendanceOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={handleSaveEditedAttendanceEvent}
+            disabled={loading || !editAttendanceData.title?.trim()}
+          >
+            Save
           </Button>
         </DialogActions>
       </Dialog>
