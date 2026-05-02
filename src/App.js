@@ -1,4 +1,5 @@
 import React, { createContext, useState, useMemo } from "react";
+import TruckersHubLayout from "./components/TruckersHubLayout"
 import {
   BrowserRouter as Router,
   Routes,
@@ -323,6 +324,7 @@ function App() {
                     <Route path="/maintain" element={<PageMaintenance />} />
                     <Route path="/" element={<Landing />} />
                     <Route path="/login" element={<Login />} />
+                    <Route path="/telemetry/*" element={<TruckersHubLayout />} />
                     <Route path="/register" element={<SteamRegistration />} />
                       <Route path="steam" element={<SteamRegistration />} />
                     

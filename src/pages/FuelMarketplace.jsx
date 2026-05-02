@@ -295,8 +295,8 @@ export default function FuelMarketplace() {
                   <YAxis tick={{ fontSize: 11 }} />
                   <RTooltip />
                   <Legend />
-                  <Line type="monotone" dataKey="normalPrice" name="Standard tokens/L" stroke="#1976d2" strokeWidth={2} dot />
                   <Line type="monotone" dataKey="premiumPrice" name="Premium tokens/L" stroke="#9c27b0" strokeWidth={2} dot />
+                  <Line type="monotone" dataKey="normalPrice" name="Standard tokens/L" stroke="#1976d2" strokeWidth={2} dot />
                 </LineChart>
               </ResponsiveContainer>
             </Box>
