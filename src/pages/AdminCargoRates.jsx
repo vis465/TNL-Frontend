@@ -481,6 +481,21 @@ export default function AdminCargoRates() {
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} flexWrap="wrap" useFlexGap>
                 <TextField size="small" label="Default €/(t·km)" type="number" value={config.defaultPricePerKm ?? ''} onChange={(e) => setConfig((p) => ({ ...p, defaultPricePerKm: Number(e.target.value) }))} />
                 <TextField size="small" label="Max division tax %" type="number" value={config.maxDivisionTaxPercent ?? ''} onChange={(e) => setConfig((p) => ({ ...p, maxDivisionTaxPercent: Number(e.target.value) }))} />
+                <TextField
+                  size="small"
+                  label="Min rider share of job tokens (%)"
+                  type="number"
+                  helperText="After penalties & platform fee, before division levy & truck rent. E.g. 85 ⇒ division takes ≤15%. Leave empty for no extra cap."
+                  value={config.minRiderShareOfPreDivisionTokensPercent ?? ''}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setConfig((p) => ({
+                      ...p,
+                      minRiderShareOfPreDivisionTokensPercent: raw === '' ? null : Number(raw),
+                    }));
+                  }}
+                  inputProps={{ min: 0, max: 100, step: 1 }}
+                />
                 <TextField size="small" label="Exit cooldown (days)" type="number" value={config.exitCooldownDays ?? ''} onChange={(e) => setConfig((p) => ({ ...p, exitCooldownDays: Number(e.target.value) }))} />
                 <TextField size="small" label="Invite expiry (days)" type="number" value={config.inviteExpiryDays ?? ''} onChange={(e) => setConfig((p) => ({ ...p, inviteExpiryDays: Number(e.target.value) }))} />
                 <TextField size="small" label="Inactivity (days)" type="number" value={config.inactivityDays ?? ''} onChange={(e) => setConfig((p) => ({ ...p, inactivityDays: Number(e.target.value) }))} />

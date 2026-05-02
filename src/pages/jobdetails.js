@@ -378,7 +378,12 @@ const JobDetails = ({ theme, toggleTheme, apiData, vtc }) => {
                       </Box>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Typography color="text.secondary">Cargo Weight:</Typography>
-                        <Typography fontWeight="bold">{(jobData.cargo.mass / 1000).toFixed(1)} t</Typography>
+                        <Typography fontWeight="bold">
+                          {(
+                            Number(jobData.cargo?.mass ?? jobData.cargo?.unit_mass) || 0
+                          ).toFixed(1)}{' '}
+                          t
+                        </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Typography color="text.secondary">Top Speed:</Typography>

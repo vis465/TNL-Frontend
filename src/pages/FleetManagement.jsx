@@ -809,8 +809,8 @@ export default function FleetManagement() {
               {Number(maintainTarget?.maintenanceCost || 0).toLocaleString()} tokens
             </strong>
             . The truck stays offline for <strong>~{repairMinutes} minutes</strong> while it is
-            being serviced and returns automatically. Division tax on matching jobs is paused
-            until it comes back.
+            being serviced and returns automatically. That truck won&apos;t count for fleet-matched
+            deliveries until it returns.
           </DialogContentText>
           {maintainError && (
             <Alert severity="error" sx={{ mt: 2 }}>

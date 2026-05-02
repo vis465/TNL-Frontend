@@ -1083,8 +1083,8 @@ export default function MyDivision() {
               {fleetSummary.blocked > 0 && isLeader && (
                 <Alert severity="warning" sx={{ mt: 1.5 }}>
                   {fleetSummary.blocked} truck{fleetSummary.blocked === 1 ? '' : 's'} need
-                  maintenance. Division tax from matching jobs is withheld until serviced —
-                  head to Fleet to pay the bill.
+                  maintenance — fleet deliveries won&apos;t attach to those trucks until they&apos;re
+                  back online. Pay in Fleet management.
                 </Alert>
               )}
             </CardContent>
