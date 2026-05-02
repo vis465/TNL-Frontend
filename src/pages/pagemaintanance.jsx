@@ -33,6 +33,7 @@ export default function PageMaintenance() {
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
                     We&apos;re currently working on this page to improve your experience.<br />
                     Please check back after some time.
+                    Plesae continue to deliver the jobs and we will be tracking it always.
                 </Typography>
                 
             </Container>
