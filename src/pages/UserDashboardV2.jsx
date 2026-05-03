@@ -719,404 +719,7 @@ export default function UserDashboard() {
                   </CardContent>
                 </Card>
               )}
-
-              <BentoGrid minItemWidth={360} gap={2} sx={{ mb: 3 }}>
-                <BentoItem span={2}>
-                  <Card component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} sx={sxCard}>
-                    <CardContent sx={{ p: '20px !important' }}>
-                      <SectionTitle>Revenue & Distance — 6 Months</SectionTitle>
-                      <Box sx={{ height: 220 }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={finalRevenueData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                            <defs>
-                              <linearGradient id="gAccent" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor={T.accent} stopOpacity={0.15} />
-                                <stop offset="100%" stopColor={T.accent} stopOpacity={0} />
-                              </linearGradient>
-                              <linearGradient id="gInfo" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor={T.info} stopOpacity={0.12} />
-                                <stop offset="100%" stopColor={T.info} stopOpacity={0} />
-                              </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 6" stroke={T.border} vertical={false} />
-                            <XAxis dataKey="month" tick={{ fill: T.textMuted, fontSize: 12, fontFamily: font }} axisLine={false} tickLine={false} />
-                            <YAxis tick={{ fill: T.textMuted, fontSize: 12, fontFamily: font }} axisLine={false} tickLine={false} />
-                            <Tooltip content={<ChartTooltip />} />
-                            <Area type="monotone" dataKey="revenue" name="Revenue" stroke={T.accent} strokeWidth={1.5} fill="url(#gAccent)" dot={false} />
-                            <Area type="monotone" dataKey="distance" name="Distance" stroke={T.info} strokeWidth={1.5} fill="url(#gInfo)" dot={false} />
-                          </AreaChart>
-                        </ResponsiveContainer>
-                      </Box>
-                      <Stack direction="row" spacing={3} sx={{ mt: 2 }}>
-                        <Stack direction="row" spacing={0.75} alignItems="center">
-                          <Box sx={{ width: 16, height: 2, bgcolor: T.accent, borderRadius: 1 }} />
-                          <Typography sx={{ fontFamily: font, fontSize: '0.78rem', color: T.textMuted, fontWeight: 500 }}>Revenue</Typography>
-                        </Stack>
-                        <Stack direction="row" spacing={0.75} alignItems="center">
-                          <Box sx={{ width: 16, height: 2, bgcolor: T.info, borderRadius: 1 }} />
-                          <Typography sx={{ fontFamily: font, fontSize: '0.78rem', color: T.textMuted, fontWeight: 500 }}>Distance</Typography>
-                        </Stack>
-                      </Stack>
-                    </CardContent>
-                  </Card>
-                </BentoItem>
-                <BentoItem span={1}>
-                  <Card component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} sx={sxCard}>
-                    <CardContent sx={{ p: '20px !important' }}>
-                      <SectionTitle>Jobs by Weekday</SectionTitle>
-                      <Box sx={{ height: 220 }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={weeklyData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 6" stroke={T.border} vertical={false} />
-                            <XAxis dataKey="day" tick={{ fill: T.textMuted, fontSize: 12, fontFamily: font }} axisLine={false} tickLine={false} />
-                            <YAxis allowDecimals={false} tick={{ fill: T.textMuted, fontSize: 12, fontFamily: font }} axisLine={false} tickLine={false} />
-                            <Tooltip content={<ChartTooltip />} />
-                            <Bar dataKey="jobs" name="Jobs" fill={T.accent} radius={[4, 4, 0, 0]} maxBarSize={28} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </Box>
-                    </CardContent>
-                  </Card>
-                </BentoItem>
-              </BentoGrid>
-
-              {/* ── Quick actions + Job validator ───────────────── */}
-              <BentoGrid minItemWidth={320} gap={2} sx={{ mb: 3 }}>
-                <BentoItem span={1}>
-                  <Card component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} sx={sxCard}>
-                    <CardContent sx={{ p: '20px !important' }}>
-                      <SectionTitle>Quick Actions</SectionTitle>
-                      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                        {[
-                          { label: 'Contract Hub', icon: <Assignment sx={{ fontSize: 14 }} />, to: '/contracts/me' },
-                          { label: 'Wallet', icon: <AccountBalanceWallet sx={{ fontSize: 14 }} />, to: '/wallet' },
-                          { label: 'Leaderboard', icon: <Timeline sx={{ fontSize: 14 }} />, to: '/leaderboard' },
-                          { label: 'Calendar', icon: <CalendarMonthOutlinedIcon sx={{ fontSize: 14 }} />, to: '/calendar' },
-                        ].map(({ label, icon, to }) => (
-                          <Button
-                            key={label}
-                            component={RouterLink}
-                            to={to}
-                            size="small"
-                            startIcon={icon}
-                            sx={{
-                              fontFamily: font, fontSize: '0.85rem', fontWeight: 500,
-                              color: T.text,
-                              border: `1px solid ${T.border}`,
-                              borderRadius: T.radiusSm, px: 2, py: 1,
-                              textTransform: 'none', bgcolor: 'transparent',
-                              '&:hover': { bgcolor: T.surfaceHover, borderColor: T.borderHover },
-                              transition: 'all 0.15s ease',
-                            }}
-                          >
-                            {label}
-                          </Button>
-                        ))}
-                      </Stack>
-                    </CardContent>
-                  </Card>
-                </BentoItem>
-                <BentoItem span={1}>
-                  <Card component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} sx={sxCard}>
-                    <CardContent sx={{ p: '20px !important' }}>
-                      <SectionTitle>Manual Job Validation</SectionTitle>
-                      {jobmessage && (
-                        <Box sx={{
-                          mb: 1.5, p: '8px 14px',
-                          bgcolor: T.accentDim, border: `1px solid ${alpha(T.accent, 0.2)}`,
-                          borderRadius: T.radiusSm,
-                        }}>
-                          <Typography sx={{ fontFamily: font, fontSize: '0.85rem', color: T.accent, fontWeight: 500 }}>
-                            {jobmessage}
-                          </Typography>
-                        </Box>
-                      )}
-                      <Stack direction="row" spacing={1} alignItems="flex-start">
-                        <TextField
-                          size="small"
-                          placeholder="Enter Job ID…"
-                          value={jobid}
-                          onChange={(e) => Setjobid(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleJobsubmit(jobid)}
-                          sx={{
-                            flex: 1,
-                            '& .MuiOutlinedInput-root': {
-                              bgcolor: 'transparent', borderRadius: T.radiusSm,
-                              fontFamily: font, fontSize: '0.95rem', color: T.text,
-                              '& fieldset': { borderColor: T.border },
-                              '&:hover fieldset': { borderColor: T.borderHover },
-                              '&.Mui-focused fieldset': { borderColor: T.accent, borderWidth: '1px' },
-                            },
-                            '& input': { color: T.text, py: '9px', '&::placeholder': { color: T.textMuted, opacity: 1 } },
-                          }}
-                        />
-                        <Button
-                          onClick={() => handleJobsubmit(jobid)}
-                          sx={{
-                            fontFamily: font, fontWeight: 600, fontSize: '0.88rem',
-                            bgcolor: T.accent, color: T.bg,
-                            borderRadius: T.radiusSm, px: 2.5, py: '9px',
-                            textTransform: 'none', whiteSpace: 'nowrap',
-                            '&:hover': { bgcolor: '#c8e600' },
-                            transition: 'background 0.15s ease',
-                          }}
-                        >
-                          Submit
-                        </Button>
-                      </Stack>
-                      <Typography sx={{ ...sxLabel, mt: 1.5, fontSize: '0.72rem', fontWeight: 400 }}>
-                        For TruckersHub jobs that weren't auto-validated
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </BentoItem>
-              </BentoGrid>
-
-              {/* ── Upcoming events (calendar) ──────────────────── */}
-              {todayEvents.length > 0 && (
-                <Grid container spacing={2} sx={{ mb: 3 }}>
-                  <Grid item xs={12}>
-                    <Card component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} sx={sxCard}>
-                      <CardContent sx={{ p: '20px !important' }}>
-                        <SectionTitle
-                          action={
-                            <Button
-                              component={RouterLink} to="/calendar" size="small"
-                              startIcon={<CalendarMonthOutlinedIcon sx={{ fontSize: 14 }} />}
-                              sx={{
-                                fontFamily: font, fontSize: '0.82rem', textTransform: 'none',
-                                color: T.accent, border: `1px solid ${alpha(T.accent, 0.25)}`,
-                                borderRadius: T.radiusSm, px: 1.5,
-                                '&:hover': { bgcolor: T.accentDim, borderColor: alpha(T.accent, 0.4) },
-                              }}
-                            >
-                              Full calendar
-                            </Button>
-                          }
-                        >
-                          Today&apos;s Events
-                        </SectionTitle>
-                        <Stack spacing={0}>
-                          {todayEvents.map((ev, idx) => {
-                            const meetupDate = ev.meetupTime ? new Date(ev.meetupTime) : null;
-                            const departureDate = ev.departureTime ? new Date(ev.departureTime) : null;
-                            const meetupLabel =
-                              meetupDate && !Number.isNaN(meetupDate.getTime())
-                                ? meetupDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                : 'TBD';
-                            const departureLabel =
-                              departureDate && !Number.isNaN(departureDate.getTime())
-                                ? departureDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                : '';
-                            return (
-                              <Stack
-                                key={ev.id || `${ev.title}-${idx}`} direction="row" alignItems="center" justifyContent="space-between"
-                                sx={{
-                                  py: 1.25,
-                                  borderBottom: idx < todayEvents.length - 1 ? `1px solid ${T.border}` : 'none',
-                                }}
-                              >
-                                <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 0 }}>
-                                  {ev.slotImageUrl ? (
-                                    <Avatar
-                                      src={ev.slotImageUrl}
-                                      variant="rounded"
-                                      sx={{ width: 40, height: 28, borderRadius: 1, border: `1px solid ${T.border}` }}
-                                    />
-                                  ) : (
-                                    <Box sx={{
-                                      width: 6, height: 6, borderRadius: '50%',
-                                      bgcolor: T.accent, flexShrink: 0,
-                                    }} />
-                                  )}
-                                  <Box sx={{ minWidth: 0 }}>
-                                    <Typography sx={{ fontFamily: font, fontSize: '0.95rem', color: T.text, fontWeight: 500 }} noWrap>
-                                      {ev.title}
-                                    </Typography>
-                                    <Typography sx={{ fontFamily: font, fontSize: '0.78rem', color: T.textMuted }}>
-                                      {ev.slotNumber != null ? `Slot ${ev.slotNumber}` : 'Slot TBD'}
-                                      {ev.slotName ? ` · ${ev.slotName}` : ''}
-                                      {ev.source ? ` · ${ev.source}` : ''}
-                                    </Typography>
-                                  </Box>
-                                </Stack>
-                                <Typography sx={{ fontFamily: font, fontSize: '0.82rem', color: T.textMuted }}>
-                                  {meetupLabel}
-                                  {departureLabel ? ` - ${departureLabel}` : ''}
-                                </Typography>
-                              </Stack>
-                            );
-                          })}
-                        </Stack>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                </Grid>
-              )}
-
-              {externalUpcoming.length > 0 && (
-                <Grid container spacing={2} sx={{ mb: 3 }}>
-                  <Grid item xs={12}>
-                    <Card sx={sxCard}>
-                      <CardContent sx={{ p: '20px !important' }}>
-                        <SectionTitle>Upcoming Events</SectionTitle>
-                        <Stack spacing={0}>
-                          {externalUpcoming.map((ev, idx) => (
-                            <Stack
-                              key={ev.id} direction="row" alignItems="center" justifyContent="space-between"
-                              sx={{
-                                py: 1.25,
-                                borderBottom: idx < externalUpcoming.length - 1 ? `1px solid ${T.border}` : 'none',
-                              }}
-                            >
-                              <Typography sx={{ fontFamily: font, fontSize: '0.92rem', color: T.text }}>
-                                {ev.title}
-                              </Typography>
-                              <Typography sx={{ fontFamily: font, fontSize: '0.8rem', color: T.textMuted }}>
-                                {new Date(ev.start).toLocaleString(undefined, {
-                                  month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
-                                })}
-                              </Typography>
-                            </Stack>
-                          ))}
-                        </Stack>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                </Grid>
-              )}
-
-              {/* ── Wallet + Contracts ──────────────────────────── */}
-              <BentoGrid minItemWidth={360} gap={2} sx={{ mb: 3 }}>
-                <BentoItem span={2}>
-                  <Box component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }}>
-                    <WalletTransactions
-                      wallet={wallet}
-                      onRefresh={() => getMyWallet().then((w) => setWallet({
-                        balance: Number(w.balance || 0),
-                        transactions: Array.isArray(w.transactions) ? w.transactions : [],
-                      }))}
-                    />
-                  </Box>
-                </BentoItem>
-                <BentoItem span={1}>
-                  <Stack spacing={2}>
-                    <Box component={motion.div} initial={{ opacity: 0, x: 14 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
-                      <ActiveContracts onRefresh={() => myContracts().then((res) => setContracts(res))} />
-                    </Box>
-                    <Box component={motion.div} initial={{ opacity: 0, x: 14 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
-                      <CompletedContracts onRefresh={() => myContracts().then((res) => setContracts(res))} />
-                    </Box>
-                  </Stack>
-                </BentoItem>
-              </BentoGrid>
-
-              {/* ── Profile & TruckersHub ───────────────────────── */}
-              <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} lg={7}>
-                  <Card component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} sx={sxCard}>
-                    <CardContent sx={{ p: '20px !important' }}>
-                      <SectionTitle>
-                        Profile & Game Details
-                      </SectionTitle>
-                      <Grid container spacing={2.5}>
-                        <Grid item xs={12} md={6}>
-                          <Stack spacing={2.5}>
-                            <Box>
-                              <Typography sx={{ ...sxLabel, mb: 1 }}>Platform IDs</Typography>
-                              <Stack spacing={0.75}>
-                                <TagChip
-                                  label={rider?.steamID ? `Steam: ${rider.steamID}` : 'No Steam ID'}
-                                  color={rider?.steamID ? T.info : T.textMuted}
-                                  filled={!!rider?.steamID}
-                                />
-                                <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
-                                  <TagChip
-                                    label={rider?.truckersmpId ? `TMP: ${rider.truckersmpId}` : 'No TMP ID'}
-                                    color={rider?.truckersmpId ? T.info : T.textMuted}
-                                    filled={!!rider?.truckersmpId}
-                                  />
-                                  <TagChip
-                                    label={rider?.truckershubId ? `Hub: ${rider.truckershubId}` : 'No Hub ID'}
-                                    color={rider?.truckershubId ? T.success : T.textMuted}
-                                    filled={!!rider?.truckershubId}
-                                  />
-                                </Stack>
-                              </Stack>
-                            </Box>
-                          </Stack>
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                          <Stack spacing={2.5}>
-                            <Box>
-                              <Typography sx={{ ...sxLabel, mb: 1 }}>DLCs Owned</Typography>
-                              <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
-                                <TagChip
-                                  label={rider?.dlcsOwned?.ets2?.length > 0 ? `ETS2 ×${rider.dlcsOwned.ets2.length}` : 'No ETS2 DLCs'}
-                                  color={rider?.dlcsOwned?.ets2?.length > 0 ? T.warning : T.textMuted}
-                                  filled={rider?.dlcsOwned?.ets2?.length > 0}
-                                />
-                                <TagChip
-                                  label={rider?.dlcsOwned?.ats?.length > 0 ? `ATS ×${rider.dlcsOwned.ats.length}` : 'No ATS DLCs'}
-                                  color={rider?.dlcsOwned?.ats?.length > 0 ? T.warning : T.textMuted}
-                                  filled={rider?.dlcsOwned?.ats?.length > 0}
-                                />
-                              </Stack>
-                            </Box>
-                            <Box>
-                              <Typography sx={{ ...sxLabel, mb: 1 }}>Games</Typography>
-                              <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
-                                {rider?.gamesOwned?.length > 0
-                                  ? rider.gamesOwned.map((g, i) => <TagChip key={i} label={g} color={T.warning} filled />)
-                                  : <TagChip label="No games listed" />}
-                              </Stack>
-                            </Box>
-                          </Stack>
-                        </Grid>
-                      </Grid>
-                    </CardContent>
-                  </Card>
-                </Grid>
-
-                <Grid item xs={12} lg={5}>
-                  <Card component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} sx={sxCard}>
-                    <CardContent sx={{ p: '20px !important' }}>
-                      <SectionTitle>TruckersHub Snapshot</SectionTitle>
-                      {truckershubStats && thSnapshot ? (
-                        <>
-                          <Typography sx={{ ...sxLabel, fontSize: '0.72rem', fontWeight: 400, mb: 2 }}>
-                            Last updated: {truckershubStats.lastUpdatedAt
-                              ? new Date(truckershubStats.lastUpdatedAt).toLocaleString()
-                              : '—'}
-                          </Typography>
-                          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.25 }}>
-                            {[
-                              { label: 'Level', value: thSnapshot.level ?? '—' },
-                              { label: 'Avg Rating', value: thSnapshot.statistics?.rating?.avg ? thSnapshot.statistics.rating.avg.toFixed(2) : '—' },
-                              { label: 'THP Total', value: thSnapshot.statistics?.THP?.total ? thSnapshot.statistics.THP.total.toLocaleString() : '—' },
-                              { label: 'XP Total', value: thSnapshot.statistics?.XP?.total ? thSnapshot.statistics.XP.total.toLocaleString() : '—' },
-                              { label: 'Fuel Burned', value: thSnapshot.statistics?.fuelBurned?.total ? thSnapshot.statistics.fuelBurned.total.toLocaleString() : '—' },
-                              { label: 'Max Speed', value: thSnapshot.statistics?.speed?.max ? `${thSnapshot.statistics.speed.max.toFixed(1)} km/h` : '—' },
-                            ].map(({ label, value }) => (
-                              <InfoCell key={label} label={label} value={value} />
-                            ))}
-                          </Box>
-                        </>
-                      ) : (
-                        <Stack alignItems="center" spacing={1} sx={{ py: 4 }}>
-                          <TrendingUpIcon sx={{ color: T.textFaint, fontSize: 28 }} />
-                          <Typography sx={{ fontFamily: font, fontSize: '0.92rem', color: T.textMuted }}>
-                            No TruckersHub data available yet
-                          </Typography>
-                        </Stack>
-                      )}
-                    </CardContent>
-                  </Card>
-                </Grid>
-              </Grid>
-
-              {/* ── Events & Attendance + Achievements ──────────── */}
-              <Grid container spacing={2} sx={{ mb: 3 }}>
+  <Grid container spacing={2} sx={{ mb: 3 }}>
                 <Grid item xs={12} lg={7}>
                   <Card component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} sx={sxCard}>
                     <CardContent sx={{ p: '20px !important' }}>
@@ -1286,6 +889,430 @@ export default function UserDashboard() {
                   </Card>
                 </Grid>
               </Grid>
+              {/* ── Quick actions + Job validator ───────────────── */}
+              <BentoGrid minItemWidth={320} gap={2} sx={{ mb: 3 }}>
+                <BentoItem span={1}>
+                  <Card component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} sx={sxCard}>
+                    <CardContent sx={{ p: '20px !important' }}>
+                      <SectionTitle>Quick Actions</SectionTitle>
+                      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                        {[
+                          { label: 'Contract Hub', icon: <Assignment sx={{ fontSize: 14 }} />, to: '/contracts/me' },
+                          { label: 'Wallet', icon: <AccountBalanceWallet sx={{ fontSize: 14 }} />, to: '/wallet' },
+                          { label: 'Leaderboard', icon: <Timeline sx={{ fontSize: 14 }} />, to: '/leaderboard' },
+                          { label: 'Calendar', icon: <CalendarMonthOutlinedIcon sx={{ fontSize: 14 }} />, to: '/calendar' },
+                        ].map(({ label, icon, to }) => (
+                          <Button
+                            key={label}
+                            component={RouterLink}
+                            to={to}
+                            size="small"
+                            startIcon={icon}
+                            sx={{
+                              fontFamily: font, fontSize: '0.85rem', fontWeight: 500,
+                              color: T.text,
+                              border: `1px solid ${T.border}`,
+                              borderRadius: T.radiusSm, px: 2, py: 1,
+                              textTransform: 'none', bgcolor: 'transparent',
+                              '&:hover': { bgcolor: T.surfaceHover, borderColor: T.borderHover },
+                              transition: 'all 0.15s ease',
+                            }}
+                          >
+                            {label}
+                          </Button>
+                        ))}
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                </BentoItem>
+                <BentoItem span={1}>
+                  <Card component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} sx={sxCard}>
+                    <CardContent sx={{ p: '20px !important' }}>
+                      <SectionTitle>Manual Job Validation</SectionTitle>
+                      {jobmessage && (
+                        <Box sx={{
+                          mb: 1.5, p: '8px 14px',
+                          bgcolor: T.accentDim, border: `1px solid ${alpha(T.accent, 0.2)}`,
+                          borderRadius: T.radiusSm,
+                        }}>
+                          <Typography sx={{ fontFamily: font, fontSize: '0.85rem', color: T.accent, fontWeight: 500 }}>
+                            {jobmessage}
+                          </Typography>
+                        </Box>
+                      )}
+                      <Stack direction="row" spacing={1} alignItems="flex-start">
+                        <TextField
+                          size="small"
+                          placeholder="Enter Job ID…"
+                          value={jobid}
+                          onChange={(e) => Setjobid(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleJobsubmit(jobid)}
+                          sx={{
+                            flex: 1,
+                            '& .MuiOutlinedInput-root': {
+                              bgcolor: 'transparent', borderRadius: T.radiusSm,
+                              fontFamily: font, fontSize: '0.95rem', color: T.text,
+                              '& fieldset': { borderColor: T.border },
+                              '&:hover fieldset': { borderColor: T.borderHover },
+                              '&.Mui-focused fieldset': { borderColor: T.accent, borderWidth: '1px' },
+                            },
+                            '& input': { color: T.text, py: '9px', '&::placeholder': { color: T.textMuted, opacity: 1 } },
+                          }}
+                        />
+                        <Button
+                          onClick={() => handleJobsubmit(jobid)}
+                          sx={{
+                            fontFamily: font, fontWeight: 600, fontSize: '0.88rem',
+                            bgcolor: T.accent, color: T.bg,
+                            borderRadius: T.radiusSm, px: 2.5, py: '9px',
+                            textTransform: 'none', whiteSpace: 'nowrap',
+                            '&:hover': { bgcolor: '#c8e600' },
+                            transition: 'background 0.15s ease',
+                          }}
+                        >
+                          Submit
+                        </Button>
+                      </Stack>
+                      <Typography sx={{ ...sxLabel, mt: 1.5, fontSize: '0.72rem', fontWeight: 400 }}>
+                        For TruckersHub jobs that weren't auto-validated
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </BentoItem>
+              </BentoGrid>
+
+              {/* ── Upcoming events (calendar) ──────────────────── */}
+              {todayEvents.length > 0 && (
+                <Grid container spacing={2} sx={{ mb: 3 }}>
+                  <Grid item xs={12}>
+                    <Card component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} sx={sxCard}>
+                      <CardContent sx={{ p: '20px !important' }}>
+                        <SectionTitle
+                          action={
+                            <Button
+                              component={RouterLink} to="/calendar" size="small"
+                              startIcon={<CalendarMonthOutlinedIcon sx={{ fontSize: 14 }} />}
+                              sx={{
+                                fontFamily: font, fontSize: '0.82rem', textTransform: 'none',
+                                color: T.accent, border: `1px solid ${alpha(T.accent, 0.25)}`,
+                                borderRadius: T.radiusSm, px: 1.5,
+                                '&:hover': { bgcolor: T.accentDim, borderColor: alpha(T.accent, 0.4) },
+                              }}
+                            >
+                              Full calendar
+                            </Button>
+                          }
+                        >
+                          Today&apos;s Events
+                        </SectionTitle>
+                        {todayEvents.length === 1 ? (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Box sx={{ flexShrink: 0 }}>
+                              {todayEvents[0].slotImageUrl ? (
+                                
+                                <Box
+                                  component="img"
+                                  src={todayEvents[0].slotImageUrl}
+                                  sx={{
+                                    width: 440,
+                                    height: 360,
+                                    borderRadius: T.radiusSm,
+                                    border: `1px solid ${T.border}`,
+                                    objectFit: 'cover',
+                                  }}
+                                />
+                              ) : (
+                                <Box sx={{
+                                  width: 440,
+                                  height: 360,
+                                  borderRadius: T.radiusSm,
+                                  bgcolor: T.accentDim,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                }}>
+                                  <Typography sx={{ color: T.accent, fontWeight: 600 }}>No Image</Typography>
+                                </Box>
+                              )}
+                            </Box>
+                            <Box sx={{ flex: 1 }}>
+                              <Typography sx={{ fontFamily: font, fontSize: '1.1rem', color: T.text, fontWeight: 600 }}>
+                                {todayEvents[0].title}
+                              </Typography>
+                              <Typography sx={{ fontFamily: font, fontSize: '0.9rem', color: T.textMuted, mt: 0.5 }}>
+                                {todayEvents[0].slotNumber != null ? `Slot ${todayEvents[0].slotNumber}` : 'Slot TBD'}
+                                {todayEvents[0].slotName ? ` · ${todayEvents[0].slotName}` : ''}
+                                {todayEvents[0].source ? ` · ${todayEvents[0].source}` : ''}
+                              </Typography>
+                              <Typography sx={{ fontFamily: font, fontSize: '0.85rem', color: T.textSecondary, mt: 0.5 }}>
+                                {(() => {
+                                  const meetupDate = todayEvents[0].meetupTime ? new Date(todayEvents[0].meetupTime) : null;
+                                  const departureDate = todayEvents[0].departureTime ? new Date(todayEvents[0].departureTime) : null;
+                                  const meetupLabel = meetupDate && !Number.isNaN(meetupDate.getTime())
+                                    ? meetupDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                    : 'TBD';
+                                  const departureLabel = departureDate && !Number.isNaN(departureDate.getTime())
+                                    ? departureDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                    : '';
+                                  return `${meetupLabel}${departureLabel ? ` - ${departureLabel}` : ''}`;
+                                })()}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        ) : (
+                          <Box sx={{ position: 'relative' }}>
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                gap: 2,
+                                overflowX: 'auto',
+                                scrollSnapType: 'x mandatory',
+                                pb: 1,
+                                '&::-webkit-scrollbar': { height: 6 },
+                                '&::-webkit-scrollbar-track': { bgcolor: T.surfaceAlt },
+                                '&::-webkit-scrollbar-thumb': { bgcolor: T.border, borderRadius: 3 },
+                              }}
+                            >
+                              {todayEvents.map((ev, idx) => {
+                                const meetupDate = ev.meetupTime ? new Date(ev.meetupTime) : null;
+                                const departureDate = ev.departureTime ? new Date(ev.departureTime) : null;
+                                const meetupLabel = meetupDate && !Number.isNaN(meetupDate.getTime())
+                                  ? meetupDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                  : 'TBD';
+                                const departureLabel = departureDate && !Number.isNaN(departureDate.getTime())
+                                  ? departureDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                  : '';
+                                return (
+                                  <Box
+                                    key={ev.id || `${ev.title}-${idx}`}
+                                    sx={{
+                                      flexShrink: 0,
+                                      width: 350,
+                                      scrollSnapAlign: 'start',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: 2,
+                                      p: 2,
+                                      border: `1px solid ${T.border}`,
+                                      borderRadius: T.radiusSm,
+                                      bgcolor: T.surfaceAlt,
+                                    }}
+                                  >
+                                    <Box sx={{ flexShrink: 0 }}>
+                                      {ev.slotImageUrl ? (
+                                        <Box
+                                          component="img"
+                                          src={ev.slotImageUrl}
+                                          sx={{
+                                            width: 160,
+                                            height: 112,
+                                            borderRadius: T.radiusSm,
+                                            border: `1px solid ${T.border}`,
+                                            objectFit: 'cover',
+                                          }}
+                                        />
+                                      ) : (
+                                        <Box sx={{
+                                          width: 160,
+                                          height: 112,
+                                          borderRadius: T.radiusSm,
+                                          bgcolor: T.accentDim,
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                        }}>
+                                          <Typography sx={{ color: T.accent, fontWeight: 600, fontSize: '0.8rem' }}>No Image</Typography>
+                                        </Box>
+                                      )}
+                                    </Box>
+                                    <Box sx={{ flex: 1 }}>
+                                      <Typography sx={{ fontFamily: font, fontSize: '1rem', color: T.text, fontWeight: 600 }} noWrap>
+                                        {ev.title}
+                                      </Typography>
+                                      <Typography sx={{ fontFamily: font, fontSize: '0.85rem', color: T.textMuted, mt: 0.5 }}>
+                                        {ev.slotNumber != null ? `Slot ${ev.slotNumber}` : 'Slot TBD'}
+                                        {ev.slotName ? ` · ${ev.slotName}` : ''}
+                                        {ev.source ? ` · ${ev.source}` : ''}
+                                      </Typography>
+                                      <Typography sx={{ fontFamily: font, fontSize: '0.8rem', color: T.textSecondary, mt: 0.5 }}>
+                                        {meetupLabel}{departureLabel ? ` - ${departureLabel}` : ''}
+                                      </Typography>
+                                    </Box>
+                                  </Box>
+                                );
+                              })}
+                            </Box>
+                          </Box>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+              )}
+
+              {externalUpcoming.length > 0 && (
+                <Grid container spacing={2} sx={{ mb: 3 }}>
+                  <Grid item xs={12}>
+                    <Card sx={sxCard}>
+                      <CardContent sx={{ p: '20px !important' }}>
+                        <SectionTitle>Upcoming Events</SectionTitle>
+                        <Stack spacing={0}>
+                          {externalUpcoming.map((ev, idx) => (
+                            <Stack
+                              key={ev.id} direction="row" alignItems="center" justifyContent="space-between"
+                              sx={{
+                                py: 1.25,
+                                borderBottom: idx < externalUpcoming.length - 1 ? `1px solid ${T.border}` : 'none',
+                              }}
+                            >
+                              <Typography sx={{ fontFamily: font, fontSize: '0.92rem', color: T.text }}>
+                                {ev.title}
+                              </Typography>
+                              <Typography sx={{ fontFamily: font, fontSize: '0.8rem', color: T.textMuted }}>
+                                {new Date(ev.start).toLocaleString(undefined, {
+                                  month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+                                })}
+                              </Typography>
+                            </Stack>
+                          ))}
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+              )}
+
+              {/* ── Wallet + Contracts ──────────────────────────── */}
+              <BentoGrid minItemWidth={360} gap={2} sx={{ mb: 3 }}>
+                <BentoItem span={2}>
+                  <Box component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }}>
+                    <WalletTransactions
+                      wallet={wallet}
+                      onRefresh={() => getMyWallet().then((w) => setWallet({
+                        balance: Number(w.balance || 0),
+                        transactions: Array.isArray(w.transactions) ? w.transactions : [],
+                      }))}
+                    />
+                  </Box>
+                </BentoItem>
+                <BentoItem span={1}>
+                  <Stack spacing={2}>
+                    <Box component={motion.div} initial={{ opacity: 0, x: 14 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+                      <ActiveContracts onRefresh={() => myContracts().then((res) => setContracts(res))} />
+                    </Box>
+                    <Box component={motion.div} initial={{ opacity: 0, x: 14 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+                      <CompletedContracts onRefresh={() => myContracts().then((res) => setContracts(res))} />
+                    </Box>
+                  </Stack>
+                </BentoItem>
+              </BentoGrid>
+
+              {/* ── Profile & TruckersHub ───────────────────────── */}
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                <Grid item xs={12} lg={7}>
+                  <Card component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} sx={sxCard}>
+                    <CardContent sx={{ p: '20px !important' }}>
+                      <SectionTitle>
+                        Profile & Game Details
+                      </SectionTitle>
+                      <Grid container spacing={2.5}>
+                        <Grid item xs={12} md={6}>
+                          <Stack spacing={2.5}>
+                            <Box>
+                              <Typography sx={{ ...sxLabel, mb: 1 }}>Platform IDs</Typography>
+                              <Stack spacing={0.75}>
+                                <TagChip
+                                  label={rider?.steamID ? `Steam: ${rider.steamID}` : 'No Steam ID'}
+                                  color={rider?.steamID ? T.info : T.textMuted}
+                                  filled={!!rider?.steamID}
+                                />
+                                <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+                                  <TagChip
+                                    label={rider?.truckersmpId ? `TMP: ${rider.truckersmpId}` : 'No TMP ID'}
+                                    color={rider?.truckersmpId ? T.info : T.textMuted}
+                                    filled={!!rider?.truckersmpId}
+                                  />
+                                  <TagChip
+                                    label={rider?.truckershubId ? `Hub: ${rider.truckershubId}` : 'No Hub ID'}
+                                    color={rider?.truckershubId ? T.success : T.textMuted}
+                                    filled={!!rider?.truckershubId}
+                                  />
+                                </Stack>
+                              </Stack>
+                            </Box>
+                          </Stack>
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                          <Stack spacing={2.5}>
+                            <Box>
+                              <Typography sx={{ ...sxLabel, mb: 1 }}>DLCs Owned</Typography>
+                              <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+                                <TagChip
+                                  label={rider?.dlcsOwned?.ets2?.length > 0 ? `ETS2 ×${rider.dlcsOwned.ets2.length}` : 'No ETS2 DLCs'}
+                                  color={rider?.dlcsOwned?.ets2?.length > 0 ? T.warning : T.textMuted}
+                                  filled={rider?.dlcsOwned?.ets2?.length > 0}
+                                />
+                                <TagChip
+                                  label={rider?.dlcsOwned?.ats?.length > 0 ? `ATS ×${rider.dlcsOwned.ats.length}` : 'No ATS DLCs'}
+                                  color={rider?.dlcsOwned?.ats?.length > 0 ? T.warning : T.textMuted}
+                                  filled={rider?.dlcsOwned?.ats?.length > 0}
+                                />
+                              </Stack>
+                            </Box>
+                            <Box>
+                              <Typography sx={{ ...sxLabel, mb: 1 }}>Games</Typography>
+                              <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+                                {rider?.gamesOwned?.length > 0
+                                  ? rider.gamesOwned.map((g, i) => <TagChip key={i} label={g} color={T.warning} filled />)
+                                  : <TagChip label="No games listed" />}
+                              </Stack>
+                            </Box>
+                          </Stack>
+                        </Grid>
+                      </Grid>
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                <Grid item xs={12} lg={5}>
+                  <Card component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} sx={sxCard}>
+                    <CardContent sx={{ p: '20px !important' }}>
+                      <SectionTitle>TruckersHub Snapshot</SectionTitle>
+                      {truckershubStats && thSnapshot ? (
+                        <>
+                          <Typography sx={{ ...sxLabel, fontSize: '0.72rem', fontWeight: 400, mb: 2 }}>
+                            Last updated: {truckershubStats.lastUpdatedAt
+                              ? new Date(truckershubStats.lastUpdatedAt).toLocaleString()
+                              : '—'}
+                          </Typography>
+                          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.25 }}>
+                            {[
+                              { label: 'Level', value: thSnapshot.level ?? '—' },
+                              { label: 'Avg Rating', value: thSnapshot.statistics?.rating?.avg ? thSnapshot.statistics.rating.avg.toFixed(2) : '—' },
+                              { label: 'THP Total', value: thSnapshot.statistics?.THP?.total ? thSnapshot.statistics.THP.total.toLocaleString() : '—' },
+                              { label: 'XP Total', value: thSnapshot.statistics?.XP?.total ? thSnapshot.statistics.XP.total.toLocaleString() : '—' },
+                              { label: 'Fuel Burned', value: thSnapshot.statistics?.fuelBurned?.total ? thSnapshot.statistics.fuelBurned.total.toLocaleString() : '—' },
+                              { label: 'Max Speed', value: thSnapshot.statistics?.speed?.max ? `${thSnapshot.statistics.speed.max.toFixed(1)} km/h` : '—' },
+                            ].map(({ label, value }) => (
+                              <InfoCell key={label} label={label} value={value} />
+                            ))}
+                          </Box>
+                        </>
+                      ) : (
+                        <Stack alignItems="center" spacing={1} sx={{ py: 4 }}>
+                          <TrendingUpIcon sx={{ color: T.textFaint, fontSize: 28 }} />
+                          <Typography sx={{ fontFamily: font, fontSize: '0.92rem', color: T.textMuted }}>
+                            No TruckersHub data available yet
+                          </Typography>
+                        </Stack>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Grid>
+              </Grid>
+
+              {/* ── Events & Attendance + Achievements ──────────── */}
+            
 
               {/* ── License Card ────────────────────────────────── */}
               <Grid container spacing={2} sx={{ mb: 3 }}>

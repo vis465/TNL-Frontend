@@ -37,7 +37,7 @@ export default function DivisionLeaderboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [tab, setTab] = useState(0);
-  const [sort, setSort] = useState('totalRevenue');
+  const [sort, setSort] = useState('totalEventsAttended');
   const [dir, setDir] = useState('desc');
 
   const load = async (nextSort = sort, nextDir = dir) => {
@@ -79,11 +79,11 @@ export default function DivisionLeaderboard() {
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <DashboardHero
         title="Division Leaderboard"
-        subtitle="Live inter-division rankings by revenue, scale, and execution. Explore top contenders or drill into the complete ecosystem."
+        subtitle="Live inter-division rankings by attendance, scale, and execution. Explore top contenders or drill into the complete ecosystem."
         stats={[
           { label: 'Tracked Divisions', value: divisions.length },
           { label: 'Ranked Divisions', value: rows.length },
-          { label: 'Top Revenue', value: Number(rows[0]?.totalRevenue || 0) },
+          { label: 'Top Attendance', value: Number(rows[0]?.totalEventsAttended || 0) },
           { label: 'Top Wallet', value: Number(rows[0]?.totalTaxTokens || 0) },
         ]}
       />
@@ -92,7 +92,7 @@ export default function DivisionLeaderboard() {
         <Typography variant="h5" fontWeight={800}>Global standings</Typography>
       </Stack>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-        Inter-division ranking by total revenue generated from normalized job data.
+        Inter-division ranking by unique division attendance counts and engagement.
       </Typography>
 
       {loading && <LinearProgress sx={{ mb: 2 }} />}
@@ -130,7 +130,7 @@ export default function DivisionLeaderboard() {
                       <Stack direction="row" justifyContent="space-between" alignItems="center">
                         <Typography variant="caption" color="text.secondary">Rank #{idx + 1}</Typography>
                         <Typography variant="body2" fontWeight={800}>
-                          <NumberTicker value={Math.round(r.totalRevenue || 0)} /> rev
+                          <NumberTicker value={Math.round(r.totalEventsAttended || 0)} /> attend
                         </Typography>
                       </Stack>
                     </Paper>
@@ -183,13 +183,13 @@ export default function DivisionLeaderboard() {
                         Distance (km)
                       </TableSortLabel>
                     </TableCell>
-                    <TableCell align="right" sortDirection={sort === 'totalRevenue' ? dir : false}>
+                    <TableCell align="right" sortDirection={sort === 'totalEventsAttended' ? dir : false}>
                       <TableSortLabel
-                        active={sort === 'totalRevenue'}
-                        direction={sort === 'totalRevenue' ? dir : 'desc'}
-                        onClick={() => toggleSort('totalRevenue')}
+                        active={sort === 'totalEventsAttended'}
+                        direction={sort === 'totalEventsAttended' ? dir : 'desc'}
+                        onClick={() => toggleSort('totalEventsAttended')}
                       >
-                        Revenue
+                        Unique attendance
                       </TableSortLabel>
                     </TableCell>
                     <TableCell align="right" sortDirection={sort === 'totalTaxTokens' ? dir : false}>
@@ -231,7 +231,7 @@ export default function DivisionLeaderboard() {
                         <TableCell align="right">{r.memberCount}</TableCell>
                         <TableCell align="right">{r.totalJobs}</TableCell>
                         <TableCell align="right">{Math.round(r.totalDistance || 0).toLocaleString()}</TableCell>
-                        <TableCell align="right">{Math.round(r.totalRevenue || 0).toLocaleString()}</TableCell>
+                        <TableCell align="right">{Math.round(r.totalEventsAttended || 0).toLocaleString()}</TableCell>
                         <TableCell align="right">{Math.round(r.totalTaxTokens || 0).toLocaleString()}</TableCell>
                       </TableRow>
                     );

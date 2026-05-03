@@ -25,7 +25,6 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Pagination,
 } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditIcon from '@mui/icons-material/Edit';
@@ -109,10 +108,7 @@ export default function AdminExternalAttendance() {
   const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [editForm, setEditForm] = useState({});
-  const [entriesPage, setEntriesPage] = useState(1);
   const [expandedMonths, setExpandedMonths] = useState({});
-
-  const ENTRIES_PER_PAGE = 10;
 
   const loadList = useCallback(async () => {
     try {
@@ -284,23 +280,12 @@ export default function AdminExternalAttendance() {
     }
   };
 
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-
   const sortedRows = [...rows].sort((a, b) => {
     const aTime = new Date(a.meetupAt || a.startUtc || a.createdAt || 0).getTime();
     const bTime = new Date(b.meetupAt || b.startUtc || b.createdAt || 0).getTime();
-    return aTime - bTime;
+    return bTime - aTime;
   });
-  const upcomingRows = sortedRows.filter((row) => {
-    const when = new Date(row.meetupAt || row.startUtc || row.createdAt || 0).getTime();
-    return Number.isFinite(when) && when >= todayStart.getTime();
-  });
-  const baseRows = upcomingRows.length > 0 ? upcomingRows : sortedRows;
-  const totalPages = Math.max(1, Math.ceil(baseRows.length / ENTRIES_PER_PAGE));
-  const safePage = Math.min(entriesPage, totalPages);
-  const pageRows = baseRows.slice((safePage - 1) * ENTRIES_PER_PAGE, safePage * ENTRIES_PER_PAGE);
-  const groupedRows = pageRows.reduce((acc, row) => {
+  const groupedRows = sortedRows.reduce((acc, row) => {
     const d = new Date(row.meetupAt || row.startUtc || row.createdAt || 0);
     const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     if (!acc[monthKey]) {
@@ -312,11 +297,7 @@ export default function AdminExternalAttendance() {
     acc[monthKey].items.push(row);
     return acc;
   }, {});
-  const groupedEntries = Object.entries(groupedRows).sort(([a], [b]) => a.localeCompare(b));
-
-  useEffect(() => {
-    setEntriesPage(1);
-  }, [rows.length]);
+  const groupedEntries = Object.entries(groupedRows).sort(([a], [b]) => b.localeCompare(a));
 
   return (
     <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
@@ -560,17 +541,6 @@ export default function AdminExternalAttendance() {
                   </Accordion>
                 );
               })}
-              {totalPages > 1 && (
-                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                  <Pagination
-                    page={safePage}
-                    count={totalPages}
-                    onChange={(_, page) => setEntriesPage(page)}
-                    size="small"
-                    color="primary"
-                  />
-                </Box>
-              )}
             </>
           )}
         </Box>
