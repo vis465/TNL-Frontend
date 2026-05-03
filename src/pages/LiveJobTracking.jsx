@@ -1,38 +1,97 @@
 /**
- * Live Job Tracking Page
- * Monitor active jobs with real-time driver progress
+ * Live job tracking — MUI
  */
 
-import React from 'react';
-import { useState,useEffect } from 'react';
-import {
-  Map,
-  Package,
-  Navigation,
-  AlertCircle,
-  CheckCircle,
-  Truck,
-  MapPin,
-  DollarSign,
-  Clock,
-  TrendingUp,
-} from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Paper from '@mui/material/Paper';
+import Grid from '@mui/material/Grid';
+import Stack from '@mui/material/Stack';
+import Chip from '@mui/material/Chip';
+import Button from '@mui/material/Button';
+import LinearProgress from '@mui/material/LinearProgress';
+import Alert from '@mui/material/Alert';
+import CircularProgress from '@mui/material/CircularProgress';
+import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
+import ListIcon from '@mui/icons-material/List';
+import MapOutlinedIcon from '@mui/icons-material/MapOutlined';
+import ViewModuleOutlinedIcon from '@mui/icons-material/ViewModuleOutlined';
+import AttachMoneyOutlinedIcon from '@mui/icons-material/AttachMoneyOutlined';
+import SensorsOutlinedIcon from '@mui/icons-material/SensorsOutlined';
+import { alpha, useTheme } from '@mui/material/styles';
+import { useTelemetryRealtime } from '../context/TelemetryRealtimeContext';
 
 export default function LiveJobTrackingPage() {
+  const theme = useTheme();
   const [jobs, setJobs] = useState([]);
-  const [drivers, setDrivers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedJob, setSelectedJob] = useState(null);
-  const [viewMode, setViewMode] = useState('list'); // list, map, detail
+  const [viewMode, setViewMode] = useState('list');
+  const { subscribe, dashboardConnected } = useTelemetryRealtime();
+
+  const mergeTelemetryJob = useCallback((data) => {
+    const raw = data?.raw || {};
+    const jobPayload = raw.job;
+    if (!jobPayload) return;
+
+    const id = String(data.riderId);
+    setJobs((prev) => {
+      const idx = prev.findIndex((j) => String(j.riderId) === id);
+      const vehicleSlice = {
+        speed: raw.truck?.speed,
+        fuel: raw.truck?.fuel,
+        damage: raw.truck?.damage,
+        navigation: raw.navigation,
+        job: jobPayload,
+        truck: raw.truck,
+      };
+      if (idx === -1) {
+        return [
+          ...prev,
+          {
+            riderId: data.riderId,
+            steamId: data.steamId,
+            displayName: data.displayName,
+            employeeID: data.employeeID,
+            truckershubId: data.truckershubId,
+            game: raw.game?.abbreviation,
+            job: jobPayload,
+            vehicle: vehicleSlice,
+            position: raw.truck?.position,
+            lastUpdate: new Date().toISOString(),
+          },
+        ];
+      }
+      const next = [...prev];
+      next[idx] = {
+        ...next[idx],
+        ...(data.displayName != null ? { displayName: data.displayName } : {}),
+        ...(data.employeeID != null ? { employeeID: data.employeeID } : {}),
+        ...(data.truckershubId != null ? { truckershubId: data.truckershubId } : {}),
+        job: jobPayload,
+        vehicle: { ...next[idx].vehicle, ...vehicleSlice },
+        position: raw.truck?.position ?? next[idx].position,
+        lastUpdate: new Date().toISOString(),
+      };
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    return subscribe((message) => {
+      if (message.type === 'TELEMETRY_UPDATE') mergeTelemetryJob(message.data);
+      if (message.type === 'DRIVER_OFFLINE') {
+        const id = String(message.data?.riderId);
+        setJobs((prev) => prev.filter((j) => String(j.riderId) !== id));
+      }
+    });
+  }, [subscribe, mergeTelemetryJob]);
 
   useEffect(() => {
     fetchActiveJobs();
-
-    const interval = setInterval(() => {
-      fetchActiveJobs();
-    }, 5000); // Refresh every 5 seconds
-
+    const interval = setInterval(() => fetchActiveJobs(), 12000);
     return () => clearInterval(interval);
   }, []);
 
@@ -44,20 +103,18 @@ export default function LiveJobTrackingPage() {
 
       if (data.success) {
         const driversWithJobs = [];
-
-        // Fetch detailed telemetry for each driver to get job info
         await Promise.all(
           data.data.drivers.map(async (driver) => {
             try {
               const detailResponse = await fetch(`/api/telemetry/drivers/${driver.riderId}`);
               const detailData = await detailResponse.json();
-
               if (detailData.success && detailData.data.telemetry.job) {
+                const tel = detailData.data.telemetry;
                 driversWithJobs.push({
                   ...driver,
-                  job: detailData.data.telemetry.job,
-                  vehicle: detailData.data.telemetry,
-                  position: detailData.data.telemetry.position,
+                  job: tel.job,
+                  vehicle: tel,
+                  position: tel.position,
                 });
               }
             } catch (err) {
@@ -65,9 +122,7 @@ export default function LiveJobTrackingPage() {
             }
           })
         );
-
         setJobs(driversWithJobs);
-        setDrivers(data.data.drivers);
         setError(null);
       }
     } catch (err) {
@@ -79,308 +134,252 @@ export default function LiveJobTrackingPage() {
   };
 
   const getProgressPercentage = (job, vehicle) => {
-    if (!job?.plannedDistance || !vehicle?.speed?.kph) return 0;
-    // This is a simplified estimate - actual progress tracking would need more data
-    return Math.random() * 100; // Placeholder
+    const totalKm = job?.plannedDistance?.km;
+    const nav = vehicle?.navigation;
+    const remainingKm =
+      nav?.remaining?.km ?? nav?.estimatedDistance?.km ?? nav?.distance?.km;
+    if (totalKm > 0 && typeof remainingKm === 'number' && remainingKm >= 0) {
+      const leg = Math.max(0, totalKm - remainingKm);
+      return Math.max(0, Math.min(100, (leg / totalKm) * 100));
+    }
+    return 0;
+  };
+
+  const statPaper = {
+    elevation: 0,
+    sx: {
+      p: 2,
+      borderRadius: 2,
+      border: `1px solid ${theme.palette.grey[300]}`,
+      height: '100%',
+    },
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-4 flex items-center gap-3">
-          <Navigation className="w-10 h-10 text-blue-400" />
-          Live Job Tracking
-        </h1>
-
-        {/* View Mode Selector */}
-        <div className="flex gap-2 mb-4">
-          {['list', 'map', 'detail'].map((mode) => (
-            <button
-              key={mode}
-              onClick={() => setViewMode(mode)}
-              className={`px-4 py-2 rounded-lg font-medium capitalize transition-colors ${
-                viewMode === mode
-                  ? 'bg-blue-500/30 text-blue-300 border border-blue-500/50'
-                  : 'bg-slate-700/50 text-slate-400 hover:text-slate-300'
-              }`}
-            >
-              {mode === 'list' && '📋 List'}
-              {mode === 'map' && '🗺️ Map'}
-              {mode === 'detail' && '🔍 Details'}
-            </button>
-          ))}
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-4">
-          <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600/50">
-            <p className="text-sm text-slate-400 mb-1">Active Jobs</p>
-            <p className="text-3xl font-bold text-blue-400">{jobs.length}</p>
-          </div>
-          <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600/50">
-            <p className="text-sm text-slate-400 mb-1">Total Income</p>
-            <p className="text-3xl font-bold text-green-400">
-              ${jobs.reduce((sum, j) => sum + (j.job?.income || 0), 0)}
-            </p>
-          </div>
-          <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600/50">
-            <p className="text-sm text-slate-400 mb-1">Avg. Distance</p>
-            <p className="text-3xl font-bold text-purple-400">
-              {jobs.length > 0
-                ? (
-                    jobs.reduce((sum, j) => sum + (j.job?.plannedDistance?.km || 0), 0) /
-                    jobs.length
-                  ).toFixed(0)
-                : 0}
-              km
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Error */}
-      {error && (
-        <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-lg flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-          <p className="text-red-200">{error}</p>
-        </div>
-      )}
-
-      {/* Content */}
-      {loading ? (
-        <div className="flex items-center justify-center h-40">
-          <div className="animate-spin">
-            <Truck className="w-8 h-8 text-blue-400" />
-          </div>
-        </div>
-      ) : viewMode === 'list' ? (
-        <JobListView
-          jobs={jobs}
-          onSelectJob={setSelectedJob}
-          getProgressPercentage={getProgressPercentage}
+    <Box>
+      <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2} sx={{ mb: 3 }}>
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <LocalShippingOutlinedIcon sx={{ fontSize: 36, color: 'primary.main' }} />
+          <Box>
+            <Typography variant="h6" fontWeight={700}>
+              Live jobs
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Telemetry API refresh + realtime merges via WebSocket.
+            </Typography>
+          </Box>
+        </Stack>
+        <Chip
+          icon={<SensorsOutlinedIcon />}
+          label={dashboardConnected ? 'Realtime merges on' : 'Socket reconnecting'}
+          size="small"
+          sx={{
+            fontWeight: 600,
+            alignSelf: 'flex-start',
+            bgcolor: dashboardConnected
+              ? alpha(theme.palette.success.main, 0.12)
+              : alpha(theme.palette.warning.main, 0.15),
+          }}
         />
-      ) : viewMode === 'detail' && selectedJob ? (
-        <JobDetailView job={selectedJob} />
-      ) : (
-        <div className="text-center py-12 px-6 bg-slate-700/50 backdrop-blur rounded-lg border border-slate-600/50">
-          <Map className="w-12 h-12 text-slate-500 mx-auto mb-3" />
-          <p className="text-slate-400">Map view coming soon</p>
-        </div>
+      </Stack>
+
+      
+
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={12} md={4}>
+          <Paper {...statPaper}>
+            <Typography variant="caption" color="text.secondary">
+              Active jobs
+            </Typography>
+            <Typography variant="h5" fontWeight={700}>
+              {jobs.length}
+            </Typography>
+          </Paper>
+        </Grid>
+       
+        
+      </Grid>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
       )}
-    </div>
+
+      {loading ? (
+        <Box sx={{ py: 6, display: 'flex', justifyContent: 'center' }}>
+          <CircularProgress />
+        </Box>
+      ) : viewMode === 'list' ? (
+        <JobList jobs={jobs} getProgressPercentage={getProgressPercentage} onSelectJob={setSelectedJob} />
+      ) : viewMode === 'detail' && selectedJob ? (
+        <JobDetail job={selectedJob} getProgressPercentage={getProgressPercentage} />
+      ) : (
+        <Paper elevation={0} sx={{ p: 6, textAlign: 'center', border: `1px dashed ${theme.palette.grey[400]}` }}>
+          <MapOutlinedIcon sx={{ fontSize: 48, color: theme.palette.grey[400] }} />
+          <Typography color="text.secondary" sx={{ mt: 2 }}>
+            Map view not implemented yet.
+          </Typography>
+        </Paper>
+      )}
+    </Box>
   );
 }
 
-/**
- * Job List View
- */
-function JobListView({ jobs, onSelectJob, getProgressPercentage }) {
-  if (jobs.length === 0) {
+function JobList({ jobs, getProgressPercentage, onSelectJob }) {
+  const theme = useTheme();
+  if (!jobs.length) {
     return (
-      <div className="text-center py-12 px-6 bg-slate-700/50 backdrop-blur rounded-lg border border-slate-600/50">
-        <Package className="w-12 h-12 text-slate-500 mx-auto mb-3" />
-        <p className="text-slate-400">No active jobs at the moment</p>
-      </div>
+      <Paper elevation={0} sx={{ p: 6, textAlign: 'center', border: `1px dashed ${theme.palette.grey[400]}` }}>
+        <Typography color="text.secondary">No drivers with active job telemetry.</Typography>
+      </Paper>
     );
   }
-
   return (
-    <div className="space-y-4">
-      {jobs.map((job) => (
-        <div
-          key={job.riderId}
-          onClick={() => onSelectJob(job)}
-          className="bg-slate-700/50 backdrop-blur rounded-lg p-6 border border-slate-600/50 hover:border-slate-500/50 cursor-pointer transition-all hover:scale-[1.01]"
-        >
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                <Truck className="w-5 h-5 text-blue-400" />
-                Driver {job.steamId?.slice(-6)}
-              </h3>
-              <p className="text-sm text-slate-400">
-                {job.job.source?.city?.name} → {job.job.destination?.city?.name}
-              </p>
-            </div>
-
-            <div className="text-right">
-              <div className="text-2xl font-bold text-green-400 flex items-center gap-1 justify-end">
-                <DollarSign className="w-5 h-5" />
-                {job.job.income}
-              </div>
-              <p className="text-sm text-slate-400">{job.job.plannedDistance?.km} km</p>
-            </div>
-          </div>
-
-          {/* Cargo Info */}
-          <div className="mb-4 p-3 bg-slate-600/30 rounded border border-slate-600/50">
-            <p className="text-sm text-slate-400 mb-1">Cargo</p>
-            <p className="font-semibold text-white">{job.job.cargo?.name}</p>
-            <p className="text-xs text-slate-400 mt-1">
-              {job.job.cargo?.mass} kg • Damage: {(job.job.cargo?.damage * 100).toFixed(2)}%
-            </p>
-          </div>
-
-          {/* Vehicle Status */}
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            <StatusBadge
-              icon={TrendingUp}
-              label="Speed"
-              value={`${job.vehicle?.speed?.kph || 0} km/h`}
-              color="blue"
-            />
-            <StatusBadge
-              icon={Truck}
-              label="Fuel"
-              value={`${(
-                ((job.vehicle?.fuel?.value || 0) / (job.vehicle?.fuel?.capacity || 1)) *
-                100
-              ).toFixed(0)}%`}
-              color="green"
-            />
-            <StatusBadge
-              icon={AlertCircle}
-              label="Damage"
-              value={`${((job.vehicle?.damage?.total || 0) * 100).toFixed(1)}%`}
-              color="orange"
-            />
-          </div>
-
-          {/* Progress */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-slate-400">Progress</span>
-              <span className="text-xs font-semibold text-white">
-                {getProgressPercentage(job.job, job.vehicle).toFixed(0)}%
-              </span>
-            </div>
-            <div className="h-2 bg-slate-600 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-blue-500 to-blue-400 transition-all duration-300"
-                style={{
-                  width: `${getProgressPercentage(job.job, job.vehicle)}%`,
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
+    <Stack spacing={2}>
+      {jobs.map((job) => {
+        const pct = getProgressPercentage(job.job, job.vehicle);
+        return (
+          <Paper
+            key={job.riderId}
+            elevation={0}
+            onClick={() => onSelectJob(job)}
+            sx={{
+              p: 2.5,
+              border: `1px solid ${theme.palette.grey[300]}`,
+              cursor: 'pointer',
+              '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.06) },
+            }}
+          >
+            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+              <Box>
+                <Typography variant="subtitle1" fontWeight={700}>
+                  {job.displayName || `Driver (${String(job.steamId || '').slice(-8)})`}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontFamily: 'mono' }}>
+                  {job.employeeID ? `Emp ${job.employeeID} · ` : ''}
+                  TH {job.truckershubId || '—'} {job.steamId ? `· Steam ${job.steamId}` : ''}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                  {job.job.source?.city?.name} → {job.job.destination?.city?.name}
+                </Typography>
+              </Box>
+              <Stack alignItems="flex-end" spacing={0.5}>
+                <Typography variant="h6" fontWeight={700} color="success.main" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <AttachMoneyOutlinedIcon fontSize="small" />
+                  {job.job.income}
+                </Typography>
+                <Typography variant="caption">{job.job.plannedDistance?.km} km</Typography>
+              </Stack>
+            </Stack>
+            <DividerLine />
+            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+              {job.job.cargo?.name}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {job.job.cargo?.mass} kg · cargo damage {(job.job.cargo?.damage * 100).toFixed(2)}%
+            </Typography>
+            <Grid container spacing={1} sx={{ mt: 2 }}>
+              <Grid item xs={4}>
+                <Metric label="Speed" value={`${job.vehicle?.speed?.kph || 0} km/h`} />
+              </Grid>
+              <Grid item xs={4}>
+                <Metric
+                  label="Fuel"
+                  value={`${(((job.vehicle?.fuel?.value || 0) / (job.vehicle?.fuel?.capacity || 1)) * 100).toFixed(0)}%`}
+                />
+              </Grid>
+              <Grid item xs={4}>
+                <Metric
+                  label="Damage"
+                  value={`${((job.vehicle?.damage?.total || 0) * 100).toFixed(1)}%`}
+                />
+              </Grid>
+            </Grid>
+           
+          </Paper>
+        );
+      })}
+    </Stack>
   );
 }
 
-/**
- * Job Detail View
- */
-function JobDetailView({ job }) {
+function Metric({ label, value }) {
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-slate-700/50 backdrop-blur rounded-lg p-6 border border-slate-600/50">
-        <h2 className="text-2xl font-bold text-white mb-4">Job Details</h2>
+    <Paper variant="outlined" sx={{ p: 1, textAlign: 'center' }}>
+      <Typography variant="caption" color="text.secondary">
+        {label}
+      </Typography>
+      <Typography variant="body2" fontWeight={700}>
+        {value}
+      </Typography>
+    </Paper>
+  );
+}
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <DetailItem label="Cargo" value={job.job.cargo?.name} />
-          <DetailItem label="Weight" value={`${job.job.cargo?.mass} kg`} />
-          <DetailItem label="Income" value={`$${job.job.income}`} color="green" />
-          <DetailItem label="Distance" value={`${job.job.plannedDistance?.km} km`} />
-          <DetailItem label="Speed" value={`${job.vehicle?.speed?.kph || 0} km/h`} />
-          <DetailItem
-            label="Fuel"
-            value={`${(
-              ((job.vehicle?.fuel?.value || 0) / (job.vehicle?.fuel?.capacity || 1)) *
-              100
-            ).toFixed(0)}%`}
-          />
-        </div>
-      </div>
+function DividerLine() {
+  return (
+    <Box sx={{ borderTop: '1px solid', borderColor: 'divider', my: 1.5 }} />
+  );
+}
 
-      {/* Route */}
-      <div className="bg-slate-700/50 backdrop-blur rounded-lg p-6 border border-slate-600/50">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <MapPin className="w-5 h-5 text-blue-400" />
+function JobDetail({ job, getProgressPercentage }) {
+  const theme = useTheme();
+  const pct = getProgressPercentage(job.job, job.vehicle);
+  return (
+    <Stack spacing={2}>
+      <Paper elevation={0} sx={{ p: 3, border: `1px solid ${theme.palette.grey[300]}` }}>
+        <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+          Job summary
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {job.displayName || 'Driver'}
+          {job.employeeID ? ` · Emp ${job.employeeID}` : ''}{' '}
+          {job.steamId ? <span style={{ fontFamily: 'monospace' }}>{job.steamId}</span> : null}{' '}
+          {job.truckershubId ? `· TH ${job.truckershubId}` : ''}
+        </Typography>
+        <Grid container spacing={2} sx={{ mt: 1 }}>
+          <Grid item xs={6} md={4}>
+            <Typography variant="caption" color="text.secondary">
+              Cargo
+            </Typography>
+            <Typography variant="body1" fontWeight={600}>
+              {job.job.cargo?.name}
+            </Typography>
+          </Grid>
+          <Grid item xs={6} md={4}>
+            <Typography variant="caption" color="text.secondary">
+              Income
+            </Typography>
+            <Typography variant="body1" fontWeight={600}>
+              €{job.job.income}
+            </Typography>
+          </Grid>
+          <Grid item xs={6} md={4}>
+            <Typography variant="caption" color="text.secondary">
+              Distance
+            </Typography>
+            <Typography variant="body1" fontWeight={600}>
+              {job.job.plannedDistance?.km} km
+            </Typography>
+          </Grid>
+        </Grid>
+        <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+          Progress ({pct.toFixed(0)}%)
+        </Typography>
+        <LinearProgress variant="determinate" value={pct} sx={{ mt: 0.5, height: 8, borderRadius: 2 }} />
+      </Paper>
+      <Paper elevation={0} sx={{ p: 3, border: `1px solid ${theme.palette.grey[300]}` }}>
+        <Typography variant="subtitle1" fontWeight={700}>
           Route
-        </h3>
-
-        <div className="space-y-3">
-          <div>
-            <p className="text-sm text-slate-400 mb-1">From</p>
-            <p className="text-lg font-semibold text-white">
-              {job.job.source?.city?.name}
-            </p>
-            <p className="text-xs text-slate-500">{job.job.source?.company?.name}</p>
-          </div>
-
-          <div className="py-2 text-center">
-            <Navigation className="w-4 h-4 text-blue-400 mx-auto" />
-          </div>
-
-          <div>
-            <p className="text-sm text-slate-400 mb-1">To</p>
-            <p className="text-lg font-semibold text-white">
-              {job.job.destination?.city?.name}
-            </p>
-            <p className="text-xs text-slate-500">{job.job.destination?.company?.name}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Cargo Details */}
-      <div className="bg-slate-700/50 backdrop-blur rounded-lg p-6 border border-slate-600/50">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <Package className="w-5 h-5 text-blue-400" />
-          Cargo Details
-        </h3>
-
-        <div className="space-y-3">
-          <DetailItem label="Type" value={job.job.cargo?.name} />
-          <DetailItem label="Mass" value={`${job.job.cargo?.mass} kg`} />
-          <DetailItem label="Unit Mass" value={`${job.job.cargo?.unitMass} kg`} />
-          <DetailItem
-            label="Damage"
-            value={`${(job.job.cargo?.damage * 100).toFixed(2)}%`}
-            color={job.job.cargo?.damage > 0.1 ? 'red' : 'green'}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Status Badge Component
- */
-function StatusBadge({ icon: Icon, label, value, color }) {
-  const colors = {
-    blue: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-    green: 'bg-green-500/20 text-green-300 border-green-500/30',
-    orange: 'bg-orange-500/20 text-orange-300 border-orange-500/30',
-  };
-
-  return (
-    <div className={`${colors[color]} rounded p-2 border flex flex-col items-center text-center`}>
-      <Icon className="w-4 h-4 mb-1" />
-      <p className="text-xs opacity-75">{label}</p>
-      <p className="text-sm font-semibold">{value}</p>
-    </div>
-  );
-}
-
-/**
- * Detail Item Component
- */
-function DetailItem({ label, value, color = 'white' }) {
-  const colorClasses = {
-    white: 'text-white',
-    green: 'text-green-400',
-    red: 'text-red-400',
-  };
-
-  return (
-    <div className="bg-slate-600/30 rounded-lg p-3 border border-slate-600/50">
-      <p className="text-xs text-slate-400 mb-1">{label}</p>
-      <p className={`text-sm font-semibold ${colorClasses[color]}`}>{value}</p>
-    </div>
+        </Typography>
+        <Typography variant="body1" sx={{ mt: 1 }}>
+          From <strong>{job.job.source?.city?.name}</strong>
+        </Typography>
+        <Typography variant="body1">
+          To <strong>{job.job.destination?.city?.name}</strong>
+        </Typography>
+      </Paper>
+    </Stack>
   );
 }

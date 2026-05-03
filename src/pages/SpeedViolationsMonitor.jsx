@@ -1,21 +1,28 @@
 /**
- * Speed Violations Monitoring Page
- * Real-time tracking of speed violations with severity indicators
+ * Speed Violations — MUI shell
  */
 
 import React, { useState, useEffect } from 'react';
-import {
-  AlertTriangle,
-  TrendingUp,
-  Clock,
-  AlertCircle,
-  Activity,
-  Zap,
-  BarChart3,
-  Filter,
-} from 'lucide-react';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Paper from '@mui/material/Paper';
+import Grid from '@mui/material/Grid';
+import Chip from '@mui/material/Chip';
+import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import Divider from '@mui/material/Divider';
+import SensorsOutlinedIcon from '@mui/icons-material/SensorsOutlined';
+import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmber';
+import TimelineOutlinedIcon from '@mui/icons-material/TimelineOutlined';
+import { alpha, useTheme } from '@mui/material/styles';
+import { useTelemetryRealtime } from '../context/TelemetryRealtimeContext';
 
 export default function SpeedViolationsMonitor() {
+  const theme = useTheme();
   const [violations, setViolations] = useState([]);
   const [stats, setStats] = useState({
     total: 0,
@@ -23,50 +30,22 @@ export default function SpeedViolationsMonitor() {
     warning: 0,
     today: 0,
   });
-  const [socket, setSocket] = useState(null);
-  const [filter, setFilter] = useState('all'); // all, critical, warning
-  const [sortBy, setSortBy] = useState('recent'); // recent, severity, speed
+  const [filter, setFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('recent');
+  const { subscribe, dashboardConnected } = useTelemetryRealtime();
 
-  // Initialize WebSocket for real-time violations
   useEffect(() => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}`;
-
-    try {
-      const ws = new WebSocket(wsUrl);
-
-      ws.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data);
-
-          if (message.type === 'SPEED_VIOLATION') {
-            addViolation(message.data);
-          }
-        } catch (err) {
-          console.error('Error parsing WebSocket message:', err);
-        }
-      };
-
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-      };
-
-      setSocket(ws);
-
-      return () => {
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.close();
-        }
-      };
-    } catch (err) {
-      console.error('Failed to create WebSocket:', err);
-    }
-  }, []);
+    return subscribe((message) => {
+      if (message.type === 'SPEED_VIOLATION') addViolation(message.data);
+    });
+  }, [subscribe]);
 
   const addViolation = (data) => {
     const violation = {
       id: `${data.riderId}-${Date.now()}`,
       riderId: data.riderId,
+      displayName: data.displayName || null,
+      employeeID: data.employeeID || null,
       violation: data.violation,
       timestamp: new Date(),
       severity: getSeverity(data.violation),
@@ -74,7 +53,6 @@ export default function SpeedViolationsMonitor() {
 
     setViolations((prev) => [violation, ...prev.slice(0, 99)]);
 
-    // Update stats
     setStats((prev) => ({
       total: prev.total + 1,
       critical: violation.severity === 'critical' ? prev.critical + 1 : prev.critical,
@@ -84,7 +62,7 @@ export default function SpeedViolationsMonitor() {
   };
 
   const getSeverity = (violation) => {
-    const excess = violation.excess || 0;
+    const excess = violation?.excess || 0;
     if (excess > 25) return 'critical';
     if (excess > 15) return 'warning';
     return 'minor';
@@ -101,246 +79,224 @@ export default function SpeedViolationsMonitor() {
       });
     }
 
-    // Sort
     if (sortBy === 'recent') {
       filtered = [...filtered].sort((a, b) => b.timestamp - a.timestamp);
     } else if (sortBy === 'severity') {
       const severityOrder = { critical: 3, warning: 2, minor: 1 };
-      filtered = [...filtered].sort(
-        (a, b) => severityOrder[b.severity] - severityOrder[a.severity]
-      );
+      filtered = [...filtered].sort((a, b) => severityOrder[b.severity] - severityOrder[a.severity]);
     } else if (sortBy === 'speed') {
-      filtered = [...filtered].sort(
-        (a, b) => (b.violation.excess || 0) - (a.violation.excess || 0)
-      );
+      filtered = [...filtered].sort((a, b) => (b.violation?.excess || 0) - (a.violation?.excess || 0));
     }
 
     return filtered;
   };
 
-  const getSeverityColor = (severity) => {
-    switch (severity) {
-      case 'critical':
-        return 'text-red-400 bg-red-500/10 border-red-500/30';
-      case 'warning':
-        return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30';
-      default:
-        return 'text-orange-400 bg-orange-500/10 border-orange-500/30';
-    }
-  };
-
-  const getSeverityIcon = (severity) => {
-    switch (severity) {
-      case 'critical':
-        return <AlertTriangle className="w-5 h-5" />;
-      case 'warning':
-        return <AlertCircle className="w-5 h-5" />;
-      default:
-        return <Zap className="w-5 h-5" />;
-    }
-  };
-
   const filteredViolations = getFilteredViolations();
 
+  const statPaper = {
+    elevation: 0,
+    sx: {
+      p: 2,
+      borderRadius: 2,
+      border: `1px solid ${theme.palette.grey[300]}`,
+      height: '100%',
+    },
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2 flex items-center gap-3">
-          <AlertTriangle className="w-10 h-10 text-red-400" />
-          Speed Violations Monitor
-        </h1>
-        <p className="text-slate-400">Real-time tracking of driver speed violations</p>
-      </div>
+    <Box>
+      <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2} sx={{ mb: 3 }}>
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <WarningAmberOutlinedIcon color="error" sx={{ fontSize: 36 }} />
+          <Box>
+            <Typography variant="h6" fontWeight={700}>
+              Speed violations
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Streamed via backend when telemetry crosses limits.
+            </Typography>
+          </Box>
+        </Stack>
+        <Chip
+          icon={<SensorsOutlinedIcon />}
+          label={dashboardConnected ? 'Listening' : 'Reconnecting'}
+          size="small"
+          sx={{
+            fontWeight: 600,
+            alignSelf: 'flex-start',
+            bgcolor: dashboardConnected
+              ? alpha(theme.palette.success.main, 0.12)
+              : alpha(theme.palette.warning.main, 0.15),
+          }}
+        />
+      </Stack>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <StatCard
-          title="Total Violations"
-          value={stats.total}
-          icon={BarChart3}
-          color="blue"
-        />
-        <StatCard
-          title="Critical"
-          value={stats.critical}
-          icon={AlertTriangle}
-          color="red"
-        />
-        <StatCard
-          title="Warning"
-          value={stats.warning}
-          icon={AlertCircle}
-          color="yellow"
-        />
-        <StatCard
-          title="Today"
-          value={stats.today}
-          icon={Activity}
-          color="orange"
-        />
-      </div>
+      <Grid container spacing={2} sx={{ mb: 2 }}>
+        <Grid item xs={6} md={3}>
+          <Paper {...statPaper}>
+            <Typography variant="caption" color="text.secondary">
+              Total
+            </Typography>
+            <Typography variant="h5" fontWeight={700}>
+              {stats.total}
+            </Typography>
+          </Paper>
+        </Grid>
+        <Grid item xs={6} md={3}>
+          <Paper {...statPaper}>
+            <Typography variant="caption" color="error">
+              Critical
+            </Typography>
+            <Typography variant="h5" fontWeight={700}>
+              {stats.critical}
+            </Typography>
+          </Paper>
+        </Grid>
+        <Grid item xs={6} md={3}>
+          <Paper {...statPaper}>
+            <Typography variant="caption" color="warning.dark">
+              Warning tier
+            </Typography>
+            <Typography variant="h5" fontWeight={700}>
+              {stats.warning}
+            </Typography>
+          </Paper>
+        </Grid>
+        <Grid item xs={6} md={3}>
+          <Paper {...statPaper}>
+            <Typography variant="caption" color="text.secondary">
+              This session
+            </Typography>
+            <Typography variant="h5" fontWeight={700}>
+              {stats.today}
+            </Typography>
+          </Paper>
+        </Grid>
+      </Grid>
 
-      {/* Controls */}
-      <div className="mb-6 p-4 bg-slate-700/50 backdrop-blur rounded-lg border border-slate-600/50 flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-slate-400" />
-          <span className="text-sm text-slate-400">Filter:</span>
-        </div>
-
-        <div className="flex gap-2">
-          {['all', 'critical', 'warning'].map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-3 py-1 rounded text-sm font-medium transition-colors capitalize ${
-                filter === f
-                  ? 'bg-blue-500/30 text-blue-300 border border-blue-500/50'
-                  : 'bg-slate-600/30 text-slate-400 hover:text-slate-300'
-              }`}
+      <Paper elevation={0} sx={{ p: 2, mb: 2, border: `1px solid ${theme.palette.grey[300]}` }}>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ md: 'center' }}>
+          <Typography variant="body2" fontWeight={700}>
+            Filters
+          </Typography>
+          <Stack direction="row" spacing={1} flexWrap="wrap">
+            {['all', 'critical', 'warning'].map((f) => (
+              <Button
+                key={f}
+                size="small"
+                variant={filter === f ? 'contained' : 'outlined'}
+                onClick={() => setFilter(f)}
+                sx={{ textTransform: 'capitalize', fontWeight: 600 }}
+              >
+                {f}
+              </Button>
+            ))}
+          </Stack>
+          <Box sx={{ flex: 1 }} />
+          <FormControl size="small" sx={{ minWidth: 180 }}>
+            <InputLabel id="vio-sort-label">Sort</InputLabel>
+            <Select
+              labelId="vio-sort-label"
+              label="Sort"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
             >
-              {f}
-            </button>
+              <MenuItem value="recent">Most recent</MenuItem>
+              <MenuItem value="severity">Severity</MenuItem>
+              <MenuItem value="speed">Excess speed</MenuItem>
+            </Select>
+          </FormControl>
+        </Stack>
+      </Paper>
+
+      {filteredViolations.length === 0 ? (
+        <Paper elevation={0} sx={{ p: 6, textAlign: 'center', border: `1px dashed ${theme.palette.grey[400]}` }}>
+          <TimelineOutlinedIcon sx={{ fontSize: 48, color: theme.palette.grey[400], mb: 1 }} />
+          <Typography color="text.secondary">No violations for this filter.</Typography>
+        </Paper>
+      ) : (
+        <Stack spacing={1.5}>
+          {filteredViolations.map((violation) => (
+            <ViolationCard key={violation.id} violation={violation} />
           ))}
-        </div>
-
-        <div className="ml-auto flex items-center gap-2">
-          <span className="text-sm text-slate-400">Sort by:</span>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="px-3 py-1 bg-slate-600/30 text-slate-300 border border-slate-600/50 rounded text-sm font-medium hover:border-slate-500/50 focus:outline-none"
-          >
-            <option value="recent">Most Recent</option>
-            <option value="severity">By Severity</option>
-            <option value="speed">By Speed Excess</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Violations List */}
-      <div className="space-y-3">
-        {filteredViolations.length === 0 ? (
-          <div className="text-center py-12 px-6 bg-slate-700/50 backdrop-blur rounded-lg border border-slate-600/50">
-            <Activity className="w-12 h-12 text-slate-500 mx-auto mb-3" />
-            <p className="text-slate-400 text-lg">No violations detected</p>
-            <p className="text-slate-500 text-sm mt-1">
-              {filter !== 'all'
-                ? 'Try adjusting your filters'
-                : 'All drivers are following speed limits'}
-            </p>
-          </div>
-        ) : (
-          filteredViolations.map((violation) => (
-            <ViolationCard
-              key={violation.id}
-              violation={violation}
-              getSeverityColor={getSeverityColor}
-              getSeverityIcon={getSeverityIcon}
-            />
-          ))
-        )}
-      </div>
-
-      {/* Auto-scroll note */}
-      <div className="mt-8 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg flex items-center gap-3">
-        <Zap className="w-5 h-5 text-blue-400 flex-shrink-0" />
-        <p className="text-blue-200 text-sm">
-          New violations appear at the top of the list in real-time
-        </p>
-      </div>
-    </div>
+        </Stack>
+      )}
+    </Box>
   );
 }
 
-/**
- * Stat Card Component
- */
-function StatCard({ title, value, icon: Icon, color }) {
-  const colorClasses = {
-    blue: 'bg-blue-500/20 border-blue-500/30',
-    red: 'bg-red-500/20 border-red-500/30',
-    yellow: 'bg-yellow-500/20 border-yellow-500/30',
-    orange: 'bg-orange-500/20 border-orange-500/30',
-  };
-
-  const textColor = {
-    blue: 'text-blue-400',
-    red: 'text-red-400',
-    yellow: 'text-yellow-400',
-    orange: 'text-orange-400',
-  };
-
-  return (
-    <div
-      className={`${colorClasses[color]} backdrop-blur rounded-lg p-6 border flex items-start justify-between`}
-    >
-      <div>
-        <p className={`text-sm font-medium mb-2 ${textColor[color]}`}>{title}</p>
-        <p className="text-3xl font-bold text-white">{value}</p>
-      </div>
-      <Icon className={`w-6 h-6 ${textColor[color]} opacity-50`} />
-    </div>
-  );
-}
-
-/**
- * Violation Card Component
- */
-function ViolationCard({ violation, getSeverityColor, getSeverityIcon }) {
+function ViolationCard({ violation }) {
+  const theme = useTheme();
   const timeAgo = getTimeAgo(violation.timestamp);
+  const v = violation.violation || {};
+  const severity = violation.severity;
+  const border =
+    severity === 'critical'
+      ? theme.palette.error.main
+      : severity === 'warning'
+        ? theme.palette.warning.dark
+        : theme.palette.grey[600];
 
   return (
-    <div
-      className={`${getSeverityColor(
-        violation.severity
-      )} backdrop-blur rounded-lg p-4 border transition-all hover:scale-[1.02]`}
+    <Paper
+      elevation={0}
+      sx={{
+        p: 2,
+        borderRadius: 2,
+        border: `1px solid ${theme.palette.grey[300]}`,
+        borderLeft: `6px solid ${border}`,
+      }}
     >
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-4 flex-1">
-          <div className="mt-1">{getSeverityIcon(violation.severity)}</div>
-
-          <div className="flex-1">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold text-white capitalize">
-                {violation.severity} Severity Violation
-              </h3>
-              <span className="text-xs opacity-75 flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                {timeAgo}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <p className="text-xs opacity-75 mb-1">Current Speed</p>
-                <p className="text-lg font-bold">{violation.violation.currentSpeed} km/h</p>
-              </div>
-
-              <div>
-                <p className="text-xs opacity-75 mb-1">Speed Limit</p>
-                <p className="text-lg font-bold">{violation.violation.speedLimit} km/h</p>
-              </div>
-
-              <div>
-                <p className="text-xs opacity-75 mb-1">Excess</p>
-                <p className="text-lg font-bold">+{violation.violation.excess} km/h</p>
-              </div>
-            </div>
-
-            <p className="text-xs opacity-75 mt-3 font-mono">
-              Rider ID: {violation.riderId}
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+      <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
+        <Typography variant="subtitle2" fontWeight={700} textTransform="capitalize">
+          {violation.severity} severity
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          {timeAgo}
+        </Typography>
+      </Stack>
+      <Grid container spacing={1} sx={{ mt: 1 }}>
+        <Grid item xs={4}>
+          <Typography variant="caption" color="text.secondary">
+            Speed
+          </Typography>
+          <Typography variant="body1" fontWeight={700}>
+            {v.currentSpeed ?? '—'} km/h
+          </Typography>
+        </Grid>
+        <Grid item xs={4}>
+          <Typography variant="caption" color="text.secondary">
+            Limit
+          </Typography>
+          <Typography variant="body1" fontWeight={700}>
+            {v.speedLimit ?? '—'} km/h
+          </Typography>
+        </Grid>
+        <Grid item xs={4}>
+          <Typography variant="caption" color="text.secondary">
+            Excess
+          </Typography>
+          <Typography variant="body1" fontWeight={700}>
+            +{v.excess ?? '—'} km/h
+          </Typography>
+        </Grid>
+      </Grid>
+      <Divider sx={{ my: 1.5 }} />
+      <Typography variant="body2" fontWeight={600}>
+        {violation.displayName || 'Unknown rider'}
+        {violation.employeeID ? (
+          <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+            Emp {violation.employeeID}
+          </Typography>
+        ) : null}
+      </Typography>
+      <Typography variant="caption" color="text.disabled" sx={{ fontFamily: 'monospace', display: 'block' }}>
+        Rider {violation.riderId}
+      </Typography>
+    </Paper>
   );
 }
 
-/**
- * Helper function to format time
- */
 function getTimeAgo(date) {
   const seconds = Math.floor((new Date() - date) / 1000);
 

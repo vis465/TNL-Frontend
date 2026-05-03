@@ -39,6 +39,7 @@ import GroupsOutlined from '@mui/icons-material/GroupsOutlined';
 import LocalOfferOutlined from '@mui/icons-material/LocalOfferOutlined';
 import LocalGasStation from '@mui/icons-material/LocalGasStation';
 import BarChartOutlined from '@mui/icons-material/BarChartOutlined';
+import SensorsOutlined from '@mui/icons-material/SensorsOutlined';
 
 /** Staff roles that can open /admin (matches App.js admin layout gate). */
 export const STAFF_ROLES = ['admin', 'eventteam', 'hrteam', 'financeteam', 'communityManager'];
@@ -64,6 +65,12 @@ export const MY_AREA_SECTIONS = [
 
       { to: '/fleet', label: 'Fleet', Icon: GarageOutlined, roles: null },
       { to: '/online-riders', label: 'Online riders', Icon: WifiTethering, roles: null },
+      {
+        to: '/telemetry',
+        label: 'TruckersHub live',
+        Icon: SensorsOutlined,
+        roles: STAFF_ROLES,
+      },
     ],
   },
   {

@@ -1,5 +1,11 @@
 import React, { createContext, useState, useMemo } from "react";
-import TruckersHubLayout from "./components/TruckersHubLayout"
+import TruckersHubLayout from "./components/TruckersHubLayout";
+import TruckersHubDashboard from "./pages/TruckersHubDashboard";
+import SpeedViolationsMonitor from "./pages/SpeedViolationsMonitor";
+import LiveJobTrackingPage from "./pages/LiveJobTracking";
+import TruckersHubStatus from "./pages/TruckersHubStatus";
+import DriverTelemetryPage from "./pages/DriverTelemetryPage";
+import { STAFF_ROLES } from "./config/adminNavigation";
 import {
   BrowserRouter as Router,
   Routes,
@@ -324,7 +330,6 @@ function App() {
                     <Route path="/maintain" element={<PageMaintenance />} />
                     <Route path="/" element={<Landing />} />
                     <Route path="/login" element={<Login />} />
-                    <Route path="/telemetry/*" element={<TruckersHubLayout />} />
                     <Route path="/register" element={<SteamRegistration />} />
                       <Route path="steam" element={<SteamRegistration />} />
                     
@@ -398,6 +403,20 @@ function App() {
                         <Route path="/jobs" element={<RiderJobs />} />
                         <Route path="/validate-job" element={<JobValidation />} />
                         <Route path="/online-riders" element={<OnlineRiders />} />
+                        <Route
+                          path="/telemetry"
+                          element={
+                            <PrivateRoute allowedRoles={STAFF_ROLES}>
+                              <TruckersHubLayout />
+                            </PrivateRoute>
+                          }
+                        >
+                          <Route index element={<TruckersHubDashboard />} />
+                          <Route path="violations" element={<SpeedViolationsMonitor />} />
+                          <Route path="jobs" element={<LiveJobTrackingPage />} />
+                          <Route path="status" element={<TruckersHubStatus />} />
+                          <Route path="driver/:riderId" element={<DriverTelemetryPage />} />
+                        </Route>
                         <Route path="/attendance" element={<RiderAttendance />} />
                         <Route
                           path="/contracts"

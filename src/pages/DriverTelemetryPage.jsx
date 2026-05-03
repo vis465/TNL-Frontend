@@ -1,26 +1,112 @@
 /**
- * Driver Telemetry Details Page
- * Detailed view of a single driver's real-time data
+ * Driver telemetry detail — matches admin MUI shell
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
-  ArrowLeft,
-  Activity,
-  AlertTriangle,
-  Gauge,
-  Droplet,
-  AlertCircle,
-  MapPin,
-  Package,
-  DollarSign,
-  Zap,
-  TrendingUp,
-  Clock,
-} from 'lucide-react';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Paper from '@mui/material/Paper';
+import Grid from '@mui/material/Grid';
+import Stack from '@mui/material/Stack';
+import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
+import LinearProgress from '@mui/material/LinearProgress';
+import Alert from '@mui/material/Alert';
+import Divider from '@mui/material/Divider';
+import Chip from '@mui/material/Chip';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
+import { alpha, useTheme } from '@mui/material/styles';
+import ArrowBackIosNewOutlinedIcon from '@mui/icons-material/ArrowBackIosNewOutlined';
+import SpeedOutlinedIcon from '@mui/icons-material/SpeedOutlined';
+import LocalGasStationOutlinedIcon from '@mui/icons-material/LocalGasStationOutlined';
+import CarCrashOutlinedIcon from '@mui/icons-material/CarCrashOutlined';
+import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined';
+import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
+import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
+import ScheduleOutlinedIcon from '@mui/icons-material/ScheduleOutlined';
+import SensorsOutlinedIcon from '@mui/icons-material/SensorsOutlined';
+
+function TelemetrySection({ title, icon: IconComp, children }) {
+  const theme = useTheme();
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        borderRadius: 2,
+        border: `1px solid ${theme.palette.grey[300]}`,
+        overflow: 'hidden',
+      }}
+    >
+      <Stack
+        direction="row"
+        alignItems="center"
+        spacing={1}
+        sx={{
+          px: 2,
+          py: 1.5,
+          bgcolor: alpha(theme.palette.primary.main, 0.06),
+          borderBottom: `1px solid ${theme.palette.grey[300]}`,
+        }}
+      >
+        <IconComp fontSize="small" color="primary" />
+        <Typography variant="subtitle1" fontWeight={700}>
+          {title}
+        </Typography>
+      </Stack>
+      <Box sx={{ p: 2 }}>{children}</Box>
+    </Paper>
+  );
+}
+
+function MetricBlock({ title, icon: IconComp, primary, caption, footer, progress }) {
+  const theme = useTheme();
+  return (
+    <Paper
+      elevation={0}
+      variant="outlined"
+      sx={{ p: 2, height: '100%', borderRadius: 2, borderColor: theme.palette.grey[300] }}
+    >
+      <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 1.5 }}>
+        <IconComp fontSize="small" color="action" />
+        <Typography variant="caption" color="text.secondary" fontWeight={600}>
+          {title}
+        </Typography>
+      </Stack>
+      <Typography variant="h4" fontWeight={700} color="primary" sx={{ lineHeight: 1.15 }}>
+        {primary}
+      </Typography>
+      {caption ? (
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          {caption}
+        </Typography>
+      ) : null}
+      {progress != null ? (
+        <Box sx={{ mt: 1.5 }}>
+          <LinearProgress variant="determinate" value={progress} sx={{ height: 8, borderRadius: 999 }} />
+        </Box>
+      ) : null}
+      {footer}
+    </Paper>
+  );
+}
+
+function DetailRow({ label, value }) {
+  return (
+    <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ py: 0.5 }}>
+      <Typography variant="caption" color="text.secondary">
+        {label}
+      </Typography>
+      <Typography variant="body2" fontWeight={600} sx={{ ml: 2, textAlign: 'right' }}>
+        {value}
+      </Typography>
+    </Stack>
+  );
+}
 
 export default function DriverTelemetryPage() {
+  const theme = useTheme();
   const { riderId } = useParams();
   const navigate = useNavigate();
   const [driver, setDriver] = useState(null);
@@ -28,24 +114,11 @@ export default function DriverTelemetryPage() {
   const [error, setError] = useState(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
 
-  useEffect(() => {
-    fetchDriverDetails();
-
-    if (!autoRefresh) return;
-
-    const interval = setInterval(() => {
-      fetchDriverDetails();
-    }, 3000); // Refresh every 3 seconds
-
-    return () => clearInterval(interval);
-  }, [riderId, autoRefresh]);
-
-  const fetchDriverDetails = async () => {
+  const fetchDriverDetails = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/telemetry/drivers/${riderId}`);
       const data = await response.json();
-
       if (data.success) {
         setDriver(data.data);
         setError(null);
@@ -58,338 +131,319 @@ export default function DriverTelemetryPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [riderId]);
+
+  useEffect(() => {
+    fetchDriverDetails();
+    if (!autoRefresh) return;
+    const interval = setInterval(() => fetchDriverDetails(), 3000);
+    return () => clearInterval(interval);
+  }, [riderId, autoRefresh, fetchDriverDetails]);
 
   if (loading && !driver) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-8 flex items-center justify-center">
-        <div className="animate-spin">
-          <Activity className="w-12 h-12 text-blue-400" />
-        </div>
-      </div>
+      <Box sx={{ py: 10, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <CircularProgress />
+      </Box>
     );
   }
 
   if (error || !driver) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-8">
-        <button
+      <Box>
+        <Button
+          startIcon={<ArrowBackIosNewOutlinedIcon sx={{ fontSize: 14 }} />}
           onClick={() => navigate('/telemetry')}
-          className="flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-8"
+          sx={{ mb: 2, textTransform: 'none', fontWeight: 600 }}
         >
-          <ArrowLeft className="w-5 h-5" />
-          Back to Dashboard
-        </button>
-
-        <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-8 flex items-center gap-4">
-          <AlertCircle className="w-8 h-8 text-red-400 flex-shrink-0" />
-          <div>
-            <h2 className="text-lg font-semibold text-red-200 mb-1">Error</h2>
-            <p className="text-red-300">{error}</p>
-          </div>
-        </div>
-      </div>
+          Back to live map
+        </Button>
+        <Alert severity="error">{error || 'Driver not found'}</Alert>
+      </Box>
     );
   }
 
   const telemetry = driver.telemetry || {};
+  const speedKph = telemetry.speed?.kph ?? 0;
+  const fuelCap = telemetry.fuel?.capacity || 1;
+  const fuelVal = telemetry.fuel?.value || 0;
+  const fuelPct = Math.min(100, (fuelVal / fuelCap) * 100);
+  const dmg = telemetry.damage || {};
+  const hasTelemetry =
+    !!(telemetry.speed || telemetry.position || telemetry.truck?.model || telemetry.job);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-8">
-      {/* Header */}
-      <div className="mb-8">
-        <button
-          onClick={() => navigate('/telemetry')}
-          className="flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-6"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          Back to Dashboard
-        </button>
+    <Box>
+      <Button
+        startIcon={<ArrowBackIosNewOutlinedIcon sx={{ fontSize: 14 }} />}
+        onClick={() => navigate('/telemetry')}
+        sx={{ mb: 2, textTransform: 'none', fontWeight: 600 }}
+      >
+        Back to live map
+      </Button>
 
-        <div className="flex items-start justify-between mb-6">
-          <div>
-            <h1 className="text-4xl font-bold text-white mb-2 flex items-center gap-3">
-              <Activity className="w-10 h-10 text-blue-400" />
-              Driver Details
-            </h1>
-            <p className="text-slate-400">
-              Steam ID: <span className="font-mono text-slate-300">{driver.steamId}</span>
-            </p>
-          </div>
+      <Stack
+        direction={{ xs: 'column', md: 'row' }}
+        justifyContent="space-between"
+        alignItems={{ xs: 'flex-start', md: 'flex-end' }}
+        spacing={2}
+        sx={{ mb: 3 }}
+      >
+        <Box>
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
+            <SensorsOutlinedIcon color="primary" />
+            <Typography variant="h6" fontWeight={700}>
+              {driver.displayName || 'Driver telemetry'}
+            </Typography>
+          </Stack>
+          <Stack direction="row" flexWrap="wrap" spacing={1} alignItems="center">
+            {driver.employeeID ? (
+              <Chip size="small" label={`Employee ${driver.employeeID}`} sx={{ fontWeight: 600 }} />
+            ) : null}
+            {driver.truckershubId ? (
+              <Chip
+                size="small"
+                variant="outlined"
+                label={`Hub ${driver.truckershubId}`}
+                sx={{ fontWeight: 600 }}
+              />
+            ) : null}
+            <Typography variant="body2" color="text.secondary" component="span">
+              Steam <Box component="span" sx={{ fontFamily: 'monospace' }}>{driver.steamId}</Box>
+            </Typography>
+          </Stack>
+        </Box>
+        <Stack direction="row" spacing={1}>
+          <FormControlLabel
+            control={<Switch checked={autoRefresh} onChange={(e) => setAutoRefresh(e.target.checked)} />}
+            label="Auto-refresh"
+          />
+          <Button variant="contained" color="primary" onClick={fetchDriverDetails} disabled={loading} sx={{ textTransform: 'none', fontWeight: 600 }}>
+            Refresh
+          </Button>
+        </Stack>
+      </Stack>
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setAutoRefresh(!autoRefresh)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                autoRefresh
-                  ? 'bg-green-500/20 text-green-300 border border-green-500/30'
-                  : 'bg-slate-700/50 text-slate-300 border border-slate-600/50'
-              }`}
-            >
-              {autoRefresh ? 'Auto-refresh ON' : 'Auto-refresh OFF'}
-            </button>
-            <button
-              onClick={fetchDriverDetails}
-              className="px-4 py-2 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-lg hover:bg-blue-500/30 font-medium transition-colors"
-            >
-              Refresh
-            </button>
-          </div>
-        </div>
-      </div>
+      {!hasTelemetry ? (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Session is active (online on TruckersHub) but telemetry packets have not arrived yet. Toggle auto-refresh
+          or wait for the game client to push player data.
+        </Alert>
+      ) : null}
 
-      {/* Main Grid */}
-      <div className="space-y-6">
-        {/* Vehicle Status */}
-        <Section title="Vehicle Status" icon={Gauge}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Speed */}
-            <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600/50">
-              <h3 className="text-sm font-semibold text-slate-400 mb-4 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" />
-                Speed
-              </h3>
-              <div className="mb-4">
-                <div className="text-4xl font-bold text-blue-400">
-                  {telemetry.speed?.kph || 0}
-                  <span className="text-lg text-slate-400 ml-2">km/h</span>
-                </div>
-                <p className="text-sm text-slate-500 mt-1">
-                  {telemetry.speed?.mph || 0} mph
-                </p>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs text-slate-400">
-                  <span>Speed</span>
-                  <span>{telemetry.speed?.value?.toFixed(2) || 0} m/s</span>
-                </div>
-                <div className="h-2 bg-slate-600 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-blue-500"
-                    style={{
-                      width: `${Math.min((telemetry.speed?.kph || 0) / 120 * 100, 100)}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
+      <Stack spacing={2}>
+        <TelemetrySection title="Vehicle status" icon={SpeedOutlinedIcon}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={4}>
+              <MetricBlock
+                title="Speed"
+                icon={SpeedOutlinedIcon}
+                primary={
+                  <>
+                    {speedKph}
+                    <Typography component="span" variant="h6" color="text.secondary" sx={{ ml: 0.5 }}>
+                      km/h
+                    </Typography>
+                  </>
+                }
+                caption={`${telemetry.speed?.mph ?? 0} mph · ${telemetry.speed?.value?.toFixed(2) ?? 0} m/s`}
+                progress={Math.min(100, (speedKph / 120) * 100)}
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <MetricBlock
+                title="Fuel"
+                icon={LocalGasStationOutlinedIcon}
+                primary={
+                  <>
+                    {fuelPct.toFixed(1)}
+                    <Typography component="span" variant="h6" color="text.secondary" sx={{ ml: 0.25 }}>
+                      %
+                    </Typography>
+                  </>
+                }
+                caption={`${fuelVal.toFixed(1)} L / ${fuelCap} L`}
+                progress={fuelPct}
+                footer={
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                    Range{' '}
+                    {telemetry.fuel?.range != null
+                      ? typeof telemetry.fuel.range === 'number'
+                        ? `${telemetry.fuel.range.toFixed(0)} km`
+                        : `${telemetry.fuel.range} km`
+                      : '—'}
+                  </Typography>
+                }
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <MetricBlock
+                title="Damage"
+                icon={CarCrashOutlinedIcon}
+                primary={
+                  <>
+                    {((dmg.total ?? 0) * 100).toFixed(2)}
+                    <Typography component="span" variant="h6" color="text.secondary" sx={{ ml: 0.25 }}>
+                      %
+                    </Typography>
+                  </>
+                }
+                caption="Chassis / engine / wheels"
+                footer={
+                  <Stack sx={{ mt: 1 }} spacing={0}>
+                    <DetailRow label="Chassis" value={`${((dmg.chassis ?? 0) * 100).toFixed(2)}%`} />
+                    <DetailRow label="Engine" value={`${((dmg.engine ?? 0) * 100).toFixed(2)}%`} />
+                    <DetailRow label="Wheels" value={`${((dmg.wheels ?? 0) * 100).toFixed(2)}%`} />
+                  </Stack>
+                }
+              />
+            </Grid>
+          </Grid>
+        </TelemetrySection>
 
-            {/* Fuel */}
-            <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600/50">
-              <h3 className="text-sm font-semibold text-slate-400 mb-4 flex items-center gap-2">
-                <Droplet className="w-4 h-4" />
-                Fuel
-              </h3>
-              <div className="mb-4">
-                <div className="text-4xl font-bold text-green-400">
-                  {((telemetry.fuel?.value || 0) / (telemetry.fuel?.capacity || 1) * 100).toFixed(1)}%
-                </div>
-                <p className="text-sm text-slate-500 mt-1">
-                  {telemetry.fuel?.value?.toFixed(1) || 0} L / {telemetry.fuel?.capacity || 0} L
-                </p>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs text-slate-400">
-                  <span>Range</span>
-                  <span>{telemetry.fuel?.range?.toFixed(0) || 0} km</span>
-                </div>
-                <div className="h-2 bg-slate-600 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-green-500"
-                    style={{
-                      width: `${(telemetry.fuel?.value || 0) / (telemetry.fuel?.capacity || 1) * 100}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Damage */}
-            <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600/50">
-              <h3 className="text-sm font-semibold text-slate-400 mb-4 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4" />
-                Damage
-              </h3>
-              <div className="mb-4">
-                <div className="text-4xl font-bold text-orange-400">
-                  {(telemetry.damage?.total * 100 || 0).toFixed(2)}%
-                </div>
-              </div>
-              <div className="space-y-2 text-xs text-slate-400">
-                <div className="flex justify-between">
-                  <span>Chassis:</span>
-                  <span>{(telemetry.damage?.chassis * 100 || 0).toFixed(2)}%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Engine:</span>
-                  <span>{(telemetry.damage?.engine * 100 || 0).toFixed(2)}%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Wheels:</span>
-                  <span>{(telemetry.damage?.wheels * 100 || 0).toFixed(2)}%</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Section>
-
-        {/* Location & Job */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Location */}
-          <Section title="Current Location" icon={MapPin}>
-            {telemetry.position ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <p className="text-sm text-slate-400 mb-1">X</p>
-                    <p className="text-lg font-mono text-blue-300">
-                      {telemetry.position.X?.toFixed(2)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-400 mb-1">Y</p>
-                    <p className="text-lg font-mono text-blue-300">
-                      {telemetry.position.Y?.toFixed(2)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-400 mb-1">Z</p>
-                    <p className="text-lg font-mono text-blue-300">
-                      {telemetry.position.Z?.toFixed(2)}
-                    </p>
-                  </div>
-                </div>
-
-                {telemetry.location && (
-                  <div className="bg-slate-600/30 rounded p-3 border border-slate-600/50">
-                    <p className="text-sm text-slate-400">City</p>
-                    <p className="text-lg font-semibold text-white">
-                      {telemetry.location.city?.name || 'Unknown'}
-                    </p>
-                    <p className="text-sm text-slate-400 mt-1">
-                      Distance: {telemetry.location.distance?.toFixed(1)} km
-                    </p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <p className="text-slate-400">No position data available</p>
-            )}
-          </Section>
-
-          {/* Job Info */}
-          <Section title="Current Job" icon={Package}>
-            {telemetry.job ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-slate-600/30 rounded border border-slate-600/50">
-                  <span className="text-slate-400">Income</span>
-                  <span className="text-xl font-bold text-green-400 flex items-center gap-1">
-                    <DollarSign className="w-5 h-5" />
-                    {telemetry.job.income}
-                  </span>
-                </div>
-
-                <div>
-                  <p className="text-sm text-slate-400 mb-2">Cargo</p>
-                  <div className="p-3 bg-slate-600/30 rounded border border-slate-600/50">
-                    <p className="font-semibold text-white mb-1">{telemetry.job.cargo?.name}</p>
-                    <p className="text-sm text-slate-400">
+        <Grid container spacing={2}>
+          <Grid item xs={12} lg={6}>
+            <TelemetrySection title="Current location" icon={PlaceOutlinedIcon}>
+              {telemetry.position ? (
+                <Stack spacing={2}>
+                  <Grid container spacing={1}>
+                    {['X', 'Y', 'Z'].map((axis) => (
+                      <Grid item xs={4} key={axis}>
+                        <Typography variant="caption" color="text.secondary">
+                          {axis}
+                        </Typography>
+                        <Typography variant="body1" fontFamily="monospace" fontWeight={600}>
+                          {telemetry.position[axis]?.toFixed(2)}
+                        </Typography>
+                      </Grid>
+                    ))}
+                  </Grid>
+                  {telemetry.location ? (
+                    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2, borderColor: theme.palette.grey[300] }}>
+                      <Typography variant="caption" color="text.secondary">
+                        City
+                      </Typography>
+                      <Typography variant="body1" fontWeight={700}>
+                        {telemetry.location.city?.name || 'Unknown'}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Distance {telemetry.location.distance?.toFixed(1)} km
+                      </Typography>
+                    </Paper>
+                  ) : null}
+                </Stack>
+              ) : (
+                <Typography color="text.secondary">No position data available</Typography>
+              )}
+            </TelemetrySection>
+          </Grid>
+          <Grid item xs={12} lg={6}>
+            <TelemetrySection title="Current job" icon={Inventory2OutlinedIcon}>
+              {telemetry.job ? (
+                <Stack spacing={1.5}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Typography color="text.secondary">Income</Typography>
+                    <Typography variant="h6" fontWeight={700} color="success.main">
+                      {telemetry.job.income}
+                    </Typography>
+                  </Stack>
+                  <Divider />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Cargo
+                    </Typography>
+                    <Typography variant="body1" fontWeight={700}>
+                      {telemetry.job.cargo?.name}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
                       {telemetry.job.cargo?.mass} kg ({telemetry.job.cargo?.unitMass} kg/unit)
-                    </p>
-                    <p className="text-xs text-yellow-400 mt-1">
-                      Damage: {(telemetry.job.cargo?.damage * 100).toFixed(2)}%
-                    </p>
-                  </div>
-                </div>
+                    </Typography>
+                    <Typography variant="caption" color="warning.main" sx={{ display: 'block', mt: 0.5 }}>
+                      Damage {((telemetry.job.cargo?.damage ?? 0) * 100).toFixed(2)}%
+                    </Typography>
+                  </Box>
+                  <Grid container spacing={1}>
+                    <Grid item xs={6}>
+                      <Typography variant="caption" color="text.secondary">
+                        From
+                      </Typography>
+                      <Typography variant="body2" fontWeight={600}>
+                        {telemetry.job.source?.city?.name}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="caption" color="text.secondary">
+                        To
+                      </Typography>
+                      <Typography variant="body2" fontWeight={600}>
+                        {telemetry.job.destination?.city?.name}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                  <Typography variant="body2">
+                    Planned distance{' '}
+                    <Box component="span" fontWeight={700} color="primary.main">
+                      {telemetry.job.plannedDistance?.km} km
+                    </Box>
+                  </Typography>
+                </Stack>
+              ) : (
+                <Typography color="text.secondary">No active job</Typography>
+              )}
+            </TelemetrySection>
+          </Grid>
+        </Grid>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-xs text-slate-400 mb-1">From</p>
-                    <p className="text-sm font-semibold text-white">
-                      {telemetry.job.source?.city?.name}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-400 mb-1">To</p>
-                    <p className="text-sm font-semibold text-white">
-                      {telemetry.job.destination?.city?.name}
-                    </p>
-                  </div>
-                </div>
+        <TelemetrySection title="Vehicle details" icon={LocalShippingOutlinedIcon}>
+          <Grid container spacing={1.5}>
+            {[
+              { label: 'Make', value: telemetry.truck?.make?.name || 'Unknown' },
+              { label: 'Model', value: telemetry.truck?.model?.name || 'Unknown' },
+              {
+                label: 'License plate',
+                value: telemetry.truck?.licensePlate?.value || 'N/A',
+              },
+              {
+                label: 'Odometer',
+                value:
+                  telemetry.truck?.odometer != null ? `${telemetry.truck.odometer.toFixed(0)} km` : '—',
+              },
+            ].map((row) => (
+              <Grid item xs={6} md={3} key={row.label}>
+                <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2, borderColor: theme.palette.grey[300], height: '100%' }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {row.label}
+                  </Typography>
+                  <Typography variant="body2" fontWeight={600} sx={{ mt: 0.5 }} noWrap title={String(row.value)}>
+                    {row.value}
+                  </Typography>
+                </Paper>
+              </Grid>
+            ))}
+          </Grid>
+        </TelemetrySection>
 
-                <div>
-                  <p className="text-xs text-slate-400 mb-1">Distance</p>
-                  <p className="text-lg font-bold text-blue-400">
-                    {telemetry.job.plannedDistance?.km} km
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <p className="text-slate-400">No active job</p>
-            )}
-          </Section>
-        </div>
-
-        {/* Truck Details */}
-        <Section title="Vehicle Details" icon={Zap}>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <InfoCard
-              label="Make"
-              value={telemetry.truck?.make?.name || 'Unknown'}
-            />
-            <InfoCard
-              label="Model"
-              value={telemetry.truck?.model?.name || 'Unknown'}
-            />
-            <InfoCard
-              label="License Plate"
-              value={telemetry.truck?.licensePlate?.value || 'N/A'}
-            />
-            <InfoCard
-              label="Odometer"
-              value={`${telemetry.truck?.odometer?.toFixed(0)} km`}
-            />
-          </div>
-        </Section>
-
-        {/* Timestamp */}
-        <div className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg border border-slate-600/50">
-          <div className="flex items-center gap-2 text-slate-400">
-            <Clock className="w-4 h-4" />
-            Last Updated
-          </div>
-          <div className="text-white font-mono">
-            {new Date(driver.lastUpdate).toLocaleTimeString()}
-          </div>
-        </div>
-      </div>
-    </div>
+        <Paper elevation={0} sx={{ ...paperSx(theme), px: 2, py: 1.5 }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <ScheduleOutlinedIcon fontSize="small" color="action" />
+              <Typography variant="body2" color="text.secondary">
+                Last updated
+              </Typography>
+            </Stack>
+            <Typography variant="body2" fontFamily="monospace" fontWeight={600}>
+              {driver.lastUpdate ? new Date(driver.lastUpdate).toLocaleString() : '—'}
+            </Typography>
+          </Stack>
+        </Paper>
+      </Stack>
+    </Box>
   );
 }
 
-/**
- * Section Component
- */
-function Section({ title, icon: Icon, children }) {
-  return (
-    <div className="bg-slate-700/50 backdrop-blur rounded-lg border border-slate-600/50 overflow-hidden">
-      <div className="flex items-center gap-3 p-6 bg-slate-600/30 border-b border-slate-600/50">
-        <Icon className="w-5 h-5 text-blue-400" />
-        <h2 className="text-lg font-semibold text-white">{title}</h2>
-      </div>
-      <div className="p-6">{children}</div>
-    </div>
-  );
-}
-
-/**
- * Info Card Component
- */
-function InfoCard({ label, value }) {
-  return (
-    <div className="bg-slate-600/30 rounded-lg p-4 border border-slate-600/50">
-      <p className="text-xs text-slate-400 mb-2">{label}</p>
-      <p className="text-sm font-semibold text-white truncate">{value}</p>
-    </div>
-  );
+function paperSx(theme) {
+  return {
+    borderRadius: 2,
+    border: `1px solid ${theme.palette.grey[300]}`,
+  };
 }
