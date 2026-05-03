@@ -24,6 +24,7 @@ import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
 import SensorsOutlinedIcon from '@mui/icons-material/SensorsOutlined';
 import { alpha, useTheme } from '@mui/material/styles';
 import { useTelemetryRealtime } from '../context/TelemetryRealtimeContext';
+import { getTelemetryJson } from '../utils/telemetryApiFetch';
 
 function buildStatsFromPayload(data) {
   const connectedAt = data?.websocket?.connectedAt;
@@ -71,8 +72,7 @@ export default function TruckersHubStatusPage() {
   const fetchStatus = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/telemetry/status');
-      const data = await response.json();
+      const data = await getTelemetryJson('status');
       if (data.success) {
         applyStatusPayload(data.data);
       }

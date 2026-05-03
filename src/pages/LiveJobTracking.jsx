@@ -21,6 +21,7 @@ import AttachMoneyOutlinedIcon from '@mui/icons-material/AttachMoneyOutlined';
 import SensorsOutlinedIcon from '@mui/icons-material/SensorsOutlined';
 import { alpha, useTheme } from '@mui/material/styles';
 import { useTelemetryRealtime } from '../context/TelemetryRealtimeContext';
+import { getTelemetryJson } from '../utils/telemetryApiFetch';
 
 export default function LiveJobTrackingPage() {
   const theme = useTheme();
@@ -89,25 +90,17 @@ export default function LiveJobTrackingPage() {
     });
   }, [subscribe, mergeTelemetryJob]);
 
-  useEffect(() => {
-    fetchActiveJobs();
-    const interval = setInterval(() => fetchActiveJobs(), 12000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchActiveJobs = async () => {
+  const fetchActiveJobs = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/telemetry/drivers');
-      const data = await response.json();
+      const data = await getTelemetryJson('drivers');
 
       if (data.success) {
         const driversWithJobs = [];
         await Promise.all(
           data.data.drivers.map(async (driver) => {
             try {
-              const detailResponse = await fetch(`/api/telemetry/drivers/${driver.riderId}`);
-              const detailData = await detailResponse.json();
+              const detailData = await getTelemetryJson(`drivers/${driver.riderId}`);
               if (detailData.success && detailData.data.telemetry.job) {
                 const tel = detailData.data.telemetry;
                 driversWithJobs.push({
@@ -131,7 +124,13 @@ export default function LiveJobTrackingPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchActiveJobs();
+    const interval = setInterval(() => fetchActiveJobs(), 12000);
+    return () => clearInterval(interval);
+  }, [fetchActiveJobs]);
 
   const getProgressPercentage = (job, vehicle) => {
     const totalKm = job?.plannedDistance?.km;

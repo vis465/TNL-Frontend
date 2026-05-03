@@ -27,6 +27,7 @@ import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
 import ScheduleOutlinedIcon from '@mui/icons-material/ScheduleOutlined';
 import SensorsOutlinedIcon from '@mui/icons-material/SensorsOutlined';
+import { getTelemetryJson } from '../utils/telemetryApiFetch';
 
 function TelemetrySection({ title, icon: IconComp, children }) {
   const theme = useTheme();
@@ -117,8 +118,7 @@ export default function DriverTelemetryPage() {
   const fetchDriverDetails = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/telemetry/drivers/${riderId}`);
-      const data = await response.json();
+      const data = await getTelemetryJson(`drivers/${riderId}`);
       if (data.success) {
         setDriver(data.data);
         setError(null);

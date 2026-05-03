@@ -22,6 +22,7 @@ import SatelliteAltOutlinedIcon from '@mui/icons-material/SatelliteAltOutlined';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { alpha, useTheme } from '@mui/material/styles';
 import { useTelemetryRealtime } from '../context/TelemetryRealtimeContext';
+import { getTelemetryJson } from '../utils/telemetryApiFetch';
 
 function telemetryFromPayload(data) {
   const raw = data?.raw || {};
@@ -68,8 +69,7 @@ export default function TruckersHubDashboard() {
 
   const fetchStatus = useCallback(async () => {
     try {
-      const response = await fetch('/api/telemetry/status');
-      const data = await response.json();
+      const data = await getTelemetryJson('status');
       if (data.success) setStatus(data.data);
     } catch (err) {
       console.error('Error fetching status:', err);
@@ -79,15 +79,13 @@ export default function TruckersHubDashboard() {
   const fetchDrivers = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/telemetry/drivers');
-      const data = await response.json();
+      const data = await getTelemetryJson('drivers');
 
       if (data.success) {
         const driversWithDetails = await Promise.all(
           data.data.drivers.map(async (driver) => {
             try {
-              const detailResponse = await fetch(`/api/telemetry/drivers/${driver.riderId}`);
-              const detailData = await detailResponse.json();
+              const detailData = await getTelemetryJson(`drivers/${driver.riderId}`);
               if (detailData.success) {
                 const d = detailData.data;
                 return {
@@ -119,8 +117,7 @@ export default function TruckersHubDashboard() {
 
   const fetchDriversQuiet = useCallback(async () => {
     try {
-      const response = await fetch('/api/telemetry/drivers');
-      const data = await response.json();
+      const data = await getTelemetryJson('drivers');
       if (!data.success) return;
 
       setDrivers((prev) => {
