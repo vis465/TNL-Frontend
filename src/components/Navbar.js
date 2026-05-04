@@ -301,28 +301,6 @@ const Navbar = () => {
           <Groups fontSize="small" />
           Division
         </MenuItem>
-        {isAuthenticated && (
-          <MenuItem
-            component={RouterLink}
-            to="/division/invites"
-            onClick={handleUserMenuClose}
-            sx={{ gap: 1.5 }}
-          >
-            <ContactMail fontSize="small" />
-            Division invites
-          </MenuItem>
-        )}
-        {isAuthenticated && (
-          <MenuItem
-            component={RouterLink}
-            to="/division/fuel"
-            onClick={handleUserMenuClose}
-            sx={{ gap: 1.5 }}
-          >
-            <LocalGasStation fontSize="small" />
-            Division fuel
-          </MenuItem>
-        )}
         {hasDivision && (
           <MenuItem
             component={RouterLink}

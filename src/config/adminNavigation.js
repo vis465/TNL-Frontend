@@ -53,23 +53,49 @@ export const MY_AREA_SECTIONS = [
     id: 'account',
     label: 'Account',
     items: [
-      { to: '/dashboard', label: 'Overview', Icon: DashboardOutlined, roles: null },
+      { to: '/dashboard', label: 'Dashboard', Icon: DashboardOutlined, roles: null },
     ],
   },
   {
-    id: 'driving',
-    label: 'Driving & jobs',
+    id: 'community',
+    label: ' Events & Attendence',
     items: [
+      // { to: '/goals', label: 'Personal goals', Icon: FlagOutlined, roles: null },
+      { to: '/calendar', label: 'Event calendar', Icon: CalendarMonthOutlined, roles: null },
+      { to: '/attendance', label: 'Attendance Leaderboard', Icon: EventAvailableOutlined, roles: null },
+    ],
+  },
+   {
+    id: 'divisions-my',
+    label: 'Divisions',
+    items: [
+      { to: '/division', label: 'My division', Icon: GroupsOutlined, roles: null },
+        { to: '/fleet', label: 'Fleet', Icon: GarageOutlined, roles: null },
+      { to: '/division/invites', label: 'Invitations', Icon: HowToReg, roles: null },
+      { to: '/division-leaderboard', label: 'Division leaderboard', Icon: LeaderboardOutlined, roles: null },
+    ],
+  },
+   
+  {
+    id: 'driving',
+    label: 'Challenges & jobs',
+    items: [
+      { to: '/challenges', label: 'Challenges', Icon: AssignmentTurnedInOutlined, roles: null },
+      {
+        to: '/contracts/me',
+        label: 'My contracts',
+        Icon: FolderSharedOutlined,
+        roles: null,
+        matchExact: true,
+      },
       { to: '/jobs', label: 'VTC jobs', Icon: LocalShippingOutlined, roles: null },
       { to: '/validate-job', label: 'Validate job', Icon: VerifiedUserOutlined, roles: null },
-
-      { to: '/fleet', label: 'Fleet', Icon: GarageOutlined, roles: null },
-      { to: '/online-riders', label: 'Online riders', Icon: WifiTethering, roles: null },
+      
       {
         to: '/telemetry',
-        label: 'TruckersHub live',
+        label: 'Live Rider status',
         Icon: SensorsOutlined,
-        roles: STAFF_ROLES,
+        roles: null,
       },
     ],
   },
@@ -77,6 +103,7 @@ export const MY_AREA_SECTIONS = [
     id: 'economy',
     label: 'Economy',
     items: [
+    
       { to: '/wallet', label: 'Wallet', Icon: AccountBalanceWalletOutlined, roles: null },
       {
         to: '/trucks/marketplace',
@@ -92,35 +119,12 @@ export const MY_AREA_SECTIONS = [
         roles: null,
         matchExact: true,
       },
-      {
-        to: '/contracts/me',
-        label: 'My contracts',
-        Icon: FolderSharedOutlined,
-        roles: null,
-        matchExact: true,
-      },
+      
       { to: '/loans', label: 'Loans', Icon: RequestQuoteOutlined, roles: null },
     ],
   },
-  {
-    id: 'community',
-    label: 'Community & events',
-    items: [
-      { to: '/challenges', label: 'Challenges', Icon: AssignmentTurnedInOutlined, roles: null },
-      // { to: '/goals', label: 'Personal goals', Icon: FlagOutlined, roles: null },
-      { to: '/attendance', label: 'My attendance', Icon: EventAvailableOutlined, roles: null },
-      { to: '/calendar', label: 'Event calendar', Icon: CalendarMonthOutlined, roles: null },
-    ],
-  },
-  {
-    id: 'divisions-my',
-    label: 'Divisions',
-    items: [
-      { to: '/division', label: 'My division', Icon: GroupsOutlined, roles: null },
-      { to: '/division/invites', label: 'Invitations', Icon: HowToReg, roles: null },
-      { to: '/division-leaderboard', label: 'Division leaderboard', Icon: LeaderboardOutlined, roles: null },
-    ],
-  },
+ 
+ 
 ];
 
 /**

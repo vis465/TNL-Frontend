@@ -37,7 +37,7 @@ function TruckersHubLayoutInner() {
   const nav = [
     { to: '/telemetry', end: true, label: 'Fleet overview', Icon: DashboardOutlinedIcon },
     // { to: '/telemetry/violations', label: 'Speed violations', Icon: WarningAmberOutlinedIcon },
-    // { to: '/telemetry/jobs', label: 'Live jobs', Icon: MapOutlinedIcon },
+    { to: '/telemetry/jobs', label: 'Live jobs', Icon: MapOutlinedIcon },
     // { to: '/telemetry/status', label: 'Gateway status', Icon: SettingsEthernetOutlinedIcon },
   ];
 

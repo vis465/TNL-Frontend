@@ -497,77 +497,7 @@ export default function DivisionPublic() {
             </Grid>
 
             {/* Section: recent jobs — MUI Table */}
-            {recentJobs.length > 0 && (
-              <Card sx={{ mt: 4, borderRadius: 2.5, overflow: 'hidden' }}>
-                <CardContent sx={{ p: 0 }}>
-                  <Box
-                    sx={{
-                      px: 2.5,
-                      py: 2,
-                      background: (t) => alpha(t.palette.primary.main, t.palette.mode === 'dark' ? 0.12 : 0.08),
-                      borderBottom: 1,
-                      borderColor: 'divider',
-                    }}
-                  >
-                    <Stack direction="row" spacing={1.5} alignItems="center">
-                      <Sparkles size={22} color={theme.palette.primary.main} />
-                      <Typography variant="h6" fontWeight={800}>
-                        Latest jobs
-                      </Typography>
-                      <Chip size="small" label={recentJobs.length} color="primary" variant="outlined" />
-                    </Stack>
-                  </Box>
-                  <Box sx={{ overflowX: 'auto' }}>
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Rider</TableCell>
-                          <TableCell>Cargo</TableCell>
-                          <TableCell>Route</TableCell>
-                          <TableCell align="right">Distance</TableCell>
-                          <TableCell align="right">Revenue</TableCell>
-                          <TableCell align="right">When</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {recentJobs.map((j, idx) => (
-                          <TableRow key={(j.jobId || '') + idx} hover>
-                            <TableCell>
-                              <Stack direction="row" spacing={1.5} alignItems="center">
-                                <Avatar src={j.riderAvatar || undefined} sx={{ width: 28, height: 28 }}>
-                                  {j.riderName?.[0] || '?'}
-                                </Avatar>
-                                <Typography variant="body2" fontWeight={600}>
-                                  {j.riderName}
-                                </Typography>
-                              </Stack>
-                            </TableCell>
-                            <TableCell>{j.cargo || '—'}</TableCell>
-                            <TableCell>
-                              <Typography variant="body2">
-                                {j.sourceCity && j.sourceCompany ? `${j.sourceCity} - ${j.sourceCompany}` : '—'}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {j.destinationCity && j.destinationCompany
-                                  ? `${j.destinationCity} - ${j.destinationCompany}`
-                                  : ''}
-                              </Typography>
-                            </TableCell>
-                            <TableCell align="right">{(j.distanceKm || 0).toLocaleString()} km</TableCell>
-                            <TableCell align="right">{(j.revenue || 0).toLocaleString()}</TableCell>
-                            <TableCell align="right">
-                              <Typography variant="caption" color="text.secondary">
-                                {j.completedAt ? new Date(j.completedAt).toLocaleString() : '—'}
-                              </Typography>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </Box>
-                </CardContent>
-              </Card>
-            )}
+          
 
             {/* Leaderboard + member list */}
             <Grid container spacing={2} sx={{ mt: 3 }}>
@@ -728,7 +658,77 @@ export default function DivisionPublic() {
             </Grid>
           </Container>
         </Box>
-
+  {recentJobs.length > 0 && (
+              <Card sx={{ mt: 4, borderRadius: 2.5, overflow: 'hidden' }}>
+                <CardContent sx={{ p: 0 }}>
+                  <Box
+                    sx={{
+                      px: 2.5,
+                      py: 2,
+                      background: (t) => alpha(t.palette.primary.main, t.palette.mode === 'dark' ? 0.12 : 0.08),
+                      borderBottom: 1,
+                      borderColor: 'divider',
+                    }}
+                  >
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Sparkles size={22} color={theme.palette.primary.main} />
+                      <Typography variant="h6" fontWeight={800}>
+                        Latest jobs
+                      </Typography>
+                      <Chip size="small" label={recentJobs.length} color="primary" variant="outlined" />
+                    </Stack>
+                  </Box>
+                  <Box sx={{ overflowX: 'auto' }}>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Rider</TableCell>
+                          <TableCell>Cargo</TableCell>
+                          <TableCell>Route</TableCell>
+                          <TableCell align="right">Distance</TableCell>
+                          <TableCell align="right">Revenue</TableCell>
+                          <TableCell align="right">When</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {recentJobs.map((j, idx) => (
+                          <TableRow key={(j.jobId || '') + idx} hover>
+                            <TableCell>
+                              <Stack direction="row" spacing={1.5} alignItems="center">
+                                <Avatar src={j.riderAvatar || undefined} sx={{ width: 28, height: 28 }}>
+                                  {j.riderName?.[0] || '?'}
+                                </Avatar>
+                                <Typography variant="body2" fontWeight={600}>
+                                  {j.riderName}
+                                </Typography>
+                              </Stack>
+                            </TableCell>
+                            <TableCell>{j.cargo || '—'}</TableCell>
+                            <TableCell>
+                              <Typography variant="body2">
+                                {j.sourceCity && j.sourceCompany ? `${j.sourceCity} - ${j.sourceCompany}` : '—'}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {j.destinationCity && j.destinationCompany
+                                  ? `${j.destinationCity} - ${j.destinationCompany}`
+                                  : ''}
+                              </Typography>
+                            </TableCell>
+                            <TableCell align="right">{(j.distanceKm || 0).toLocaleString()} km</TableCell>
+                            <TableCell align="right">{(j.revenue || 0).toLocaleString()}</TableCell>
+                            <TableCell align="right">
+                              <Typography variant="caption" color="text.secondary">
+                                {j.completedAt ? new Date(j.completedAt).toLocaleString() : '—'}
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </Box>
+                </CardContent>
+              </Card>
+            )}
         <Dialog open={applyOpen} onClose={() => !applyBusy && setApplyOpen(false)} maxWidth="sm" fullWidth>
           <DialogTitle>Apply to join {division.name}</DialogTitle>
           <DialogContent>
