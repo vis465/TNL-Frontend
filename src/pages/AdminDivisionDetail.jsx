@@ -22,6 +22,7 @@ import {
   Stack,
   Tab,
   Tabs,
+  Pagination,
   Table,
   TableBody,
   TableCell,
@@ -81,6 +82,12 @@ export default function AdminDivisionDetail() {
   const [trucks, setTrucks] = useState([]);
   const [trucksLoading, setTrucksLoading] = useState(false);
   const [attendanceSummary, setAttendanceSummary] = useState(null);
+  const [divisionJobs, setDivisionJobs] = useState([]);
+  const [divisionJobsTotal, setDivisionJobsTotal] = useState(0);
+  const [divisionJobsPage, setDivisionJobsPage] = useState(1);
+  const [divisionJobsLimit] = useState(20);
+  const [divisionJobsLoading, setDivisionJobsLoading] = useState(false);
+  const [includeRemovedJobs, setIncludeRemovedJobs] = useState(false);
 
   const user = getItemWithExpiry('user') || {};
   const uid = String(user.id || user._id || '');
@@ -136,6 +143,54 @@ export default function AdminDivisionDetail() {
     if (tab === 6 && id) loadTrucks();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, id]);
+
+  const loadDivisionJobs = async () => {
+    if (!id) return;
+    setDivisionJobsLoading(true);
+    try {
+      const { data } = await axiosInstance.get(`/divisions/${id}/jobs`, {
+        params: {
+          page: divisionJobsPage,
+          limit: divisionJobsLimit,
+          includeRemoved: includeRemovedJobs || undefined,
+        },
+      });
+      setDivisionJobs(Array.isArray(data?.items) ? data.items : []);
+      setDivisionJobsTotal(Number(data?.total) || 0);
+    } catch (e) {
+      setError(e?.response?.data?.message || 'Failed to load division jobs');
+    } finally {
+      setDivisionJobsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (tab !== 7 || !id) return;
+    loadDivisionJobs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, id, divisionJobsPage, includeRemovedJobs]);
+
+  const removeDivisionJobFromStats = async (job) => {
+    if (!window.confirm(`Remove job ${job?.jobID || job?._id} from this division's stats?`)) return;
+    try {
+      await axiosInstance.post(`/divisions/${id}/jobs/${job._id}/remove-from-stats`);
+      await load();
+      await loadDivisionJobs();
+    } catch (e) {
+      alert(e?.response?.data?.message || 'Failed to remove job from division stats');
+    }
+  };
+
+  const restoreDivisionJobToStats = async (job) => {
+    if (!window.confirm(`Restore job ${job?.jobID || job?._id} into this division's stats?`)) return;
+    try {
+      await axiosInstance.post(`/divisions/${id}/jobs/${job._id}/restore-to-stats`);
+      await load();
+      await loadDivisionJobs();
+    } catch (e) {
+      alert(e?.response?.data?.message || 'Failed to restore job into division stats');
+    }
+  };
 
   const patchTruck = async (truckId, body) => {
     // Defense-in-depth: the backend PATCH /trucks/:truckId/admin already
@@ -450,6 +505,7 @@ export default function AdminDivisionDetail() {
           label={`Requests${joinRequests.length ? ` (${joinRequests.length})` : ''}`}
         />
         <Tab label={`Trucks${trucks.length ? ` (${trucks.length})` : ''}`} />
+        <Tab label={`Jobs${divisionJobsTotal ? ` (${divisionJobsTotal})` : ''}`} />
       </Tabs>
 
       <AnimatedTabPanel panelKey={`admin-division-tab-${tab}`}>
@@ -1103,6 +1159,107 @@ export default function AdminDivisionDetail() {
                 )}
               </TableBody>
             </Table>
+          </CardContent>
+        </Card>
+      )}
+      {tab === 7 && (
+        <Card>
+          <CardContent>
+            <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'center' }} spacing={1.5} sx={{ mb: 2 }}>
+              <Box>
+                <Typography variant="subtitle1" fontWeight={700}>Division jobs</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Reconcile or remove individual delivered jobs from this division's stats.
+                </Typography>
+              </Box>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Button size="small" variant="outlined" onClick={loadDivisionJobs} disabled={divisionJobsLoading}>
+                  {divisionJobsLoading ? 'Loading…' : 'Refresh'}
+                </Button>
+                <Button
+                  size="small"
+                  variant={includeRemovedJobs ? 'contained' : 'outlined'}
+                  color="warning"
+                  onClick={() => {
+                    setDivisionJobsPage(1);
+                    setIncludeRemovedJobs((v) => !v);
+                  }}
+                >
+                  {includeRemovedJobs ? 'Showing removed too' : 'Show removed'}
+                </Button>
+              </Stack>
+            </Stack>
+            {divisionJobsLoading && <LinearProgress sx={{ mb: 1 }} />}
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Job ID</TableCell>
+                  <TableCell>Driver</TableCell>
+                  <TableCell>Route</TableCell>
+                  <TableCell align="right">Distance</TableCell>
+                  <TableCell align="right">Revenue</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Completed</TableCell>
+                  <TableCell align="right">Admin</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {divisionJobs.map((j) => {
+                  const revenueValue = Number(j?.normalized?.revenueValue);
+                  const displayRevenue = Number.isFinite(revenueValue)
+                    ? revenueValue
+                    : Number(j?.revenue ?? j?.income ?? 0);
+                  const removed = Boolean(j?.divisionStatsManuallyExcluded);
+                  return (
+                    <TableRow key={j._id} hover>
+                      <TableCell>{j.jobID ?? '—'}</TableCell>
+                      <TableCell>{j?.driver?.username || '—'}</TableCell>
+                      <TableCell>{j?.source?.city?.name || '—'} → {j?.destination?.city?.name || '—'}</TableCell>
+                      <TableCell align="right">{Math.round(Number(j?.distanceDriven) || 0).toLocaleString()}</TableCell>
+                      <TableCell align="right">{Math.round(displayRevenue || 0).toLocaleString()}</TableCell>
+                      <TableCell>
+                        <Chip
+                          size="small"
+                          color={removed ? 'warning' : 'success'}
+                          variant={removed ? 'filled' : 'outlined'}
+                          label={removed ? 'Removed from stats' : 'Included'}
+                        />
+                      </TableCell>
+                      <TableCell>{new Date(j.completedAt || j.createdAt).toLocaleString()}</TableCell>
+                      <TableCell align="right">
+                        {removed ? (
+                          <Button size="small" variant="contained" onClick={() => restoreDivisionJobToStats(j)}>
+                            Restore
+                          </Button>
+                        ) : (
+                          <Button size="small" color="warning" variant="outlined" onClick={() => removeDivisionJobFromStats(j)}>
+                            Remove
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {!divisionJobs.length && !divisionJobsLoading && (
+                  <TableRow>
+                    <TableCell colSpan={8} align="center">
+                      <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+                        No jobs found for this division.
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+            <Stack direction="row" justifyContent="flex-end" sx={{ mt: 1 }}>
+              <Pagination
+                count={Math.max(1, Math.ceil(divisionJobsTotal / divisionJobsLimit))}
+                page={divisionJobsPage}
+                onChange={(_, p) => setDivisionJobsPage(p)}
+                shape="rounded"
+                size="small"
+              />
+            </Stack>
           </CardContent>
         </Card>
       )}

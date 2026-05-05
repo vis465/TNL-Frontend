@@ -1415,7 +1415,9 @@ const HRDashboard = () => {
             options={availableSearchOptions}
             value={selectedSearchOptions}
             loading={riderSearchLoading}
-            onInputChange={(_, value) => setRiderSearchTerm(value)}
+            onInputChange={(_, value, reason) => {
+              if (reason === 'input') setRiderSearchTerm(value);
+            }}
             onChange={(_, selected) => setSelectedRiderIds(selected.map((r) => r._id))}
             getOptionLabel={(option) =>
               `${option.name || option.username || 'Unknown'} (${option.employeeID || 'No ID'})`

@@ -40,6 +40,7 @@ import LocalOfferOutlined from '@mui/icons-material/LocalOfferOutlined';
 import LocalGasStation from '@mui/icons-material/LocalGasStation';
 import BarChartOutlined from '@mui/icons-material/BarChartOutlined';
 import SensorsOutlined from '@mui/icons-material/SensorsOutlined';
+import HistoryOutlined from '@mui/icons-material/HistoryOutlined';
 
 /** Staff roles that can open /admin (matches App.js admin layout gate). */
 export const STAFF_ROLES = ['admin', 'eventteam', 'hrteam', 'financeteam', 'communityManager'];
@@ -166,6 +167,12 @@ export const ADMIN_SECTIONS = [
         label: 'Analytics',
         Icon: AnalyticsOutlined,
         roles: ['admin', 'eventteam'],
+      },
+      {
+        to: '/admin/audit-logs',
+        label: 'Audit logs',
+        Icon: HistoryOutlined,
+        roles: STAFF_ROLES,
       },
       {
         to: '/admin/trucks',
@@ -308,6 +315,15 @@ export const ADMIN_DASHBOARD_CARDS = [
     icon: AnalyticsOutlined,
     color: 'info',
     roles: ['admin', 'eventteam'],
+  },
+  {
+    group: 'Events & operations',
+    title: 'Audit logs',
+    description: 'Track staff/API changes with actor, endpoint, status, and latency.',
+    to: '/admin/audit-logs',
+    icon: HistoryOutlined,
+    color: 'info',
+    roles: STAFF_ROLES,
   },
   {
     group: 'Events & operations',

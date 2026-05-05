@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  Alert,
   Box,
   Card,
   CardContent,
@@ -45,6 +46,7 @@ export default function AdminJobs() {
 
   const [status, setStatus] = useState('');
   const [username, setUsername] = useState('');
+  const [truckershubId, setTruckershubId] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [unmapped, setUnmapped] = useState(false);
@@ -60,6 +62,8 @@ export default function AdminJobs() {
   const [withinLastMonths, setWithinLastMonths] = useState('');
   const [dryRun, setDryRun] = useState(true);
   const [deletePreview, setDeletePreview] = useState(null);
+  const [selectedJobIds, setSelectedJobIds] = useState([]);
+  const [bulkResult, setBulkResult] = useState(null);
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / limit)), [total, limit]);
 
@@ -72,6 +76,7 @@ export default function AdminJobs() {
           limit,
           status: status || undefined,
           username: username || undefined,
+          truckershubId: truckershubId || undefined,
           unmapped: unmapped || undefined,
           dateFrom: dateFrom || undefined,
           dateTo: dateTo || undefined,
@@ -79,6 +84,7 @@ export default function AdminJobs() {
       });
       setItems(data.items || []);
       setTotal(data.total || 0);
+      setSelectedJobIds([]);
     } catch (e) {
       console.error(e);
     } finally {
@@ -96,7 +102,7 @@ export default function AdminJobs() {
     setPage(1);
     fetchJobs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, username, dateFrom, dateTo, unmapped]);
+  }, [status, username, truckershubId, dateFrom, dateTo, unmapped]);
 
   const fetchProgress = async () => {
     try {
@@ -130,6 +136,7 @@ export default function AdminJobs() {
         data: {
           status: status || undefined,
           username: username || undefined,
+          truckershubId: truckershubId || undefined,
           dateFrom: dateFrom || undefined,
           dateTo: dateTo || undefined,
           olderThanMonths: olderThanMonths ? Number(olderThanMonths) : undefined,
@@ -149,6 +156,7 @@ export default function AdminJobs() {
         data: {
           status: status || undefined,
           username: username || undefined,
+          truckershubId: truckershubId || undefined,
           dateFrom: dateFrom || undefined,
           dateTo: dateTo || undefined,
           olderThanMonths: olderThanMonths ? Number(olderThanMonths) : undefined,
@@ -187,14 +195,73 @@ export default function AdminJobs() {
     } catch (e) { console.error(e); }
   };
 
+  const reconcileForDivision = async (job) => {
+    try {
+      await axiosInstance.post(`/jobs/${job._id}/reconcile-division`, {
+        force: true,
+      });
+      await fetchJobs();
+      setBulkResult({
+        reconciled: 1,
+        skippedAlreadyApplied: 0,
+        skippedMissingMapping: 0,
+        skippedNonDelivered: 0,
+        failed: 0,
+      });
+    } catch (e) {
+      alert(e?.response?.data?.message || 'Failed to reconcile division stats');
+    }
+  };
+
+  const toggleOne = (jobId) => {
+    setSelectedJobIds((prev) => (
+      prev.includes(jobId) ? prev.filter((id) => id !== jobId) : [...prev, jobId]
+    ));
+  };
+
+  const toggleAllOnPage = () => {
+    const pageIds = items.map((j) => j._id);
+    const allSelected = pageIds.length > 0 && pageIds.every((id) => selectedJobIds.includes(id));
+    if (allSelected) {
+      setSelectedJobIds((prev) => prev.filter((id) => !pageIds.includes(id)));
+      return;
+    }
+    setSelectedJobIds((prev) => [...new Set([...prev, ...pageIds])]);
+  };
+
+  const runBulkReconcile = async () => {
+    if (!selectedJobIds.length) return;
+    if (!window.confirm(`Reconcile ${selectedJobIds.length} selected job(s) for division stats?`)) return;
+    try {
+      const { data } = await axiosInstance.post('/jobs/reconcile-division/bulk', {
+        jobIds: selectedJobIds,
+        force: true,
+      });
+      setBulkResult(data);
+      await fetchJobs();
+    } catch (e) {
+      alert(e?.response?.data?.message || 'Failed to bulk reconcile jobs');
+    }
+  };
+
   return (
     <Box sx={{ maxWidth: 1200, mx: 'auto', px: 3, py: 4 }}>
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
         <Typography variant="h5" fontWeight={700}>Admin • Job Management</Typography>
         <Stack direction="row" spacing={1}>
           <Button variant="contained" color="error" onClick={() => { setDeleteOpen(true); setDeletePreview(null); }}>Bulk Delete…</Button>
+          <Button variant="contained" onClick={runBulkReconcile} disabled={!selectedJobIds.length}>
+            Reconcile Selected ({selectedJobIds.length})
+          </Button>
         </Stack>
       </Stack>
+      {bulkResult && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Reconcile result: reconciled {bulkResult.reconciled || 0}, already applied {bulkResult.skippedAlreadyApplied || 0},
+          missing mapping {bulkResult.skippedMissingMapping || 0}, non-delivered {bulkResult.skippedNonDelivered || 0},
+          failed {bulkResult.failed || 0}.
+        </Alert>
+      )}
 
       <Card variant="outlined" sx={{ mb: 3 }}>
         <CardContent>
@@ -210,6 +277,15 @@ export default function AdminJobs() {
               <TextField label="Username" fullWidth size="small" value={username} onChange={(e) => setUsername(e.target.value)} />
             </Grid>
             <Grid item xs={12} md={2}>
+              <TextField
+                label="TruckersHub ID"
+                fullWidth
+                size="small"
+                value={truckershubId}
+                onChange={(e) => setTruckershubId(e.target.value)}
+              />
+            </Grid>
+            <Grid item xs={12} md={2}>
               <TextField type="date" label="From" fullWidth size="small" InputLabelProps={{ shrink: true }} value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
             </Grid>
             <Grid item xs={12} md={2}>
@@ -218,7 +294,19 @@ export default function AdminJobs() {
             <Grid item xs={12} md={3}>
               <Stack direction="row" spacing={1}>
                 <Button variant="contained" onClick={applyFilters}>Apply</Button>
-                <Button variant="outlined" onClick={() => { setStatus(''); setUsername(''); setDateFrom(''); setDateTo(''); setPage(1); }}>Reset</Button>
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    setStatus('');
+                    setUsername('');
+                    setTruckershubId('');
+                    setDateFrom('');
+                    setDateTo('');
+                    setPage(1);
+                  }}
+                >
+                  Reset
+                </Button>
               </Stack>
             </Grid>
             <Grid item xs={12} md={3}>
@@ -272,6 +360,13 @@ export default function AdminJobs() {
             <Table size="small">
               <TableHead>
                 <TableRow>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      checked={items.length > 0 && items.every((j) => selectedJobIds.includes(j._id))}
+                      indeterminate={items.some((j) => selectedJobIds.includes(j._id)) && !items.every((j) => selectedJobIds.includes(j._id))}
+                      onChange={toggleAllOnPage}
+                    />
+                  </TableCell>
                   <TableCell>ID</TableCell>
                   <TableCell>Status</TableCell>
                   <TableCell>Driver</TableCell>
@@ -279,6 +374,7 @@ export default function AdminJobs() {
                   <TableCell align="right">Distance</TableCell>
                   <TableCell align="right">Revenue</TableCell>
                   <TableCell>Created</TableCell>
+                  <TableCell align="right">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -290,6 +386,9 @@ export default function AdminJobs() {
                       : Number(j?.revenue ?? j?.income ?? 0);
                     return (
                   <TableRow key={j._id} hover>
+                    <TableCell padding="checkbox">
+                      <Checkbox checked={selectedJobIds.includes(j._id)} onChange={() => toggleOne(j._id)} />
+                    </TableCell>
                     <TableCell>{j.jobID || '-'}</TableCell>
                     <TableCell>
                       <Chip size="small" label={j.status} color={j.status === 'delivered' ? 'success' : (j.status === 'started' ? 'warning' : 'default')} variant="outlined" />
@@ -299,13 +398,18 @@ export default function AdminJobs() {
                     <TableCell align="right">{j.distanceDriven || 0}</TableCell>
                     <TableCell align="right">${Math.round(displayRevenue).toLocaleString()}</TableCell>
                     <TableCell>{new Date(j.createdAt).toLocaleString()}</TableCell>
+                    <TableCell align="right">
+                      <Button size="small" variant="outlined" onClick={() => reconcileForDivision(j)}>
+                        Reconcile for division
+                      </Button>
+                    </TableCell>
                   </TableRow>
                     );
                   })()
                 ))}
                 {!loading && items.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} align="center">
+                    <TableCell colSpan={9} align="center">
                       <Typography variant="body2" color="text.secondary">No jobs found.</Typography>
                     </TableCell>
                   </TableRow>
@@ -385,6 +489,15 @@ export default function AdminJobs() {
               </Grid>
               <Grid item xs={12}>
                 <TextField label="Username (optional)" fullWidth size="small" value={username} onChange={(e) => setUsername(e.target.value)} />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  label="TruckersHub ID (optional)"
+                  fullWidth
+                  size="small"
+                  value={truckershubId}
+                  onChange={(e) => setTruckershubId(e.target.value)}
+                />
               </Grid>
             </Grid>
             <Divider />
