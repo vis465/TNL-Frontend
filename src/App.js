@@ -373,7 +373,7 @@ function App() {
                       element={<LicenseGenerator />}
                     />
                     <Route
-                          path="/telemetry"
+                          path="/telemetry/*"
                           element={
                               <TruckersHubLayout />
                           }
