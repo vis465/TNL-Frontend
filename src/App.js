@@ -372,14 +372,6 @@ function App() {
                       path="/riders/licence"
                       element={<LicenseGenerator />}
                     />
-                    <Route
-                          path="/telemetry/*"
-                          element={
-                              <TruckersHubLayout />
-                          }
-                        >
-                          <Route index element={<TruckersHubDashboard />} />
-                        </Route>
                     <Route path="/attendance" element={<PublicAttendance />} />
                     <Route
                       path="/riders/:driverId/challenges"
@@ -413,6 +405,8 @@ function App() {
                         <Route path="/jobs" element={<RiderJobs />} />
                         <Route path="/validate-job" element={<JobValidation />} />
                         <Route path="/online-riders" element={<OnlineRiders />} />
+                        <Route path="/telemetry/*" element={<TruckersHubLayout />}>
+                          <Route index element={<TruckersHubDashboard />} />
                           <Route path="violations" element={<SpeedViolationsMonitor />} />
                           <Route path="jobs" element={<LiveJobTrackingPage />} />
                           <Route path="status" element={<TruckersHubStatus />} />
@@ -435,6 +429,7 @@ function App() {
                         <Route path="/division/fuel" element={<FuelMarketplace />} />
                         <Route path="/division/invites" element={<DivisionInvites />} />
                       
+                    </Route>
                     </Route>
 
                     {/* Admin area: layout with sidebar + nested gated routes */}

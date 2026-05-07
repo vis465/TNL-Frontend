@@ -58,6 +58,7 @@ const emptyForm = () => ({
   resellable: false,
   maxResalePrice: '0',
   rentPerJobTokens: '0',
+  maintenanceCostCategory: '',
   isActive: true,
   source: 'marketplace'
 });
@@ -86,6 +87,7 @@ function truckToForm(t) {
     resellable: Boolean(t.resellable),
     maxResalePrice: t.maxResalePrice != null ? String(t.maxResalePrice) : '0',
     rentPerJobTokens: t.rentPerJobTokens != null ? String(t.rentPerJobTokens) : '0',
+    maintenanceCostCategory: t.maintenanceCostCategory || t.maintenanceCategory || t.costCategory || '',
     isActive: t.isActive !== false,
     source: t.source || 'marketplace'
   };
@@ -113,6 +115,7 @@ function formToCreatePayload(form) {
     resellable: form.resellable,
     maxResalePrice: num(form.maxResalePrice),
     rentPerJobTokens: num(form.rentPerJobTokens),
+    maintenanceCostCategory: form.maintenanceCostCategory.trim() || undefined,
     isActive: form.isActive,
     source: form.source.trim() || 'marketplace'
   };
@@ -145,6 +148,7 @@ function formToPatchPayload(form) {
     resellable: form.resellable,
     maxResalePrice: num(form.maxResalePrice) ?? 0,
     rentPerJobTokens: num(form.rentPerJobTokens) ?? 0,
+    maintenanceCostCategory: form.maintenanceCostCategory.trim() || undefined,
     isActive: form.isActive,
     source: form.source.trim() || 'marketplace'
   };
@@ -313,6 +317,7 @@ export default function AdminTrucks() {
               <TableCell align="right">Price</TableCell>
               <TableCell align="right">Stock</TableCell>
               <TableCell align="right">Rent/job</TableCell>
+              <TableCell>Maint. category</TableCell>
               <TableCell>Active</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
@@ -345,6 +350,7 @@ export default function AdminTrucks() {
                 <TableCell align="right">{Number(row.effectivePrice ?? row.price ?? 0).toLocaleString()}</TableCell>
                 <TableCell align="right">{row.stock ?? 0}</TableCell>
                 <TableCell align="right">{row.rentPerJobTokens ?? 0}</TableCell>
+                <TableCell>{row.maintenanceCostCategory || '—'}</TableCell>
                 <TableCell>
                   <Chip size="small" label={row.isActive ? 'Yes' : 'No'} color={row.isActive ? 'success' : 'default'} />
                 </TableCell>
@@ -498,6 +504,16 @@ export default function AdminTrucks() {
             </Grid>
             <Grid item xs={6} sm={3}>
               <TextField fullWidth size="small" label="Source" value={form.source} onChange={f('source')} />
+            </Grid>
+            <Grid item xs={6} sm={3}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Maintenance category"
+                value={form.maintenanceCostCategory}
+                onChange={f('maintenanceCostCategory')}
+                placeholder="low / medium / high"
+              />
             </Grid>
             <Grid item xs={12} sm={6}>
               <FormControlLabel

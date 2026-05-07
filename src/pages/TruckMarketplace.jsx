@@ -61,6 +61,16 @@ const sxCard = {
   flexDirection: 'column',
 };
 
+function maintenanceCategoryLabel(raw) {
+  const value = String(raw || '').trim();
+  if (!value) return '';
+  return value
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ');
+}
+
 function tabProps(index) {
   return { id: `truck-market-tab-${index}`, 'aria-controls': `truck-market-tabpanel-${index}` };
 }
@@ -363,6 +373,7 @@ export default function TruckMarketplace() {
                   const owned = isOwned(model);
                   const canBuy = isLeader && !!divisionId;
                   const canAfford = price <= divisionBalance;
+                  const maintCategory = maintenanceCategoryLabel(model.maintenanceCostCategory);
                   return (
                     <BentoItem key={`${brand.id}-${model.id}`}>
                       <Card sx={sxCard}>
@@ -394,6 +405,9 @@ export default function TruckMarketplace() {
                           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                             <Chip size="small" label={`${price.toLocaleString()} tokens`} sx={{ fontWeight: 600 }} />
                             {rent > 0 ? <Chip size="small" variant="outlined" label={`${rent}/job rent`} /> : null}
+                            {maintCategory ? (
+                              <Chip size="small" variant="outlined" label={`Maintenance: ${maintCategory}`} />
+                            ) : null}
                             {Number(model.stock) > 0 ? (
                               <Chip size="small" variant="outlined" label={`Stock ${model.stock}`} />
                             ) : null}
