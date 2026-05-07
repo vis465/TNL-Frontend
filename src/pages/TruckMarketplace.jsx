@@ -71,6 +71,17 @@ function maintenanceCategoryLabel(raw) {
     .join(' ');
 }
 
+function inferMaintenanceCategory(rawCategory, priceTokens) {
+  const normalized = String(rawCategory || '').trim().toLowerCase();
+  if (normalized.includes('low')) return 'low';
+  if (normalized.includes('mid') || normalized.includes('medium')) return 'medium';
+  if (normalized.includes('high') || normalized.includes('premium')) return 'premium';
+  const price = Number(priceTokens) || 0;
+  if (price < 50000) return 'low';
+  if (price < 150000) return 'medium';
+  return 'premium';
+}
+
 function tabProps(index) {
   return { id: `truck-market-tab-${index}`, 'aria-controls': `truck-market-tabpanel-${index}` };
 }
@@ -373,7 +384,9 @@ export default function TruckMarketplace() {
                   const owned = isOwned(model);
                   const canBuy = isLeader && !!divisionId;
                   const canAfford = price <= divisionBalance;
-                  const maintCategory = maintenanceCategoryLabel(model.maintenanceCostCategory);
+                  const maintCategory = maintenanceCategoryLabel(
+                    inferMaintenanceCategory(model.maintenanceCostCategory, price)
+                  );
                   return (
                     <BentoItem key={`${brand.id}-${model.id}`}>
                       <Card sx={sxCard}>
@@ -405,9 +418,7 @@ export default function TruckMarketplace() {
                           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                             <Chip size="small" label={`${price.toLocaleString()} tokens`} sx={{ fontWeight: 600 }} />
                             {rent > 0 ? <Chip size="small" variant="outlined" label={`${rent}/job rent`} /> : null}
-                            {maintCategory ? (
-                              <Chip size="small" variant="outlined" label={`Maintenance: ${maintCategory}`} />
-                            ) : null}
+                            <Chip size="small" variant="outlined" label={`Maintenance: ${maintCategory}`} />
                             {Number(model.stock) > 0 ? (
                               <Chip size="small" variant="outlined" label={`Stock ${model.stock}`} />
                             ) : null}
