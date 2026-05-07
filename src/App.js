@@ -372,24 +372,25 @@ function App() {
                       path="/riders/licence"
                       element={<LicenseGenerator />}
                     />
+                    <Route
+                          path="/telemetry"
+                          element={
+                              <TruckersHubLayout />
+                          }
+                        >
+                          <Route index element={<TruckersHubDashboard />} />
+                        </Route>
                     <Route path="/attendance" element={<PublicAttendance />} />
                     <Route
                       path="/riders/:driverId/challenges"
                       element={<RiderChallenges />}
+
                     />
                     <Route path="/challenges" element={<PublicChallenges />} />
                     <Route
                       path="/rider/register"
                       element={<RiderRegistration />}
                     />
-                      <Route
-                          path="/telemetry"
-                          element={
-                            
-                              <TruckersHubLayout />
-                          
-                          }
-                        >
                     {/* Authenticated personal routes (sidebar shell — same as /admin for staff) */}
                     <Route
                       element={
@@ -412,8 +413,6 @@ function App() {
                         <Route path="/jobs" element={<RiderJobs />} />
                         <Route path="/validate-job" element={<JobValidation />} />
                         <Route path="/online-riders" element={<OnlineRiders />} />
-                      
-                          <Route index element={<TruckersHubDashboard />} />
                           <Route path="violations" element={<SpeedViolationsMonitor />} />
                           <Route path="jobs" element={<LiveJobTrackingPage />} />
                           <Route path="status" element={<TruckersHubStatus />} />
@@ -435,7 +434,7 @@ function App() {
                         <Route path="/division" element={<MyDivision />} />
                         <Route path="/division/fuel" element={<FuelMarketplace />} />
                         <Route path="/division/invites" element={<DivisionInvites />} />
-                      </Route>
+                      
                     </Route>
 
                     {/* Admin area: layout with sidebar + nested gated routes */}
