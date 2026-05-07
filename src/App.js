@@ -382,6 +382,14 @@ function App() {
                       path="/rider/register"
                       element={<RiderRegistration />}
                     />
+                      <Route
+                          path="/telemetry"
+                          element={
+                            
+                              <TruckersHubLayout />
+                          
+                          }
+                        >
                     {/* Authenticated personal routes (sidebar shell — same as /admin for staff) */}
                     <Route
                       element={
@@ -404,14 +412,7 @@ function App() {
                         <Route path="/jobs" element={<RiderJobs />} />
                         <Route path="/validate-job" element={<JobValidation />} />
                         <Route path="/online-riders" element={<OnlineRiders />} />
-                        <Route
-                          path="/telemetry"
-                          element={
-                            <PrivateRoute allowedRoles={STAFF_ROLES}>
-                              <TruckersHubLayout />
-                            </PrivateRoute>
-                          }
-                        >
+                      
                           <Route index element={<TruckersHubDashboard />} />
                           <Route path="violations" element={<SpeedViolationsMonitor />} />
                           <Route path="jobs" element={<LiveJobTrackingPage />} />
