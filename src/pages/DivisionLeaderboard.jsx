@@ -17,6 +17,9 @@ import {
   TableSortLabel,
   Tab,
   Tabs,
+  TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from '@mui/material';
 import EmojiEvents from '@mui/icons-material/EmojiEvents';
@@ -39,14 +42,29 @@ export default function DivisionLeaderboard() {
   const [tab, setTab] = useState(0);
   const [sort, setSort] = useState('totalEventsAttended');
   const [dir, setDir] = useState('desc');
+  const [period, setPeriod] = useState('all-time');
+  const [month, setMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
 
-  const load = async (nextSort = sort, nextDir = dir) => {
+  const load = async (
+    nextSort = sort,
+    nextDir = dir,
+    nextPeriod = period,
+    nextMonth = month
+  ) => {
     setLoading(true);
     setError('');
     try {
       const [lb, list] = await Promise.all([
         axiosInstance.get('/divisions/leaderboard/global', {
-          params: { limit: 50, sort: nextSort, dir: nextDir },
+          params: {
+            limit: 50,
+            sort: nextSort,
+            dir: nextDir,
+            ...(nextPeriod === 'monthly' ? { period: 'monthly', month: nextMonth } : {}),
+          },
         }),
         axiosInstance.get('/divisions/public/list').catch(() => ({ data: { divisions: [] } })),
       ]);
@@ -60,26 +78,39 @@ export default function DivisionLeaderboard() {
   };
 
   useEffect(() => {
-    load();
+    if (period === 'monthly' || period === 'all-time') {
+      load(sort, dir, period, month);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [period, month]);
 
   const toggleSort = (key) => {
     const nextDir = sort === key ? (dir === 'asc' ? 'desc' : 'asc') : 'desc';
     setSort(key);
     setDir(nextDir);
-    load(key, nextDir);
+    load(key, nextDir, period, month);
   };
 
   const divBySlug = new Map(divisions.map((d) => [String(d._id), d]));
   const top = rows.slice(0, 3);
+  const formatMonthLabel = (value) => {
+    if (!value) return '';
+    const [year, monthPart] = String(value).split('-');
+    const date = new Date(`${year}-${monthPart}-01`);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
+  };
 
   return (
     <MagicPageShell>
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <DashboardHero
         title="Division Leaderboard"
-        subtitle="Live inter-division rankings by attendance, scale, and execution. Explore top contenders or drill into the complete ecosystem."
+        subtitle={
+          period === 'monthly'
+            ? `Monthly division rankings for ${formatMonthLabel(month)}.`
+            : 'Live inter-division rankings by attendance, scale, and execution. Explore top contenders or drill into the complete ecosystem.'
+        }
         stats={[
           { label: 'Tracked Divisions', value: divisions.length },
           { label: 'Ranked Divisions', value: rows.length },
@@ -94,6 +125,30 @@ export default function DivisionLeaderboard() {
       <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
         Inter-division ranking by unique division attendance counts and engagement.
       </Typography>
+      <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'stretch', sm: 'center' }} justifyContent="space-between" spacing={2} sx={{ mb: 3 }}>
+        <ToggleButtonGroup
+          value={period}
+          exclusive
+          onChange={(_, value) => value && setPeriod(value)}
+          size="small"
+          color="primary"
+          aria-label="leaderboard period"
+        >
+          <ToggleButton value="all-time">All time</ToggleButton>
+          <ToggleButton value="monthly">Monthly</ToggleButton>
+        </ToggleButtonGroup>
+        {period === 'monthly' && (
+          <TextField
+            type="month"
+            label="Month"
+            value={month}
+            onChange={(e) => setMonth(e.target.value)}
+            size="small"
+            InputLabelProps={{ shrink: true }}
+            sx={{ maxWidth: 200 }}
+          />
+        )}
+      </Stack>
 
       {loading && <LinearProgress sx={{ mb: 2 }} />}
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
