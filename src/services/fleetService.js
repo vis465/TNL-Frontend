@@ -27,9 +27,25 @@ export async function getDivisionTrucks(divisionId) {
   return data;
 }
 
-export async function payTruckMaintenance(divisionId, divisionTruckId) {
+export async function payTruckMaintenance(divisionId, divisionTruckId, couponCode) {
   const { data } = await axiosInstance.post(
-    `/divisions/${encodeURIComponent(divisionId)}/trucks/${encodeURIComponent(divisionTruckId)}/maintain`
+    `/divisions/${encodeURIComponent(divisionId)}/trucks/${encodeURIComponent(divisionTruckId)}/maintain`,
+    couponCode ? { couponCode } : undefined
+  );
+  return data;
+}
+
+export async function previewTruckMaintenance(divisionId, divisionTruckId, couponCode) {
+  const { data } = await axiosInstance.post(
+    `/divisions/${encodeURIComponent(divisionId)}/trucks/${encodeURIComponent(divisionTruckId)}/maintain/preview`,
+    couponCode ? { couponCode } : undefined
+  );
+  return data;
+}
+
+export async function sellDivisionTruck(divisionId, divisionTruckId) {
+  const { data } = await axiosInstance.post(
+    `/divisions/${encodeURIComponent(divisionId)}/trucks/${encodeURIComponent(divisionTruckId)}/sell`
   );
   return data;
 }

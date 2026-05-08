@@ -7,6 +7,7 @@ import {
   Button,
   Card,
   CardContent,
+  MenuItem,
   CardMedia,
   Chip,
   Container,
@@ -41,6 +42,12 @@ import SpeedOutlined from '@mui/icons-material/SpeedOutlined';
 import axiosInstance from '../utils/axios';
 import { getItemWithExpiry } from '../localStorageWithExpiry';
 import { getDivisionTrucks } from '../services/fleetService';
+import {
+  createDivisionLoan,
+  getDivisionLoanInstallments,
+  getDivisionLoanPlans,
+  getDivisionLoans,
+} from '../services/loanService';
 import DivisionGlobalBanner from '../components/DivisionGlobalBanner';
 import DashboardHero from '../components/magicui/DashboardHero';
 import MagicPageShell from '../components/magicui/MagicPageShell';
@@ -51,6 +58,11 @@ const DIVISION_FUEL_CAPACITY_L = 20_000;
 
 const TAB_KEYS = ['overview', 'people', 'fleet', 'leaderboard'];
 const TAB_INDEX_BY_KEY = TAB_KEYS.reduce((acc, key, index) => {
+  acc[key] = index;
+  return acc;
+}, {});
+const LEADER_TOOL_KEYS = ['access', 'requests', 'finance'];
+const LEADER_TOOL_INDEX_BY_KEY = LEADER_TOOL_KEYS.reduce((acc, key, index) => {
   acc[key] = index;
   return acc;
 }, {});
@@ -80,6 +92,19 @@ export default function MyDivision() {
   const [removingMemberId, setRemovingMemberId] = useState('');
   const [lbSortKey, setLbSortKey] = useState('jobs');
   const [lbSortDir, setLbSortDir] = useState('desc');
+  const [coLeaders, setCoLeaders] = useState([]);
+  const [divisionLoanPrincipal, setDivisionLoanPrincipal] = useState('10000');
+  const [divisionLoanPlans, setDivisionLoanPlans] = useState([]);
+  const [divisionLoanTenure, setDivisionLoanTenure] = useState(3);
+  const [divisionLoans, setDivisionLoans] = useState([]);
+  const [selectedDivisionLoanId, setSelectedDivisionLoanId] = useState('');
+  const [selectedDivisionLoanInstallments, setSelectedDivisionLoanInstallments] = useState([]);
+  const [myInvestments, setMyInvestments] = useState([]);
+  const [myInvestedTotal, setMyInvestedTotal] = useState(0);
+  const [investmentSummary, setInvestmentSummary] = useState([]);
+  const [investAmount, setInvestAmount] = useState('');
+  const [investNote, setInvestNote] = useState('');
+  const [leaderToolTab, setLeaderToolTab] = useState(0);
 
   const sortedLb = useMemo(() => {
     const rows = [...lb];
@@ -131,21 +156,38 @@ export default function MyDivision() {
       const resolvedData = { ...(d || {}), division: resolvedDivision, isLeader: isLeaderFromApi };
       setData(resolvedData);
       if (resolvedDivision?._id) {
-        const [{ data: l }, { data: m }, fleet] = await Promise.all([
+        const [{ data: l }, { data: m }, fleet, divisionLoansRes, mineInvestmentsRes, summaryRes] = await Promise.all([
           axiosInstance.get(`/divisions/${resolvedDivision._id}/leaderboard`, { params: { limit: 30 } }),
           axiosInstance.get(`/divisions/${resolvedDivision._id}/members`).catch(() => ({ data: { members: [] } })),
           getDivisionTrucks(resolvedDivision._id).catch(() => ({ trucks: [] })),
+          getDivisionLoans(resolvedDivision._id).catch(() => []),
+          axiosInstance.get(`/divisions/${resolvedDivision._id}/investments/me`).catch(() => ({ data: { items: [], totalInvested: 0 } })),
+          axiosInstance.get(`/divisions/${resolvedDivision._id}/investments/summary`).catch(() => ({ data: { byRider: [] } })),
         ]);
         setLb(l.riders || []);
         setMembers(m.members || []);
         setFleetTrucks(Array.isArray(fleet?.trucks) ? fleet.trucks : []);
         setTaxPct(String(resolvedDivision.taxPercent ?? 0));
+        setDivisionLoans(Array.isArray(divisionLoansRes) ? divisionLoansRes : []);
+        setMyInvestments(Array.isArray(mineInvestmentsRes?.data?.items) ? mineInvestmentsRes.data.items : []);
+        setMyInvestedTotal(Number(mineInvestmentsRes?.data?.totalInvested) || 0);
+        setInvestmentSummary(Array.isArray(summaryRes?.data?.byRider) ? summaryRes.data.byRider : []);
+        setSelectedDivisionLoanId((prev) =>
+          prev && (divisionLoansRes || []).some((x) => String(x._id) === String(prev))
+            ? prev
+            : divisionLoansRes?.[0]?._id || ''
+        );
       } else {
         setLb([]);
         setMembers([]);
         setFleetTrucks([]);
         setJoinRequests([]);
         setSentInvites([]);
+        setDivisionLoans([]);
+        setSelectedDivisionLoanId('');
+        setMyInvestments([]);
+        setMyInvestedTotal(0);
+        setInvestmentSummary([]);
       }
     } catch (e) {
       setError(e?.response?.data?.message || 'Failed to load');
@@ -184,6 +226,9 @@ export default function MyDivision() {
   const isLeader =
     data?.isLeader === true || Boolean(div && uid && leaderIdStr && uid === leaderIdStr);
   const isAdmin = user?.role === 'admin';
+  const coLeaderIds = Array.isArray(div?.coLeaderUserIds) ? div.coLeaderUserIds.map((x) => String(x)) : [];
+  const isCoLeader = Boolean(uid && coLeaderIds.includes(uid));
+  const canManageFuel = isLeader || isCoLeader || isAdmin || user?.role === 'communityManager';
 
   const fleetSummary = useMemo(() => {
     const total = fleetTrucks.length;
@@ -232,7 +277,22 @@ export default function MyDivision() {
     }
     return base;
   }, [members, div]);
+  const coLeaderCandidateMembers = useMemo(
+    () => peopleRows.filter((m) => !m.isLeader && String(m._id || m.riderId || '').trim()),
+    [peopleRows]
+  );
+  useEffect(() => {
+    const coIds = Array.isArray(div?.coLeaderUserIds) ? div.coLeaderUserIds.map((x) => String(x)) : [];
+    if (!coIds.length) {
+      setCoLeaders([]);
+      return;
+    }
+    const selected = coLeaderCandidateMembers.filter((m) => coIds.includes(String(m.userId || '')));
+    setCoLeaders(selected);
+  }, [div?.coLeaderUserIds, coLeaderCandidateMembers]);
   const effectiveMemberCount = peopleRows.length || Number(div?.memberCount || 0);
+  const currentMemberByUserId = peopleRows.find((m) => String(m?.userId || '') === uid);
+  const canInvest = Boolean(isLeader || (currentMemberByUserId && !currentMemberByUserId?.inactive));
 
   useEffect(() => {
     if (!isLeader || !div?._id) return;
@@ -258,17 +318,69 @@ export default function MyDivision() {
   }, [div?._id, isLeader]);
 
   useEffect(() => {
+    const loadPlans = async () => {
+      const p = Number(divisionLoanPrincipal);
+      if (!Number.isFinite(p) || p <= 0) {
+        setDivisionLoanPlans([]);
+        return;
+      }
+      try {
+        const data = await getDivisionLoanPlans(p);
+        const plans = data?.items || [];
+        setDivisionLoanPlans(plans);
+        if (plans.length && !plans.some((x) => Number(x.tenureMonths) === Number(divisionLoanTenure))) {
+          setDivisionLoanTenure(Number(plans[0].tenureMonths));
+        }
+      } catch (_) {
+        setDivisionLoanPlans([]);
+      }
+    };
+    if (isLeader && div?._id) loadPlans();
+  }, [divisionLoanPrincipal, divisionLoanTenure, div?._id, isLeader]);
+
+  useEffect(() => {
+    const loadInstallments = async () => {
+      if (!div?._id || !selectedDivisionLoanId) {
+        setSelectedDivisionLoanInstallments([]);
+        return;
+      }
+      try {
+        const data = await getDivisionLoanInstallments(div._id, selectedDivisionLoanId);
+        setSelectedDivisionLoanInstallments(data?.installments || []);
+      } catch (_) {
+        setSelectedDivisionLoanInstallments([]);
+      }
+    };
+    loadInstallments();
+  }, [div?._id, selectedDivisionLoanId]);
+
+  useEffect(() => {
     const tabKey = String(searchParams.get('tab') || '').toLowerCase();
     const nextIndex = TAB_INDEX_BY_KEY[tabKey];
     if (nextIndex == null || nextIndex === activeTab) return;
     setActiveTab(nextIndex);
   }, [searchParams, activeTab]);
 
+  useEffect(() => {
+    const leaderKey = String(searchParams.get('leader') || '').toLowerCase();
+    const nextIndex = LEADER_TOOL_INDEX_BY_KEY[leaderKey];
+    if (nextIndex == null || nextIndex === leaderToolTab) return;
+    setLeaderToolTab(nextIndex);
+  }, [searchParams, leaderToolTab]);
+
   const setTabAndSyncQuery = (tabIndex) => {
     setActiveTab(tabIndex);
     const next = new URLSearchParams(searchParams);
     if (tabIndex <= 0) next.delete('tab');
     else next.set('tab', TAB_KEYS[tabIndex]);
+    setSearchParams(next, { replace: true });
+  };
+
+  const setLeaderTabAndSyncQuery = (tabIndex) => {
+    setLeaderToolTab(tabIndex);
+    const next = new URLSearchParams(searchParams);
+    if (tabIndex <= 0) next.delete('leader');
+    else next.set('leader', LEADER_TOOL_KEYS[tabIndex]);
     setSearchParams(next, { replace: true });
   };
 
@@ -301,6 +413,49 @@ export default function MyDivision() {
       load();
     } catch (e) {
       setError(e?.response?.data?.message || 'Failed to update tax');
+    }
+  };
+
+  const saveCoLeaders = async () => {
+    try {
+      await axiosInstance.patch(`/divisions/${div._id}/co-leaders`, {
+        coLeaderUserIds: coLeaders.map((m) => m.userId || m._id).filter(Boolean),
+      });
+      await load();
+    } catch (e) {
+      setError(e?.response?.data?.message || 'Failed to update co-leaders');
+    }
+  };
+
+  const createDivisionLoanAction = async () => {
+    try {
+      const principal = Number(divisionLoanPrincipal);
+      if (!Number.isFinite(principal) || principal <= 0) return;
+      await createDivisionLoan({
+        divisionId: div._id,
+        principal,
+        tenureMonths: Number(divisionLoanTenure),
+        metadata: { source: 'division_ui' },
+      });
+      await load();
+    } catch (e) {
+      setError(e?.response?.data?.message || 'Failed to create division loan');
+    }
+  };
+
+  const investInDivision = async () => {
+    try {
+      const amount = Math.floor(Number(investAmount) || 0);
+      if (amount <= 0) return;
+      await axiosInstance.post(`/divisions/${div._id}/investments`, {
+        amount,
+        note: investNote,
+      });
+      setInvestAmount('');
+      setInvestNote('');
+      await load();
+    } catch (e) {
+      setError(e?.response?.data?.message || 'Failed to create investment');
     }
   };
 
@@ -482,8 +637,8 @@ export default function MyDivision() {
             </BentoItem>
             <BentoItem>
               <Paper variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>
-                <Typography variant="caption" color="text.secondary">Fleet trucks</Typography>
-                <Typography variant="h6" fontWeight={800}>{fleetSummary.total}</Typography>
+                <Typography variant="caption" color="text.secondary">My invested</Typography>
+                <Typography variant="h6" fontWeight={800}>{Math.round(myInvestedTotal).toLocaleString()}</Typography>
               </Paper>
             </BentoItem>
             <BentoItem>
@@ -627,8 +782,11 @@ export default function MyDivision() {
                     <Chip size="small" variant="outlined" label={`Free ${Math.round(remainingFuelCapacity).toLocaleString()} L`} />
                   </Stack>
                 </Box>
-                <Button component={RouterLink} to="/division/fuel" variant={isLeader ? 'contained' : 'outlined'}>
-                  {isLeader ? 'Fuel marketplace' : 'Fuel market'}
+                <Button component={RouterLink} to="/division/fuel" variant={canManageFuel ? 'contained' : 'outlined'}>
+                  {canManageFuel ? 'Fuel marketplace' : 'Fuel market'}
+                </Button>
+                <Button component={RouterLink} to="/division?tab=people&leader=finance" variant="outlined">
+                  Division loans
                 </Button>
               </Stack>
             </CardContent>
@@ -747,71 +905,181 @@ export default function MyDivision() {
             );
           })()}
 
-          {activeTab === 1 && isLeader && (
+          {activeTab === 1 && isLeader && leaderToolTab === 1 && (
             <Card>
               <CardContent>
-                <Typography fontWeight={700} sx={{ mb: 2 }}>Leader tools</Typography>
-                <Stack spacing={2}>
-                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-                    <Chip
-                      color={joinRequests.length ? 'warning' : 'default'}
-                      label={`Pending applications: ${joinRequests.length}`}
-                    />
-                    <Chip
-                      color={sentInvites.filter((i) => i.status === 'pending').length ? 'info' : 'default'}
-                      label={`Pending invites: ${sentInvites.filter((i) => i.status === 'pending').length}`}
-                    />
-                    <Button size="small" variant="outlined" onClick={() => setTabAndSyncQuery(2)}>
-                      Fleet maintenance tab
-                    </Button>
+                <Typography fontWeight={700} sx={{ mb: 1.5 }}>Leader tools</Typography>
+                <Tabs
+                  value={leaderToolTab}
+                  onChange={(_, v) => setLeaderTabAndSyncQuery(v)}
+                  sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}
+                  variant="scrollable"
+                  scrollButtons="auto"
+                >
+                  <Tab label="Access" />
+                  <Tab label={`Requests (${joinRequests.length})`} />
+                  <Tab label="Finance" />
+                </Tabs>
+
+                {leaderToolTab === 0 && (
+                  <Stack spacing={2}>
+                    <Typography variant="subtitle2">Co-leaders (fuel purchase rights)</Typography>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25}>
+                      <Autocomplete
+                        multiple
+                        options={coLeaderCandidateMembers}
+                        value={coLeaders}
+                        getOptionLabel={(o) => o ? `${o.name} (${o.employeeID || o.username || ''})` : ''}
+                        isOptionEqualToValue={(a, b) => String(a?._id || a?.riderId) === String(b?._id || b?.riderId)}
+                        onChange={(_, v) => setCoLeaders(v || [])}
+                        renderInput={(params) => <TextField {...params} label="Select co-leaders" />}
+                        sx={{ minWidth: 280, flex: 1 }}
+                      />
+                      <Button variant="outlined" onClick={saveCoLeaders}>
+                        Save co-leaders
+                      </Button>
+                    </Stack>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                      <Autocomplete
+                        options={inviteOptions}
+                        value={inviteRider}
+                        loading={inviteLoading}
+                        getOptionLabel={(o) => o ? `${o.name} (${o.employeeID || o.username || ''})` : ''}
+                        isOptionEqualToValue={(a, b) => a?._id === b?._id}
+                        onInputChange={(_, v, reason) => { if (reason === 'input') setInviteQuery(v); }}
+                        onChange={(_, v) => setInviteRider(v)}
+                        renderOption={(props, o) => (
+                          <li {...props}>
+                            <Stack direction="row" spacing={1.5} alignItems="center">
+                              <Avatar src={o.avatar || undefined} sx={{ width: 28, height: 28 }}>{o.name?.[0]}</Avatar>
+                              <Box>
+                                <Typography variant="body2" fontWeight={600}>{o.name}</Typography>
+                                <Typography variant="caption" color="text.secondary">{o.employeeID} · {o.username}</Typography>
+                              </Box>
+                            </Stack>
+                          </li>
+                        )}
+                        renderInput={(params) => <TextField {...params} label="Invite rider (search)" />}
+                        sx={{ flex: 1, minWidth: 260 }}
+                      />
+                      <Button variant="contained" onClick={invite} disabled={!inviteRider?._id}>
+                        Send invite
+                      </Button>
+                    </Stack>
                   </Stack>
-                  {leaderQueuesLoading && <LinearProgress />}
-                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                    <Autocomplete
-                      options={inviteOptions}
-                      value={inviteRider}
-                      loading={inviteLoading}
-                      getOptionLabel={(o) => o ? `${o.name} (${o.employeeID || o.username || ''})` : ''}
-                      isOptionEqualToValue={(a, b) => a?._id === b?._id}
-                      onInputChange={(_, v, reason) => { if (reason === 'input') setInviteQuery(v); }}
-                      onChange={(_, v) => setInviteRider(v)}
-                      renderOption={(props, o) => (
-                        <li {...props}>
-                          <Stack direction="row" spacing={1.5} alignItems="center">
-                            <Avatar src={o.avatar || undefined} sx={{ width: 28, height: 28 }}>{o.name?.[0]}</Avatar>
-                            <Box>
-                              <Typography variant="body2" fontWeight={600}>{o.name}</Typography>
-                              <Typography variant="caption" color="text.secondary">{o.employeeID} · {o.username}</Typography>
-                            </Box>
-                          </Stack>
-                        </li>
-                      )}
-                      renderInput={(params) => <TextField {...params} label="Invite rider (search)" />}
-                      sx={{ flex: 1, minWidth: 260 }}
-                    />
-                    <Button variant="contained" onClick={invite} disabled={!inviteRider?._id}>
-                      Send invite
-                    </Button>
+                )}
+
+                {leaderToolTab === 1 && (
+                  <Stack spacing={2}>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                      <Chip
+                        color={joinRequests.length ? 'warning' : 'default'}
+                        label={`Pending applications: ${joinRequests.length}`}
+                      />
+                      <Chip
+                        color={sentInvites.filter((i) => i.status === 'pending').length ? 'info' : 'default'}
+                        label={`Pending invites: ${sentInvites.filter((i) => i.status === 'pending').length}`}
+                      />
+                    </Stack>
+                    {leaderQueuesLoading && <LinearProgress />}
+                    <Typography variant="body2" color="text.secondary">
+                      Use the cards below to accept/reject applications and cancel sent invites.
+                    </Typography>
                   </Stack>
-                  <Divider />
-                  <Typography variant="subtitle2">Pay member from division wallet</Typography>
-                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                    <Autocomplete
-                      options={peopleRows}
-                      value={walletForm.rider}
-                      onChange={(_, v) => setWalletForm((p) => ({ ...p, rider: v }))}
-                      getOptionLabel={(o) => o ? `${o.name} (${o.employeeID || ''})` : ''}
-                      isOptionEqualToValue={(a, b) => a?._id === b?._id}
-                      sx={{ minWidth: 240, flex: 1 }}
-                      renderInput={(params) => <TextField {...params} label="Member" />}
-                    />
-                    <TextField label="Amount" type="number" value={walletForm.amount} onChange={(e) => setWalletForm((p) => ({ ...p, amount: e.target.value }))} />
-                    <TextField label="Reason" value={walletForm.reason} onChange={(e) => setWalletForm((p) => ({ ...p, reason: e.target.value }))} />
-                    <Button variant="outlined" onClick={distribute} disabled={!walletForm.rider || !(Number(walletForm.amount) > 0)}>
-                      Distribute
-                    </Button>
+                )}
+
+                {leaderToolTab === 2 && (
+                  <Stack spacing={2}>
+                    <Typography variant="subtitle2">Pay member from division wallet</Typography>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                      <Autocomplete
+                        options={peopleRows}
+                        value={walletForm.rider}
+                        onChange={(_, v) => setWalletForm((p) => ({ ...p, rider: v }))}
+                        getOptionLabel={(o) => o ? `${o.name} (${o.employeeID || ''})` : ''}
+                        isOptionEqualToValue={(a, b) => a?._id === b?._id}
+                        sx={{ minWidth: 240, flex: 1 }}
+                        renderInput={(params) => <TextField {...params} label="Member" />}
+                      />
+                      <TextField label="Amount" type="number" value={walletForm.amount} onChange={(e) => setWalletForm((p) => ({ ...p, amount: e.target.value }))} />
+                      <TextField label="Reason" value={walletForm.reason} onChange={(e) => setWalletForm((p) => ({ ...p, reason: e.target.value }))} />
+                      <Button variant="outlined" onClick={distribute} disabled={!walletForm.rider || !(Number(walletForm.amount) > 0)}>
+                        Distribute
+                      </Button>
+                    </Stack>
+                    <Divider />
+                    <Typography variant="subtitle2">Division loans</Typography>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                      <TextField
+                        label="Principal"
+                        type="number"
+                        value={divisionLoanPrincipal}
+                        onChange={(e) => setDivisionLoanPrincipal(e.target.value)}
+                      />
+                      <TextField
+                        select
+                        label="Tenure (months)"
+                        value={divisionLoanTenure}
+                        onChange={(e) => setDivisionLoanTenure(Number(e.target.value))}
+                        sx={{ minWidth: 180 }}
+                      >
+                        {divisionLoanPlans.map((p) => (
+                          <MenuItem key={p.tenureMonths} value={p.tenureMonths}>
+                            {p.tenureMonths} months | EMI {p.emiAmount}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                      <Button variant="contained" onClick={createDivisionLoanAction} disabled={!divisionLoanPlans.length}>
+                        Create division loan
+                      </Button>
+                    </Stack>
+                    {!!divisionLoans.length && (
+                      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25}>
+                        <TextField
+                          select
+                          label="Active/Recent loans"
+                          value={selectedDivisionLoanId}
+                          onChange={(e) => setSelectedDivisionLoanId(e.target.value)}
+                          sx={{ minWidth: 300 }}
+                        >
+                          {divisionLoans.map((loan) => (
+                            <MenuItem key={loan._id} value={loan._id}>
+                              {(loan.loanNumber || loan._id)} | outstanding {Number(loan.outstandingAmount || 0).toLocaleString()}
+                            </MenuItem>
+                          ))}
+                        </TextField>
+                      </Stack>
+                    )}
+                    {!!selectedDivisionLoanInstallments.length && (
+                      <Box sx={{ overflowX: 'auto' }}>
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow>
+                              <TableCell>#</TableCell>
+                              <TableCell>Due date</TableCell>
+                              <TableCell align="right">Due</TableCell>
+                              <TableCell align="right">Paid</TableCell>
+                              <TableCell align="right">Carry</TableCell>
+                              <TableCell>Status</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {selectedDivisionLoanInstallments.map((it) => (
+                              <TableRow key={it._id}>
+                                <TableCell>{it.installmentNo}</TableCell>
+                                <TableCell>{new Date(it.dueDate).toLocaleDateString()}</TableCell>
+                                <TableCell align="right">{Number(it.dueAmount || 0).toLocaleString()}</TableCell>
+                                <TableCell align="right">{Number(it.paidAmount || 0).toLocaleString()}</TableCell>
+                                <TableCell align="right">{Number(it.carryForwardAmount || 0).toLocaleString()}</TableCell>
+                                <TableCell>{it.status}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </Box>
+                    )}
                   </Stack>
-                </Stack>
+                )}
               </CardContent>
             </Card>
           )}
@@ -876,7 +1144,7 @@ export default function MyDivision() {
             </Card>
           )}
 
-          {activeTab === 1 && isLeader && (
+          {activeTab === 1 && isLeader && leaderToolTab === 1 && (
             <Card>
               <CardContent>
                 <Typography fontWeight={700} sx={{ mb: 1.5 }}>
@@ -950,6 +1218,135 @@ export default function MyDivision() {
 
           {activeTab === 1 && !isLeader && (
             <Alert severity="info">People management is available for division leaders.</Alert>
+          )}
+
+          {activeTab === 0 && (
+            <Card variant="outlined">
+              <CardContent>
+                <Typography fontWeight={700} sx={{ mb: 1.5 }}>
+                  Member investment
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                  Invest tokens from your personal wallet into division wallet.
+                </Typography>
+                {!canInvest && (
+                  <Alert severity="info" sx={{ mb: 1.5 }}>
+                    Only active division members can invest from this account.
+                  </Alert>
+                )}
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} sx={{ mb: 1.5 }}>
+                  <TextField
+                    size="small"
+                    type="number"
+                    label="Amount"
+                    value={investAmount}
+                    onChange={(e) => setInvestAmount(e.target.value)}
+                  />
+                  <TextField
+                    size="small"
+                    label="Note (optional)"
+                    value={investNote}
+                    onChange={(e) => setInvestNote(e.target.value)}
+                    sx={{ minWidth: 260 }}
+                  />
+                  <Button
+                    variant="contained"
+                    onClick={investInDivision}
+                    disabled={!canInvest || !(Number(investAmount) > 0)}
+                  >
+                    Invest
+                  </Button>
+                </Stack>
+                <Typography variant="body2" sx={{ mb: 1 }}>
+                  Total invested by you: <b>{Math.round(myInvestedTotal).toLocaleString()}</b>
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                  This table shows your own recent investments.
+                </Typography>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Date</TableCell>
+                      <TableCell align="right">Amount</TableCell>
+                      <TableCell>Note</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {myInvestments.slice(0, 10).map((it) => (
+                      <TableRow key={it._id}>
+                        <TableCell>{new Date(it.createdAt).toLocaleString()}</TableCell>
+                        <TableCell align="right">{Number(it.amount || 0).toLocaleString()}</TableCell>
+                        <TableCell>{it.note || '—'}</TableCell>
+                      </TableRow>
+                    ))}
+                    {!myInvestments.length && (
+                      <TableRow>
+                        <TableCell colSpan={3}>
+                          <Typography variant="body2" color="text.secondary">No investments yet.</Typography>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+                {(isLeader || isAdmin) && (
+                  <>
+                    <Divider sx={{ my: 1.5 }} />
+                    <Typography fontWeight={700} sx={{ mb: 1 }}>
+                      Member investments
+                    </Typography>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Member</TableCell>
+                          <TableCell align="right">Total invested</TableCell>
+                          <TableCell align="right">Entries</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {investmentSummary.slice(0, 10).map((row) => (
+                          <TableRow key={row.riderId}>
+                            <TableCell>{row.riderName || row.riderUsername || row.riderEmployeeId || 'Member'}</TableCell>
+                            <TableCell align="right">{Number(row.totalInvested || 0).toLocaleString()}</TableCell>
+                            <TableCell align="right">{Number(row.investmentCount || 0).toLocaleString()}</TableCell>
+                          </TableRow>
+                        ))}
+                        {!investmentSummary.length && (
+                          <TableRow>
+                            <TableCell colSpan={3}>
+                              <Typography variant="body2" color="text.secondary">No member investments yet.</Typography>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === 0 && isLeader && (
+            <Card variant="outlined">
+              <CardContent>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} alignItems={{ sm: 'center' }}>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography fontWeight={700}>Division loan manager</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Create loans and review EMI schedule from leader finance tools.
+                    </Typography>
+                  </Box>
+                  <Button
+                    variant="contained"
+                    onClick={() => {
+                      setTabAndSyncQuery(1);
+                      setLeaderTabAndSyncQuery(2);
+                    }}
+                  >
+                    Open loan manager
+                  </Button>
+                </Stack>
+              </CardContent>
+            </Card>
           )}
 
           {activeTab === 2 && (
