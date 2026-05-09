@@ -93,7 +93,7 @@ const Navbar = () => {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [walletBalance, setWalletBalance] = useState(null);
   const theme = useTheme();
-  const { isDarkMode, toggleTheme } = useContext(ThemeContext);
+  const { isDarkMode, toggleTheme, showdownActive } = useContext(ThemeContext);
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const hasStaffRole = user && ['admin', 'eventteam', 'hrteam', 'financeteam'].includes(user.role);
@@ -168,6 +168,17 @@ const Navbar = () => {
 
           {/* Desktop nav */}
           <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 0.5 }}>
+            {isAuthenticated && showdownActive && (
+              <Chip
+                component={RouterLink}
+                to="/showdown"
+                clickable
+                size="small"
+                color="primary"
+                label="Showdown LIVE"
+                sx={{ mr: 0.5, fontWeight: 700 }}
+              />
+            )}
             {navItems.map((item) => (
               <NavButton
                 key={item.path}

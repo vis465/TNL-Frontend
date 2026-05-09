@@ -41,6 +41,7 @@ import LocalGasStation from '@mui/icons-material/LocalGasStation';
 import BarChartOutlined from '@mui/icons-material/BarChartOutlined';
 import SensorsOutlined from '@mui/icons-material/SensorsOutlined';
 import HistoryOutlined from '@mui/icons-material/HistoryOutlined';
+import WhatshotOutlined from '@mui/icons-material/WhatshotOutlined';
 
 /** Staff roles that can open /admin (matches App.js admin layout gate). */
 export const STAFF_ROLES = ['admin', 'eventteam', 'hrteam', 'financeteam', 'communityManager'];
@@ -81,6 +82,7 @@ export const MY_AREA_SECTIONS = [
     id: 'driving',
     label: 'Challenges & jobs',
     items: [
+      { to: '/showdown', label: 'Showdown Weekend', Icon: WhatshotOutlined, roles: null },
       { to: '/challenges', label: 'Challenges', Icon: AssignmentTurnedInOutlined, roles: null },
       {
         to: '/contracts/me',
@@ -173,6 +175,12 @@ export const ADMIN_SECTIONS = [
         label: 'Audit logs',
         Icon: HistoryOutlined,
         roles: STAFF_ROLES,
+      },
+      {
+        to: '/admin/showdown',
+        label: 'Showdown Weekend',
+        Icon: WhatshotOutlined,
+        roles: ['admin', 'eventteam'],
       },
       {
         to: '/admin/trucks',

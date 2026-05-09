@@ -19,6 +19,7 @@ import {
   ADMIN_DASHBOARD_GROUP_ORDER,
   userCanSeeNavItem,
 } from '../config/adminNavigation';
+import ShowdownAnalyticsPanel from '../components/admin/ShowdownAnalyticsPanel';
 
 function formatStaffRole(role) {
   if (!role) return '';
@@ -98,8 +99,11 @@ const AdminDashboard = () => {
     return acc;
   }, {});
 
+  const showShowdownStats = role && ['admin', 'eventteam'].includes(role);
+
   return (
     <Box>
+      {showShowdownStats && <ShowdownAnalyticsPanel />}
       <Box
         sx={{
           display: 'flex',

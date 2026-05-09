@@ -119,47 +119,107 @@ import DivisionsIndex from "./pages/DivisionsIndex";
 import AdminCoupons from "./pages/AdminCoupons";
 import AdminVtcMonthlyStats from "./pages/AdminVtcMonthlyStats";
 import AdminAuditLogs from "./pages/AdminAuditLogs";
+import ShowdownPublicHub from "./pages/showdown/ShowdownPublicHub";
+import ShowdownAdminLayout from "./pages/admin/showdown/ShowdownAdminLayout";
+import ShowdownAdminDashboard from "./pages/admin/showdown/ShowdownAdminDashboard";
+import ShowdownCityModifiers from "./pages/admin/showdown/ShowdownCityModifiers";
+import ShowdownRouteModifiers from "./pages/admin/showdown/ShowdownRouteModifiers";
+import ShowdownFeedAdmin from "./pages/admin/showdown/ShowdownFeedAdmin";
+import axiosInstance from "./utils/axios";
+import { getShowdownGlobalPalette } from "./theme/showdownTheme";
 
 export const ThemeContext = createContext({
   isDarkMode: false,
   toggleTheme: () => {},
+  /** True when user has a session and Showdown master flag is on (API). */
+  showdownActive: false,
 });
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [maintain, setmaintain] = useState(false);
+  const [showdownRemoteOn, setShowdownRemoteOn] = useState(false);
+  const [hasSession, setHasSession] = useState(
+    () => typeof window !== "undefined" && !!localStorage.getItem("token")
+  );
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
   };
-  
+
+  useEffect(() => {
+    let cancel = false;
+    const pollShowdown = async () => {
+      if (typeof window === "undefined") return;
+      const token = localStorage.getItem("token");
+      setHasSession(!!token);
+      if (!token) {
+        if (!cancel) setShowdownRemoteOn(false);
+        return;
+      }
+      try {
+        const { data } = await axiosInstance.get("/showdown/status");
+        if (!cancel) setShowdownRemoteOn(!!data?.flags?.showdownWeekendEnabled);
+      } catch {
+        if (!cancel) setShowdownRemoteOn(false);
+      }
+    };
+    pollShowdown();
+    const t = setInterval(pollShowdown, 60_000);
+    window.addEventListener("focus", pollShowdown);
+    return () => {
+      cancel = true;
+      clearInterval(t);
+      window.removeEventListener("focus", pollShowdown);
+    };
+  }, []);
+
+  const showdownSkin = hasSession && showdownRemoteOn;
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.body.classList.toggle("showdown-theme-active", Boolean(showdownSkin));
+    return () => document.body.classList.remove("showdown-theme-active");
+  }, [showdownSkin]);
 
   const theme = useMemo(
-    () =>
-      createTheme({
+    () => {
+      const sd = showdownSkin ? getShowdownGlobalPalette(isDarkMode) : null;
+      const paperBg = sd
+        ? sd.background.paper
+        : isDarkMode
+          ? "#1f1f1f"
+          : "#ffffff";
+      const defaultBg = sd
+        ? sd.background.default
+        : isDarkMode
+          ? "#121212"
+          : "#fafafa";
+      return createTheme({
         palette: {
           mode: isDarkMode ? "dark" : "light",
-          primary: {
+          primary: sd?.primary ?? {
             main: "#ffff00",
             light: "#ffff66",
             dark: "#c4c400",
             contrastText: "#0a0a0a",
           },
-          secondary: {
+          secondary: sd?.secondary ?? {
             main: isDarkMode ? "#f48fb1" : "#d81b60",
             light: isDarkMode ? "#fce4ec" : "#ff5c8d",
             dark: isDarkMode ? "#c2185b" : "#880e4f",
             contrastText: "#ffffff",
           },
-          background: {
-            default: isDarkMode ? "#121212" : "#fafafa",
-            paper: isDarkMode ? "#1f1f1f" : "#ffffff",
+          background: sd?.background ?? {
+            default: defaultBg,
+            paper: paperBg,
           },
-          text: {
-            primary: isDarkMode ? "#ffffff" : "#212121",
-            secondary: isDarkMode
-              ? "rgba(255, 255, 255, 0.7)"
-              : "rgba(0, 0, 0, 0.6)",
-          },
+          text:
+            sd?.text ?? {
+              primary: isDarkMode ? "#ffffff" : "#212121",
+              secondary: isDarkMode
+                ? "rgba(255, 255, 255, 0.7)"
+                : "rgba(0, 0, 0, 0.6)",
+            },
           action: {
             active: isDarkMode ? "#ffffff" : "rgba(0, 0, 0, 0.54)",
             hover: isDarkMode
@@ -250,24 +310,48 @@ function App() {
           MuiCard: {
             styleOverrides: {
               root: {
-                backgroundColor: isDarkMode ? "#1f1f1f" : "#ffffff",
-                color: isDarkMode ? "#ffffff" : "inherit",
+                backgroundColor: paperBg,
+                color: showdownSkin
+                  ? isDarkMode
+                    ? "#f2f2f4"
+                    : "#121212"
+                  : isDarkMode
+                    ? "#ffffff"
+                    : "inherit",
               },
             },
           },
           MuiPaper: {
             styleOverrides: {
               root: {
-                backgroundColor: isDarkMode ? "#1f1f1f" : "#ffffff",
-                color: isDarkMode ? "#ffffff" : "inherit",
+                backgroundColor: paperBg,
+                color: showdownSkin
+                  ? isDarkMode
+                    ? "#f2f2f4"
+                    : "#121212"
+                  : isDarkMode
+                    ? "#ffffff"
+                    : "inherit",
+                ...(showdownSkin && isDarkMode
+                  ? {
+                      backgroundImage:
+                        "linear-gradient(145deg, rgba(255,87,34,0.07) 0%, transparent 42%)",
+                    }
+                  : {}),
               },
             },
           },
           MuiDialog: {
             styleOverrides: {
               paper: {
-                backgroundColor: isDarkMode ? "#1f1f1f" : "#ffffff",
-                color: isDarkMode ? "#ffffff" : "inherit",
+                backgroundColor: paperBg,
+                color: showdownSkin
+                  ? isDarkMode
+                    ? "#f2f2f4"
+                    : "#121212"
+                  : isDarkMode
+                    ? "#ffffff"
+                    : "inherit",
               },
             },
           },
@@ -286,8 +370,9 @@ function App() {
             },
           },
         },
-      }),
-    [isDarkMode],
+      });
+    },
+    [isDarkMode, showdownSkin],
   );
 
   if (maintain) {
@@ -306,7 +391,9 @@ function App() {
   }
 
   return (
-    <ThemeContext.Provider value={{ isDarkMode, toggleTheme }}>
+    <ThemeContext.Provider
+      value={{ isDarkMode, toggleTheme, showdownActive: showdownSkin }}
+    >
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <ExternalDataProvider>
@@ -368,6 +455,7 @@ function App() {
                     <Route path="/divisions" element={<DivisionsIndex />} />
                     <Route path="/divisions/:slug" element={<DivisionPublic />} />
                     <Route path="/map-test" element={<MapPlayground />} />
+                    <Route path="/showdown" element={<ShowdownPublicHub />} />
                     <Route
                       path="/riders/licence"
                       element={<LicenseGenerator />}
@@ -655,6 +743,19 @@ function App() {
                           </PrivateRoute>
                         }
                       />
+                      <Route
+                        path="showdown"
+                        element={
+                          <PrivateRoute allowedRoles={["admin", "eventteam"]}>
+                            <ShowdownAdminLayout />
+                          </PrivateRoute>
+                        }
+                      >
+                        <Route index element={<ShowdownAdminDashboard />} />
+                        <Route path="cities" element={<ShowdownCityModifiers />} />
+                        <Route path="routes" element={<ShowdownRouteModifiers />} />
+                        <Route path="feed" element={<ShowdownFeedAdmin />} />
+                      </Route>
                       <Route
                         path="user-approvals"
                         element={
