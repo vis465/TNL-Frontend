@@ -95,9 +95,6 @@ export default function DashboardHero({ title, subtitle, stats = [], compact }) 
                 },
               }}
             />
-            <Typography variant="caption" sx={{ fontWeight: 800, letterSpacing: '0.2em', color: alpha(p, 1) }}>
-              OPS LIVE
-            </Typography>
           </Box>
 
           <Typography

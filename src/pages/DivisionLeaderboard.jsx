@@ -40,19 +40,27 @@ export default function DivisionLeaderboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [tab, setTab] = useState(0);
-  const [sort, setSort] = useState('totalEventsAttended');
+  const [sort, setSort] = useState('uniqueEventsAttended');
   const [dir, setDir] = useState('desc');
   const [period, setPeriod] = useState('all-time');
   const [month, setMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
+  const [dailyDate, setDailyDate] = useState(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  });
 
   const load = async (
     nextSort = sort,
     nextDir = dir,
     nextPeriod = period,
-    nextMonth = month
+    nextMonth = month,
+    nextDailyDate = dailyDate
   ) => {
     setLoading(true);
     setError('');
@@ -64,6 +72,7 @@ export default function DivisionLeaderboard() {
             sort: nextSort,
             dir: nextDir,
             ...(nextPeriod === 'monthly' ? { period: 'monthly', month: nextMonth } : {}),
+            ...(nextPeriod === 'daily' ? { period: 'daily', date: nextDailyDate } : {}),
           },
         }),
         axiosInstance.get('/divisions/public/list').catch(() => ({ data: { divisions: [] } })),
@@ -78,17 +87,17 @@ export default function DivisionLeaderboard() {
   };
 
   useEffect(() => {
-    if (period === 'monthly' || period === 'all-time') {
-      load(sort, dir, period, month);
+    if (period === 'monthly' || period === 'all-time' || period === 'daily') {
+      load(sort, dir, period, month, dailyDate);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [period, month]);
+  }, [period, month, dailyDate]);
 
   const toggleSort = (key) => {
     const nextDir = sort === key ? (dir === 'asc' ? 'desc' : 'asc') : 'desc';
     setSort(key);
     setDir(nextDir);
-    load(key, nextDir, period, month);
+    load(key, nextDir, period, month, dailyDate);
   };
 
   const divBySlug = new Map(divisions.map((d) => [String(d._id), d]));
@@ -101,6 +110,16 @@ export default function DivisionLeaderboard() {
     return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
   };
 
+  const formatDayLabel = (value) => {
+    if (!value) return '';
+    const [y, m, day] = String(value).split('-');
+    const date = new Date(Number(y), Number(m) - 1, Number(day));
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  };
+
+  const attendanceCount = (r) => Number(r?.uniqueEventsAttended ?? 0);
+
   return (
     <MagicPageShell>
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -109,12 +128,14 @@ export default function DivisionLeaderboard() {
         subtitle={
           period === 'monthly'
             ? `Monthly division rankings for ${formatMonthLabel(month)}.`
-            : 'Live inter-division rankings by attendance, scale, and execution. Explore top contenders or drill into the complete ecosystem.'
+            : period === 'daily'
+              ? `Daily division rankings for ${formatDayLabel(dailyDate)} (UTC day by approval time).`
+              : 'Live inter-division rankings by attendance, scale, and execution. Explore top contenders or drill into the complete ecosystem.'
         }
         stats={[
           { label: 'Tracked Divisions', value: divisions.length },
           { label: 'Ranked Divisions', value: rows.length },
-          { label: 'Top Attendance', value: Number(rows[0]?.totalEventsAttended || 0) },
+          { label: 'Top unique events', value: attendanceCount(rows[0]) },
           { label: 'Top Wallet', value: Number(rows[0]?.totalTaxTokens || 0) },
         ]}
       />
@@ -123,7 +144,7 @@ export default function DivisionLeaderboard() {
         <Typography variant="h5" fontWeight={800}>Global standings</Typography>
       </Stack>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-        Inter-division ranking by unique division attendance counts and engagement.
+        Unique attendance counts each internal event once per division (distinct event IDs), not total member marks.
       </Typography>
       <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'stretch', sm: 'center' }} justifyContent="space-between" spacing={2} sx={{ mb: 3 }}>
         <ToggleButtonGroup
@@ -136,6 +157,7 @@ export default function DivisionLeaderboard() {
         >
           <ToggleButton value="all-time">All time</ToggleButton>
           <ToggleButton value="monthly">Monthly</ToggleButton>
+          <ToggleButton value="daily">Daily</ToggleButton>
         </ToggleButtonGroup>
         {period === 'monthly' && (
           <TextField
@@ -143,6 +165,17 @@ export default function DivisionLeaderboard() {
             label="Month"
             value={month}
             onChange={(e) => setMonth(e.target.value)}
+            size="small"
+            InputLabelProps={{ shrink: true }}
+            sx={{ maxWidth: 200 }}
+          />
+        )}
+        {period === 'daily' && (
+          <TextField
+            type="date"
+            label="Day (UTC filter)"
+            value={dailyDate}
+            onChange={(e) => setDailyDate(e.target.value)}
             size="small"
             InputLabelProps={{ shrink: true }}
             sx={{ maxWidth: 200 }}
@@ -185,7 +218,7 @@ export default function DivisionLeaderboard() {
                       <Stack direction="row" justifyContent="space-between" alignItems="center">
                         <Typography variant="caption" color="text.secondary">Rank #{idx + 1}</Typography>
                         <Typography variant="body2" fontWeight={800}>
-                          <NumberTicker value={Math.round(r.totalEventsAttended || 0)} /> attend
+                          <NumberTicker value={Math.round(attendanceCount(r))} /> events
                         </Typography>
                       </Stack>
                     </Paper>
@@ -238,11 +271,11 @@ export default function DivisionLeaderboard() {
                         Distance (km)
                       </TableSortLabel>
                     </TableCell>
-                    <TableCell align="right" sortDirection={sort === 'totalEventsAttended' ? dir : false}>
+                    <TableCell align="right" sortDirection={sort === 'uniqueEventsAttended' ? dir : false}>
                       <TableSortLabel
-                        active={sort === 'totalEventsAttended'}
-                        direction={sort === 'totalEventsAttended' ? dir : 'desc'}
-                        onClick={() => toggleSort('totalEventsAttended')}
+                        active={sort === 'uniqueEventsAttended'}
+                        direction={sort === 'uniqueEventsAttended' ? dir : 'desc'}
+                        onClick={() => toggleSort('uniqueEventsAttended')}
                       >
                         Unique attendance
                       </TableSortLabel>
@@ -286,7 +319,7 @@ export default function DivisionLeaderboard() {
                         <TableCell align="right">{r.memberCount}</TableCell>
                         <TableCell align="right">{r.totalJobs}</TableCell>
                         <TableCell align="right">{Math.round(r.totalDistance || 0).toLocaleString()}</TableCell>
-                        <TableCell align="right">{Math.round(r.totalEventsAttended || 0).toLocaleString()}</TableCell>
+                        <TableCell align="right">{Math.round(attendanceCount(r)).toLocaleString()}</TableCell>
                         <TableCell align="right">{Math.round(r.totalTaxTokens || 0).toLocaleString()}</TableCell>
                       </TableRow>
                     );
