@@ -719,8 +719,8 @@ export default function UserDashboard() {
                   </CardContent>
                 </Card>
               )}
-  <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} lg={7}>
+  <Grid marginBottom={5}>
+                <Grid item xs={12} lg={12}>
                   <Card component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} sx={sxCard}>
                     <CardContent sx={{ p: '20px !important' }}>
                       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
@@ -795,7 +795,7 @@ export default function UserDashboard() {
                           </Typography>
                         </Box>
                       )}
-                      <Stack spacing={1}>
+                      <Stack spacing={1} sx={{ maxHeight: 320, overflowY: 'auto', pr: 0.5 }}>
                         {activeAttendanceEvents.map((ev) => (
                           <Stack key={ev._id} direction="row" alignItems="center" justifyContent="space-between"
                             sx={{
@@ -848,45 +848,6 @@ export default function UserDashboard() {
                 </Grid>
 
                 <Grid item xs={12} lg={5}>
-                  <Card component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} sx={sxCard}>
-                    <CardContent sx={{ p: '20px !important' }}>
-                      <SectionTitle>Achievements</SectionTitle>
-                      {achievements.length === 0 ? (
-                        <Stack alignItems="center" spacing={1} sx={{ py: 4 }}>
-                          <EmojiEventsOutlinedIcon sx={{ color: T.textFaint, fontSize: 28 }} />
-                          <Typography sx={{ fontFamily: font, fontSize: '0.92rem', color: T.textMuted }}>
-                            No achievements yet
-                          </Typography>
-                        </Stack>
-                      ) : (
-                        <Stack spacing={1}>
-                          {achievements.slice(0, 6).map((a, idx) => (
-                            <Stack key={idx} direction="row" spacing={1.5} alignItems="center"
-                              sx={{
-                                p: '12px 14px', border: `1px solid ${T.border}`,
-                                borderRadius: T.radiusSm, bgcolor: T.surfaceAlt,
-                                transition: 'border-color 0.15s ease',
-                                '&:hover': { borderColor: T.borderHover },
-                              }}>
-                              <Avatar
-                                src={a.logoUrl} alt={a.name} variant="rounded"
-                                sx={{ width: 34, height: 34, bgcolor: T.surfaceElevated, borderRadius: T.radiusXs }}
-                              />
-                              <Box sx={{ minWidth: 0 }}>
-                                <Typography sx={{ fontFamily: font, fontSize: '0.95rem', fontWeight: 600, color: T.text }} noWrap>
-                                  {a.name}
-                                </Typography>
-                                <Typography sx={{ fontFamily: font, fontSize: '0.82rem', color: T.textMuted }} noWrap>
-                                  {a.description || ''}
-                                  {a.issuedOn ? ` · ${new Date(a.issuedOn).toLocaleDateString()}` : ''}
-                                </Typography>
-                              </Box>
-                            </Stack>
-                          ))}
-                        </Stack>
-                      )}
-                    </CardContent>
-                  </Card>
                 </Grid>
               </Grid>
               {/* ── Quick actions + Job validator ───────────────── */}
@@ -922,60 +883,6 @@ export default function UserDashboard() {
                           </Button>
                         ))}
                       </Stack>
-                    </CardContent>
-                  </Card>
-                </BentoItem>
-                <BentoItem span={1}>
-                  <Card component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} sx={sxCard}>
-                    <CardContent sx={{ p: '20px !important' }}>
-                      <SectionTitle>Manual Job Validation</SectionTitle>
-                      {jobmessage && (
-                        <Box sx={{
-                          mb: 1.5, p: '8px 14px',
-                          bgcolor: T.accentDim, border: `1px solid ${alpha(T.accent, 0.2)}`,
-                          borderRadius: T.radiusSm,
-                        }}>
-                          <Typography sx={{ fontFamily: font, fontSize: '0.85rem', color: T.accent, fontWeight: 500 }}>
-                            {jobmessage}
-                          </Typography>
-                        </Box>
-                      )}
-                      <Stack direction="row" spacing={1} alignItems="flex-start">
-                        <TextField
-                          size="small"
-                          placeholder="Enter Job ID…"
-                          value={jobid}
-                          onChange={(e) => Setjobid(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleJobsubmit(jobid)}
-                          sx={{
-                            flex: 1,
-                            '& .MuiOutlinedInput-root': {
-                              bgcolor: 'transparent', borderRadius: T.radiusSm,
-                              fontFamily: font, fontSize: '0.95rem', color: T.text,
-                              '& fieldset': { borderColor: T.border },
-                              '&:hover fieldset': { borderColor: T.borderHover },
-                              '&.Mui-focused fieldset': { borderColor: T.accent, borderWidth: '1px' },
-                            },
-                            '& input': { color: T.text, py: '9px', '&::placeholder': { color: T.textMuted, opacity: 1 } },
-                          }}
-                        />
-                        <Button
-                          onClick={() => handleJobsubmit(jobid)}
-                          sx={{
-                            fontFamily: font, fontWeight: 600, fontSize: '0.88rem',
-                            bgcolor: T.accent, color: T.bg,
-                            borderRadius: T.radiusSm, px: 2.5, py: '9px',
-                            textTransform: 'none', whiteSpace: 'nowrap',
-                            '&:hover': { bgcolor: '#c8e600' },
-                            transition: 'background 0.15s ease',
-                          }}
-                        >
-                          Submit
-                        </Button>
-                      </Stack>
-                      <Typography sx={{ ...sxLabel, mt: 1.5, fontSize: '0.72rem', fontWeight: 400 }}>
-                        For TruckersHub jobs that weren't auto-validated
-                      </Typography>
                     </CardContent>
                   </Card>
                 </BentoItem>
@@ -1184,17 +1091,6 @@ export default function UserDashboard() {
 
               {/* ── Wallet + Contracts ──────────────────────────── */}
               <BentoGrid minItemWidth={360} gap={2} sx={{ mb: 3 }}>
-                <BentoItem span={2}>
-                  <Box component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }}>
-                    <WalletTransactions
-                      wallet={wallet}
-                      onRefresh={() => getMyWallet().then((w) => setWallet({
-                        balance: Number(w.balance || 0),
-                        transactions: Array.isArray(w.transactions) ? w.transactions : [],
-                      }))}
-                    />
-                  </Box>
-                </BentoItem>
                 <BentoItem span={1}>
                   <Stack spacing={2}>
                     <Box component={motion.div} initial={{ opacity: 0, x: 14 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
@@ -1211,7 +1107,7 @@ export default function UserDashboard() {
               <Grid container spacing={2} sx={{ mb: 3 }}>
                 <Grid item xs={12} lg={7}>
                   <Card component={motion.div} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} sx={sxCard}>
-                    <CardContent sx={{ p: '20px !important' }}>
+                    <CardContent>
                       <SectionTitle>
                         Profile & Game Details
                       </SectionTitle>
@@ -1310,10 +1206,6 @@ export default function UserDashboard() {
                   </Card>
                 </Grid>
               </Grid>
-
-              {/* ── Events & Attendance + Achievements ──────────── */}
-            
-
               {/* ── License Card ────────────────────────────────── */}
               <Grid container spacing={2} sx={{ mb: 3 }}>
                 <Grid item xs={12}>
