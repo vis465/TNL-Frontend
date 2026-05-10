@@ -398,6 +398,8 @@ export default function AdminDivisionDetail() {
   const premiumFuel = Math.max(0, Number(division?.fuelTankPremiumLiters) || 0);
   const standardFuel = Math.max(0, Number(division?.fuelTankNormalLiters ?? division?.fuelTankLiters) || 0);
   const totalFuel = premiumFuel + standardFuel;
+  const premiumPct = Math.max(0, Math.min(100, (premiumFuel / DIVISION_FUEL_CAPACITY_L) * 100));
+  const standardPct = Math.max(0, Math.min(100, (standardFuel / DIVISION_FUEL_CAPACITY_L) * 100));
   const fuelFillPct = Math.max(
     0,
     Math.min(100, Math.round((totalFuel / DIVISION_FUEL_CAPACITY_L) * 100))
@@ -524,12 +526,137 @@ export default function AdminDivisionDetail() {
               <Box><Typography variant="caption" color="text.secondary">Members</Typography><Typography variant="h6">{division.memberCount ?? 0}</Typography></Box>
               <Box><Typography variant="caption" color="text.secondary">Wallet balance</Typography><Typography variant="h6">{(division.walletBalance ?? 0).toLocaleString()} tokens</Typography></Box>
               <Box><Typography variant="caption" color="text.secondary">Tax rate</Typography><Typography variant="h6">{division.taxPercent ?? 0}%</Typography></Box>
-              <Box>
+              <Box sx={{ minWidth: 260, width: '100%', maxWidth: 360 }}>
                 <Typography variant="caption" color="text.secondary">Fuel status</Typography>
                 <Typography variant="h6">{fuelStatus.label} ({fuelFillPct}%)</Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {Math.round(totalFuel).toLocaleString()} / {DIVISION_FUEL_CAPACITY_L.toLocaleString()} L · Premium {Math.round(premiumFuel).toLocaleString()} L
+                  {Math.round(totalFuel).toLocaleString()} / {DIVISION_FUEL_CAPACITY_L.toLocaleString()} L total
                 </Typography>
+                <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 3 }}>
+                  {/* Fuel Tank Visualization */}
+                  <Box sx={{ position: 'relative', width: 70, height: 140, flexShrink: 0 }}>
+                    {/* Tank outline */}
+                    <Box sx={{
+                      position: 'absolute',
+                      inset: 0,
+                      borderRadius: '10px 10px 6px 6px',
+                      border: `3px solid`,
+                      borderColor: 'divider',
+                      bgcolor: 'background.paper',
+                      boxShadow: `inset 0 3px 8px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.1)`,
+                    }} />
+
+                    {/* Tank body details */}
+                    <Box sx={{
+                      position: 'absolute',
+                      top: 6,
+                      left: 6,
+                      right: 6,
+                      bottom: 6,
+                      borderRadius: '6px 6px 3px 3px',
+                      border: `1px solid`,
+                      borderColor: 'divider',
+                      opacity: 0.3,
+                    }} />
+
+                    {/* Measurement markings */}
+                    {[25, 50, 75].map((mark) => (
+                      <Box key={mark} sx={{
+                        position: 'absolute',
+                        left: -6,
+                        right: -6,
+                        top: `${100 - mark}%`,
+                        height: '1px',
+                        bgcolor: 'divider',
+                        opacity: 0.5,
+                      }} />
+                    ))}
+
+                    {/* Fuel level */}
+                    <Box sx={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      height: `${fuelFillPct}%`,
+                      borderRadius: '6px 6px 3px 3px',
+                      overflow: 'hidden',
+                      transition: 'height 1.2s cubic-bezier(.22,1,.36,1)',
+                      boxShadow: `inset 0 1px 2px rgba(0,0,0,0.2)`,
+                    }}>
+                      {/* Premium fuel (bottom layer) */}
+                      <Box sx={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: `${totalFuel > 0 ? (premiumFuel / totalFuel) * 100 : 0}%`,
+                        background: `linear-gradient(180deg, #f59e0bdd 0%, #f59e0b 100%)`,
+                        boxShadow: `inset 0 1px 0 rgba(255,255,255,0.3)`,
+                      }} />
+                      {/* Standard fuel (top layer) */}
+                      <Box sx={{
+                        position: 'absolute',
+                        bottom: `${totalFuel > 0 ? (premiumFuel / totalFuel) * 100 : 0}%`,
+                        left: 0,
+                        right: 0,
+                        height: `${totalFuel > 0 ? (standardFuel / totalFuel) * 100 : 0}%`,
+                        background: `linear-gradient(180deg, #38bdf8dd 0%, #38bdf8 100%)`,
+                        boxShadow: `inset 0 1px 0 rgba(255,255,255,0.3)`,
+                      }} />
+                    </Box>
+
+                    {/* Tank cap */}
+                    <Box sx={{
+                      position: 'absolute',
+                      top: -6,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      width: 20,
+                      height: 8,
+                      borderRadius: '50%',
+                      bgcolor: 'divider',
+                      border: `2px solid`,
+                      borderColor: 'divider',
+                      boxShadow: `0 1px 3px rgba(0,0,0,0.2)`,
+                    }} />
+
+                    {/* Fill level indicator */}
+                    <Box sx={{
+                      position: 'absolute',
+                      right: -28,
+                      top: `${100 - fuelFillPct}%`,
+                      transform: 'translateY(-50%)',
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      color: 'text.primary',
+                      bgcolor: 'background.paper',
+                      px: 0.75,
+                      py: 0.5,
+                      borderRadius: 1,
+                      border: `1px solid`,
+                      borderColor: 'divider',
+                      whiteSpace: 'nowrap',
+                      boxShadow: `0 2px 4px rgba(0,0,0,0.1)`,
+                    }}>
+                      {fuelFillPct}%
+                    </Box>
+                  </Box>
+
+                  {/* Fuel details */}
+                  <Box sx={{ flex: 1 }}>
+                    <Stack direction="row" spacing={2} alignItems="center">
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Box sx={{ width: 12, height: 12, bgcolor: 'warning.main', borderRadius: 0.5, opacity: 0.9 }} />
+                        <Typography variant="caption" color="text.secondary">Premium {Math.round(premiumFuel).toLocaleString()} L</Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Box sx={{ width: 12, height: 12, bgcolor: 'info.main', borderRadius: 0.5, opacity: 0.9 }} />
+                        <Typography variant="caption" color="text.secondary">Standard {Math.round(standardFuel).toLocaleString()} L</Typography>
+                      </Box>
+                    </Stack>
+                  </Box>
+                </Box>
               </Box>
               <Box>
                 <Typography variant="caption" color="text.secondary">Unique events (members)</Typography>

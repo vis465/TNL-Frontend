@@ -1041,50 +1041,161 @@ export default function MyDivision() {
                         }
                       />
                       <Box sx={{ p: 2.5, borderRadius: 1.5, bgcolor: T.bg, border: `1px solid ${T.border}` }}>
-                        <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} alignItems={{ md: 'flex-start' }}>
-                          <TankBar label="Premium fuel" liters={premiumFuel} pct={premiumPct} color={T.premium} borderColor={T.premium} />
-                          <TankBar label="Standard fuel" liters={standardFuel} pct={standardPct} color={T.accent} borderColor={T.accent} />
-                          <Box sx={{ flex: 2, minWidth: 0 }}>
-                            <Typography sx={{ ...sx.label, mb: 1.5 }}>Tank summary</Typography>
-                            <Stack spacing={1}>
-                              {[
-                                { label: 'Total in tanks', value: `${totalFuel.toLocaleString()} / ${DIVISION_FUEL_CAPACITY_L.toLocaleString()} L` },
-                                { label: 'Filled', value: `${capacityPct}%` },
-                                { label: 'Remaining capacity', value: `${Math.round(remainingFuelCapacity).toLocaleString()} L` },
-                              ].map(({ label, value }) => (
-                                <Stack key={label} direction="row" justifyContent="space-between" alignItems="center"
-                                  sx={{ py: 0.75, borderBottom: `1px solid ${T.border}` }}>
-                                  <Typography sx={{ fontFamily: T.mono, fontSize: '11px', color: T.textMuted }}>{label}</Typography>
-                                  <Typography sx={{ fontFamily: T.mono, fontSize: '12px', fontWeight: 700, color: T.text }}>{value}</Typography>
-                                </Stack>
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography sx={{ ...sx.label, mb: 1.5 }}>Shared fuel tank</Typography>
+                          <Typography sx={{ fontFamily: T.mono, fontSize: '18px', fontWeight: 800, color: T.text, mb: 1 }}>
+                            {totalFuel.toLocaleString()} / {DIVISION_FUEL_CAPACITY_L.toLocaleString()} L total
+                          </Typography>
+                          <Typography sx={{ fontFamily: T.mono, fontSize: '12px', color: T.textMuted, mb: 2 }}>
+                            {capacityPct}% filled · {Math.round(remainingFuelCapacity).toLocaleString()} L remaining
+                          </Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 4, mb: 2 }}>
+                            {/* Fuel Tank Visualization */}
+                            <Box sx={{ position: 'relative', width: 80, height: 200, flexShrink: 0 }}>
+                              {/* Tank outline */}
+                              <Box sx={{
+                                position: 'absolute',
+                                inset: 0,
+                                borderRadius: '16px 16px 12px 12px',
+                                border: `4px solid ${T.borderStrong}`,
+                                bgcolor: T.surfaceAlt,
+                                boxShadow: `inset 0 4px 12px rgba(0,0,0,0.2), 0 3px 12px rgba(0,0,0,0.15)`,
+                              }} />
+
+                              {/* Tank body details */}
+                              <Box sx={{
+                                position: 'absolute',
+                                top: 10,
+                                left: 10,
+                                right: 10,
+                                bottom: 10,
+                                borderRadius: '10px 10px 6px 6px',
+                                border: `1px solid ${T.border}`,
+                                opacity: 0.4,
+                              }} />
+
+                              {/* Measurement markings */}
+                              {[20, 40, 60, 80].map((mark) => (
+                                <Box key={mark} sx={{
+                                  position: 'absolute',
+                                  left: -10,
+                                  right: -10,
+                                  top: `${100 - mark}%`,
+                                  height: '2px',
+                                  bgcolor: T.border,
+                                  opacity: 0.7,
+                                }} />
                               ))}
-                            </Stack>
-                            <Box sx={{ mt: 1.5 }}>
-                              <Box sx={{ height: 6, borderRadius: 3, bgcolor: T.border, overflow: 'hidden', position: 'relative' }}>
-                                <Box sx={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${premiumPct}%`, bgcolor: T.premium, transition: 'width 1s cubic-bezier(.22,1,.36,1)' }} />
-                                <Box sx={{ position: 'absolute', left: `${premiumPct}%`, top: 0, bottom: 0, width: `${standardPct}%`, bgcolor: T.accent, transition: 'width 1s cubic-bezier(.22,1,.36,1)', transitionDelay: '0.1s' }} />
+
+                              {/* Fuel level */}
+                              <Box sx={{
+                                position: 'absolute',
+                                bottom: 0,
+                                left: 0,
+                                right: 0,
+                                height: `${capacityPct}%`,
+                                borderRadius: '10px 10px 6px 6px',
+                                overflow: 'hidden',
+                                transition: 'height 1.5s cubic-bezier(.22,1,.36,1)',
+                                boxShadow: `inset 0 2px 4px rgba(0,0,0,0.3)`,
+                              }}>
+                                {/* Premium fuel (bottom layer) */}
+                                <Box sx={{
+                                  position: 'absolute',
+                                  bottom: 0,
+                                  left: 0,
+                                  right: 0,
+                                  height: `${totalFuel > 0 ? (premiumFuel / totalFuel) * 100 : 0}%`,
+                                  background: `linear-gradient(180deg, ${T.premium}ee 0%, ${T.premium} 100%)`,
+                                  boxShadow: `inset 0 2px 0 rgba(255,255,255,0.4)`,
+                                }} />
+                                {/* Standard fuel (top layer) */}
+                                <Box sx={{
+                                  position: 'absolute',
+                                  bottom: `${totalFuel > 0 ? (premiumFuel / totalFuel) * 100 : 0}%`,
+                                  left: 0,
+                                  right: 0,
+                                  height: `${totalFuel > 0 ? (standardFuel / totalFuel) * 100 : 0}%`,
+                                  background: `linear-gradient(180deg, ${T.accent}ee 0%, ${T.accent} 100%)`,
+                                  boxShadow: `inset 0 2px 0 rgba(255,255,255,0.4)`,
+                                }} />
                               </Box>
-                              <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
-                                <Stack direction="row" spacing={0.5} alignItems="center">
-                                  <Box sx={{ width: 8, height: 8, borderRadius: 1, bgcolor: T.premium }} />
-                                  <Typography sx={{ fontFamily: T.mono, fontSize: '10px', color: T.textMuted }}>Premium</Typography>
-                                </Stack>
-                                <Stack direction="row" spacing={0.5} alignItems="center">
-                                  <Box sx={{ width: 8, height: 8, borderRadius: 1, bgcolor: T.accent }} />
-                                  <Typography sx={{ fontFamily: T.mono, fontSize: '10px', color: T.textMuted }}>Standard</Typography>
-                                </Stack>
-                              </Stack>
+
+                              {/* Tank cap */}
+                              <Box sx={{
+                                position: 'absolute',
+                                top: -10,
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                width: 32,
+                                height: 14,
+                                borderRadius: '50%',
+                                bgcolor: T.borderStrong,
+                                border: `3px solid ${T.border}`,
+                                boxShadow: `0 2px 6px rgba(0,0,0,0.3)`,
+                              }} />
+
+                              {/* Fill level indicator */}
+                              <Box sx={{
+                                position: 'absolute',
+                                right: -40,
+                                top: `${100 - capacityPct}%`,
+                                transform: 'translateY(-50%)',
+                                fontFamily: T.mono,
+                                fontSize: '12px',
+                                fontWeight: 900,
+                                color: T.text,
+                                bgcolor: T.surface,
+                                px: 1,
+                                py: 0.75,
+                                borderRadius: 1.5,
+                                border: `2px solid ${T.border}`,
+                                whiteSpace: 'nowrap',
+                                boxShadow: `0 3px 8px rgba(0,0,0,0.15)`,
+                              }}>
+                                {capacityPct}%
+                              </Box>
                             </Box>
-                            <Stack direction="row" spacing={1} sx={{ mt: 1.5 }} flexWrap="wrap" useFlexGap>
-                              <Box sx={{ ...sx.pill(T.premiumDim, T.premium), fontSize: '10px' }}>
-                                <BoltOutlined sx={{ fontSize: 10 }} /> Premium consumed first
-                              </Box>
-                              <Box sx={{ ...sx.pill(T.accentDim, T.accent), fontSize: '10px' }}>
-                                <SpeedOutlined sx={{ fontSize: 10 }} /> Premium = longer coverage
-                              </Box>
-                            </Stack>
+
+                            {/* Tank details */}
+                            <Box sx={{ flex: 1 }}>
+                              <Typography sx={{ fontFamily: T.mono, fontSize: '16px', fontWeight: 700, color: T.text, mb: 1 }}>
+                                Fuel Tank Status
+                              </Typography>
+                              <Typography sx={{ fontFamily: T.mono, fontSize: '13px', color: T.textMuted, mb: 0.5 }}>
+                                Current: {Math.round(totalFuel).toLocaleString()} L
+                              </Typography>
+                              <Typography sx={{ fontFamily: T.mono, fontSize: '13px', color: T.textMuted, mb: 0.5 }}>
+                                Capacity: {DIVISION_FUEL_CAPACITY_L.toLocaleString()} L
+                              </Typography>
+                              <Typography sx={{ fontFamily: T.mono, fontSize: '13px', color: T.textMuted }}>
+                                Available: {Math.round(remainingFuelCapacity).toLocaleString()} L
+                              </Typography>
+                            </Box>
                           </Box>
-                        </Stack>
+                          <Stack direction="row" spacing={3} alignItems="center">
+                            <Stack direction="row" spacing={0.5} alignItems="center">
+                              <Box sx={{ width: 12, height: 12, borderRadius: 1, bgcolor: T.premium, opacity: 0.9 }} />
+                              <Typography sx={{ fontFamily: T.mono, fontSize: '11px', color: T.textMuted }}>
+                                Premium: {Math.round(premiumFuel).toLocaleString()} L
+                              </Typography>
+                            </Stack>
+                            <Stack direction="row" spacing={0.5} alignItems="center">
+                              <Box sx={{ width: 12, height: 12, borderRadius: 1, bgcolor: T.accent, opacity: 0.9 }} />
+                              <Typography sx={{ fontFamily: T.mono, fontSize: '11px', color: T.textMuted }}>
+                                Standard: {Math.round(standardFuel).toLocaleString()} L
+                              </Typography>
+                            </Stack>
+                          </Stack>
+                          <Stack direction="row" spacing={1} sx={{ mt: 2 }} flexWrap="wrap" useFlexGap>
+                            <Box sx={{ ...sx.pill(T.premiumDim, T.premium), fontSize: '10px' }}>
+                              <BoltOutlined sx={{ fontSize: 10 }} /> Premium consumed first
+                            </Box>
+                            <Box sx={{ ...sx.pill(T.accentDim, T.accent), fontSize: '10px' }}>
+                              <SpeedOutlined sx={{ fontSize: 10 }} /> Premium = longer coverage
+                            </Box>
+                          </Stack>
+                        </Box>
                       </Box>
                     </Box>
                   </Box>
