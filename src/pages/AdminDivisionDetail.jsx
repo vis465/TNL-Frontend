@@ -88,6 +88,7 @@ export default function AdminDivisionDetail() {
   const [divisionJobsLimit] = useState(20);
   const [divisionJobsLoading, setDivisionJobsLoading] = useState(false);
   const [includeRemovedJobs, setIncludeRemovedJobs] = useState(false);
+  const [investmentSummary, setInvestmentSummary] = useState({ totalInvested: 0, byRider: [] });
 
   const user = getItemWithExpiry('user') || {};
   const uid = String(user.id || user._id || '');
@@ -106,12 +107,13 @@ export default function AdminDivisionDetail() {
       setDivision(data.division);
       setAttendanceSummary(data.attendanceSummary || null);
       setTaxPct(String(data.division?.taxPercent ?? 0));
-      const [m, l, t, inv, jr] = await Promise.all([
+      const [m, l, t, inv, jr, invest] = await Promise.all([
         axiosInstance.get(`/divisions/${id}/members`),
         axiosInstance.get(`/divisions/${id}/leaderboard`),
         axiosInstance.get(`/divisions/${id}/wallet/transactions`),
         axiosInstance.get(`/divisions/${id}/invites`),
         axiosInstance.get(`/divisions/${id}/join-requests`).catch(() => ({ data: { requests: [] } })),
+        axiosInstance.get(`/divisions/${id}/investments/summary`).catch(() => ({ data: { totalInvested: 0, byRider: [] } })),
       ]);
       setMembers(m.data.members || []);
       setInactivityDays(Number(m.data.inactivityDays) || 14);
@@ -119,6 +121,10 @@ export default function AdminDivisionDetail() {
       setTxns(t.data.transactions || []);
       setInvites(inv.data.invites || []);
       setJoinRequests(jr.data.requests || []);
+      setInvestmentSummary({
+        totalInvested: Number(invest?.data?.totalInvested) || 0,
+        byRider: Array.isArray(invest?.data?.byRider) ? invest.data.byRider : [],
+      });
     } catch (e) {
       setError(e?.response?.data?.message || 'Failed to load');
     } finally {
@@ -696,6 +702,45 @@ export default function AdminDivisionDetail() {
 
       {tab === 3 && (
         <Stack spacing={2}>
+          <Card>
+            <CardContent>
+              <Typography fontWeight={700} sx={{ mb: 1 }}>
+                Member investments
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                Total invested into division wallet: {Math.round(investmentSummary.totalInvested || 0).toLocaleString()}
+              </Typography>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Member</TableCell>
+                    <TableCell align="right">Invested total</TableCell>
+                    <TableCell align="right">Entries</TableCell>
+                    <TableCell>Last invested</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {(investmentSummary.byRider || []).map((row) => (
+                    <TableRow key={String(row.riderId)}>
+                      <TableCell>
+                        {row.riderName || row.riderUsername || row.riderEmployeeId || String(row.riderId)}
+                      </TableCell>
+                      <TableCell align="right">{Math.round(Number(row.totalInvested || 0)).toLocaleString()}</TableCell>
+                      <TableCell align="right">{Number(row.investmentCount || 0).toLocaleString()}</TableCell>
+                      <TableCell>{row.lastInvestedAt ? new Date(row.lastInvestedAt).toLocaleString() : '—'}</TableCell>
+                    </TableRow>
+                  ))}
+                  {!investmentSummary.byRider?.length && (
+                    <TableRow>
+                      <TableCell colSpan={4} align="center">
+                        <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>No investments yet.</Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
           <Card>
             <CardContent>
               <Typography fontWeight={700} sx={{ mb: 1 }}>Recent transactions</Typography>

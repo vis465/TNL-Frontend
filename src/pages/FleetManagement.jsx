@@ -12,6 +12,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TextField,
   TableContainer,
   TableHead,
   TableRow,
@@ -40,6 +41,8 @@ import {
   getFleetDeliveries,
   getDivisionTrucks,
   payTruckMaintenance,
+  previewTruckMaintenance,
+  sellDivisionTruck,
 } from '../services/fleetService';
 import { getItemWithExpiry } from '../localStorageWithExpiry';
 import { useTheme, alpha } from '@mui/material/styles';
@@ -119,6 +122,12 @@ export default function FleetManagement() {
   const [maintainTarget, setMaintainTarget] = useState(null);
   const [maintainBusy, setMaintainBusy] = useState(false);
   const [maintainError, setMaintainError] = useState('');
+  const [maintainCouponCode, setMaintainCouponCode] = useState('');
+  const [maintainPreview, setMaintainPreview] = useState(null);
+  const [maintainPreviewLoading, setMaintainPreviewLoading] = useState(false);
+  const [sellTarget, setSellTarget] = useState(null);
+  const [sellBusy, setSellBusy] = useState(false);
+  const [sellError, setSellError] = useState('');
   const [feedback, setFeedback] = useState('');
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [repairMinutes, setRepairMinutes] = useState(120);
@@ -260,18 +269,71 @@ export default function FleetManagement() {
     setMaintainError('');
     try {
       const truckId = maintainTarget._id || maintainTarget.divisionTruckId;
-      const data = await payTruckMaintenance(divisionId, truckId);
+      const data = await payTruckMaintenance(divisionId, truckId, maintainCouponCode.trim() || undefined);
       const mins = Number(data?.repairMinutes || repairMinutes);
       setFeedback(
         data?.message ||
           `Maintenance paid (${Number(data?.amount || 0).toLocaleString()} tokens). Truck is in the garage for ~${mins} minutes.`
       );
       setMaintainTarget(null);
+      setMaintainCouponCode('');
       await loadTrucks();
     } catch (e) {
       setMaintainError(e?.response?.data?.message || 'Maintenance failed.');
     } finally {
       setMaintainBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      if (!maintainTarget || !divisionId) {
+        setMaintainPreview(null);
+        return;
+      }
+      setMaintainPreviewLoading(true);
+      try {
+        const truckId = maintainTarget._id || maintainTarget.divisionTruckId;
+        const data = await previewTruckMaintenance(
+          divisionId,
+          truckId,
+          maintainCouponCode.trim() || undefined
+        );
+        if (!cancelled) setMaintainPreview(data || null);
+      } catch (e) {
+        if (!cancelled) {
+          setMaintainPreview(null);
+          setMaintainError(e?.response?.data?.message || 'Failed to preview maintenance cost.');
+        }
+      } finally {
+        if (!cancelled) setMaintainPreviewLoading(false);
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [maintainTarget, maintainCouponCode, divisionId]);
+
+  const handleConfirmSell = async () => {
+    if (!sellTarget || !divisionId) return;
+    setSellBusy(true);
+    setSellError('');
+    try {
+      const truckId = sellTarget._id || sellTarget.divisionTruckId;
+      const data = await sellDivisionTruck(divisionId, truckId);
+      setFeedback(
+        `Truck sold for ${Number(data?.amountCredited || 0).toLocaleString()} tokens (max ${Number(
+          data?.maxResalePrice || 0
+        ).toLocaleString()}).`
+      );
+      setSellTarget(null);
+      await loadTrucks();
+    } catch (e) {
+      setSellError(e?.response?.data?.message || 'Truck sale failed.');
+    } finally {
+      setSellBusy(false);
     }
   };
 
@@ -516,6 +578,12 @@ export default function FleetManagement() {
                   const inService = t.blocked && secondsLeft > 0;
                   const needsMaintenance = t.blocked && !inService;
                   const maintenanceCost = Math.max(0, Number(t.maintenanceCost) || 0);
+                  const rentPerJob = Math.max(0, Number(t.rentPerJobTokens) || 0);
+                  const rentSaved = Math.max(0, Number(t.deliveriesCount) || 0) * rentPerJob;
+                  const breakEvenJobs =
+                    rentPerJob > 0
+                      ? Math.ceil(Math.max(0, Number(t.purchasePrice) || 0) / rentPerJob)
+                      : null;
                   const maintenanceBorder = needsMaintenance
                     ? theme.palette.error.main
                     : inService
@@ -619,6 +687,28 @@ export default function FleetManagement() {
                                 color: T.text,
                               }}
                             />
+                            <Chip
+                              size="small"
+                              label={`Rent saved ${rentSaved.toLocaleString()}`}
+                              sx={{
+                                bgcolor: alpha(T.success, 0.12),
+                                border: `1px solid ${alpha(T.success, 0.38)}`,
+                                color: T.text,
+                              }}
+                            />
+                            <Chip
+                              size="small"
+                              label={
+                                breakEvenJobs != null
+                                  ? `Break-even est. ${breakEvenJobs.toLocaleString()} jobs`
+                                  : 'Break-even est. N/A'
+                              }
+                              sx={{
+                                bgcolor: alpha(T.info, 0.12),
+                                border: `1px solid ${alpha(T.info, 0.4)}`,
+                                color: T.text,
+                              }}
+                            />
                             {needsMaintenance && (
                               <Chip
                                 size="small"
@@ -671,20 +761,37 @@ export default function FleetManagement() {
                               </Typography>
                             </Box>
                           )}
-                          {canManageMaintenance && needsMaintenance && (
-                            <Button
-                              size="small"
-                              variant="contained"
-                              color="warning"
-                              startIcon={<BuildIcon />}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setMaintainTarget(t);
-                              }}
-                              sx={{ mt: 1 }}
-                            >
-                              Service now ({maintenanceCost.toLocaleString()})
-                            </Button>
+                          {canManageMaintenance && (
+                            <Stack direction="row" spacing={1} sx={{ mt: 1 }} flexWrap="wrap">
+                              {needsMaintenance && (
+                                <Button
+                                  size="small"
+                                  variant="contained"
+                                  color="warning"
+                                  startIcon={<BuildIcon />}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setMaintainTarget(t);
+                                  }}
+                                >
+                                  Service now ({maintenanceCost.toLocaleString()})
+                                </Button>
+                              )}
+                              {t.resellable && Number(t.maxResalePrice || 0) > 0 && (
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  color="error"
+                                  disabled={Boolean(t.blocked)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSellTarget(t);
+                                  }}
+                                >
+                                  Sell truck
+                                </Button>
+                              )}
+                            </Stack>
                           )}
                           {!canManageMaintenance && needsMaintenance && (
                             <Typography
@@ -801,22 +908,65 @@ export default function FleetManagement() {
       >
         <DialogTitle>Pay for maintenance</DialogTitle>
         <DialogContent>
+          {maintainPreviewLoading && <LinearProgress sx={{ mb: 1.5 }} />}
           <DialogContentText>
             Send <strong>{maintainTarget?.displayName || maintainTarget?.modelName}</strong> to
             the garage? The division wallet will be debited for
             {' '}
             <strong>
-              {Number(maintainTarget?.maintenanceCost || 0).toLocaleString()} tokens
+              {Number(
+                (maintainPreview?.cost ?? maintainTarget?.maintenanceCost) ||
+                  0
+              ).toLocaleString()} tokens
             </strong>
             . The truck stays offline for <strong>~{repairMinutes} minutes</strong> while it is
             being serviced and returns automatically. That truck won&apos;t count for fleet-matched
             deliveries until it returns.
           </DialogContentText>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 1.25 }}>
+            <Chip
+              size="small"
+              variant="outlined"
+              label={`Base cost: ${Number(
+                (maintainPreview?.baseCost ?? maintainTarget?.maintenanceCost) || 0
+              ).toLocaleString()}`}
+            />
+            <Chip
+              size="small"
+              color={Number(maintainPreview?.discount || 0) > 0 ? 'success' : 'default'}
+              variant={Number(maintainPreview?.discount || 0) > 0 ? 'filled' : 'outlined'}
+              label={`Discount: ${Number(maintainPreview?.discount || 0).toLocaleString()}`}
+            />
+            <Chip
+              size="small"
+              color="warning"
+              variant="outlined"
+              label={`Payable: ${Number(
+                (maintainPreview?.cost ?? maintainTarget?.maintenanceCost) || 0
+              ).toLocaleString()}`}
+            />
+          </Stack>
+          {!!maintainCouponCode.trim() && maintainPreview?.couponValid === false && (
+            <Alert severity="warning" sx={{ mt: 1.5 }}>
+              Coupon invalid for this truck or expired.
+            </Alert>
+          )}
           {maintainError && (
             <Alert severity="error" sx={{ mt: 2 }}>
               {maintainError}
             </Alert>
           )}
+          <TextField
+            label="Maintenance coupon (optional)"
+            size="small"
+            fullWidth
+            sx={{ mt: 2 }}
+            value={maintainCouponCode}
+            onChange={(e) => {
+              setMaintainError('');
+              setMaintainCouponCode(e.target.value.toUpperCase());
+            }}
+          />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setMaintainTarget(null)} disabled={maintainBusy}>
@@ -830,6 +980,38 @@ export default function FleetManagement() {
             startIcon={<BuildIcon />}
           >
             {maintainBusy ? 'Paying…' : 'Confirm payment'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={Boolean(sellTarget)}
+        onClose={() => !sellBusy && setSellTarget(null)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Sell truck</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Sell <strong>{sellTarget?.displayName || sellTarget?.modelName}</strong> and credit its resale value to
+            the division wallet?
+            {' '}
+            <strong>
+              Max resale: {Number(sellTarget?.maxResalePrice || 0).toLocaleString()} tokens
+            </strong>
+            .
+          </DialogContentText>
+          {sellError && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {sellError}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSellTarget(null)} disabled={sellBusy}>
+            Cancel
+          </Button>
+          <Button variant="contained" color="error" onClick={handleConfirmSell} disabled={sellBusy}>
+            {sellBusy ? 'Selling…' : 'Confirm sale'}
           </Button>
         </DialogActions>
       </Dialog>

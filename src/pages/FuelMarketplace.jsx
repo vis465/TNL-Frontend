@@ -69,6 +69,9 @@ export default function FuelMarketplace() {
   const leaderIdStr = String(div?.leaderId || '');
   const isLeader =
     divisionPayload?.isLeader === true || Boolean(div && uid && leaderIdStr && uid === leaderIdStr);
+  const coLeaderIds = Array.isArray(div?.coLeaderUserIds) ? div.coLeaderUserIds.map((x) => String(x)) : [];
+  const isCoLeader = Boolean(uid && coLeaderIds.includes(uid));
+  const canManageFuel = isLeader || isCoLeader || user?.role === 'admin' || user?.role === 'communityManager';
 
   const reloadDivisionAndHistory = async () => {
     const dRes = await axiosInstance.get('/me/division');
@@ -84,8 +87,9 @@ export default function FuelMarketplace() {
     setDivisionPayload(resolved);
     const d = resolved?.division;
     const uidLocal = String(user.id || user._id || '');
+    const coIds = Array.isArray(d?.coLeaderUserIds) ? d.coLeaderUserIds.map((x) => String(x)) : [];
     const canSeeHistory =
-      d?._id && (resolved?.isLeader === true || String(d.leaderId) === uidLocal);
+      d?._id && (resolved?.isLeader === true || String(d.leaderId) === uidLocal || coIds.includes(uidLocal));
     if (canSeeHistory) {
       try {
         const h = await axiosInstance.get(`/divisions/${d._id}/fuel/history`, { params: { limit: 200 } });
@@ -188,7 +192,7 @@ export default function FuelMarketplace() {
   const buyOverCapacity = buyLitersFloor > remainingCapacity;
 
   const buy = async () => {
-    if (!div?._id || !isLeader) return;
+    if (!div?._id || !canManageFuel) return;
     setBuying(true);
     setError('');
     try {
@@ -263,7 +267,7 @@ export default function FuelMarketplace() {
               </Typography>
             </Typography>
           </Stack>
-          {isLeader && tier && (
+          {canManageFuel && tier && (
             <Typography
               variant="body2"
               sx={{ mt: 1.5, maxWidth: 560 }}
@@ -403,7 +407,7 @@ export default function FuelMarketplace() {
                   Wallet balance is shown above for quick verification.
                 </Typography>
                 <Divider sx={{ my: 1.5 }} />
-                {isLeader ? (
+                {canManageFuel ? (
                   <>
                     <Typography fontWeight={600} gutterBottom>Buy fuel (division wallet)</Typography>
                     <Button variant="contained" onClick={() => setBuyDrawerOpen(true)} disabled={!tier || remainingCapacity <= 0}>
@@ -480,7 +484,7 @@ export default function FuelMarketplace() {
         </RevealSection>
       )}
 
-      {!loading && isLeader && !chartData.length && div && (
+      {!loading && canManageFuel && !chartData.length && div && (
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2 }}>
           No fuel purchases recorded yet — charts appear after the first buy.
         </Typography>

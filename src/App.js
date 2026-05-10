@@ -131,112 +131,192 @@ function App() {
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
   };
-  
 
   const theme = useMemo(
     () =>
       createTheme({
-        palette: {
-          mode: isDarkMode ? "dark" : "light",
-          primary: {
-            main: "#ffff00",
-            light: "#ffff66",
-            dark: "#c4c400",
-            contrastText: "#0a0a0a",
-          },
-          secondary: {
-            main: isDarkMode ? "#f48fb1" : "#d81b60",
-            light: isDarkMode ? "#fce4ec" : "#ff5c8d",
-            dark: isDarkMode ? "#c2185b" : "#880e4f",
-            contrastText: "#ffffff",
-          },
-          background: {
-            default: isDarkMode ? "#121212" : "#fafafa",
-            paper: isDarkMode ? "#1f1f1f" : "#ffffff",
-          },
-          text: {
-            primary: isDarkMode ? "#ffffff" : "#212121",
-            secondary: isDarkMode
-              ? "rgba(255, 255, 255, 0.7)"
-              : "rgba(0, 0, 0, 0.6)",
-          },
-          action: {
-            active: isDarkMode ? "#ffffff" : "rgba(0, 0, 0, 0.54)",
-            hover: isDarkMode
-              ? "rgba(255, 255, 255, 0.08)"
-              : "rgba(0, 0, 0, 0.04)",
-            selected: isDarkMode
-              ? "rgba(255, 255, 255, 0.16)"
-              : "rgba(0, 0, 0, 0.08)",
-            disabled: isDarkMode
-              ? "rgba(255, 255, 255, 0.3)"
-              : "rgba(0, 0, 0, 0.26)",
-            disabledBackground: isDarkMode
-              ? "rgba(255, 255, 255, 0.12)"
-              : "rgba(0, 0, 0, 0.12)",
-          },
-        },
-        typography: {
-          fontFamily:
-            '"Montserrat", "Roboto", "Helvetica", "Arial", sans-serif',
-          h1: {
-            fontWeight: 700,
-            color: isDarkMode ? "#ffffff" : "#212121",
-          },
-          h2: {
-            fontWeight: 600,
-            color: isDarkMode ? "#ffffff" : "#212121",
-          },
-          h3: {
-            fontWeight: 600,
-            color: isDarkMode ? "#ffffff" : "#212121",
-          },
-          h4: {
-            fontWeight: 600,
-            color: isDarkMode ? "#ffffff" : "#212121",
-          },
-          h5: {
-            fontWeight: 500,
-            color: isDarkMode ? "#ffffff" : "#212121",
-          },
-          h6: {
-            fontWeight: 500,
-            color: isDarkMode ? "#ffffff" : "#212121",
-          },
-          body1: {
-            color: isDarkMode
-              ? "rgba(255, 255, 255, 0.87)"
-              : "rgba(0, 0, 0, 0.87)",
-          },
-          body2: {
-            color: isDarkMode
-              ? "rgba(255, 255, 255, 0.7)"
-              : "rgba(0, 0, 0, 0.6)",
-          },
+       palette: {
+  mode: isDarkMode ? "dark" : "light",
+
+  primary: {
+    main: "#BFA14A",
+    light: "#D8BE72",
+    dark: "#8C742F",
+    contrastText: "#0F0D07",
+  },
+
+  secondary: {
+    main: isDarkMode ? "#D6C089" : "#2B2418",
+    light: isDarkMode ? "#E5D4A8" : "#4A3F2A",
+    dark: isDarkMode ? "#9D8240" : "#17120A",
+    contrastText: isDarkMode ? "#0B0904" : "#FFFFFF",
+  },
+
+  background: {
+    default: isDarkMode ? "#0A0907" : "#F6F3ED",
+    paper: isDarkMode ? "#15120E" : "#FEFCF8",
+  },
+
+  text: {
+    primary: isDarkMode
+      ? "rgba(245,238,220,0.92)"
+      : "rgba(28,22,12,0.92)",
+
+    secondary: isDarkMode
+      ? "rgba(214,201,168,0.64)"
+      : "rgba(58,48,26,0.62)",
+  },
+
+  divider: isDarkMode
+    ? "rgba(191,161,74,0.14)"
+    : "rgba(120,98,40,0.12)",
+
+  action: {
+    active: isDarkMode
+      ? "#CDB46A"
+      : "rgba(43,36,24,0.62)",
+
+    hover: isDarkMode
+      ? "rgba(191,161,74,0.08)"
+      : "rgba(191,161,74,0.06)",
+
+    selected: isDarkMode
+      ? "rgba(191,161,74,0.14)"
+      : "rgba(191,161,74,0.10)",
+
+    disabled: isDarkMode
+      ? "rgba(214,201,168,0.30)"
+      : "rgba(58,48,26,0.28)",
+
+    disabledBackground: isDarkMode
+      ? "rgba(191,161,74,0.08)"
+      : "rgba(191,161,74,0.08)",
+  },
+},
+      typography: {
+  fontFamily: '"Montserrat", "Helvetica", sans-serif',
+
+  h1: {
+    fontSize: "4rem",
+    lineHeight: 1.08,
+    fontWeight: 700,
+    letterSpacing: "-0.035em",
+    color: isDarkMode ? "#F5EEDC" : "#0F0D07",
+  },
+
+  h2: {
+    fontSize: "3rem",
+    lineHeight: 1.12,
+    fontWeight: 700,
+    letterSpacing: "-0.03em",
+    color: isDarkMode ? "#F5EEDC" : "#0F0D07",
+  },
+
+  h3: {
+    fontSize: "2.25rem",
+    lineHeight: 1.18,
+    fontWeight: 600,
+    letterSpacing: "-0.02em",
+    color: isDarkMode ? "#F5EEDC" : "#0F0D07",
+  },
+
+  h4: {
+    fontSize: "1.75rem",
+    lineHeight: 1.24,
+    fontWeight: 600,
+    letterSpacing: "-0.015em",
+    color: isDarkMode ? "#F5EEDC" : "#0F0D07",
+  },
+
+  h5: {
+    fontSize: "1.35rem",
+    lineHeight: 1.3,
+    fontWeight: 600,
+    letterSpacing: "-0.01em",
+    color: isDarkMode ? "#F5EEDC" : "#0F0D07",
+  },
+
+  h6: {
+    fontSize: "1.05rem",
+    lineHeight: 1.4,
+    fontWeight: 600,
+    letterSpacing: "-0.005em",
+    color: isDarkMode ? "#F5EEDC" : "#0F0D07",
+  },
+
+  body1: {
+    fontFamily: '"Montserrat", "Helvetica", sans-serif',
+    fontSize: "1.05rem",
+    lineHeight: 1.8,
+    fontWeight: 400,
+    color: isDarkMode
+      ? "rgba(245,238,220,0.88)"
+      : "rgba(28,22,12,0.86)",
+  },
+
+  body2: {
+    fontFamily: '"Montserrat", "Helvetica", sans-serif',
+    fontSize: "0.95rem",
+    lineHeight: 1.7,
+    fontWeight: 400,
+    color: isDarkMode
+      ? "rgba(214,201,168,0.66)"
+      : "rgba(58,48,26,0.62)",
+  },
+
+  button: {
+    fontFamily: '"Montserrat", "Helvetica", sans-serif',
+    fontSize: "0.95rem",
+    fontWeight: 600,
+    letterSpacing: "0.045em",
+    textTransform: "none",
+  },
+
+  overline: {
+    fontFamily: '"Montserrat", "Helvetica", sans-serif',
+    fontSize: "0.78rem",
+    fontWeight: 700,
+    letterSpacing: "0.14em",
+    textTransform: "uppercase",
+    color: "#BFA14A",
+  },
+},
+        shape: {
+          borderRadius: 6,
         },
         components: {
           MuiButton: {
             styleOverrides: {
               root: {
                 textTransform: "none",
-                fontWeight: 500,
+                fontWeight: 600,
+                letterSpacing: "0.04em",
+                padding: "10px 28px",
               },
               containedPrimary: ({ theme }) => ({
                 color: `${theme.palette.primary.contrastText} !important`,
                 backgroundColor: theme.palette.primary.main,
-                '&:hover': {
+                boxShadow: "none",
+                "&:hover": {
                   backgroundColor: theme.palette.primary.dark,
+                  boxShadow: "0 2px 12px rgba(201,168,0,0.25)",
                   color: `${theme.palette.primary.contrastText} !important`,
                 },
               }),
               outlined: {
                 borderColor: isDarkMode
-                  ? "rgba(255, 255, 255, 0.3)"
-                  : "rgba(0, 0, 0, 0.23)",
-                color: isDarkMode ? "#ffffff" : "inherit",
+                  ? "rgba(201, 168, 0, 0.35)"
+                  : "rgba(180, 148, 0, 0.40)",
+                color: isDarkMode ? "#C9A800" : "#7A6400",
+                "&:hover": {
+                  borderColor: "#C9A800",
+                  backgroundColor: isDarkMode
+                    ? "rgba(201,168,0,0.07)"
+                    : "rgba(180,148,0,0.06)",
+                },
               },
               text: {
-                color: isDarkMode ? "#ffffff" : "inherit",
+                color: isDarkMode ? "#C9A800" : "#7A6400",
               },
             },
           },
@@ -244,44 +324,64 @@ function App() {
             styleOverrides: {
               root: {
                 fontWeight: 500,
+                fontFamily: '"DM Sans", sans-serif',
+                letterSpacing: "0.02em",
               },
             },
           },
           MuiCard: {
             styleOverrides: {
               root: {
-                backgroundColor: isDarkMode ? "#1f1f1f" : "#ffffff",
-                color: isDarkMode ? "#ffffff" : "inherit",
+                backgroundColor: isDarkMode ? "#1E1A14" : "#FAFAF6",
+                color: isDarkMode ? "#EDE8DC" : "#1A1508",
+                border: isDarkMode
+                  ? "1px solid rgba(201,168,0,0.10)"
+                  : "1px solid rgba(180,148,0,0.13)",
+                boxShadow: isDarkMode
+                  ? "0 1px 24px rgba(0,0,0,0.35)"
+                  : "0 1px 16px rgba(180,148,0,0.07)",
               },
             },
           },
           MuiPaper: {
             styleOverrides: {
               root: {
-                backgroundColor: isDarkMode ? "#1f1f1f" : "#ffffff",
-                color: isDarkMode ? "#ffffff" : "inherit",
+                backgroundColor: isDarkMode ? "#1E1A14" : "#FAFAF6",
+                color: isDarkMode ? "#EDE8DC" : "#1A1508",
               },
             },
           },
           MuiDialog: {
             styleOverrides: {
               paper: {
-                backgroundColor: isDarkMode ? "#1f1f1f" : "#ffffff",
-                color: isDarkMode ? "#ffffff" : "inherit",
+                backgroundColor: isDarkMode ? "#1E1A14" : "#FAFAF6",
+                color: isDarkMode ? "#EDE8DC" : "#1A1508",
+              },
+            },
+          },
+          MuiDivider: {
+            styleOverrides: {
+              root: {
+                borderColor: isDarkMode
+                  ? "rgba(201,168,0,0.10)"
+                  : "rgba(180,148,0,0.13)",
               },
             },
           },
           MuiTableCell: {
             styleOverrides: {
               root: {
-                color: isDarkMode ? "#ffffff" : "inherit",
+                color: isDarkMode ? "#EDE8DC" : "#1A1508",
                 borderBottom: isDarkMode
-                  ? "1px solid rgba(255, 255, 255, 0.12)"
-                  : "1px solid rgba(0, 0, 0, 0.12)",
+                  ? "1px solid rgba(201,168,0,0.10)"
+                  : "1px solid rgba(180,148,0,0.12)",
               },
               head: {
-                fontWeight: 600,
-                color: isDarkMode ? "#ffffff" : "inherit",
+                fontWeight: 700,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                fontSize: "0.72rem",
+                color: "#C9A800",
               },
             },
           },
@@ -321,7 +421,15 @@ function App() {
               >
                 <RedirectBasedOnHost />
                 <Navbar />
-                <Box component="main" sx={{ flexGrow: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+                <Box
+                  component="main"
+                  sx={{
+                    flexGrow: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    minHeight: 0,
+                  }}
+                >
                   <Routes>
                     {/* Public routes */}
                     <Route
@@ -332,8 +440,7 @@ function App() {
                     <Route path="/" element={<Landing />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<SteamRegistration />} />
-                      <Route path="steam" element={<SteamRegistration />} />
-                    
+                    <Route path="steam" element={<SteamRegistration />} />
 
                     <Route
                       path="/forgot-password"
@@ -364,9 +471,15 @@ function App() {
                     <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                     <Route path="/events" element={<Home />} />
                     <Route path="/leaderboard" element={<Leaderboard />} />
-                    <Route path="/division-leaderboard" element={<DivisionLeaderboard />} />
+                    <Route
+                      path="/division-leaderboard"
+                      element={<DivisionLeaderboard />}
+                    />
                     <Route path="/divisions" element={<DivisionsIndex />} />
-                    <Route path="/divisions/:slug" element={<DivisionPublic />} />
+                    <Route
+                      path="/divisions/:slug"
+                      element={<DivisionPublic />}
+                    />
                     <Route path="/map-test" element={<MapPlayground />} />
                     <Route
                       path="/riders/licence"
@@ -376,7 +489,6 @@ function App() {
                     <Route
                       path="/riders/:driverId/challenges"
                       element={<RiderChallenges />}
-
                     />
                     <Route path="/challenges" element={<PublicChallenges />} />
                     <Route
@@ -399,20 +511,50 @@ function App() {
                       }
                     >
                       <Route element={<AdminLayout />}>
-                        <Route path="/dashboard" element={<UserDashboardV2 />} />
-                        <Route path="/change-password" element={<ChangePassword />} />
+                        <Route
+                          path="/dashboard"
+                          element={<UserDashboardV2 />}
+                        />
+                        <Route
+                          path="/change-password"
+                          element={<ChangePassword />}
+                        />
                         <Route path="/profile" element={<UserDashboardV2 />} />
                         <Route path="/jobs" element={<RiderJobs />} />
-                        <Route path="/validate-job" element={<JobValidation />} />
-                        <Route path="/online-riders" element={<OnlineRiders />} />
-                        <Route path="/telemetry/*" element={<TruckersHubLayout />}>
+                        <Route
+                          path="/validate-job"
+                          element={<JobValidation />}
+                        />
+                        <Route
+                          path="/online-riders"
+                          element={<OnlineRiders />}
+                        />
+                        <Route
+                          path="/telemetry/*"
+                          element={<TruckersHubLayout />}
+                        >
                           <Route index element={<TruckersHubDashboard />} />
-                          <Route path="violations" element={<SpeedViolationsMonitor />} />
-                          <Route path="jobs" element={<LiveJobTrackingPage />} />
-                          <Route path="status" element={<TruckersHubStatus />} />
-                          <Route path="driver/:riderId" element={<DriverTelemetryPage />} />
+                          <Route
+                            path="violations"
+                            element={<SpeedViolationsMonitor />}
+                          />
+                          <Route
+                            path="jobs"
+                            element={<LiveJobTrackingPage />}
+                          />
+                          <Route
+                            path="status"
+                            element={<TruckersHubStatus />}
+                          />
+                          <Route
+                            path="driver/:riderId"
+                            element={<DriverTelemetryPage />}
+                          />
                         </Route>
-                        <Route path="/attendance" element={<RiderAttendance />} />
+                        <Route
+                          path="/attendance"
+                          element={<RiderAttendance />}
+                        />
                         <Route
                           path="/contracts"
                           element={<ContractsMarketplace />}
@@ -420,16 +562,27 @@ function App() {
                         <Route path="/contracts/me" element={<MyContracts />} />
                         <Route path="/wallet" element={<Wallet />} />
                         <Route path="/fleet" element={<FleetManagement />} />
-                        <Route path="/trucks/marketplace" element={<TruckMarketplace />} />
+                        <Route
+                          path="/trucks/marketplace"
+                          element={<TruckMarketplace />}
+                        />
                         <Route path="/loans" element={<Loans />} />
                         <Route path="/goals" element={<PersonalGoals />} />
                         <Route path="/jobs/:id" element={<JobDetails />} />
-                        <Route path="/calendar" element={<EventCalendarPage />} />
+                        <Route
+                          path="/calendar"
+                          element={<EventCalendarPage />}
+                        />
                         <Route path="/division" element={<MyDivision />} />
-                        <Route path="/division/fuel" element={<FuelMarketplace />} />
-                        <Route path="/division/invites" element={<DivisionInvites />} />
-                      
-                    </Route>
+                        <Route
+                          path="/division/fuel"
+                          element={<FuelMarketplace />}
+                        />
+                        <Route
+                          path="/division/invites"
+                          element={<DivisionInvites />}
+                        />
+                      </Route>
                     </Route>
 
                     {/* Admin area: layout with sidebar + nested gated routes */}
@@ -504,7 +657,7 @@ function App() {
                       <Route
                         path="create-user"
                         element={
-                          <PrivateRoute allowedRoles={["admin","hrteam"]}>
+                          <PrivateRoute allowedRoles={["admin", "hrteam"]}>
                             <AdminCreateUser />
                           </PrivateRoute>
                         }
@@ -602,7 +755,9 @@ function App() {
                       <Route
                         path="divisions"
                         element={
-                          <PrivateRoute allowedRoles={["admin", "communityManager"]}>
+                          <PrivateRoute
+                            allowedRoles={["admin", "communityManager"]}
+                          >
                             <AdminDivisions />
                           </PrivateRoute>
                         }
@@ -610,7 +765,9 @@ function App() {
                       <Route
                         path="divisions/:id"
                         element={
-                          <PrivateRoute allowedRoles={["admin", "communityManager"]}>
+                          <PrivateRoute
+                            allowedRoles={["admin", "communityManager"]}
+                          >
                             <AdminDivisionDetail />
                           </PrivateRoute>
                         }
@@ -650,7 +807,15 @@ function App() {
                       <Route
                         path="audit-logs"
                         element={
-                          <PrivateRoute allowedRoles={["admin", "eventteam", "hrteam", "financeteam", "communityManager"]}>
+                          <PrivateRoute
+                            allowedRoles={[
+                              "admin",
+                              "eventteam",
+                              "hrteam",
+                              "financeteam",
+                              "communityManager",
+                            ]}
+                          >
                             <AdminAuditLogs />
                           </PrivateRoute>
                         }
