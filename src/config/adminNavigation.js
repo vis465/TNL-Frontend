@@ -90,7 +90,7 @@ export const MY_AREA_SECTIONS = [
         matchExact: true,
       },
       { to: '/jobs', label: 'VTC jobs', Icon: LocalShippingOutlined, roles: null },
-      { to: '/validate-job', label: 'Validate job', Icon: VerifiedUserOutlined, roles: null },
+      // { to: '/validate-job', label: 'Validate job', Icon: VerifiedUserOutlined, roles: null },
       
       {
         to: '/telemetry',

@@ -521,10 +521,10 @@ function App() {
                         />
                         <Route path="/profile" element={<UserDashboardV2 />} />
                         <Route path="/jobs" element={<RiderJobs />} />
-                        <Route
+                        {/* <Route
                           path="/validate-job"
                           element={<JobValidation />}
-                        />
+                        /> */}
                         <Route
                           path="/online-riders"
                           element={<OnlineRiders />}
