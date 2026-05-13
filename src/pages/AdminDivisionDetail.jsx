@@ -15,7 +15,8 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Divider,
+  FormControlLabel,
+  Switch,
   IconButton,
   LinearProgress,
   MenuItem,
@@ -42,6 +43,16 @@ import MagicPageShell from '../components/magicui/MagicPageShell';
 import AnimatedTabPanel from '../components/magicui/AnimatedTabPanel';
 
 const DIVISION_FUEL_CAPACITY_L = 20_000;
+
+const DEFAULT_DW_NOTIFY = {
+  jobDelivered: true,
+  jobFuelSummary: true,
+  tokenPayoutSummary: false,
+  walletTreasury: true,
+  memberLifecycle: true,
+  fleetGarage: true,
+  divisionSettings: true,
+};
 
 export default function AdminDivisionDetail() {
   const { id } = useParams();
@@ -90,6 +101,10 @@ export default function AdminDivisionDetail() {
   const [includeRemovedJobs, setIncludeRemovedJobs] = useState(false);
   const [investmentSummary, setInvestmentSummary] = useState({ totalInvested: 0, byRider: [] });
 
+  const [dwWebhookUrl, setDwWebhookUrl] = useState('');
+  const [dwNotify, setDwNotify] = useState(DEFAULT_DW_NOTIFY);
+  const [savingDiscord, setSavingDiscord] = useState(false);
+
   const user = getItemWithExpiry('user') || {};
   const uid = String(user.id || user._id || '');
   const leaderIdStr = String(division?.leaderId || division?.leader?._id || '');
@@ -105,6 +120,10 @@ export default function AdminDivisionDetail() {
     try {
       const { data } = await axiosInstance.get(`/divisions/${id}`);
       setDivision(data.division);
+      if (data.division && (user.role === 'admin' || user.role === 'communityManager')) {
+        setDwWebhookUrl(data.division.discordWebhookUrl || '');
+        setDwNotify({ ...DEFAULT_DW_NOTIFY, ...(data.division.discordWebhookNotify || {}) });
+      }
       setAttendanceSummary(data.attendanceSummary || null);
       setTaxPct(String(data.division?.taxPercent ?? 0));
       const [m, l, t, inv, jr, invest] = await Promise.all([
@@ -288,6 +307,23 @@ export default function AdminDivisionDetail() {
       load();
     } catch (e) {
       setError(e?.response?.data?.message || 'Save failed');
+    }
+  };
+
+  const saveDiscordWebhook = async () => {
+    if (!canStaff) return;
+    setSavingDiscord(true);
+    setError('');
+    try {
+      await axiosInstance.patch(`/divisions/${id}`, {
+        discordWebhookUrl: dwWebhookUrl.trim(),
+        discordWebhookNotify: dwNotify,
+      });
+      await load();
+    } catch (e) {
+      setError(e?.response?.data?.message || 'Discord webhook settings failed to save');
+    } finally {
+      setSavingDiscord(false);
     }
   };
 
@@ -673,6 +709,65 @@ export default function AdminDivisionDetail() {
               <Box><Typography variant="caption" color="text.secondary">Leader</Typography><Typography variant="h6">{division.leader?.username || '—'}</Typography></Box>
               <Box><Typography variant="caption" color="text.secondary">Created</Typography><Typography variant="h6">{new Date(division.createdAt).toLocaleDateString()}</Typography></Box>
             </Stack>
+
+            {canStaff && (
+              <>
+                <Divider sx={{ my: 3 }} />
+                <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>
+                  Discord — division webhook
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  When set, lifecycle and wallet events go to this URL instead of the global{' '}
+                  <code>DISCORD_WEBHOOK_DIVISIONS</code> channel. Member job posts use the same URL.
+                </Typography>
+                <TextField
+                  label="Discord webhook URL"
+                  placeholder="https://discord.com/api/webhooks/…"
+                  value={dwWebhookUrl}
+                  onChange={(e) => setDwWebhookUrl(e.target.value)}
+                  fullWidth
+                  size="small"
+                  sx={{ mb: 2 }}
+                  helperText="Must start with https://discord.com/api/webhooks/ — create a webhook in your division server channel."
+                />
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                  What to send (only applies when a webhook URL is set above)
+                </Typography>
+                <Stack spacing={0.5} sx={{ mb: 2 }}>
+                  <FormControlLabel
+                    control={<Switch checked={dwNotify.jobDelivered} onChange={(e) => setDwNotify((p) => ({ ...p, jobDelivered: e.target.checked }))} />}
+                    label="Member job deliveries (route, cargo, distance, job value)"
+                  />
+                  <FormControlLabel
+                    control={<Switch checked={dwNotify.jobFuelSummary} onChange={(e) => setDwNotify((p) => ({ ...p, jobFuelSummary: e.target.checked }))} />}
+                    label="Fuel after each job (burned + tank % / liters)"
+                  />
+                  <FormControlLabel
+                    control={<Switch checked={dwNotify.tokenPayoutSummary} onChange={(e) => setDwNotify((p) => ({ ...p, tokenPayoutSummary: e.target.checked }))} />}
+                    label="Token payout snippet (gross, division levy, net to rider)"
+                  />
+                  <FormControlLabel
+                    control={<Switch checked={dwNotify.walletTreasury} onChange={(e) => setDwNotify((p) => ({ ...p, walletTreasury: e.target.checked }))} />}
+                    label="Wallet: payouts, splits, levy refunds"
+                  />
+                  <FormControlLabel
+                    control={<Switch checked={dwNotify.memberLifecycle} onChange={(e) => setDwNotify((p) => ({ ...p, memberLifecycle: e.target.checked }))} />}
+                    label="Members: join requests, kicks, acceptances"
+                  />
+                  <FormControlLabel
+                    control={<Switch checked={dwNotify.fleetGarage} onChange={(e) => setDwNotify((p) => ({ ...p, fleetGarage: e.target.checked }))} />}
+                    label="Fleet: truck purchases & maintenance"
+                  />
+                  <FormControlLabel
+                    control={<Switch checked={dwNotify.divisionSettings} onChange={(e) => setDwNotify((p) => ({ ...p, divisionSettings: e.target.checked }))} />}
+                    label="Admin: created/deleted, leader change, tax % updates"
+                  />
+                </Stack>
+                <Button variant="contained" onClick={saveDiscordWebhook} disabled={savingDiscord}>
+                  {savingDiscord ? 'Saving…' : 'Save Discord settings'}
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
       )}

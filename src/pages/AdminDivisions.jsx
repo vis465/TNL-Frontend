@@ -44,6 +44,7 @@ const emptyForm = {
   leader: null,
   maxMembers: '',
   taxPercent: '0',
+  discordWebhookUrl: '',
 };
 
 export default function AdminDivisions() {
@@ -135,6 +136,7 @@ export default function AdminDivisions() {
         leaderId: createForm.leader._id,
         maxMembers: createForm.maxMembers ? Number(createForm.maxMembers) : null,
         taxPercent: Number(createForm.taxPercent) || 0,
+        discordWebhookUrl: createForm.discordWebhookUrl?.trim() || undefined,
       });
       setCreateOpen(false);
       setCreateForm(emptyForm);
@@ -443,6 +445,14 @@ export default function AdminDivisions() {
                 fullWidth
               />
             </Stack>
+            <TextField
+              label="Discord webhook URL (optional)"
+              placeholder="https://discord.com/api/webhooks/…"
+              value={createForm.discordWebhookUrl}
+              onChange={(e) => setCreateForm((p) => ({ ...p, discordWebhookUrl: e.target.value }))}
+              fullWidth
+              helperText="Division feed + job posts. Configure message toggles on the division admin page after creation."
+            />
           </Stack>
         </DialogContent>
         <DialogActions>
