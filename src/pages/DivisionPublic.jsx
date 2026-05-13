@@ -35,7 +35,7 @@ import EmojiEvents from '@mui/icons-material/EmojiEvents';
 import PersonAddOutlined from '@mui/icons-material/PersonAddOutlined';
 import VerifiedOutlined from '@mui/icons-material/VerifiedOutlined';
 import { motion } from 'framer-motion';
-import { Landmark, Receipt, Sparkles, Users, WalletCards } from 'lucide-react';
+import { Landmark, Receipt, Sparkles, TrendingDown, Users, WalletCards } from 'lucide-react';
 import axiosInstance from '../utils/axios';
 import { getItemWithExpiry } from '../localStorageWithExpiry';
 import DivisionGlobalBanner from '../components/DivisionGlobalBanner';
@@ -495,6 +495,42 @@ export default function DivisionPublic() {
                 </Grid>
               ))}
             </Grid>
+            <Paper
+              variant="outlined"
+              sx={{
+                mt: 2,
+                p: 2.5,
+                borderRadius: 2,
+                borderColor: alpha(p, 0.25),
+                background: alpha(p, theme.palette.mode === 'dark' ? 0.06 : 0.04),
+              }}
+            >
+              <Stack direction="row" spacing={1.5} alignItems="flex-start">
+                <Box
+                  sx={{
+                    p: 1,
+                    borderRadius: 2,
+                    bgcolor: alpha(p, 0.15),
+                    color: 'primary.main',
+                    display: 'flex',
+                  }}
+                >
+                  <TrendingDown size={22} strokeWidth={2.2} />
+                </Box>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    Deduction overview
+                  </Typography>
+                  <Typography variant="h6" fontWeight={900} sx={{ mt: 0.5 }}>
+                    Truck rent: {Math.round(division.stats?.totalTruckRentTokens ?? 0).toLocaleString()} tokens
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
+                    Cumulative tokens sent to the platform as truck rent when division members complete jobs on
+                    marketplace (non–fleet) trucks. Division levy is tracked separately in the division wallet.
+                  </Typography>
+                </Box>
+              </Stack>
+            </Paper>
             <Grid container spacing={2} sx={{ mt: 3 }}>
               <Grid item xs={12} lg={8}>
                 <Card sx={{ borderRadius: 2.5 }}>

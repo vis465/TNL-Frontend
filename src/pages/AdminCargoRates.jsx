@@ -485,7 +485,7 @@ export default function AdminCargoRates() {
                   size="small"
                   label="Min rider share of job tokens (%)"
                   type="number"
-                  helperText="After penalties & platform fee, before division levy & truck rent. E.g. 85 ⇒ division takes ≤15%. Leave empty for no extra cap."
+                  helperText="Applies to the token pool after platform fee, penalties, and truck rent — before division levy (e.g. 85 ⇒ rider keeps ≥85% of that pool, division ≤15%). Leave empty for no extra cap."
                   value={config.minRiderShareOfPreDivisionTokensPercent ?? ''}
                   onChange={(e) => {
                     const raw = e.target.value;

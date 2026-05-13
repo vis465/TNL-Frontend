@@ -380,7 +380,8 @@ export default function TruckMarketplace() {
               <BentoGrid minItemWidth={270} gap={2}>
                 {(brand.models || []).map((model) => {
                   const price = Math.max(0, Number(model.purchasePriceTokens) || 0);
-                  const rent = Math.max(0, Number(model.rentPerJobTokens) || 0);
+                  const rentKm = Math.max(0, Number(model.rentPerKmTokens) || 0);
+                  const rentJob = Math.max(0, Number(model.rentPerJobTokens) || 0);
                   const owned = isOwned(model);
                   const canBuy = isLeader && !!divisionId;
                   const canAfford = price <= divisionBalance;
@@ -417,7 +418,11 @@ export default function TruckMarketplace() {
                           </Stack>
                           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                             <Chip size="small" label={`${price.toLocaleString()} tokens`} sx={{ fontWeight: 600 }} />
-                            {rent > 0 ? <Chip size="small" variant="outlined" label={`${rent}/job rent`} /> : null}
+                            {rentJob > 0 ? (
+                              <Chip size="small" variant="outlined" label={`${rentJob} tok/job rent`} />
+                            ) : rentKm > 0 ? (
+                              <Chip size="small" variant="outlined" label={`${rentKm} tok/km rent`} />
+                            ) : null}
                             <Chip size="small" variant="outlined" label={`Maintenance: ${maintCategory}`} />
                             {Number(model.stock) > 0 ? (
                               <Chip size="small" variant="outlined" label={`Stock ${model.stock}`} />

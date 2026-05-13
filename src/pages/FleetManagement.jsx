@@ -578,12 +578,21 @@ export default function FleetManagement() {
                   const inService = t.blocked && secondsLeft > 0;
                   const needsMaintenance = t.blocked && !inService;
                   const maintenanceCost = Math.max(0, Number(t.maintenanceCost) || 0);
+                  const rentPerKm = Math.max(0, Number(t.rentPerKmTokens) || 0);
                   const rentPerJob = Math.max(0, Number(t.rentPerJobTokens) || 0);
-                  const rentSaved = Math.max(0, Number(t.deliveriesCount) || 0) * rentPerJob;
+                  const odometerKm = Math.max(0, Number(t.odometerKm) || 0);
+                  const deliveries = Math.max(0, Number(t.deliveriesCount) || 0);
+                  const rentSaved =
+                    rentPerJob > 0
+                      ? Math.floor(deliveries * rentPerJob)
+                      : Math.floor(odometerKm * rentPerKm);
+                  const avgKmPerDelivery = deliveries > 0 ? odometerKm / deliveries : odometerKm;
                   const breakEvenJobs =
                     rentPerJob > 0
                       ? Math.ceil(Math.max(0, Number(t.purchasePrice) || 0) / rentPerJob)
-                      : null;
+                      : rentPerKm > 0 && avgKmPerDelivery > 0
+                        ? Math.ceil(Math.max(0, Number(t.purchasePrice) || 0) / (rentPerKm * avgKmPerDelivery))
+                        : null;
                   const maintenanceBorder = needsMaintenance
                     ? theme.palette.error.main
                     : inService
@@ -689,7 +698,7 @@ export default function FleetManagement() {
                             />
                             <Chip
                               size="small"
-                              label={`Rent saved ${rentSaved.toLocaleString()}`}
+                              label={`Rent avoided (est.) ${rentSaved.toLocaleString()} tok`}
                               sx={{
                                 bgcolor: alpha(T.success, 0.12),
                                 border: `1px solid ${alpha(T.success, 0.38)}`,

@@ -110,7 +110,7 @@ export default function DivisionLeaderboard() {
       load(sort, dir, period, month, dailyDate);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [period, month, dailyDate]);
+  }, [period, month, dailyDate, sort, dir]);
 
   const toggleSort = (key) => {
     const nextDir = sort === key ? (dir === 'asc' ? 'desc' : 'asc') : 'desc';

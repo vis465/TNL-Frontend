@@ -57,6 +57,7 @@ const emptyForm = () => ({
   stock: '0',
   resellable: false,
   maxResalePrice: '0',
+  rentPerKmTokens: '0',
   rentPerJobTokens: '0',
   maintenanceCostCategory: '',
   isActive: true,
@@ -86,6 +87,7 @@ function truckToForm(t) {
     stock: t.stock != null ? String(t.stock) : '0',
     resellable: Boolean(t.resellable),
     maxResalePrice: t.maxResalePrice != null ? String(t.maxResalePrice) : '0',
+    rentPerKmTokens: t.rentPerKmTokens != null ? String(t.rentPerKmTokens) : '0',
     rentPerJobTokens: t.rentPerJobTokens != null ? String(t.rentPerJobTokens) : '0',
     maintenanceCostCategory: t.maintenanceCostCategory || t.maintenanceCategory || t.costCategory || '',
     isActive: t.isActive !== false,
@@ -114,6 +116,7 @@ function formToCreatePayload(form) {
     stock: num(form.stock),
     resellable: form.resellable,
     maxResalePrice: num(form.maxResalePrice),
+    rentPerKmTokens: num(form.rentPerKmTokens),
     rentPerJobTokens: num(form.rentPerJobTokens),
     maintenanceCostCategory: form.maintenanceCostCategory.trim() || undefined,
     isActive: form.isActive,
@@ -147,6 +150,7 @@ function formToPatchPayload(form) {
     stock: num(form.stock) ?? 0,
     resellable: form.resellable,
     maxResalePrice: num(form.maxResalePrice) ?? 0,
+    rentPerKmTokens: num(form.rentPerKmTokens) ?? 0,
     rentPerJobTokens: num(form.rentPerJobTokens) ?? 0,
     maintenanceCostCategory: form.maintenanceCostCategory.trim() || undefined,
     isActive: form.isActive,
@@ -316,6 +320,7 @@ export default function AdminTrucks() {
               <TableCell>Game</TableCell>
               <TableCell align="right">Price</TableCell>
               <TableCell align="right">Stock</TableCell>
+              <TableCell align="right">Rent/km</TableCell>
               <TableCell align="right">Rent/job</TableCell>
               <TableCell>Maint. category</TableCell>
               <TableCell>Active</TableCell>
@@ -325,7 +330,7 @@ export default function AdminTrucks() {
           <TableBody>
             {!items.length && !loading && (
               <TableRow>
-                <TableCell colSpan={10} align="center">
+                <TableCell colSpan={12} align="center">
                   <Typography color="text.secondary" sx={{ py: 3 }}>
                     No trucks found.
                   </Typography>
@@ -349,6 +354,7 @@ export default function AdminTrucks() {
                 <TableCell>{row.gameType || '—'}</TableCell>
                 <TableCell align="right">{Number(row.effectivePrice ?? row.price ?? 0).toLocaleString()}</TableCell>
                 <TableCell align="right">{row.stock ?? 0}</TableCell>
+                <TableCell align="right">{row.rentPerKmTokens ?? 0}</TableCell>
                 <TableCell align="right">{row.rentPerJobTokens ?? 0}</TableCell>
                 <TableCell>{row.maintenanceCostCategory || '—'}</TableCell>
                 <TableCell>
@@ -486,10 +492,22 @@ export default function AdminTrucks() {
               <TextField
                 fullWidth
                 size="small"
-                label="Rent / job (tokens)"
+                label="Rent (tokens per km)"
+                type="number"
+                value={form.rentPerKmTokens}
+                onChange={f('rentPerKmTokens')}
+                helperText="Used only if per-job rent is 0: rate × distance (km)."
+              />
+            </Grid>
+            <Grid item xs={6} sm={3}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Rent (tokens per job)"
                 type="number"
                 value={form.rentPerJobTokens}
                 onChange={f('rentPerJobTokens')}
+                helperText="If set above zero, flat rent per completed job (overrides per-km)."
               />
             </Grid>
             <Grid item xs={6} sm={3}>

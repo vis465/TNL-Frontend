@@ -41,6 +41,7 @@ import SpeedOutlined from '@mui/icons-material/SpeedOutlined';
 import PeopleOutlined from '@mui/icons-material/PeopleOutlined';
 import AccountBalanceWalletOutlined from '@mui/icons-material/AccountBalanceWalletOutlined';
 import TrendingUpOutlined from '@mui/icons-material/TrendingUpOutlined';
+import TrendingDownOutlined from '@mui/icons-material/TrendingDownOutlined';
 import WarningAmberOutlined from '@mui/icons-material/WarningAmberOutlined';
 import CheckCircleOutlined from '@mui/icons-material/CheckCircleOutlined';
 import ErrorOutlined from '@mui/icons-material/ErrorOutlined';
@@ -1019,6 +1020,14 @@ export default function MyDivision() {
                       accent={T.textMuted}
                       sub={`avg ${avgFuelPerJob.toFixed(1)} L / job`}
                       delay={0.25}
+                    />
+                    <StatTile
+                      label="Truck rent (members)"
+                      value={Math.round(Number(div?.stats?.totalTruckRentTokens) || 0).toLocaleString()}
+                      icon={TrendingDownOutlined}
+                      accent={T.textMuted}
+                      sub="tokens to bank · marketplace-truck jobs"
+                      delay={0.28}
                     />
                   </Stack>
 
