@@ -18,6 +18,8 @@ import {
   Tab,
   Link,
   Divider,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import TruckThumbAvatar from '../components/TruckThumbAvatar';
 import SearchIcon from '@mui/icons-material/Search';
@@ -27,10 +29,12 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined';
 import AccountBalanceWalletOutlined from '@mui/icons-material/AccountBalanceWalletOutlined';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
   getTruckMarketplaceCatalog,
   purchaseDivisionTruck,
   previewCoupon,
+  getFleetMaintenancePolicy,
 } from '../services/truckMarketplaceService';
 import { getOwnedTrucksFleet } from '../services/fleetService';
 import axiosInstance from '../utils/axios';
@@ -82,6 +86,9 @@ function inferMaintenanceCategory(rawCategory, priceTokens) {
   return 'premium';
 }
 
+/** Defaults match backend `fleetOdometerService` when env is unset. */
+const DEFAULT_POLICY = { wearThresholdKm: 100000, garageRepairMinutes: 120 };
+
 function tabProps(index) {
   return { id: `truck-market-tab-${index}`, 'aria-controls': `truck-market-tabpanel-${index}` };
 }
@@ -111,6 +118,8 @@ export default function TruckMarketplace() {
   const [purchaseLoading, setPurchaseLoading] = useState(false);
   const [purchaseError, setPurchaseError] = useState('');
   const [purchaseOk, setPurchaseOk] = useState('');
+  const [fleetPolicy, setFleetPolicy] = useState(null);
+  const [acceptedMaintenanceTerms, setAcceptedMaintenanceTerms] = useState(false);
 
   const divisionId = myDivisionInfo?.division?._id || null;
   const isLeader = Boolean(myDivisionInfo?.isLeader);
@@ -129,11 +138,20 @@ export default function TruckMarketplace() {
     setError('');
     setPurchaseOk('');
     try {
-      const [cat, owned, div] = await Promise.all([
+      const [cat, owned, div, policy] = await Promise.all([
         getTruckMarketplaceCatalog({ preferApi: false }),
         getOwnedTrucksFleet().catch(() => ({ ownedTrucks: [] })),
         axiosInstance.get('/me/division').then((r) => r.data).catch(() => null),
+        getFleetMaintenancePolicy().catch(() => null),
       ]);
+      setFleetPolicy(
+        policy && Number(policy.wearThresholdKm) > 0
+          ? {
+              wearThresholdKm: Number(policy.wearThresholdKm),
+              garageRepairMinutes: Math.max(1, Number(policy.garageRepairMinutes) || DEFAULT_POLICY.garageRepairMinutes),
+            }
+          : null
+      );
       setBrands(Array.isArray(cat?.brands) ? cat.brands : []);
       setSourceLabel(cat?.source || '');
       setOwnedTrucks(owned?.ownedTrucks || []);
@@ -182,6 +200,7 @@ export default function TruckMarketplace() {
     setPurchaseError('');
     setCouponCode('');
     setCouponPreview(null);
+    setAcceptedMaintenanceTerms(false);
     setConfirmModel({ brandId: brand.id, brandName: brand.name, model });
   };
 
@@ -223,7 +242,8 @@ export default function TruckMarketplace() {
       const res = await purchaseDivisionTruck(
         divisionId,
         confirmModel.model.itemId,
-        couponPreview?.valid ? couponCode.trim() : ''
+        couponPreview?.valid ? couponCode.trim() : '',
+        { acceptedMaintenanceTerms: true }
       );
       setPurchaseOk(
         `Purchased ${confirmModel.model.name} for ${Number(res.effectivePrice || 0).toLocaleString()} tokens.`
@@ -242,6 +262,7 @@ export default function TruckMarketplace() {
   const basePrice = Math.max(0, Number(confirmModel?.model?.purchasePriceTokens) || 0);
   const payable = couponPreview?.valid ? Number(couponPreview.effectivePrice) : basePrice;
   const canAffordConfirm = divisionId && payable <= divisionBalance;
+  const policy = fleetPolicy || DEFAULT_POLICY;
 
   return (
     <MagicPageShell>
@@ -295,6 +316,22 @@ export default function TruckMarketplace() {
         <Alert severity="info" icon={<LockOutlinedIcon />} sx={{ mb: 2 }}>
           Only your division leader can buy trucks. You can still browse the catalogue and see what your division
           already owns.
+        </Alert>
+      )}
+
+      {!loading && (
+        <Alert severity="info" sx={{ mb: 2 }} icon={<InfoOutlinedIcon />}>
+          <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.75 }}>
+            Division fleet maintenance (shared trucks)
+          </Typography>
+          <Typography variant="body2" component="div" sx={{ color: 'text.secondary' }}>
+            Delivered jobs that match a division-owned truck add distance to that truck&apos;s odometer and wear. When
+            accumulated wear reaches <strong>{policy.wearThresholdKm.toLocaleString()} km</strong>, the truck is blocked
+            from accruing more distance until the division pays maintenance from the division wallet. After payment, the
+            truck stays in the garage for about <strong>{policy.garageRepairMinutes} minutes</strong> before it returns
+            to service. Maintenance token cost scales with the truck&apos;s price tier, maintenance category, and age
+            since purchase (see Fleet for live estimates).
+          </Typography>
         </Alert>
       )}
 
@@ -466,7 +503,12 @@ export default function TruckMarketplace() {
         footer={(
           <Stack direction="row" spacing={1}>
             <Button onClick={closeConfirm} disabled={purchaseLoading} variant="outlined" fullWidth>Cancel</Button>
-            <Button variant="contained" onClick={handlePurchase} disabled={purchaseLoading || !canAffordConfirm || !isLeader} fullWidth>
+            <Button
+              variant="contained"
+              onClick={handlePurchase}
+              disabled={purchaseLoading || !canAffordConfirm || !isLeader || !acceptedMaintenanceTerms}
+              fullWidth
+            >
               {purchaseLoading ? 'Processing…' : 'Buy'}
             </Button>
           </Stack>
@@ -512,6 +554,27 @@ export default function TruckMarketplace() {
                 Division wallet balance: {divisionBalance.toLocaleString()} tokens
               </Typography>
               {!canAffordConfirm ? <Alert severity="warning">Insufficient division wallet balance for this purchase.</Alert> : null}
+              <Alert severity="warning" sx={{ py: 1 }}>
+                <Typography variant="body2" fontWeight={600} sx={{ mb: 0.5 }}>
+                  Acknowledge maintenance rules
+                </Typography>
+                <Typography variant="caption" display="block" sx={{ color: T.textMuted, mb: 1 }}>
+                  By purchasing, your division accepts that this truck will require periodic maintenance payments and
+                  garage downtime once the wear threshold is reached ({policy.wearThresholdKm.toLocaleString()} km with
+                  current server settings).
+                </Typography>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={acceptedMaintenanceTerms}
+                      onChange={(e) => setAcceptedMaintenanceTerms(e.target.checked)}
+                      size="small"
+                      disabled={purchaseLoading}
+                    />
+                  }
+                  label="We accept the fleet maintenance rules for division-owned trucks"
+                />
+              </Alert>
               {purchaseError ? <Alert severity="error">{purchaseError}</Alert> : null}
             </Stack>
           </Box>

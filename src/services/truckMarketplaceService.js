@@ -11,11 +11,20 @@ export async function getTruckMarketplaceCatalog({ preferApi = false } = {}) {
  * Purchase a truck for the leader's division. Trucks are division-owned — an
  * individual user can no longer buy trucks.
  */
-export async function purchaseDivisionTruck(divisionId, truckItemId, couponCode) {
+export async function purchaseDivisionTruck(divisionId, truckItemId, couponCode, { acceptedMaintenanceTerms } = {}) {
   const { data } = await axiosInstance.post(
     `/divisions/${encodeURIComponent(divisionId)}/trucks/purchase`,
-    { truckItemId, couponCode: couponCode || undefined }
+    {
+      truckItemId,
+      couponCode: couponCode || undefined,
+      acceptedMaintenanceTerms: Boolean(acceptedMaintenanceTerms),
+    }
   );
+  return data;
+}
+
+export async function getFleetMaintenancePolicy() {
+  const { data } = await axiosInstance.get('/trucks/fleet-maintenance-policy');
   return data;
 }
 
