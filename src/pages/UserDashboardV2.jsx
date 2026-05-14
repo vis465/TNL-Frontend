@@ -743,7 +743,18 @@ export default function UserDashboard() {
                           {attendance?.totalEventsAttended || 0}
                         </Typography>
                       </Box>
-
+                      <Typography sx={{ ...sxLabel, mb: 1.25 }}>Active Attendance Windows</Typography>
+                      {attendanceSubmitMsg && (
+                        <Box sx={{
+                          mb: 1.5, p: '8px 14px',
+                          bgcolor: T.accentDim, border: `1px solid ${alpha(T.accent, 0.2)}`,
+                          borderRadius: T.radiusSm,
+                        }}>
+                          <Typography sx={{ fontFamily: font, fontSize: '0.85rem', color: T.accent, fontWeight: 500 }}>
+                            {attendanceSubmitMsg}
+                          </Typography>
+                        </Box>
+                      )}
                       <Typography sx={{ ...sxLabel, mb: 1.25 }}>Recently Attended</Typography>
                       <Stack spacing={1} sx={{ mb: 2.5 }}>
                         {(attendance?.eventsAttended || []).slice(0, 3).map((e) => (
@@ -783,18 +794,7 @@ export default function UserDashboard() {
                         )}
                       </Stack>
 
-                      <Typography sx={{ ...sxLabel, mb: 1.25 }}>Active Attendance Windows</Typography>
-                      {attendanceSubmitMsg && (
-                        <Box sx={{
-                          mb: 1.5, p: '8px 14px',
-                          bgcolor: T.accentDim, border: `1px solid ${alpha(T.accent, 0.2)}`,
-                          borderRadius: T.radiusSm,
-                        }}>
-                          <Typography sx={{ fontFamily: font, fontSize: '0.85rem', color: T.accent, fontWeight: 500 }}>
-                            {attendanceSubmitMsg}
-                          </Typography>
-                        </Box>
-                      )}
+                      
                       <Stack spacing={1} sx={{ maxHeight: 320, overflowY: 'auto', pr: 0.5 }}>
                         {activeAttendanceEvents.map((ev) => (
                           <Stack key={ev._id} direction="row" alignItems="center" justifyContent="space-between"
