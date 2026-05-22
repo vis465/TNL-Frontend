@@ -68,9 +68,9 @@ export default function DivisionLeaderboard() {
   });
   const [dailyDate, setDailyDate] = useState(() => {
     const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
+    const y = now.getUTCFullYear();
+    const m = String(now.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(now.getUTCDate()).padStart(2, '0');
     return `${y}-${m}-${d}`;
   });
 
@@ -248,7 +248,7 @@ export default function DivisionLeaderboard() {
           period === 'monthly'
             ? `Monthly division rankings for ${formatMonthLabel(month)}.`
             : period === 'daily'
-              ? `Daily division rankings for ${formatDayLabel(dailyDate)} (UTC day by approval time).`
+              ? `Daily division rankings for ${formatDayLabel(dailyDate)} (UTC calendar day; jobs by delivery time, attendance by approval time).`
               : 'Live inter-division rankings by attendance, scale, and execution. Explore top contenders or drill into the complete ecosystem.'
         }
         stats={[

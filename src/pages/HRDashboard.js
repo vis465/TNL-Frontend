@@ -89,6 +89,7 @@ const HRDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [attendanceSearchTerm, setAttendanceSearchTerm] = useState('');
   const [attendanceEventDateFilter, setAttendanceEventDateFilter] = useState('');
+  const [attendanceEventTimeFilter, setAttendanceEventTimeFilter] = useState('future');
   const [attendanceEventPage, setAttendanceEventPage] = useState(1);
   const [expandedAttendanceMonths, setExpandedAttendanceMonths] = useState({});
   
@@ -411,17 +412,16 @@ const HRDashboard = () => {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
-  const upcomingAttendanceEvents = attendanceEvents
-    .filter((event) => {
-      const eventDate = new Date(event.eventDate);
-      return eventDate >= todayStart;
-    })
+  const futureAttendanceEvents = attendanceEvents
+    .filter((event) => new Date(event.eventDate) >= todayStart)
     .sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate));
 
+  const pastAttendanceEvents = attendanceEvents
+    .filter((event) => new Date(event.eventDate) < todayStart)
+    .sort((a, b) => new Date(b.eventDate) - new Date(a.eventDate));
+
   const attendanceEventsBaseList =
-    upcomingAttendanceEvents.length > 0
-      ? upcomingAttendanceEvents
-      : [...attendanceEvents].sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate));
+    attendanceEventTimeFilter === 'past' ? pastAttendanceEvents : futureAttendanceEvents;
 
   const attendanceEventsFilteredByDate = attendanceEventDateFilter
     ? attendanceEventsBaseList.filter((event) => {
@@ -460,7 +460,7 @@ const HRDashboard = () => {
 
   useEffect(() => {
     setAttendanceEventPage(1);
-  }, [attendanceEventDateFilter, attendanceEvents.length]);
+  }, [attendanceEventDateFilter, attendanceEventTimeFilter, attendanceEvents.length]);
 
   const handleViewEventDetails = async (event) => {
     try {
@@ -794,7 +794,21 @@ const HRDashboard = () => {
             <Typography variant="h6" gutterBottom>
               Attendance Events Management ({attendanceEvents.length})
             </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+              <Button
+                variant={attendanceEventTimeFilter === 'future' ? 'contained' : 'outlined'}
+                size="small"
+                onClick={() => setAttendanceEventTimeFilter('future')}
+              >
+                Upcoming ({futureAttendanceEvents.length})
+              </Button>
+              <Button
+                variant={attendanceEventTimeFilter === 'past' ? 'contained' : 'outlined'}
+                size="small"
+                onClick={() => setAttendanceEventTimeFilter('past')}
+              >
+                Past ({pastAttendanceEvents.length})
+              </Button>
               <TextField
                 type="date"
                 size="small"
@@ -827,6 +841,13 @@ const HRDashboard = () => {
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Create your first attendance event to start tracking rider attendance
+              </Typography>
+            </Paper>
+          ) : attendanceEventsFilteredByDate.length === 0 ? (
+            <Paper sx={{ p: 4, textAlign: 'center' }}>
+              <Typography variant="body1" color="text.secondary">
+                No {attendanceEventTimeFilter === 'past' ? 'past' : 'upcoming'} attendance events
+                {attendanceEventDateFilter ? ' for the selected date' : ''}.
               </Typography>
             </Paper>
           ) : (

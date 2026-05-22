@@ -69,6 +69,7 @@ const AttendanceManagement = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [eventFilter, setEventFilter] = useState('all');
+  const [attendanceEventTimeFilter, setAttendanceEventTimeFilter] = useState('future');
   const [statusFilter, setStatusFilter] = useState('all');
   const [user, setUser] = useState(null);
   
@@ -245,6 +246,17 @@ const AttendanceManagement = () => {
   };
 
   const stats = getAttendanceStats();
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const futureAttendanceEvents = attendanceEvents
+    .filter((event) => new Date(event.eventDate) >= todayStart)
+    .sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate));
+  const pastAttendanceEvents = attendanceEvents
+    .filter((event) => new Date(event.eventDate) < todayStart)
+    .sort((a, b) => new Date(b.eventDate) - new Date(a.eventDate));
+  const filteredAttendanceEvents =
+    attendanceEventTimeFilter === 'past' ? pastAttendanceEvents : futureAttendanceEvents;
 
   if (loading) {
     return (
@@ -638,15 +650,31 @@ const AttendanceManagement = () => {
       {activeTab === 3 && (
         <Paper sx={{ borderRadius: 2, overflow: 'auto' }}>
           <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }} flexWrap="wrap" gap={1}>
               <Typography variant="h6">Attendance Events Management</Typography>
-              <Button
-                variant="contained"
-                startIcon={<Add />}
-                onClick={() => setEventDialogOpen(true)}
-              >
-                Create Event
-              </Button>
+              <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                <Button
+                  variant={attendanceEventTimeFilter === 'future' ? 'contained' : 'outlined'}
+                  size="small"
+                  onClick={() => setAttendanceEventTimeFilter('future')}
+                >
+                  Upcoming ({futureAttendanceEvents.length})
+                </Button>
+                <Button
+                  variant={attendanceEventTimeFilter === 'past' ? 'contained' : 'outlined'}
+                  size="small"
+                  onClick={() => setAttendanceEventTimeFilter('past')}
+                >
+                  Past ({pastAttendanceEvents.length})
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<Add />}
+                  onClick={() => setEventDialogOpen(true)}
+                >
+                  Create Event
+                </Button>
+              </Stack>
             </Stack>
           </Box>
           
@@ -664,7 +692,15 @@ const AttendanceManagement = () => {
                   </TableRow>
               </TableHead>
               <TableBody>
-                {attendanceEvents.map((event) => (
+                {filteredAttendanceEvents.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7}>
+                      <Alert severity="info">
+                        No {attendanceEventTimeFilter === 'past' ? 'past' : 'upcoming'} attendance events.
+                      </Alert>
+                    </TableCell>
+                  </TableRow>
+                ) : filteredAttendanceEvents.map((event) => (
                   <TableRow key={event._id}>
                     <TableCell>
                       <Box>
