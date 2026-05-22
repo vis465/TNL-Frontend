@@ -42,6 +42,8 @@ import axiosInstance from '../utils/axios';
 import { getItemWithExpiry } from '../localStorageWithExpiry';
 import MagicPageShell from '../components/magicui/MagicPageShell';
 import AnimatedTabPanel from '../components/magicui/AnimatedTabPanel';
+import DivisionWalletTransactionsPanel from '../components/division/DivisionWalletTransactionsPanel';
+import MemberNudgeDialog from '../components/division/MemberNudgeDialog';
 
 const DIVISION_FUEL_CAPACITY_L = 20_000;
 
@@ -62,7 +64,7 @@ export default function AdminDivisionDetail() {
   const [division, setDivision] = useState(null);
   const [members, setMembers] = useState([]);
   const [lb, setLb] = useState([]);
-  const [txns, setTxns] = useState([]);
+  const [nudgeOpen, setNudgeOpen] = useState(false);
   const [invites, setInvites] = useState([]);
   const [joinRequests, setJoinRequests] = useState([]);
   const [inactivityDays, setInactivityDays] = useState(14);
@@ -127,10 +129,9 @@ export default function AdminDivisionDetail() {
       }
       setAttendanceSummary(data.attendanceSummary || null);
       setTaxPct(String(data.division?.taxPercent ?? 0));
-      const [m, l, t, inv, jr, invest] = await Promise.all([
+      const [m, l, inv, jr, invest] = await Promise.all([
         axiosInstance.get(`/divisions/${id}/members`),
         axiosInstance.get(`/divisions/${id}/leaderboard`),
-        axiosInstance.get(`/divisions/${id}/wallet/transactions`),
         axiosInstance.get(`/divisions/${id}/invites`),
         axiosInstance.get(`/divisions/${id}/join-requests`).catch(() => ({ data: { requests: [] } })),
         axiosInstance.get(`/divisions/${id}/investments/summary`).catch(() => ({ data: { totalInvested: 0, byRider: [] } })),
@@ -138,7 +139,6 @@ export default function AdminDivisionDetail() {
       setMembers(m.data.members || []);
       setInactivityDays(Number(m.data.inactivityDays) || 14);
       setLb(l.data.riders || []);
-      setTxns(t.data.transactions || []);
       setInvites(inv.data.invites || []);
       setJoinRequests(jr.data.requests || []);
       setInvestmentSummary({
@@ -788,14 +788,21 @@ export default function AdminDivisionDetail() {
                         <> · <Chip size="small" color="warning" label={`${inactiveCount} inactive`} sx={{ ml: 0.5 }} /></>
                       )}
                     </Typography>
-                    <Button
-                      size="small"
-                      variant={onlyInactive ? 'contained' : 'outlined'}
-                      color="warning"
-                      onClick={() => setOnlyInactive((v) => !v)}
-                    >
-                      {onlyInactive ? 'Showing inactive only' : 'Filter inactive'}
-                    </Button>
+                    <Stack direction="row" spacing={1}>
+                      <Button
+                        size="small"
+                        variant={onlyInactive ? 'contained' : 'outlined'}
+                        color="warning"
+                        onClick={() => setOnlyInactive((v) => !v)}
+                      >
+                        {onlyInactive ? 'Showing inactive only' : 'Filter inactive'}
+                      </Button>
+                      {canStaff && inactiveCount > 0 && (
+                        <Button size="small" variant="outlined" onClick={() => setNudgeOpen(true)}>
+                          Nudge templates…
+                        </Button>
+                      )}
+                    </Stack>
                   </Stack>
                   <Table size="small">
                     <TableHead>
@@ -966,34 +973,7 @@ export default function AdminDivisionDetail() {
           </Card>
           <Card>
             <CardContent>
-              <Typography fontWeight={700} sx={{ mb: 1 }}>Recent transactions</Typography>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Date</TableCell>
-                    <TableCell>Type</TableCell>
-                    <TableCell align="right">Amount</TableCell>
-                    <TableCell>Title</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {txns.map((t) => (
-                    <TableRow key={t._id}>
-                      <TableCell>{new Date(t.createdAt).toLocaleString()}</TableCell>
-                      <TableCell>{t.type} / {t.source?.kind}</TableCell>
-                      <TableCell align="right">{t.amount?.toLocaleString?.() ?? t.amount}</TableCell>
-                      <TableCell>{t.title}</TableCell>
-                    </TableRow>
-                  ))}
-                  {!txns.length && (
-                    <TableRow>
-                      <TableCell colSpan={4} align="center">
-                        <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>No transactions yet.</Typography>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+              <DivisionWalletTransactionsPanel divisionId={id} title="Recent transactions" limit={80} dense />
             </CardContent>
           </Card>
 
@@ -1240,9 +1220,22 @@ export default function AdminDivisionDetail() {
                   tax contribution for matching jobs until maintenance is paid.
                 </Typography>
               </Box>
-              <Button size="small" variant="outlined" onClick={loadTrucks} disabled={trucksLoading}>
-                {trucksLoading ? 'Loading…' : 'Refresh'}
-              </Button>
+              <Stack direction="row" spacing={1}>
+                {canStaff && (
+                  <Button
+                    size="small"
+                    variant="contained"
+                    color="warning"
+                    component={RouterLink}
+                    to={`/admin/operations/fleet-odometer?divisionId=${id}`}
+                  >
+                    Fix odometer…
+                  </Button>
+                )}
+                <Button size="small" variant="outlined" onClick={loadTrucks} disabled={trucksLoading}>
+                  {trucksLoading ? 'Loading…' : 'Refresh'}
+                </Button>
+              </Stack>
             </Stack>
             {trucksLoading && <LinearProgress sx={{ mb: 1 }} />}
             <Table size="small">
@@ -1635,6 +1628,14 @@ export default function AdminDivisionDetail() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <MemberNudgeDialog
+        open={nudgeOpen}
+        onClose={() => setNudgeOpen(false)}
+        divisionName={division?.name || 'Division'}
+        inactivityDays={inactivityDays}
+        inactiveMembers={members.filter((m) => m.inactive && !m.isLeader)}
+      />
     </Container>
     </MagicPageShell>
   );

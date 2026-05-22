@@ -41,6 +41,7 @@ import LocalGasStation from '@mui/icons-material/LocalGasStation';
 import BarChartOutlined from '@mui/icons-material/BarChartOutlined';
 import SensorsOutlined from '@mui/icons-material/SensorsOutlined';
 import HistoryOutlined from '@mui/icons-material/HistoryOutlined';
+import BuildOutlined from '@mui/icons-material/BuildOutlined';
 
 /** Staff roles that can open /admin (matches App.js admin layout gate). */
 export const STAFF_ROLES = ['admin', 'eventteam', 'hrteam', 'financeteam', 'communityManager'];
@@ -251,6 +252,12 @@ export const ADMIN_SECTIONS = [
         Icon: LocalOfferOutlined,
         roles: ['admin'],
       },
+      {
+        to: '/admin/operations',
+        label: 'Maintenance tools',
+        Icon: BuildOutlined,
+        roles: ['admin', 'communityManager'],
+      },
     ],
   },
   {
@@ -310,7 +317,7 @@ export const ADMIN_DASHBOARD_CARDS = [
   {
     group: 'Events & operations',
     title: 'Analytics',
-    description: 'Event, attendance, and engagement analytics.',
+    description: 'KPI dashboard with delivery trends, engagement, and fleet insights.',
     to: '/admin/analytics',
     icon: AnalyticsOutlined,
     color: 'info',
@@ -450,6 +457,15 @@ export const ADMIN_DASHBOARD_CARDS = [
     icon: LocalOfferOutlined,
     color: 'success',
     roles: ['admin'],
+  },
+  {
+    group: 'Divisions',
+    title: 'Maintenance tools',
+    description: 'Fleet odometer backfill and other safe data repairs (preview before apply).',
+    to: '/admin/operations',
+    icon: BuildOutlined,
+    color: 'warning',
+    roles: ['admin', 'communityManager'],
   },
   {
     group: 'Finance',

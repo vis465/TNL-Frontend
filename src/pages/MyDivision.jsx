@@ -66,6 +66,9 @@ import {
 } from '../services/loanService';
 import DivisionGlobalBanner from '../components/DivisionGlobalBanner';
 import MagicPageShell from '../components/magicui/MagicPageShell';
+import DivisionWalletTransactionsPanel from '../components/division/DivisionWalletTransactionsPanel';
+import MemberNudgeDialog from '../components/division/MemberNudgeDialog';
+import { computeDivisionLeaderInsights } from '../utils/divisionLeaderInsights';
 
 // ─── design tokens ───────────────────────────────────────────────────────────
 const T = {
@@ -546,6 +549,10 @@ export default function MyDivision() {
   const [investNote, setInvestNote] = useState('');
   const [leaderToolTab, setLeaderToolTab] = useState(0);
   const [tabKey, setTabKey] = useState(0); // for re-mount animation
+  const [inactivityDays, setInactivityDays] = useState(14);
+  const [nudgeOpen, setNudgeOpen] = useState(false);
+  const [dayStats, setDayStats] = useState(null);
+  const [dayStatsLoading, setDayStatsLoading] = useState(false);
 
   const sortedLb = useMemo(() => {
     const rows = [...lb];
@@ -601,6 +608,7 @@ export default function MyDivision() {
         ]);
         setLb(l.riders || []);
         setMembers(m.members || []);
+        setInactivityDays(Number(m.inactivityDays) || 14);
         setFleetTrucks(Array.isArray(fleet?.trucks) ? fleet.trucks : []);
         setTaxPct(String(resolvedDivision.taxPercent ?? 0));
         setDivisionLoans(Array.isArray(divisionLoansRes) ? divisionLoansRes : []);
@@ -648,6 +656,18 @@ export default function MyDivision() {
   const coLeaderIds = Array.isArray(div?.coLeaderUserIds) ? div.coLeaderUserIds.map((x) => String(x)) : [];
   const isCoLeader = Boolean(uid && coLeaderIds.includes(uid));
   const canManageFuel = isLeader || isCoLeader || isAdmin || user?.role === 'communityManager';
+  const canViewWalletTx = isLeader || isCoLeader || isAdmin || user?.role === 'communityManager';
+  const canNudgeMembers = canViewWalletTx;
+
+  const leaderInsights = useMemo(
+    () => computeDivisionLeaderInsights({ division: div, fleetTrucks }),
+    [div, fleetTrucks]
+  );
+
+  const inactiveMembers = useMemo(
+    () => members.filter((m) => m.inactive && !m.isLeader),
+    [members]
+  );
 
   const fleetSummary = useMemo(() => {
     const total = fleetTrucks.length;
@@ -712,6 +732,31 @@ export default function MyDivision() {
   }, [isLeader, div?._id, inviteQuery]);
 
   useEffect(() => { loadLeaderQueues(div?._id); }, [div?._id, isLeader]);
+
+  const dayParam = searchParams.get('day') || '';
+  useEffect(() => {
+    if (!div?._id || !dayParam || !/^\d{4}-\d{2}-\d{2}$/.test(dayParam)) {
+      setDayStats(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setDayStatsLoading(true);
+      try {
+        const { data } = await axiosInstance.get(`/divisions/${div._id}/stats/day`, {
+          params: { date: dayParam },
+        });
+        if (!cancelled) setDayStats(data);
+      } catch (_) {
+        if (!cancelled) setDayStats(null);
+      } finally {
+        if (!cancelled) setDayStatsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [div?._id, dayParam]);
 
   useEffect(() => {
     const loadPlans = async () => {
@@ -1029,7 +1074,84 @@ export default function MyDivision() {
                       sub="tokens to bank · marketplace-truck jobs"
                       delay={0.28}
                     />
+                    {canViewWalletTx && leaderInsights.runwayDays != null && (
+                      <StatTile
+                        label="Fuel runway"
+                        value={`~${leaderInsights.runwayDays}d`}
+                        icon={LocalGasStationOutlined}
+                        accent={leaderInsights.runwayDays < 7 ? T.warn : T.info}
+                        sub={`~${leaderInsights.avgDailyFuelBurn} L/day burn`}
+                        delay={0.3}
+                      />
+                    )}
                   </Stack>
+
+                  {dayParam && canViewWalletTx && (
+                    <Alert severity="info" sx={{ mb: 0 }}>
+                      {dayStatsLoading ? (
+                        'Loading daily stats…'
+                      ) : dayStats?.stats ? (
+                        <>
+                          <strong>UTC day {dayStats.dayKey}:</strong>{' '}
+                          {dayStats.stats.totalJobs} jobs · {Math.round(dayStats.stats.totalDistance).toLocaleString()} km ·{' '}
+                          {Math.round(dayStats.stats.totalFuelBurned).toLocaleString()} L fuel ·{' '}
+                          {Math.round(dayStats.stats.totalTaxTokens).toLocaleString()} tax tokens
+                        </>
+                      ) : (
+                        <>No recorded activity for UTC day <strong>{dayParam}</strong> (division may not appear on daily leaderboard).</>
+                      )}
+                    </Alert>
+                  )}
+
+                  {canViewWalletTx && (
+                    <Box className="anim-fade-up stagger-2" sx={{ ...sx.card, p: 2.5 }}>
+                      <SectionHeader label="Leader alerts" icon={DashboardOutlined} />
+                      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 1.5 }}>
+                        <Box sx={sx.pill(leaderInsights.runwayDays != null && leaderInsights.runwayDays < 7 ? T.warnDim : T.successDim, leaderInsights.runwayDays != null && leaderInsights.runwayDays < 7 ? T.warn : T.success)}>
+                          Fuel runway: {leaderInsights.runwayDays != null ? `~${leaderInsights.runwayDays} days` : '—'} ({leaderInsights.totalFuel.toLocaleString()} L in tank)
+                        </Box>
+                        {leaderInsights.wearHighCount > 0 && (
+                          <Box sx={sx.pill(T.warnDim, T.warn)}>{leaderInsights.wearHighCount} truck(s) high wear (70%+)</Box>
+                        )}
+                        {leaderInsights.blockedCount > 0 && (
+                          <Box sx={sx.pill(T.dangerDim, T.danger)}>{leaderInsights.blockedCount} maintenance due</Box>
+                        )}
+                        {inactiveMembers.length > 0 && (
+                          <Box sx={sx.pill(T.warnDim, T.warn)}>{inactiveMembers.length} inactive member(s)</Box>
+                        )}
+                      </Stack>
+                      {(leaderInsights.wearAlerts.length > 0 || leaderInsights.maintenanceDue.length > 0) && (
+                        <Stack spacing={0.75} sx={{ mb: 1.5 }}>
+                          {leaderInsights.wearAlerts.slice(0, 4).map((a) => (
+                            <Typography key={a.id} sx={{ fontFamily: T.mono, fontSize: '11px', color: T.textMuted }}>
+                              Wear: {a.label} — {a.wearPct}% ({a.odometerKm.toLocaleString()} km)
+                            </Typography>
+                          ))}
+                          {leaderInsights.maintenanceDue.slice(0, 4).map((a) => (
+                            <Typography key={a.id} sx={{ fontFamily: T.mono, fontSize: '11px', color: T.warn }}>
+                              Maintenance: {a.label}
+                              {a.inGarage && a.repairSecondsRemaining > 0
+                                ? ` — garage ${Math.ceil(a.repairSecondsRemaining / 60)} min`
+                                : ` — ${Math.round(a.maintenanceCost).toLocaleString()} tokens`}
+                            </Typography>
+                          ))}
+                        </Stack>
+                      )}
+                      <Stack direction="row" spacing={1} flexWrap="wrap">
+                        <Button size="small" variant="outlined" sx={btnSx.outlined} onClick={() => setTabAndSyncQuery(2)}>
+                          Fleet
+                        </Button>
+                        <Button size="small" variant="outlined" component={RouterLink} to="/division/fuel" sx={btnSx.outlined}>
+                          Fuel market
+                        </Button>
+                        {inactiveMembers.length > 0 && (
+                          <Button size="small" variant="contained" color="warning" onClick={() => setNudgeOpen(true)}>
+                            Nudge inactive ({inactiveMembers.length})
+                          </Button>
+                        )}
+                      </Stack>
+                    </Box>
+                  )}
 
                   {/* ── Fuel status ── */}
                   <Box className="anim-fade-up stagger-3" sx={sx.card}>
@@ -1281,8 +1403,7 @@ export default function MyDivision() {
                             </Box>
                           )}
 
-                          {isLeader && (() => {
-                            const inactiveMembers = members.filter((m) => m.inactive && !m.isLeader);
+                          {canNudgeMembers && (() => {
                             if (!inactiveMembers.length) return null;
                             return (
                               <Box sx={{ p: 2, borderRadius: 1.5, border: `1px solid ${T.warnDim}`, bgcolor: T.warnDim }}>
@@ -1290,9 +1411,12 @@ export default function MyDivision() {
                                   <WarningAmberOutlined sx={{ fontSize: 16, color: T.warn }} />
                                   <Typography sx={{ ...sx.sectionTitle, color: T.warn }}>Attention needed</Typography>
                                   <Box sx={sx.pill(T.warnDim, T.warn)}>{inactiveMembers.length} inactive</Box>
+                                  <Button size="small" variant="outlined" sx={{ ml: 'auto', ...btnSx.outlined }} onClick={() => setNudgeOpen(true)}>
+                                    Nudge…
+                                  </Button>
                                 </Stack>
                                 <Typography sx={{ color: T.textMuted, fontSize: '12px', mb: 1.5 }}>
-                                  These members haven't logged a job recently.
+                                  No delivery in {inactivityDays}+ days — copy a Discord or email template (no auto-send).
                                 </Typography>
                                 <Stack spacing={0.75}>
                                   {inactiveMembers.slice(0, 8).map((m) => (
@@ -1429,7 +1553,7 @@ export default function MyDivision() {
                       {/* ── PEOPLE ── */}
                       {activeTab === 1 && (
                         <Stack spacing={2.5}>
-                          {isLeader && (
+                          {canViewWalletTx && (
                             <Box sx={{ border: `1px solid ${T.border}`, borderRadius: 1.5, overflow: 'hidden' }}>
                               <Box sx={{ px: 2.5, pt: 2, pb: 0, bgcolor: T.bg }}>
                                 <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
@@ -1572,6 +1696,16 @@ export default function MyDivision() {
 
                                 {leaderToolTab === 2 && (
                                   <Stack spacing={2.5}>
+                                    {canViewWalletTx && div?._id && (
+                                      <Box sx={{ p: 2, borderRadius: 1.5, border: `1px solid ${T.border}`, bgcolor: T.bg }}>
+                                        <DivisionWalletTransactionsPanel
+                                          divisionId={div._id}
+                                          title="Division wallet history"
+                                          limit={40}
+                                          dense
+                                        />
+                                      </Box>
+                                    )}
                                     <Box>
                                       <Typography sx={{ ...sx.label, mb: 1.25 }}>Pay member from division wallet</Typography>
                                       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} flexWrap="wrap" useFlexGap>
@@ -2022,6 +2156,18 @@ export default function MyDivision() {
               <Button sx={btnSx.primary} onClick={saveTax} disabled={!div?._id}>Save</Button>
             </DialogActions>
           </Dialog>
+
+          <MemberNudgeDialog
+            open={nudgeOpen}
+            onClose={() => setNudgeOpen(false)}
+            divisionName={div?.name || 'Division'}
+            inactivityDays={inactivityDays}
+            inactiveMembers={inactiveMembers}
+            fuelSummary={{
+              totalFuel: leaderInsights.totalFuel,
+              runwayDays: leaderInsights.runwayDays,
+            }}
+          />
 
         </Container>
       </Box>

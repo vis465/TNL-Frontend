@@ -21,8 +21,10 @@ import {
   TextField,
   ToggleButton,
   ToggleButtonGroup,
+  Tooltip,
   Typography,
 } from '@mui/material';
+import InfoOutlined from '@mui/icons-material/InfoOutlined';
 import EmojiEvents from '@mui/icons-material/EmojiEvents';
 import DownloadOutlined from '@mui/icons-material/DownloadOutlined';
 import { Link as RouterLink } from 'react-router-dom';
@@ -73,6 +75,7 @@ export default function DivisionLeaderboard() {
     const d = String(now.getUTCDate()).padStart(2, '0');
     return `${y}-${m}-${d}`;
   });
+  const [myDivisionId, setMyDivisionId] = useState(null);
 
   const load = async (
     nextSort = sort,
@@ -111,6 +114,21 @@ export default function DivisionLeaderboard() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period, month, dailyDate, sort, dir]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    (async () => {
+      try {
+        const { data } = await axiosInstance.get('/me/division');
+        const d = data?.division;
+        if (d?._id) {
+          setMyDivisionId(String(d._id));
+        }
+      } catch (_) {
+        setMyDivisionId(null);
+      }
+    })();
+  }, [isAuthenticated]);
 
   const toggleSort = (key) => {
     const nextDir = sort === key ? (dir === 'asc' ? 'desc' : 'asc') : 'desc';
@@ -289,8 +307,32 @@ export default function DivisionLeaderboard() {
         >
           <ToggleButton value="all-time">All time</ToggleButton>
           <ToggleButton value="monthly">Monthly</ToggleButton>
-          <ToggleButton value="daily">Daily</ToggleButton>
+          <ToggleButton value="daily">
+            Daily
+            <Tooltip
+              title={
+                period === 'daily'
+                  ? `Only divisions with activity on ${dailyDate} (UTC calendar day) appear. Jobs count by delivery time; attendance by approval time. Empty list means no division had jobs or attendance that UTC day.`
+                  : 'Daily rankings use a UTC calendar day. Only divisions with jobs or attendance that day are listed.'
+              }
+              arrow
+              placement="top"
+            >
+              <InfoOutlined sx={{ fontSize: 14, ml: 0.75, opacity: 0.85 }} />
+            </Tooltip>
+          </ToggleButton>
         </ToggleButtonGroup>
+        {period === 'daily' && myDivisionId && (
+          <Button
+            component={RouterLink}
+            to={`/division?day=${dailyDate}`}
+            size="small"
+            variant="outlined"
+            sx={{ borderColor: T.border, color: T.textMuted, fontFamily: T.mono, textTransform: 'none' }}
+          >
+            Your division · {dailyDate} stats
+          </Button>
+        )}
         {period === 'monthly' && (
           <TextField
             type="month"

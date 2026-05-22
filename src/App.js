@@ -119,6 +119,8 @@ import DivisionsIndex from "./pages/DivisionsIndex";
 import AdminCoupons from "./pages/AdminCoupons";
 import AdminVtcMonthlyStats from "./pages/AdminVtcMonthlyStats";
 import AdminAuditLogs from "./pages/AdminAuditLogs";
+import AdminOperations from "./pages/admin/AdminOperations";
+import FleetOdometerBackfill from "./pages/admin/FleetOdometerBackfill";
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -817,6 +819,22 @@ function App() {
                             ]}
                           >
                             <AdminAuditLogs />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="operations"
+                        element={
+                          <PrivateRoute allowedRoles={["admin", "communityManager"]}>
+                            <AdminOperations />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="operations/fleet-odometer"
+                        element={
+                          <PrivateRoute allowedRoles={["admin", "communityManager"]}>
+                            <FleetOdometerBackfill />
                           </PrivateRoute>
                         }
                       />
