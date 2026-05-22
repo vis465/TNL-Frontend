@@ -20,7 +20,10 @@ import {
   AccordionDetails,
   TextField,
   InputAdornment,
-  Grid
+  Grid,
+  Stack,
+  ToggleButton,
+  ToggleButtonGroup
 } from '@mui/material';
 import {
   Event as EventIcon,
@@ -42,24 +45,38 @@ import axiosInstance from '../utils/axios';
 const PublicAttendance = () => {
   const [events, setEvents] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
+  const [leaderboardPeriod, setLeaderboardPeriod] = useState('all-time');
+  const [leaderboardMonth, setLeaderboardMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchAttendanceData();
+  }, [leaderboardPeriod, leaderboardMonth]);
+
+  useEffect(() => {
     fetchLeaderboard();
-  }, []);
+  }, [leaderboardPeriod, leaderboardMonth]);
+
+  const monthParams = () =>
+    leaderboardPeriod === 'monthly' && leaderboardMonth ? { month: leaderboardMonth } : {};
 
   const fetchAttendanceData = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/attendance-events/public/attendance');
-      setEvents(response.data);
-      console.log(response.data);
-    } catch (error) {
+      const response = await axiosInstance.get('/attendance-events/public/attendance', {
+        params: monthParams(),
+      });
+      const data = response.data;
+      const list = Array.isArray(data) ? data : data?.events || [];
+      setEvents(list);
+    } catch (err) {
       setError('Failed to load attendance data');
-      console.error('Error fetching attendance data:', error);
+      console.error('Error fetching attendance data:', err);
     } finally {
       setLoading(false);
     }
@@ -67,11 +84,22 @@ const PublicAttendance = () => {
 
   const fetchLeaderboard = async () => {
     try {
-      const response = await axiosInstance.get('/attendance-events/public/leaderboard?limit=10');
-      setLeaderboard(response.data);
-    } catch (error) {
-      console.error('Error fetching leaderboard:', error);
+      const response = await axiosInstance.get('/attendance-events/public/leaderboard', {
+        params: { limit: 10, ...monthParams() },
+      });
+      const data = response.data;
+      setLeaderboard(Array.isArray(data) ? data : data?.leaderboard || []);
+    } catch (err) {
+      console.error('Error fetching leaderboard:', err);
     }
+  };
+
+  const formatMonthLabel = (value) => {
+    if (!value) return '';
+    const [year, monthPart] = String(value).split('-');
+    const date = new Date(`${year}-${monthPart}-01`);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
   };
 
   const filteredEvents = events.filter(event =>
@@ -181,12 +209,41 @@ const PublicAttendance = () => {
 
       {/* Leaderboard Section */}
       <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <LeaderboardIcon sx={{ mr: 1, color: 'primary.main', fontSize: 32 }} />
-          <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-            Attendance Leaderboard
-          </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <LeaderboardIcon sx={{ mr: 1, color: 'primary.main', fontSize: 32 }} />
+            <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+              Attendance Leaderboard
+            </Typography>
+          </Box>
+          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+            <ToggleButtonGroup
+              value={leaderboardPeriod}
+              exclusive
+              size="small"
+              onChange={(_, value) => value && setLeaderboardPeriod(value)}
+            >
+              <ToggleButton value="all-time">All time</ToggleButton>
+              <ToggleButton value="monthly">Monthly</ToggleButton>
+            </ToggleButtonGroup>
+            {leaderboardPeriod === 'monthly' && (
+              <TextField
+                type="month"
+                label="Month (UTC)"
+                value={leaderboardMonth}
+                onChange={(e) => setLeaderboardMonth(e.target.value)}
+                size="small"
+                InputLabelProps={{ shrink: true }}
+                sx={{ minWidth: 160 }}
+              />
+            )}
+          </Stack>
         </Box>
+        {leaderboardPeriod === 'monthly' && (
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Rankings for {formatMonthLabel(leaderboardMonth)} by approval/mark time (UTC).
+          </Typography>
+        )}
         
         {leaderboard.length > 0 ? (
           <Grid container spacing={2}>
