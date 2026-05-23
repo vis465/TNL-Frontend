@@ -55,6 +55,8 @@ import OpenInNewOutlined from '@mui/icons-material/OpenInNewOutlined';
 import MonetizationOnOutlined from '@mui/icons-material/MonetizationOnOutlined';
 import SecurityOutlined from '@mui/icons-material/SecurityOutlined';
 import AssignmentOutlined from '@mui/icons-material/AssignmentOutlined';
+import FlagOutlined from '@mui/icons-material/FlagOutlined';
+import LightbulbOutlined from '@mui/icons-material/LightbulbOutlined';
 import axiosInstance from '../utils/axios';
 import { getItemWithExpiry } from '../localStorageWithExpiry';
 import { getDivisionTrucks } from '../services/fleetService';
@@ -69,6 +71,8 @@ import MagicPageShell from '../components/magicui/MagicPageShell';
 import DivisionWalletTransactionsPanel from '../components/division/DivisionWalletTransactionsPanel';
 import MemberNudgeDialog from '../components/division/MemberNudgeDialog';
 import { computeDivisionLeaderInsights } from '../utils/divisionLeaderInsights';
+import { canShowDivisionInvest } from '../utils/divisionInvestUi';
+import { formatGoalValue } from '../utils/divisionWeeklyGoals';
 
 // ─── design tokens ───────────────────────────────────────────────────────────
 const T = {
@@ -95,6 +99,23 @@ const T = {
   premiumDim: 'rgba(250,204,21,0.10)',
   mono: '"Montserrat", "Helvetica", sans-serif',
   sans: '"DM Sans", "Nunito", system-ui, sans-serif',
+  bg: '#12151c',
+  surface: '#161a22',
+};
+
+/** Readable type scale (bumped ~2px vs original compact UI). */
+const TYPE = {
+  xs: '12px',
+  sm: '13px',
+  md: '14px',
+  base: '15px',
+  lg: '16px',
+  xl: '18px',
+  section: '13px',
+  stat: '26px',
+  statLg: '28px',
+  hero: '30px',
+  tank: '20px',
 };
 
 // ─── keyframe injection ───────────────────────────────────────────────────────
@@ -184,7 +205,7 @@ const sx = {
   },
   label: {
     fontFamily: T.mono,
-    fontSize: '10px',
+    fontSize: TYPE.xs,
     fontWeight: 700,
     letterSpacing: '0.12em',
     textTransform: 'uppercase',
@@ -193,14 +214,14 @@ const sx = {
   value: {
     fontFamily: T.mono,
     fontWeight: 700,
-    fontSize: '22px',
+    fontSize: TYPE.stat,
     color: T.text,
     lineHeight: 1,
   },
   sectionTitle: {
     fontFamily: T.mono,
     fontWeight: 700,
-    fontSize: '11px',
+    fontSize: TYPE.section,
     letterSpacing: '0.1em',
     textTransform: 'uppercase',
     color: T.textMuted,
@@ -212,7 +233,7 @@ const sx = {
     bgcolor: color,
     color: text,
     fontFamily: T.mono,
-    fontSize: '10px',
+    fontSize: TYPE.xs,
     fontWeight: 700,
     display: 'inline-flex',
     alignItems: 'center',
@@ -254,11 +275,11 @@ const StatTile = ({ label, value, accent, icon: Icon, sub, delay = 0 }) => {
         <Icon sx={{ position: 'absolute', right: 12, top: 12, fontSize: 30, color: accent || T.textDim, opacity: 0.15, transition: 'opacity 0.2s', '.card-hover:hover &': { opacity: 0.3 } }} />
       )}
       <Typography sx={{ ...sx.label, mb: 1 }}>{label}</Typography>
-      <Typography className="stat-count" sx={{ ...sx.value, color: accent || T.text, fontSize: '24px' }}>
+      <Typography className="stat-count" sx={{ ...sx.value, color: accent || T.text, fontSize: TYPE.statLg }}>
         {value}
       </Typography>
       {sub && (
-        <Typography sx={{ fontFamily: T.mono, fontSize: '10px', color: T.textMuted, mt: 0.75, lineHeight: 1.4 }}>
+        <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.xs, color: T.textMuted, mt: 0.75, lineHeight: 1.4 }}>
           {sub}
         </Typography>
       )}
@@ -284,7 +305,7 @@ const StatusDot = ({ status }) => {
 const SectionHeader = ({ label, right, icon: Icon }) => (
   <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
     <Stack direction="row" alignItems="center" spacing={1}>
-      {Icon && <Icon sx={{ fontSize: 15, color: T.textMuted }} />}
+      {Icon && <Icon sx={{ fontSize: 20, color: T.textMuted }} />}
       <Typography sx={sx.sectionTitle}>{label}</Typography>
     </Stack>
     {right}
@@ -312,10 +333,10 @@ const TankBar = ({ label, liters, pct, color, borderColor }) => (
         )}
       </Box>
       <Box>
-        <Typography sx={{ fontFamily: T.mono, fontWeight: 800, fontSize: '18px', color: T.text }}>
+        <Typography sx={{ fontFamily: T.mono, fontWeight: 800, fontSize: TYPE.tank, color: T.text }}>
           {liters.toLocaleString()} L
         </Typography>
-        <Typography sx={{ fontFamily: T.mono, fontSize: '10px', color: T.textMuted, mt: 0.25 }}>
+        <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.xs, color: T.textMuted, mt: 0.25 }}>
           {pct}% capacity
         </Typography>
         <Box sx={{ mt: 1, width: 80, height: 3, borderRadius: 2, bgcolor: T.border, overflow: 'hidden' }}>
@@ -325,6 +346,39 @@ const TankBar = ({ label, liters, pct, color, borderColor }) => (
     </Stack>
   </Box>
 );
+
+// ─── Weekly goal progress row ───────────────────────────────────────────────
+const GoalProgressRow = ({ metric }) => {
+  const barColor =
+    metric.complete ? T.success : metric.percent >= 75 ? T.info : metric.percent >= 40 ? T.warn : T.accent;
+  return (
+    <Box sx={{ mb: 1.75 }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mb: 0.6 }}>
+        <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.sm, fontWeight: 700, color: T.text }}>
+          {metric.label}
+        </Typography>
+        <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.xs, color: T.textMuted }}>
+          {formatGoalValue(metric.key, metric.current)} / {formatGoalValue(metric.key, metric.target)}
+          {' · '}
+          <Box component="span" sx={{ color: metric.complete ? T.success : T.text, fontWeight: 700 }}>
+            {metric.percent}%
+          </Box>
+        </Typography>
+      </Stack>
+      <Box sx={{ height: 8, borderRadius: 2, bgcolor: T.border, overflow: 'hidden' }}>
+        <Box
+          sx={{
+            height: '100%',
+            width: `${Math.min(100, metric.percent)}%`,
+            bgcolor: barColor,
+            borderRadius: 2,
+            transition: 'width 0.5s cubic-bezier(.22,1,.36,1)',
+          }}
+        />
+      </Box>
+    </Box>
+  );
+};
 
 // ─── Truck card ──────────────────────────────────────────────────────────────
 const TruckCard = ({ truck }) => {
@@ -349,16 +403,16 @@ const TruckCard = ({ truck }) => {
       }}
     >
       <Avatar src={truck.image || truck.brandLogo || undefined} variant="rounded"
-        sx={{ width: 34, height: 34, bgcolor: T.bg, fontSize: '14px', border: `1px solid ${T.border}` }}>
+        sx={{ width: 40, height: 40, bgcolor: T.bg, fontSize: TYPE.md, border: `1px solid ${T.border}` }}>
         {(truck.brandName || truck.displayName || 'T')[0]}
       </Avatar>
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography sx={{ fontFamily: T.mono, fontSize: '11px', fontWeight: 700, color: T.text }} noWrap>
+        <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.sm, fontWeight: 700, color: T.text }} noWrap>
           {truck.displayName || `${truck.brandName || ''} ${truck.modelName || ''}`.trim() || 'Truck'}
         </Typography>
         <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mt: 0.4 }}>
           <StatusDot status={status} />
-          <Typography sx={{ fontFamily: T.mono, fontSize: '10px', color: status === 'error' ? T.danger : status === 'info' ? T.info : T.success }}>
+          <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.xs, color: status === 'error' ? T.danger : status === 'info' ? T.info : T.success }}>
             {statusLabel}
           </Typography>
         </Stack>
@@ -366,10 +420,16 @@ const TruckCard = ({ truck }) => {
           <Box sx={{ flex: 1, height: 3, borderRadius: 2, bgcolor: T.border, overflow: 'hidden' }}>
             <Box sx={{ height: '100%', width: `${wearPct}%`, bgcolor: wearColor, borderRadius: 2 }} />
           </Box>
-          <Typography sx={{ fontFamily: T.mono, fontSize: '10px', color: T.textMuted, flexShrink: 0 }}>
+          <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.xs, color: T.textMuted, flexShrink: 0 }}>
             {wearPct}%
           </Typography>
         </Stack>
+        <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.xs, color: T.textMuted, mt: 0.5 }}>
+          {Math.round(Number(truck.odometerKm) || 0).toLocaleString()} km
+          {Number(truck.deliveriesCount) > 0
+            ? ` · ${Number(truck.deliveriesCount).toLocaleString()} deliveries`
+            : ''}
+        </Typography>
       </Box>
     </Stack>
   );
@@ -383,8 +443,8 @@ const EmptyState = ({ icon: Icon, title, description, actions }) => (
         <Icon sx={{ fontSize: 26, color: T.textMuted }} />
       </Box>
     )}
-    <Typography sx={{ fontFamily: T.sans, fontWeight: 700, fontSize: '16px', color: T.text, mb: 0.75 }}>{title}</Typography>
-    {description && <Typography sx={{ color: T.textMuted, fontSize: '13px', mb: 3, maxWidth: 320, mx: 'auto' }}>{description}</Typography>}
+    <Typography sx={{ fontFamily: T.sans, fontWeight: 700, fontSize: TYPE.lg, color: T.text, mb: 0.75 }}>{title}</Typography>
+    {description && <Typography sx={{ color: T.textMuted, fontSize: TYPE.base, mb: 3, maxWidth: 320, mx: 'auto' }}>{description}</Typography>}
     {actions && <Stack direction="row" spacing={1.5} justifyContent="center">{actions}</Stack>}
   </Box>
 );
@@ -402,13 +462,13 @@ const inputSx = {
     bgcolor: T.bg,
     color: T.text,
     fontFamily: T.mono,
-    fontSize: '13px',
+    fontSize: TYPE.base,
     borderRadius: '8px',
     '& fieldset': { borderColor: T.border },
     '&:hover fieldset': { borderColor: T.borderStrong },
     '&.Mui-focused fieldset': { borderColor: T.accent },
   },
-  '& .MuiInputLabel-root': { color: T.textMuted, fontSize: '12px', fontFamily: T.mono },
+  '& .MuiInputLabel-root': { color: T.textMuted, fontSize: TYPE.md, fontFamily: T.mono },
   '& .MuiInputLabel-root.Mui-focused': { color: T.accent },
 };
 
@@ -417,7 +477,7 @@ const btnSx = {
     bgcolor: T.accent,
     color: '#fff',
     fontFamily: T.mono,
-    fontSize: '11px',
+    fontSize: TYPE.sm,
     fontWeight: 700,
     letterSpacing: '0.06em',
     textTransform: 'uppercase',
@@ -431,7 +491,7 @@ const btnSx = {
     color: T.textMuted,
     borderColor: T.border,
     fontFamily: T.mono,
-    fontSize: '11px',
+    fontSize: TYPE.sm,
     fontWeight: 700,
     letterSpacing: '0.06em',
     textTransform: 'uppercase',
@@ -443,7 +503,7 @@ const btnSx = {
     color: T.danger,
     borderColor: `${T.danger}44`,
     fontFamily: T.mono,
-    fontSize: '11px',
+    fontSize: TYPE.sm,
     fontWeight: 700,
     letterSpacing: '0.05em',
     textTransform: 'uppercase',
@@ -455,7 +515,7 @@ const btnSx = {
     bgcolor: T.success,
     color: '#000',
     fontFamily: T.mono,
-    fontSize: '11px',
+    fontSize: TYPE.sm,
     fontWeight: 700,
     letterSpacing: '0.06em',
     textTransform: 'uppercase',
@@ -467,12 +527,12 @@ const btnSx = {
 const tabsSx = {
   '& .MuiTab-root': {
     fontFamily: T.mono,
-    fontSize: '11px',
+    fontSize: TYPE.sm,
     fontWeight: 700,
     letterSpacing: '0.08em',
     textTransform: 'uppercase',
     color: T.textMuted,
-    minHeight: 44,
+    minHeight: 48,
     transition: 'color 0.2s',
     '&.Mui-selected': { color: T.accent },
   },
@@ -484,21 +544,21 @@ const tabsSx = {
 const tableSx = {
   '& .MuiTableCell-head': {
     fontFamily: T.mono,
-    fontSize: '10px',
+    fontSize: TYPE.xs,
     fontWeight: 700,
     letterSpacing: '0.08em',
     textTransform: 'uppercase',
     color: T.textMuted,
     bgcolor: T.bg,
     borderBottom: `1px solid ${T.border}`,
-    py: 1.25,
+    py: 1.5,
   },
   '& .MuiTableCell-body': {
     fontFamily: T.mono,
-    fontSize: '12px',
+    fontSize: TYPE.md,
     color: T.text,
     borderBottom: `1px solid ${T.border}`,
-    py: 1,
+    py: 1.25,
   },
   '& .MuiTableRow-root:last-child .MuiTableCell-body': { borderBottom: 'none' },
   '& .MuiTableSortLabel-root': { color: `${T.textMuted} !important` },
@@ -553,6 +613,11 @@ export default function MyDivision() {
   const [nudgeOpen, setNudgeOpen] = useState(false);
   const [dayStats, setDayStats] = useState(null);
   const [dayStatsLoading, setDayStatsLoading] = useState(false);
+  const [weeklyGoals, setWeeklyGoals] = useState(null);
+  const [truckSuggestion, setTruckSuggestion] = useState(null);
+  const [goalsDialogOpen, setGoalsDialogOpen] = useState(false);
+  const [goalsForm, setGoalsForm] = useState({ jobs: '', distanceKm: '', revenue: '' });
+  const [goalsSaving, setGoalsSaving] = useState(false);
 
   const sortedLb = useMemo(() => {
     const rows = [...lb];
@@ -598,13 +663,24 @@ export default function MyDivision() {
       setData(resolvedData);
 
       if (resolvedDivision?._id) {
-        const [{ data: l }, { data: m }, fleet, divisionLoansRes, mineInvestmentsRes, summaryRes] = await Promise.all([
+        const [
+          { data: l },
+          { data: m },
+          fleet,
+          divisionLoansRes,
+          mineInvestmentsRes,
+          summaryRes,
+          weeklyGoalsRes,
+          truckSuggestionRes,
+        ] = await Promise.all([
           axiosInstance.get(`/divisions/${resolvedDivision._id}/leaderboard`, { params: { limit: 30 } }),
           axiosInstance.get(`/divisions/${resolvedDivision._id}/members`).catch(() => ({ data: { members: [] } })),
           getDivisionTrucks(resolvedDivision._id).catch(() => ({ trucks: [] })),
           getDivisionLoans(resolvedDivision._id).catch(() => []),
           axiosInstance.get(`/divisions/${resolvedDivision._id}/investments/me`).catch(() => ({ data: { items: [], totalInvested: 0 } })),
           axiosInstance.get(`/divisions/${resolvedDivision._id}/investments/summary`).catch(() => ({ data: { byRider: [] } })),
+          axiosInstance.get(`/divisions/${resolvedDivision._id}/goals/weekly`).catch(() => ({ data: null })),
+          axiosInstance.get(`/divisions/${resolvedDivision._id}/insights/truck-suggestion`).catch(() => ({ data: null })),
         ]);
         setLb(l.riders || []);
         setMembers(m.members || []);
@@ -615,6 +691,8 @@ export default function MyDivision() {
         setMyInvestments(Array.isArray(mineInvestmentsRes?.data?.items) ? mineInvestmentsRes.data.items : []);
         setMyInvestedTotal(Number(mineInvestmentsRes?.data?.totalInvested) || 0);
         setInvestmentSummary(Array.isArray(summaryRes?.data?.byRider) ? summaryRes.data.byRider : []);
+        setWeeklyGoals(weeklyGoalsRes?.data || null);
+        setTruckSuggestion(truckSuggestionRes?.data || null);
         setSelectedDivisionLoanId((prev) =>
           prev && (divisionLoansRes || []).some((x) => String(x._id) === String(prev))
             ? prev
@@ -624,6 +702,7 @@ export default function MyDivision() {
         setLb([]); setMembers([]); setFleetTrucks([]); setJoinRequests([]); setSentInvites([]);
         setDivisionLoans([]); setSelectedDivisionLoanId(''); setMyInvestments([]);
         setMyInvestedTotal(0); setInvestmentSummary([]);
+        setWeeklyGoals(null); setTruckSuggestion(null);
       }
     } catch (e) {
       setError(e?.response?.data?.message || 'Failed to load');
@@ -717,7 +796,19 @@ export default function MyDivision() {
 
   const effectiveMemberCount = peopleRows.length || Number(div?.memberCount || 0);
   const currentMemberByUserId = peopleRows.find((m) => String(m?.userId || '') === uid);
-  const canInvest = Boolean(isLeader || (currentMemberByUserId && !currentMemberByUserId?.inactive));
+  const myRiderId = String(data?.rider?._id || '');
+  const myLbRow = myRiderId ? lb.find((r) => String(r.riderId) === myRiderId) : null;
+  const isInactiveMember = Boolean(
+    (currentMemberByUserId && currentMemberByUserId.inactive) ||
+    (myLbRow && myLbRow.inactive === true)
+  );
+  // Members list is leader-only; use /me/division rider + division context for regular members.
+  const canInvest = canShowDivisionInvest({
+    isLeader,
+    divisionId: div?._id,
+    riderId: myRiderId,
+    isInactiveMember,
+  });
 
   useEffect(() => {
     if (!isLeader || !div?._id) return;
@@ -860,6 +951,34 @@ export default function MyDivision() {
     } catch (e) { setError(e?.response?.data?.message || 'Failed to create investment'); }
   };
 
+  const openGoalsDialog = () => {
+    const t = weeklyGoals?.targets || {};
+    setGoalsForm({
+      jobs: String(t.jobs || ''),
+      distanceKm: String(t.distanceKm || ''),
+      revenue: String(t.revenue || ''),
+    });
+    setGoalsDialogOpen(true);
+  };
+
+  const saveWeeklyGoals = async () => {
+    if (!div?._id) return;
+    setGoalsSaving(true);
+    try {
+      const { data } = await axiosInstance.patch(`/divisions/${div._id}/goals/weekly`, {
+        jobs: Number(goalsForm.jobs) || 0,
+        distanceKm: Number(goalsForm.distanceKm) || 0,
+        revenue: Number(goalsForm.revenue) || 0,
+      });
+      setWeeklyGoals(data);
+      setGoalsDialogOpen(false);
+    } catch (e) {
+      setError(e?.response?.data?.message || 'Failed to save weekly goals');
+    } finally {
+      setGoalsSaving(false);
+    }
+  };
+
   const distribute = async () => {
     if (!walletForm.rider?._id) return;
     try {
@@ -896,7 +1015,7 @@ export default function MyDivision() {
   // ─── render ──────────────────────────────────────────────────────────────────
   return (
     <MagicPageShell>
-      <Box sx={{ bgcolor: T.bg, minHeight: '100vh', fontFamily: T.sans }}>
+      <Box sx={{ bgcolor: T.bg, minHeight: '100vh', fontFamily: T.sans, fontSize: TYPE.base, lineHeight: 1.5 }}>
 
         {/* ── Loading bar ── */}
         {loading && (
@@ -911,10 +1030,10 @@ export default function MyDivision() {
           <Box className="anim-fade-up" sx={{ mb: 3 }}>
             <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} spacing={2}>
               <Box sx={{ flex: 1 }}>
-                <Typography sx={{ fontFamily: T.mono, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: T.textDim, mb: 0.5 }}>
+                <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.xs, letterSpacing: '0.2em', textTransform: 'uppercase', color: T.textDim, mb: 0.5 }}>
                   Division command center
                 </Typography>
-                <Typography sx={{ fontFamily: T.sans, fontWeight: 800, fontSize: '26px', color: T.text, lineHeight: 1.1, letterSpacing: '-0.02em' }}>
+                <Typography sx={{ fontFamily: T.sans, fontWeight: 800, fontSize: TYPE.hero, color: T.text, lineHeight: 1.1, letterSpacing: '-0.02em' }}>
                   My Division
                 </Typography>
               </Box>
@@ -928,7 +1047,7 @@ export default function MyDivision() {
 
           {error && (
             <Alert severity="error" className="anim-fade-up"
-              sx={{ mb: 2, bgcolor: T.dangerDim, color: T.danger, border: `1px solid ${T.danger}44`, fontFamily: T.mono, fontSize: '12px', borderRadius: 2 }}
+              sx={{ mb: 2, bgcolor: T.dangerDim, color: T.danger, border: `1px solid ${T.danger}44`, fontFamily: T.mono, fontSize: TYPE.md, borderRadius: 2 }}
               onClose={() => setError('')}>
               {error}
             </Alert>
@@ -981,14 +1100,14 @@ export default function MyDivision() {
                             bgcolor: T.surfaceAlt,
                             fontFamily: T.mono,
                             fontWeight: 800,
-                            fontSize: '22px',
+                            fontSize: TYPE.stat,
                             boxShadow: `0 4px 16px rgba(0,0,0,0.4)`,
                           }}>
                           {div.name?.[0] || 'D'}
                         </Avatar>
                         <Box sx={{ flex: 1, minWidth: 0 }}>
                           <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" useFlexGap sx={{ mb: 0.75 }}>
-                            <Typography sx={{ fontWeight: 800, fontSize: '20px', color: T.text, fontFamily: T.sans, letterSpacing: '-0.01em' }}>
+                            <Typography sx={{ fontWeight: 800, fontSize: TYPE.tank, color: T.text, fontFamily: T.sans, letterSpacing: '-0.01em' }}>
                               {div.name}
                             </Typography>
                             <Tooltip title="Edit tax rate" arrow>
@@ -996,23 +1115,23 @@ export default function MyDivision() {
                                 sx={{ ...sx.pill(T.accentDim, T.accent), cursor: isLeader ? 'pointer' : 'default' }}
                                 onClick={isLeader ? () => { setTaxPct(String(div.taxPercent ?? 0)); setTaxDialogOpen(true); } : undefined}
                               >
-                                <MonetizationOnOutlined sx={{ fontSize: 11 }} />
+                                <MonetizationOnOutlined sx={{ fontSize: 16 }} />
                                 Tax {div.taxPercent}%
-                                {isLeader && <EditOutlined sx={{ fontSize: 10, ml: 0.25 }} />}
+                                {isLeader && <EditOutlined sx={{ fontSize: 13, ml: 0.25 }} />}
                               </Box>
                             </Tooltip>
                           </Stack>
                           {div.description && (
-                            <Typography sx={{ color: T.textMuted, fontSize: '13px', mb: 1.5, lineHeight: 1.6 }}>
+                            <Typography sx={{ color: T.textMuted, fontSize: TYPE.base, mb: 1.5, lineHeight: 1.6 }}>
                               {div.description}
                             </Typography>
                           )}
                           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap alignItems="center">
                             <Box sx={sx.pill(T.successDim, T.success)}>
-                              <PeopleOutlined sx={{ fontSize: 11 }} /> {effectiveMemberCount} members
+                              <PeopleOutlined sx={{ fontSize: 16 }} /> {effectiveMemberCount} members
                             </Box>
                             <Box sx={sx.pill(T.infoDim, T.info)}>
-                              <AccountBalanceWalletOutlined sx={{ fontSize: 11 }} /> {(div.walletBalance ?? 0).toLocaleString()} tokens
+                              <AccountBalanceWalletOutlined sx={{ fontSize: 16 }} /> {(div.walletBalance ?? 0).toLocaleString()} tokens
                             </Box>
                             {attendanceSummary && (
                               <>
@@ -1027,7 +1146,7 @@ export default function MyDivision() {
                           </Stack>
                         </Box>
                         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                          <Button component={RouterLink} to={`/divisions/${div.slug}`} variant="outlined" size="small" sx={btnSx.outlined} endIcon={<OpenInNewOutlined sx={{ fontSize: 12 }} />}>
+                          <Button component={RouterLink} to={`/divisions/${div.slug}`} variant="outlined" size="small" sx={btnSx.outlined} endIcon={<OpenInNewOutlined sx={{ fontSize: 16 }} />}>
                             Public page
                           </Button>
                           {isLeader && (
@@ -1086,6 +1205,108 @@ export default function MyDivision() {
                     )}
                   </Stack>
 
+                  {/* Weekly goals + truck suggestion */}
+                  <Grid container spacing={2} className="anim-fade-up stagger-2">
+                    <Grid item xs={12} md={6}>
+                      <Box sx={{ ...sx.card, p: 2.5, height: '100%' }}>
+                        <SectionHeader
+                          label="Weekly division goals"
+                          icon={FlagOutlined}
+                          right={
+                            canViewWalletTx ? (
+                              <Button size="small" sx={btnSx.outlined} variant="outlined" onClick={openGoalsDialog}>
+                                Edit targets
+                              </Button>
+                            ) : null
+                          }
+                        />
+                        {weeklyGoals ? (
+                          <>
+                            <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.xs, color: T.textMuted, mb: 2 }}>
+                              UTC week {weeklyGoals.weekKey}
+                              {weeklyGoals.targets?.isCustom ? ' · custom targets' : ` · default (${effectiveMemberCount} members)`}
+                              {' · '}
+                              {weeklyGoals.overallPercent}% overall
+                            </Typography>
+                            {weeklyGoals.metrics?.map((metric) => (
+                              <GoalProgressRow key={metric.key} metric={metric} />
+                            ))}
+                            {weeklyGoals.allComplete && (
+                              <Alert severity="success" sx={{ mt: 1, fontFamily: T.mono, fontSize: TYPE.xs, borderRadius: 1.5 }}>
+                                All weekly targets reached — great work!
+                              </Alert>
+                            )}
+                          </>
+                        ) : (
+                          <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.sm, color: T.textMuted }}>
+                            Loading weekly goals…
+                          </Typography>
+                        )}
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <Box sx={{ ...sx.card, p: 2.5, height: '100%' }}>
+                        <SectionHeader label="Suggested truck purchase" icon={LightbulbOutlined} />
+                        {truckSuggestion?.suggestion ? (
+                          <Stack spacing={1.5}>
+                            <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.base, color: T.text, fontWeight: 700, lineHeight: 1.5 }}>
+                              {truckSuggestion.suggestion.headline}
+                            </Typography>
+                            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                              <Box sx={sx.pill()}>
+                                {truckSuggestion.suggestion.jobs} jobs ({truckSuggestion.suggestion.sharePercent}%)
+                              </Box>
+                              <Box sx={sx.pill()}>
+                                {Math.round(truckSuggestion.suggestion.distanceKm).toLocaleString()} km driven
+                              </Box>
+                              {truckSuggestion.suggestion.alreadyOwned ? (
+                                <Box sx={sx.pill(T.successDim, T.success)}>Already in fleet</Box>
+                              ) : truckSuggestion.suggestion.catalogFound ? (
+                                <Box sx={sx.pill(T.accentDim, T.accent)}>Available in marketplace</Box>
+                              ) : (
+                                <Box sx={sx.pill(T.warnDim, T.warn)}>Not in catalogue</Box>
+                              )}
+                            </Stack>
+                            {Array.isArray(truckSuggestion.topModels) && truckSuggestion.topModels.length > 1 && (
+                              <Box sx={{ mt: 0.5 }}>
+                                <Typography sx={{ ...sx.label, mb: 0.75 }}>Top models (last {truckSuggestion.lookbackDays}d)</Typography>
+                                <Stack spacing={0.5}>
+                                  {truckSuggestion.topModels.slice(0, 4).map((row) => (
+                                    <Typography key={`${row.brand}-${row.model}`} sx={{ fontFamily: T.mono, fontSize: TYPE.xs, color: T.textMuted }}>
+                                      {row.label} — {row.jobs} jobs ({row.sharePercent}%)
+                                      {row.alreadyOwned ? ' · owned' : ''}
+                                    </Typography>
+                                  ))}
+                                </Stack>
+                              </Box>
+                            )}
+                            <Stack direction="row" spacing={1} sx={{ pt: 0.5 }}>
+                              {isLeader && !truckSuggestion.suggestion.alreadyOwned && (
+                                <Button
+                                  size="small"
+                                  component={RouterLink}
+                                  to="/trucks/marketplace"
+                                  sx={btnSx.primary}
+                                  startIcon={<LocalShippingOutlined sx={{ fontSize: 16 }} />}
+                                >
+                                  Open marketplace
+                                </Button>
+                              )}
+                              <Button size="small" variant="outlined" onClick={() => setTabAndSyncQuery(2)} sx={btnSx.outlined}>
+                                View fleet
+                              </Button>
+                            </Stack>
+                          </Stack>
+                        ) : (
+                          <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.sm, color: T.textMuted, lineHeight: 1.6 }}>
+                            {truckSuggestion?.message ||
+                              'Complete more division jobs to see which truck model your members use most.'}
+                          </Typography>
+                        )}
+                      </Box>
+                    </Grid>
+                  </Grid>
+
                   {dayParam && canViewWalletTx && (
                     <Alert severity="info" sx={{ mb: 0 }}>
                       {dayStatsLoading ? (
@@ -1123,12 +1344,12 @@ export default function MyDivision() {
                       {(leaderInsights.wearAlerts.length > 0 || leaderInsights.maintenanceDue.length > 0) && (
                         <Stack spacing={0.75} sx={{ mb: 1.5 }}>
                           {leaderInsights.wearAlerts.slice(0, 4).map((a) => (
-                            <Typography key={a.id} sx={{ fontFamily: T.mono, fontSize: '11px', color: T.textMuted }}>
+                            <Typography key={a.id} sx={{ fontFamily: T.mono, fontSize: TYPE.sm, color: T.textMuted }}>
                               Wear: {a.label} — {a.wearPct}% ({a.odometerKm.toLocaleString()} km)
                             </Typography>
                           ))}
                           {leaderInsights.maintenanceDue.slice(0, 4).map((a) => (
-                            <Typography key={a.id} sx={{ fontFamily: T.mono, fontSize: '11px', color: T.warn }}>
+                            <Typography key={a.id} sx={{ fontFamily: T.mono, fontSize: TYPE.sm, color: T.warn }}>
                               Maintenance: {a.label}
                               {a.inGarage && a.repairSecondsRemaining > 0
                                 ? ` — garage ${Math.ceil(a.repairSecondsRemaining / 60)} min`
@@ -1174,10 +1395,10 @@ export default function MyDivision() {
                       <Box sx={{ p: 2.5, borderRadius: 1.5, bgcolor: T.bg, border: `1px solid ${T.border}` }}>
                         <Box sx={{ flex: 1, minWidth: 0 }}>
                           <Typography sx={{ ...sx.label, mb: 1.5 }}>Shared fuel tank</Typography>
-                          <Typography sx={{ fontFamily: T.mono, fontSize: '18px', fontWeight: 800, color: T.text, mb: 1 }}>
+                          <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.xl, fontWeight: 800, color: T.text, mb: 1 }}>
                             {totalFuel.toLocaleString()} / {DIVISION_FUEL_CAPACITY_L.toLocaleString()} L total
                           </Typography>
-                          <Typography sx={{ fontFamily: T.mono, fontSize: '12px', color: T.textMuted, mb: 2 }}>
+                          <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.md, color: T.textMuted, mb: 2 }}>
                             {capacityPct}% filled · {Math.round(remainingFuelCapacity).toLocaleString()} L remaining
                           </Typography>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 4, mb: 2 }}>
@@ -1273,7 +1494,7 @@ export default function MyDivision() {
                                 top: `${100 - capacityPct}%`,
                                 transform: 'translateY(-50%)',
                                 fontFamily: T.mono,
-                                fontSize: '12px',
+                                fontSize: TYPE.md,
                                 fontWeight: 900,
                                 color: T.text,
                                 bgcolor: T.surface,
@@ -1290,16 +1511,16 @@ export default function MyDivision() {
 
                             {/* Tank details */}
                             <Box sx={{ flex: 1 }}>
-                              <Typography sx={{ fontFamily: T.mono, fontSize: '16px', fontWeight: 700, color: T.text, mb: 1 }}>
+                              <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.lg, fontWeight: 700, color: T.text, mb: 1 }}>
                                 Fuel Tank Status
                               </Typography>
-                              <Typography sx={{ fontFamily: T.mono, fontSize: '13px', color: T.textMuted, mb: 0.5 }}>
+                              <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.base, color: T.textMuted, mb: 0.5 }}>
                                 Current: {Math.round(totalFuel).toLocaleString()} L
                               </Typography>
-                              <Typography sx={{ fontFamily: T.mono, fontSize: '13px', color: T.textMuted, mb: 0.5 }}>
+                              <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.base, color: T.textMuted, mb: 0.5 }}>
                                 Capacity: {DIVISION_FUEL_CAPACITY_L.toLocaleString()} L
                               </Typography>
-                              <Typography sx={{ fontFamily: T.mono, fontSize: '13px', color: T.textMuted }}>
+                              <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.base, color: T.textMuted }}>
                                 Available: {Math.round(remainingFuelCapacity).toLocaleString()} L
                               </Typography>
                             </Box>
@@ -1307,22 +1528,22 @@ export default function MyDivision() {
                           <Stack direction="row" spacing={3} alignItems="center">
                             <Stack direction="row" spacing={0.5} alignItems="center">
                               <Box sx={{ width: 12, height: 12, borderRadius: 1, bgcolor: T.premium, opacity: 0.9 }} />
-                              <Typography sx={{ fontFamily: T.mono, fontSize: '11px', color: T.textMuted }}>
+                              <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.sm, color: T.textMuted }}>
                                 Premium: {Math.round(premiumFuel).toLocaleString()} L
                               </Typography>
                             </Stack>
                             <Stack direction="row" spacing={0.5} alignItems="center">
                               <Box sx={{ width: 12, height: 12, borderRadius: 1, bgcolor: T.accent, opacity: 0.9 }} />
-                              <Typography sx={{ fontFamily: T.mono, fontSize: '11px', color: T.textMuted }}>
+                              <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.sm, color: T.textMuted }}>
                                 Standard: {Math.round(standardFuel).toLocaleString()} L
                               </Typography>
                             </Stack>
                           </Stack>
                           <Stack direction="row" spacing={1} sx={{ mt: 2 }} flexWrap="wrap" useFlexGap>
-                            <Box sx={{ ...sx.pill(T.premiumDim, T.premium), fontSize: '10px' }}>
+                            <Box sx={{ ...sx.pill(T.premiumDim, T.premium), fontSize: TYPE.xs }}>
                               <BoltOutlined sx={{ fontSize: 10 }} /> Premium consumed first
                             </Box>
-                            <Box sx={{ ...sx.pill(T.accentDim, T.accent), fontSize: '10px' }}>
+                            <Box sx={{ ...sx.pill(T.accentDim, T.accent), fontSize: TYPE.xs }}>
                               <SpeedOutlined sx={{ fontSize: 10 }} /> Premium = longer coverage
                             </Box>
                           </Stack>
@@ -1341,24 +1562,24 @@ export default function MyDivision() {
                           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                             {joinRequests.length > 0 && (
                               <Box sx={sx.pill(T.warnDim, T.warn)}>
-                                <WarningAmberOutlined sx={{ fontSize: 11 }} /> {joinRequests.length} pending
+                                <WarningAmberOutlined sx={{ fontSize: 16 }} /> {joinRequests.length} pending
                               </Box>
                             )}
                             {fleetSummary.blocked > 0 && (
                               <Box sx={sx.pill(T.dangerDim, T.danger)}>
-                                <ErrorOutlined sx={{ fontSize: 11 }} /> {fleetSummary.blocked} blocked
+                                <ErrorOutlined sx={{ fontSize: 16 }} /> {fleetSummary.blocked} blocked
                               </Box>
                             )}
                           </Stack>
                         )}
                       </Stack>
                       <Tabs value={activeTab} onChange={(_, v) => setTabAndSyncQuery(v)} sx={{ ...tabsSx, borderBottom: 'none', mb: 0 }} variant="scrollable" scrollButtons="auto">
-                        <Tab label="Overview" icon={<DashboardOutlined sx={{ fontSize: 14 }} />} iconPosition="start" />
+                        <Tab label="Overview" icon={<DashboardOutlined sx={{ fontSize: 16 }} />} iconPosition="start" />
                         <Tab
                           label={`People · ${peopleRows.length}`}
                           icon={
                             <Badge badgeContent={joinRequests.length} color="warning" max={9}>
-                              <GroupOutlined sx={{ fontSize: 14 }} />
+                              <GroupOutlined sx={{ fontSize: 16 }} />
                             </Badge>
                           }
                           iconPosition="start"
@@ -1367,12 +1588,12 @@ export default function MyDivision() {
                           label={`Fleet${fleetSummary.blocked ? ` · ${fleetSummary.blocked}` : ''}`}
                           icon={
                             <Badge badgeContent={fleetSummary.blocked || 0} color="error" max={9}>
-                              <DirectionsBusOutlined sx={{ fontSize: 14 }} />
+                              <DirectionsBusOutlined sx={{ fontSize: 16 }} />
                             </Badge>
                           }
                           iconPosition="start"
                         />
-                        <Tab label={`Leaderboard · ${lb.length}`} icon={<LeaderboardOutlined sx={{ fontSize: 14 }} />} iconPosition="start" />
+                        <Tab label={`Leaderboard · ${lb.length}`} icon={<LeaderboardOutlined sx={{ fontSize: 16 }} />} iconPosition="start" />
                       </Tabs>
                     </Box>
 
@@ -1386,10 +1607,10 @@ export default function MyDivision() {
                             <Box sx={{ p: 2, borderRadius: 1.5, border: `1px solid ${T.infoDim}`, bgcolor: T.infoDim }}>
                               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }}>
                                 <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: 1 }}>
-                                  <AdminPanelSettingsOutlined sx={{ fontSize: 18, color: T.info }} />
+                                  <AdminPanelSettingsOutlined sx={{ fontSize: 20, color: T.info }} />
                                   <Box>
                                     <Typography sx={{ ...sx.sectionTitle, color: T.info, mb: 0.25 }}>Admin mode</Typography>
-                                    <Typography sx={{ color: T.textMuted, fontSize: '12px' }}>
+                                    <Typography sx={{ color: T.textMuted, fontSize: TYPE.md }}>
                                       Open admin console for deeper moderation and controls.
                                     </Typography>
                                   </Box>
@@ -1408,26 +1629,26 @@ export default function MyDivision() {
                             return (
                               <Box sx={{ p: 2, borderRadius: 1.5, border: `1px solid ${T.warnDim}`, bgcolor: T.warnDim }}>
                                 <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.25 }}>
-                                  <WarningAmberOutlined sx={{ fontSize: 16, color: T.warn }} />
+                                  <WarningAmberOutlined sx={{ fontSize: 20, color: T.warn }} />
                                   <Typography sx={{ ...sx.sectionTitle, color: T.warn }}>Attention needed</Typography>
                                   <Box sx={sx.pill(T.warnDim, T.warn)}>{inactiveMembers.length} inactive</Box>
                                   <Button size="small" variant="outlined" sx={{ ml: 'auto', ...btnSx.outlined }} onClick={() => setNudgeOpen(true)}>
                                     Nudge…
                                   </Button>
                                 </Stack>
-                                <Typography sx={{ color: T.textMuted, fontSize: '12px', mb: 1.5 }}>
+                                <Typography sx={{ color: T.textMuted, fontSize: TYPE.md, mb: 1.5 }}>
                                   No delivery in {inactivityDays}+ days — copy a Discord or email template (no auto-send).
                                 </Typography>
                                 <Stack spacing={0.75}>
                                   {inactiveMembers.slice(0, 8).map((m) => (
                                     <Stack key={m._id} direction="row" spacing={1.5} alignItems="center"
                                       sx={{ p: 1, borderRadius: 1, bgcolor: 'rgba(0,0,0,0.2)' }}>
-                                      <Avatar src={m.avatar || undefined} sx={{ width: 26, height: 26, fontSize: '12px', bgcolor: T.surfaceAlt }}>
+                                      <Avatar src={m.avatar || undefined} sx={{ width: 26, height: 26, fontSize: TYPE.md, bgcolor: T.surfaceAlt }}>
                                         {m.name?.[0]}
                                       </Avatar>
                                       <Box sx={{ flex: 1, minWidth: 0 }}>
-                                        <Typography sx={{ fontFamily: T.mono, fontSize: '12px', fontWeight: 700, color: T.text }} noWrap>{m.name}</Typography>
-                                        <Typography sx={{ fontFamily: T.mono, fontSize: '10px', color: T.textMuted }}>
+                                        <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.md, fontWeight: 700, color: T.text }} noWrap>{m.name}</Typography>
+                                        <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.xs, color: T.textMuted }}>
                                           {m.lastJobAt ? `Last job ${m.daysSinceLastJob}d ago` : 'No jobs since joining'}
                                         </Typography>
                                       </Box>
@@ -1435,7 +1656,7 @@ export default function MyDivision() {
                                     </Stack>
                                   ))}
                                   {inactiveMembers.length > 8 && (
-                                    <Typography sx={{ fontFamily: T.mono, fontSize: '10px', color: T.textMuted }}>
+                                    <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.xs, color: T.textMuted }}>
                                       +{inactiveMembers.length - 8} more
                                     </Typography>
                                   )}
@@ -1447,11 +1668,11 @@ export default function MyDivision() {
                           {/* Investment section */}
                           <Box sx={{ p: 2.5, borderRadius: 1.5, border: `1px solid ${T.border}`, bgcolor: T.bg }}>
                             <SectionHeader label="Member investment" icon={TrendingUpOutlined} />
-                            <Typography sx={{ color: T.textMuted, fontSize: '12px', mb: 2 }}>
+                            <Typography sx={{ color: T.textMuted, fontSize: TYPE.md, mb: 2 }}>
                               Transfer tokens from your personal wallet into the division wallet.
                             </Typography>
                             {!canInvest && (
-                              <Alert severity="info" sx={{ mb: 1.5, bgcolor: T.infoDim, color: T.info, border: `1px solid ${T.infoDim}`, fontFamily: T.mono, fontSize: '11px', borderRadius: 1.5 }}>
+                              <Alert severity="info" sx={{ mb: 1.5, bgcolor: T.infoDim, color: T.info, border: `1px solid ${T.infoDim}`, fontFamily: T.mono, fontSize: TYPE.sm, borderRadius: 1.5 }}>
                                 Only active division members can invest.
                               </Alert>
                             )}
@@ -1462,14 +1683,14 @@ export default function MyDivision() {
                                 onChange={(e) => setInvestNote(e.target.value)} sx={{ ...inputSx, minWidth: 200, flex: 1 }} />
                               <Button sx={btnSx.primary} onClick={investInDivision}
                                 disabled={!canInvest || !(Number(investAmount) > 0)}
-                                startIcon={<AddCircleOutlineOutlined sx={{ fontSize: 14 }} />}>
+                                startIcon={<AddCircleOutlineOutlined sx={{ fontSize: 16 }} />}>
                                 Invest
                               </Button>
                             </Stack>
                             <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 1.5, p: 1.25, borderRadius: 1, bgcolor: T.surfaceAlt }}>
                               <TrendingUpOutlined sx={{ fontSize: 14, color: T.info }} />
-                              <Typography sx={{ fontFamily: T.mono, fontSize: '11px', color: T.textMuted }}>Your total invested:</Typography>
-                              <Typography sx={{ fontFamily: T.mono, fontSize: '14px', fontWeight: 800, color: T.info }}>{Math.round(myInvestedTotal).toLocaleString()}</Typography>
+                              <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.sm, color: T.textMuted }}>Your total invested:</Typography>
+                              <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.md, fontWeight: 800, color: T.info }}>{Math.round(myInvestedTotal).toLocaleString()}</Typography>
                             </Stack>
                             <Box sx={{ overflowX: 'auto' }}>
                               <Table size="small" sx={tableSx}>
@@ -1538,7 +1759,7 @@ export default function MyDivision() {
                             <Box sx={{ p: 2, borderRadius: 1.5, border: `1px solid ${T.border}`, bgcolor: T.bg, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
                               <Box sx={{ flex: 1, minWidth: 200 }}>
                                 <Typography sx={{ ...sx.sectionTitle, mb: 0.5 }}>Division loan manager</Typography>
-                                <Typography sx={{ color: T.textMuted, fontSize: '12px' }}>
+                                <Typography sx={{ color: T.textMuted, fontSize: TYPE.md }}>
                                   Create loans and review EMI schedule in leader finance tools.
                                 </Typography>
                               </Box>
@@ -1562,17 +1783,17 @@ export default function MyDivision() {
                                 </Stack>
                                 <Tabs value={leaderToolTab} onChange={(_, v) => setLeaderTabAndSyncQuery(v)}
                                   sx={{ ...tabsSx, borderBottom: 'none' }} variant="scrollable" scrollButtons="auto">
-                                  <Tab label="Access control" icon={<SecurityOutlined sx={{ fontSize: 13 }} />} iconPosition="start" />
+                                  <Tab label="Access control" icon={<SecurityOutlined sx={{ fontSize: 15 }} />} iconPosition="start" />
                                   <Tab
                                     label={`Applications · ${joinRequests.length}`}
                                     icon={
                                       <Badge badgeContent={joinRequests.length} color="warning" max={9}>
-                                        <AssignmentOutlined sx={{ fontSize: 13 }} />
+                                        <AssignmentOutlined sx={{ fontSize: 15 }} />
                                       </Badge>
                                     }
                                     iconPosition="start"
                                   />
-                                  <Tab label="Finance" icon={<MonetizationOnOutlined sx={{ fontSize: 13 }} />} iconPosition="start" />
+                                  <Tab label="Finance" icon={<MonetizationOnOutlined sx={{ fontSize: 15 }} />} iconPosition="start" />
                                 </Tabs>
                               </Box>
                               <Box sx={{ p: 2.5, bgcolor: T.surfaceAlt }}>
@@ -1611,8 +1832,8 @@ export default function MyDivision() {
                                               <Stack direction="row" spacing={1.5} alignItems="center">
                                                 <Avatar src={o.avatar || undefined} sx={{ width: 26, height: 26, bgcolor: T.surfaceAlt }}>{o.name?.[0]}</Avatar>
                                                 <Box>
-                                                  <Typography sx={{ fontFamily: T.mono, fontSize: '12px', fontWeight: 700 }}>{o.name}</Typography>
-                                                  <Typography sx={{ fontFamily: T.mono, fontSize: '10px', color: T.textMuted }}>{o.employeeID} · {o.username}</Typography>
+                                                  <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.md, fontWeight: 700 }}>{o.name}</Typography>
+                                                  <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.xs, color: T.textMuted }}>{o.employeeID} · {o.username}</Typography>
                                                 </Box>
                                               </Stack>
                                             </li>
@@ -1648,10 +1869,10 @@ export default function MyDivision() {
                                                 {r.rider?.name?.[0] || '?'}
                                               </Avatar>
                                               <Box sx={{ minWidth: 0 }}>
-                                                <Typography sx={{ fontFamily: T.mono, fontSize: '12px', fontWeight: 700, color: T.text }} noWrap>
+                                                <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.md, fontWeight: 700, color: T.text }} noWrap>
                                                   {r.rider?.name || r.riderId}
                                                 </Typography>
-                                                <Typography sx={{ fontFamily: T.mono, fontSize: '10px', color: T.textMuted }}>
+                                                <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.xs, color: T.textMuted }}>
                                                   {r.rider?.employeeID || ''} {r.rider?.username ? `· ${r.rider.username}` : ''}
                                                 </Typography>
                                               </Box>
@@ -1671,10 +1892,10 @@ export default function MyDivision() {
                                           <Stack key={inv._id} direction={{ xs: 'column', sm: 'row' }} spacing={1.25} alignItems={{ sm: 'center' }}
                                             sx={{ p: 1.5, borderRadius: 1.5, bgcolor: T.bg, border: `1px solid ${T.border}` }}>
                                             <Box sx={{ flex: 1, minWidth: 0 }}>
-                                              <Typography sx={{ fontFamily: T.mono, fontSize: '12px', fontWeight: 700, color: T.text }} noWrap>
+                                              <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.md, fontWeight: 700, color: T.text }} noWrap>
                                                 {inv.riderId?.name || inv.riderId || 'Rider'}
                                               </Typography>
-                                              <Typography sx={{ fontFamily: T.mono, fontSize: '10px', color: T.textMuted }}>
+                                              <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.xs, color: T.textMuted }}>
                                                 {inv.status} · Expires {inv.expiresAt ? new Date(inv.expiresAt).toLocaleDateString() : '—'}
                                               </Typography>
                                             </Box>
@@ -1688,7 +1909,7 @@ export default function MyDivision() {
                                     {!joinRequests.length && !sentInvites.length && (
                                       <Box sx={{ textAlign: 'center', py: 3 }}>
                                         <CheckCircleOutlined sx={{ fontSize: 28, color: T.success, mb: 1 }} />
-                                        <Typography sx={{ fontFamily: T.mono, fontSize: '12px', color: T.textMuted }}>No pending applications or invites</Typography>
+                                        <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.md, color: T.textMuted }}>No pending applications or invites</Typography>
                                       </Box>
                                     )}
                                   </Stack>
@@ -1742,7 +1963,7 @@ export default function MyDivision() {
                                           size="small" sx={{ ...inputSx, minWidth: 220 }}>
                                           {divisionLoanPlans.map((p) => (
                                             <MenuItem key={p.tenureMonths} value={p.tenureMonths}
-                                              sx={{ fontFamily: T.mono, fontSize: '12px' }}>
+                                              sx={{ fontFamily: T.mono, fontSize: TYPE.md }}>
                                               {p.tenureMonths} months · EMI {p.emiAmount}
                                             </MenuItem>
                                           ))}
@@ -1758,7 +1979,7 @@ export default function MyDivision() {
                                           size="small" sx={{ ...inputSx, minWidth: 320 }}>
                                           {divisionLoans.map((loan) => (
                                             <MenuItem key={loan._id} value={loan._id}
-                                              sx={{ fontFamily: T.mono, fontSize: '12px' }}>
+                                              sx={{ fontFamily: T.mono, fontSize: TYPE.md }}>
                                               {loan.loanNumber || loan._id} · outstanding {Number(loan.outstandingAmount || 0).toLocaleString()}
                                             </MenuItem>
                                           ))}
@@ -1810,7 +2031,7 @@ export default function MyDivision() {
                           <Box>
                             <SectionHeader label={`Members · ${peopleRows.length}`} icon={PeopleOutlined} />
                             {!peopleRows.length && (
-                              <Typography sx={{ color: T.textMuted, fontSize: '12px', fontFamily: T.mono }}>No members listed yet.</Typography>
+                              <Typography sx={{ color: T.textMuted, fontSize: TYPE.md, fontFamily: T.mono }}>No members listed yet.</Typography>
                             )}
                             <Stack spacing={0.75}>
                               {peopleRows.map((m, i) => {
@@ -1832,17 +2053,17 @@ export default function MyDivision() {
                                     }}
                                   >
                                     <Avatar src={m.avatar || undefined}
-                                      sx={{ width: 32, height: 32, fontSize: '13px', bgcolor: T.bg, border: `1px solid ${T.border}` }}>
+                                      sx={{ width: 32, height: 32, fontSize: TYPE.base, bgcolor: T.bg, border: `1px solid ${T.border}` }}>
                                       {m.name?.[0] || m.username?.[0] || '?'}
                                     </Avatar>
                                     <Box sx={{ flex: 1, minWidth: 0 }}>
                                       <Stack direction="row" spacing={1} alignItems="center">
-                                        <Typography sx={{ fontFamily: T.mono, fontSize: '12px', fontWeight: 700, color: T.text }} noWrap>
+                                        <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.md, fontWeight: 700, color: T.text }} noWrap>
                                           {m.name || m.username || 'Member'}
                                         </Typography>
                                         {m.isLeader && <Box sx={sx.pill(T.accentDim, T.accent)}>Leader</Box>}
                                       </Stack>
-                                      <Typography sx={{ fontFamily: T.mono, fontSize: '10px', color: T.textMuted }}>
+                                      <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.xs, color: T.textMuted }}>
                                         {m.employeeID || m.username || '—'}
                                       </Typography>
                                     </Box>
@@ -1861,7 +2082,7 @@ export default function MyDivision() {
                           </Box>
 
                           {!isLeader && (
-                            <Alert severity="info" sx={{ bgcolor: T.infoDim, color: T.info, border: `1px solid ${T.infoDim}`, fontFamily: T.mono, fontSize: '11px', borderRadius: 1.5 }}>
+                            <Alert severity="info" sx={{ bgcolor: T.infoDim, color: T.info, border: `1px solid ${T.infoDim}`, fontFamily: T.mono, fontSize: TYPE.sm, borderRadius: 1.5 }}>
                               Member management is only available for division leaders.
                             </Alert>
                           )}
@@ -1892,7 +2113,7 @@ export default function MyDivision() {
                           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                             <Box sx={sx.pill()}>{fleetSummary.total} trucks total</Box>
                             <Box sx={sx.pill(fleetSummary.blocked ? T.dangerDim : T.successDim, fleetSummary.blocked ? T.danger : T.success)}>
-                              <BuildOutlined sx={{ fontSize: 11 }} />
+                              <BuildOutlined sx={{ fontSize: 16 }} />
                               {fleetSummary.blocked ? `${fleetSummary.blocked} blocked` : 'All operational'}
                             </Box>
                             {fleetSummary.wearHigh > 0 && (
@@ -1916,7 +2137,7 @@ export default function MyDivision() {
                           ) : (
                             <Box sx={{ p: 3, borderRadius: 1.5, border: `1px dashed ${T.border}`, bgcolor: T.bg, textAlign: 'center' }}>
                               <LocalShippingOutlined sx={{ fontSize: 32, color: T.textDim, mb: 1 }} />
-                              <Typography sx={{ fontFamily: T.mono, fontSize: '12px', color: T.textMuted }}>No trucks in fleet yet.</Typography>
+                              <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.md, color: T.textMuted }}>No trucks in fleet yet.</Typography>
                               {isLeader && (
                                 <Button component={RouterLink} to="/trucks/marketplace" sx={{ ...btnSx.primary, mt: 2 }}>
                                   Buy first truck
@@ -1927,7 +2148,7 @@ export default function MyDivision() {
 
                           {fleetSummary.blocked > 0 && isLeader && (
                             <Alert severity="warning"
-                              sx={{ bgcolor: T.warnDim, color: T.warn, border: `1px solid ${T.warn}44`, fontFamily: T.mono, fontSize: '11px', borderRadius: 1.5 }}>
+                              sx={{ bgcolor: T.warnDim, color: T.warn, border: `1px solid ${T.warn}44`, fontFamily: T.mono, fontSize: TYPE.sm, borderRadius: 1.5 }}>
                               {fleetSummary.blocked} truck{fleetSummary.blocked === 1 ? '' : 's'} need maintenance — fleet deliveries won't attach until back online. Pay in Fleet management.
                             </Alert>
                           )}
@@ -1964,13 +2185,13 @@ export default function MyDivision() {
                                     sx={{ '&:hover': { bgcolor: `${T.surfaceAlt} !important` } }}>
                                     <TableCell>
                                       <Stack direction="row" spacing={1} alignItems="center">
-                                        <Typography sx={{ fontFamily: T.mono, fontSize: '10px', color: i < 3 ? T.premium : T.textDim, fontWeight: i < 3 ? 800 : 400, width: 18 }}>
+                                        <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.xs, color: i < 3 ? T.premium : T.textDim, fontWeight: i < 3 ? 800 : 400, width: 18 }}>
                                           {i + 1}
                                         </Typography>
-                                        <Avatar sx={{ width: 22, height: 22, fontSize: '10px', bgcolor: T.surfaceAlt, border: `1px solid ${T.border}` }}>
+                                        <Avatar sx={{ width: 22, height: 22, fontSize: TYPE.xs, bgcolor: T.surfaceAlt, border: `1px solid ${T.border}` }}>
                                           {(r.name || r.username || '?')[0]}
                                         </Avatar>
-                                        <Typography sx={{ fontFamily: T.mono, fontSize: '12px', fontWeight: 700, color: T.text }}>
+                                        <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.md, fontWeight: 700, color: T.text }}>
                                           {r.name || r.username || 'Unknown'}
                                           {r.inDivision === false && <span style={{ color: T.textMuted, fontWeight: 400 }}> (left)</span>}
                                         </Typography>
@@ -1978,7 +2199,7 @@ export default function MyDivision() {
                                     </TableCell>
                                     <TableCell sx={{ color: `${T.textMuted} !important`, maxWidth: 180 }}>
                                       {(r.startCity || r.destinationCity) ? (
-                                        <Typography sx={{ fontFamily: T.mono, fontSize: '11px', color: T.textMuted }} noWrap>
+                                        <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.sm, color: T.textMuted }} noWrap>
                                           {r.startCity || '—'} → {r.destinationCity || '—'}
                                         </Typography>
                                       ) : '—'}
@@ -1994,7 +2215,7 @@ export default function MyDivision() {
                                 {!lb.length && (
                                   <TableRow>
                                     <TableCell colSpan={8} align="center"
-                                      sx={{ color: `${T.textMuted} !important`, py: 5, fontFamily: T.mono, fontSize: '12px' }}>
+                                      sx={{ color: `${T.textMuted} !important`, py: 5, fontFamily: T.mono, fontSize: TYPE.md }}>
                                       No jobs logged yet.
                                     </TableCell>
                                   </TableRow>
@@ -2036,16 +2257,16 @@ export default function MyDivision() {
                         {/* Quick stats */}
                         <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
                           <Box sx={{ flex: 1, p: 1.25, borderRadius: 1, bgcolor: T.bg, border: `1px solid ${T.border}`, textAlign: 'center' }}>
-                            <Typography sx={{ fontFamily: T.mono, fontWeight: 800, fontSize: '18px', color: T.text }}>{fleetSummary.total}</Typography>
-                            <Typography sx={{ ...sx.label, fontSize: '9px' }}>Total</Typography>
+                            <Typography sx={{ fontFamily: T.mono, fontWeight: 800, fontSize: TYPE.xl, color: T.text }}>{fleetSummary.total}</Typography>
+                            <Typography sx={{ ...sx.label, fontSize: TYPE.xs }}>Total</Typography>
                           </Box>
                           <Box sx={{ flex: 1, p: 1.25, borderRadius: 1, bgcolor: fleetSummary.blocked ? T.dangerDim : T.successDim, border: `1px solid ${fleetSummary.blocked ? T.danger + '33' : T.success + '33'}`, textAlign: 'center' }}>
-                            <Typography sx={{ fontFamily: T.mono, fontWeight: 800, fontSize: '18px', color: fleetSummary.blocked ? T.danger : T.success }}>{fleetSummary.blocked}</Typography>
-                            <Typography sx={{ ...sx.label, fontSize: '9px', color: fleetSummary.blocked ? T.danger : T.success }}>Blocked</Typography>
+                            <Typography sx={{ fontFamily: T.mono, fontWeight: 800, fontSize: TYPE.xl, color: fleetSummary.blocked ? T.danger : T.success }}>{fleetSummary.blocked}</Typography>
+                            <Typography sx={{ ...sx.label, fontSize: TYPE.xs, color: fleetSummary.blocked ? T.danger : T.success }}>Blocked</Typography>
                           </Box>
                           <Box sx={{ flex: 1, p: 1.25, borderRadius: 1, bgcolor: fleetSummary.wearHigh ? T.warnDim : T.bg, border: `1px solid ${T.border}`, textAlign: 'center' }}>
-                            <Typography sx={{ fontFamily: T.mono, fontWeight: 800, fontSize: '18px', color: fleetSummary.wearHigh ? T.warn : T.textMuted }}>{fleetSummary.wearHigh}</Typography>
-                            <Typography sx={{ ...sx.label, fontSize: '9px' }}>High wear</Typography>
+                            <Typography sx={{ fontFamily: T.mono, fontWeight: 800, fontSize: TYPE.xl, color: fleetSummary.wearHigh ? T.warn : T.textMuted }}>{fleetSummary.wearHigh}</Typography>
+                            <Typography sx={{ ...sx.label, fontSize: TYPE.xs }}>High wear</Typography>
                           </Box>
                         </Stack>
 
@@ -2055,12 +2276,12 @@ export default function MyDivision() {
                             <TruckCard key={t._id || t.divisionTruckId} truck={t} />
                           ))}
                           {!fleetTrucks.length && (
-                            <Typography sx={{ fontFamily: T.mono, fontSize: '11px', color: T.textMuted, textAlign: 'center', py: 2 }}>
+                            <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.sm, color: T.textMuted, textAlign: 'center', py: 2 }}>
                               No trucks in fleet yet.
                             </Typography>
                           )}
                           {fleetTrucks.length > 8 && (
-                            <Typography sx={{ fontFamily: T.mono, fontSize: '10px', color: T.textMuted, textAlign: 'center', py: 0.5 }}>
+                            <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.xs, color: T.textMuted, textAlign: 'center', py: 0.5 }}>
                               +{fleetTrucks.length - 8} more trucks
                             </Typography>
                           )}
@@ -2080,7 +2301,7 @@ export default function MyDivision() {
                         {isAdmin && div?._id && (
                           <Button size="small" component={RouterLink} to={`/admin/divisions/${div._id}`}
                             sx={{ ...btnSx.outlined, mt: 1, width: '100%' }} variant="outlined"
-                            startIcon={<AdminPanelSettingsOutlined sx={{ fontSize: 13 }} />}>
+                            startIcon={<AdminPanelSettingsOutlined sx={{ fontSize: 15 }} />}>
                             Admin division tools
                           </Button>
                         )}
@@ -2101,11 +2322,11 @@ export default function MyDivision() {
                             <Button
                               key={tab}
                               onClick={() => setTabAndSyncQuery(tab)}
-                              startIcon={<Icon sx={{ fontSize: 14 }} />}
+                              startIcon={<Icon sx={{ fontSize: 16 }} />}
                               sx={{
                                 justifyContent: 'flex-start',
                                 fontFamily: T.mono,
-                                fontSize: '11px',
+                                fontSize: TYPE.sm,
                                 fontWeight: 700,
                                 letterSpacing: '0.06em',
                                 textTransform: 'uppercase',
@@ -2120,10 +2341,10 @@ export default function MyDivision() {
                             >
                               {label}
                               {tab === 1 && joinRequests.length > 0 && (
-                                <Box sx={{ ...sx.pill(T.warnDim, T.warn), ml: 'auto', fontSize: '9px' }}>{joinRequests.length}</Box>
+                                <Box sx={{ ...sx.pill(T.warnDim, T.warn), ml: 'auto', fontSize: TYPE.xs }}>{joinRequests.length}</Box>
                               )}
                               {tab === 2 && fleetSummary.blocked > 0 && (
-                                <Box sx={{ ...sx.pill(T.dangerDim, T.danger), ml: 'auto', fontSize: '9px' }}>{fleetSummary.blocked}</Box>
+                                <Box sx={{ ...sx.pill(T.dangerDim, T.danger), ml: 'auto', fontSize: TYPE.xs }}>{fleetSummary.blocked}</Box>
                               )}
                             </Button>
                           ))}
@@ -2137,14 +2358,43 @@ export default function MyDivision() {
             </Grid>
           )}
 
+          {/* ── Weekly goals dialog ── */}
+          <Dialog
+            open={goalsDialogOpen}
+            onClose={() => setGoalsDialogOpen(false)}
+            maxWidth="xs"
+            fullWidth
+            PaperProps={{ sx: { bgcolor: T.surface, border: `1px solid ${T.border}`, borderRadius: 2 } }}
+          >
+            <DialogTitle sx={{ fontFamily: T.mono, fontWeight: 800, fontSize: TYPE.base, color: T.text, letterSpacing: '0.08em', textTransform: 'uppercase', pb: 1, borderBottom: `1px solid ${T.border}` }}>
+              Weekly targets
+            </DialogTitle>
+            <DialogContent sx={{ pt: 2 }}>
+              <Typography sx={{ color: T.textMuted, fontSize: TYPE.md, mb: 2, fontFamily: T.mono, lineHeight: 1.6 }}>
+                Set division-wide targets for the current UTC week (Mon–Sun). Progress uses daily stats from member jobs.
+              </Typography>
+              <Stack spacing={2}>
+                <TextField label="Jobs" type="number" value={goalsForm.jobs} onChange={(e) => setGoalsForm((f) => ({ ...f, jobs: e.target.value }))} sx={inputSx} inputProps={{ min: 0 }} />
+                <TextField label="Distance (km)" type="number" value={goalsForm.distanceKm} onChange={(e) => setGoalsForm((f) => ({ ...f, distanceKm: e.target.value }))} sx={inputSx} inputProps={{ min: 0 }} />
+                <TextField label="Revenue" type="number" value={goalsForm.revenue} onChange={(e) => setGoalsForm((f) => ({ ...f, revenue: e.target.value }))} sx={inputSx} inputProps={{ min: 0 }} />
+              </Stack>
+            </DialogContent>
+            <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
+              <Button onClick={() => setGoalsDialogOpen(false)} sx={btnSx.outlined} variant="outlined">Cancel</Button>
+              <Button sx={btnSx.primary} onClick={saveWeeklyGoals} disabled={goalsSaving}>
+                {goalsSaving ? 'Saving…' : 'Save targets'}
+              </Button>
+            </DialogActions>
+          </Dialog>
+
           {/* ── Tax dialog ── */}
           <Dialog open={taxDialogOpen} onClose={() => setTaxDialogOpen(false)} maxWidth="xs" fullWidth
             PaperProps={{ sx: { bgcolor: T.surface, border: `1px solid ${T.border}`, borderRadius: 2, backdropFilter: 'blur(12px)' } }}>
-            <DialogTitle sx={{ fontFamily: T.mono, fontWeight: 800, fontSize: '13px', color: T.text, letterSpacing: '0.08em', textTransform: 'uppercase', pb: 1, borderBottom: `1px solid ${T.border}` }}>
+            <DialogTitle sx={{ fontFamily: T.mono, fontWeight: 800, fontSize: TYPE.base, color: T.text, letterSpacing: '0.08em', textTransform: 'uppercase', pb: 1, borderBottom: `1px solid ${T.border}` }}>
               Division tax rate
             </DialogTitle>
             <DialogContent sx={{ pt: 2 }}>
-              <Typography sx={{ color: T.textMuted, fontSize: '12px', mb: 2.5, fontFamily: T.mono, lineHeight: 1.6 }}>
+              <Typography sx={{ color: T.textMuted, fontSize: TYPE.md, mb: 2.5, fontFamily: T.mono, lineHeight: 1.6 }}>
                 Job revenue tax % credited to the division wallet. Must be within server maximum.
               </Typography>
               <TextField autoFocus fullWidth label="Tax %" type="number" value={taxPct}
