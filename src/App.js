@@ -109,6 +109,14 @@ import AdminTrucks from "./pages/AdminTrucks";
 import AdminDivisions from "./pages/AdminDivisions";
 import AdminDivisionDetail from "./pages/AdminDivisionDetail";
 import AdminCargoRates from "./pages/AdminCargoRates";
+import CargoBidHub from "./pages/CargoBidHub";
+import CargoBidLotDetail from "./pages/CargoBidLotDetail";
+import CargoBidMyBids from "./pages/CargoBidMyBids";
+import CargoBidMyAwards from "./pages/CargoBidMyAwards";
+import AdminCargoBids from "./pages/admin/AdminCargoBids";
+import AdminCargoBidConfig from "./pages/admin/AdminCargoBidConfig";
+import AdminCargoBidSessionEdit from "./pages/admin/AdminCargoBidSessionEdit";
+import AdminCargoBidAnalytics from "./pages/admin/AdminCargoBidAnalytics";
 import AdminFuelMarket from "./pages/AdminFuelMarket";
 import MyDivision from "./pages/MyDivision";
 import FuelMarketplace from "./pages/FuelMarketplace";
@@ -569,6 +577,10 @@ function App() {
                           element={<TruckMarketplace />}
                         />
                         <Route path="/loans" element={<Loans />} />
+                        <Route path="/cargo-bids" element={<CargoBidHub />} />
+                        <Route path="/cargo-bids/lots/:lotId" element={<CargoBidLotDetail />} />
+                        <Route path="/cargo-bids/my-bids" element={<CargoBidMyBids />} />
+                        <Route path="/cargo-bids/my-awards" element={<CargoBidMyAwards />} />
                         <Route path="/goals" element={<PersonalGoals />} />
                         <Route path="/jobs/:id" element={<JobDetails />} />
                         <Route
@@ -779,6 +791,46 @@ function App() {
                         element={
                           <PrivateRoute allowedRoles={["admin"]}>
                             <AdminCargoRates />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="cargo-bids"
+                        element={
+                          <PrivateRoute allowedRoles={["admin", "eventteam"]}>
+                            <AdminCargoBids />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="cargo-bids/config"
+                        element={
+                          <PrivateRoute allowedRoles={["admin", "eventteam"]}>
+                            <AdminCargoBidConfig />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="cargo-bids/sessions/new"
+                        element={
+                          <PrivateRoute allowedRoles={["admin", "eventteam"]}>
+                            <AdminCargoBidSessionEdit />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="cargo-bids/sessions/:id"
+                        element={
+                          <PrivateRoute allowedRoles={["admin", "eventteam"]}>
+                            <AdminCargoBidSessionEdit />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="cargo-bids/sessions/:id/analytics"
+                        element={
+                          <PrivateRoute allowedRoles={["admin", "eventteam"]}>
+                            <AdminCargoBidAnalytics />
                           </PrivateRoute>
                         }
                       />

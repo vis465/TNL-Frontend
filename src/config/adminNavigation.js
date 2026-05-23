@@ -42,6 +42,7 @@ import BarChartOutlined from '@mui/icons-material/BarChartOutlined';
 import SensorsOutlined from '@mui/icons-material/SensorsOutlined';
 import HistoryOutlined from '@mui/icons-material/HistoryOutlined';
 import BuildOutlined from '@mui/icons-material/BuildOutlined';
+import GavelOutlined from '@mui/icons-material/GavelOutlined';
 
 /** Staff roles that can open /admin (matches App.js admin layout gate). */
 export const STAFF_ROLES = ['admin', 'eventteam', 'hrteam', 'financeteam', 'communityManager'];
@@ -118,6 +119,13 @@ export const MY_AREA_SECTIONS = [
         to: '/contracts',
         label: 'Contract marketplace',
         Icon: AssignmentOutlined,
+        roles: null,
+        matchExact: true,
+      },
+      {
+        to: '/cargo-bids',
+        label: 'Cargo auctions',
+        Icon: GavelOutlined,
         roles: null,
         matchExact: true,
       },
@@ -239,6 +247,12 @@ export const ADMIN_SECTIONS = [
         label: 'Cargo market rates',
         Icon: LocalOfferOutlined,
         roles: ['admin'],
+      },
+      {
+        to: '/admin/cargo-bids',
+        label: 'Cargo auctions',
+        Icon: GavelOutlined,
+        roles: ['admin', 'eventteam'],
       },
       {
         to: '/admin/fuel-market',
