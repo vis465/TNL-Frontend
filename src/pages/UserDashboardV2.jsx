@@ -491,6 +491,20 @@ export default function UserDashboard() {
             </Alert>
           </Container>
         )}
+        {data?.rto?.showBanner && (data?.rto?.outstanding || 0) > 0 && (
+          <Container maxWidth="xl" sx={{ pt: 2 }}>
+            <Alert
+              severity="warning"
+              action={(
+                <Button component={RouterLink} to="/rto/my-challans" size="small" sx={{ textTransform: 'none' }}>
+                  Pay fines
+                </Button>
+              )}
+            >
+              You have {Number(data.rto.outstanding).toLocaleString()} tokens in outstanding RTO fines.
+            </Alert>
+          </Container>
+        )}
 
         <Container maxWidth="xl" sx={{ pt: { xs: 2, md: 3 }, pb: 4 }}>
           <Box

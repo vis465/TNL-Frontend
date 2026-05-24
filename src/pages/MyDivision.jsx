@@ -53,6 +53,7 @@ import AdminPanelSettingsOutlined from '@mui/icons-material/AdminPanelSettingsOu
 import AddCircleOutlineOutlined from '@mui/icons-material/AddCircleOutlineOutlined';
 import OpenInNewOutlined from '@mui/icons-material/OpenInNewOutlined';
 import MonetizationOnOutlined from '@mui/icons-material/MonetizationOnOutlined';
+import GavelOutlined from '@mui/icons-material/GavelOutlined';
 import SecurityOutlined from '@mui/icons-material/SecurityOutlined';
 import AssignmentOutlined from '@mui/icons-material/AssignmentOutlined';
 import FlagOutlined from '@mui/icons-material/FlagOutlined';
@@ -69,6 +70,7 @@ import {
 import DivisionGlobalBanner from '../components/DivisionGlobalBanner';
 import MagicPageShell from '../components/magicui/MagicPageShell';
 import DivisionWalletTransactionsPanel from '../components/division/DivisionWalletTransactionsPanel';
+import DivisionRtoFinesPanel from '../components/division/DivisionRtoFinesPanel';
 import MemberNudgeDialog from '../components/division/MemberNudgeDialog';
 import { computeDivisionLeaderInsights } from '../utils/divisionLeaderInsights';
 import { canShowDivisionInvest } from '../utils/divisionInvestUi';
@@ -1794,6 +1796,7 @@ export default function MyDivision() {
                                     iconPosition="start"
                                   />
                                   <Tab label="Finance" icon={<MonetizationOnOutlined sx={{ fontSize: 15 }} />} iconPosition="start" />
+                                  <Tab label="RTO fines" icon={<GavelOutlined sx={{ fontSize: 15 }} />} iconPosition="start" />
                                 </Tabs>
                               </Box>
                               <Box sx={{ p: 2.5, bgcolor: T.surfaceAlt }}>
@@ -1913,6 +1916,12 @@ export default function MyDivision() {
                                       </Box>
                                     )}
                                   </Stack>
+                                )}
+
+                                {leaderToolTab === 3 && canViewWalletTx && div?._id && (
+                                  <Box sx={{ p: 2, borderRadius: 1.5, border: `1px solid ${T.border}`, bgcolor: T.bg }}>
+                                    <DivisionRtoFinesPanel divisionId={div._id} />
+                                  </Box>
                                 )}
 
                                 {leaderToolTab === 2 && (

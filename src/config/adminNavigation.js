@@ -107,6 +107,8 @@ export const MY_AREA_SECTIONS = [
     items: [
     
       { to: '/wallet', label: 'Wallet', Icon: AccountBalanceWalletOutlined, roles: null },
+      { to: '/rto/my-challans', label: 'RTO fines', Icon: GavelOutlined, roles: null },
+      { to: '/rto/issue', label: 'Issue challan', Icon: GavelOutlined, roles: ['rto', 'admin'] },
       {
         to: '/trucks/marketplace',
         label: 'Truck marketplace',
@@ -273,6 +275,9 @@ export const ADMIN_SECTIONS = [
       },
       { to: '/admin/loans', label: 'Loan management', Icon: RequestQuoteOutlined, roles: ['admin', 'financeteam'] },
       { to: '/admin/emis', label: 'EMI tracking', Icon: PaymentsOutlined, roles: ['admin', 'financeteam'] },
+      { to: '/admin/rto/offences', label: 'RTO offences', Icon: GavelOutlined, roles: ['admin', 'eventteam'] },
+      { to: '/admin/rto/challans', label: 'RTO challans', Icon: GavelOutlined, roles: ['admin', 'eventteam', 'financeteam'] },
+      { to: '/admin/rto/settings', label: 'RTO settings', Icon: GavelOutlined, roles: ['admin', 'eventteam'] },
     ],
   },
 ];

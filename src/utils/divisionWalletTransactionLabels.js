@@ -15,6 +15,7 @@ export const DIVISION_WALLET_KIND_OPTIONS = [
   { value: 'bank_debit', label: 'Division → bank' },
   { value: 'division_loan_disbursal', label: 'Loan disbursal' },
   { value: 'division_emi_deduction', label: 'Loan EMI deduction' },
+  { value: 'rto_fine', label: 'RTO fine settlement' },
 ];
 
 const KIND_LABELS = Object.fromEntries(

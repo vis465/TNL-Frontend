@@ -55,6 +55,7 @@ const FOCUS_OPTIONS = [
   { id: 'quality', label: 'Job quality' },
   { id: 'community', label: 'Events & HR' },
   { id: 'fleet', label: 'Fleet & cargo' },
+  { id: 'rto', label: 'RTO & fines' },
 ];
 
 const CHART_COLORS = ['#5B8DEF', '#3DD68C', '#F5A524', '#F97066', '#9B8AFB', '#38BDF8'];
@@ -214,6 +215,7 @@ export default function AnalyticsV2Page() {
   const financial = data?.financial;
   const engagement = data?.engagement;
   const divisions = data?.divisions;
+  const rto = data?.rto;
   const timeSeries = data?.timeSeries || [];
   const fuelTrend = divisions?.fuel?.trendByDay || [];
 
@@ -777,6 +779,62 @@ export default function AnalyticsV2Page() {
                   <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
                     {formatNum(financial?.cargoJobsRecorded)} cargo deliveries recorded (deduped)
                   </Typography>
+                </Grid>
+              </Grid>
+            </Section>
+          )}
+
+          {(show('rto') || show('all')) && rto && (
+            <Section
+              title="RTO & traffic fines"
+              description="Challans issued, collected, and outstanding in the selected window"
+              defaultOpen
+            >
+              <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid item xs={6} sm={4} md={3}>
+                  <KpiTile
+                    label="Issued"
+                    value={formatNum(rto.current?.challansIssued)}
+                    delta={rto.deltas?.challansIssuedPct}
+                    sub={priorLabel}
+                  />
+                </Grid>
+                <Grid item xs={6} sm={4} md={3}>
+                  <KpiTile
+                    label="Collected"
+                    value={formatNum(rto.current?.fineAmountCollected)}
+                    delta={rto.deltas?.fineAmountCollectedPct}
+                    sub={priorLabel}
+                    accent="#3DD68C"
+                  />
+                </Grid>
+                <Grid item xs={6} sm={4} md={3}>
+                  <KpiTile
+                    label="Outstanding"
+                    value={formatNum(rto.current?.outstandingPending)}
+                    sub="Pending platform-wide"
+                    accent="#F97066"
+                  />
+                </Grid>
+                <Grid item xs={6} sm={4} md={3}>
+                  <KpiTile
+                    label="Collection rate"
+                    value={`${formatNum(rto.current?.collectionRatePct, { decimals: 1 })}%`}
+                    delta={rto.deltas?.collectionRatePct}
+                    sub={priorLabel}
+                  />
+                </Grid>
+                <Grid item xs={6} sm={4} md={3}>
+                  <KpiTile
+                    label="Avg days to pay"
+                    value={formatNum(rto.current?.avgDaysToPay, { decimals: 1 })}
+                  />
+                </Grid>
+                <Grid item xs={6} sm={4} md={3}>
+                  <KpiTile
+                    label="Appeals pending"
+                    value={formatNum(rto.current?.appealsPending)}
+                  />
                 </Grid>
               </Grid>
             </Section>
