@@ -12,6 +12,7 @@ import { useTheme, useMediaQuery } from "@mui/material";
 import { Menu as MenuIcon } from "@mui/icons-material";
 import AdminSidebar from "./AdminSidebar";
 import { ADMIN_SECTIONS, MY_AREA_SECTIONS, isNavPathActive } from "../config/adminNavigation";
+import { ADMIN_RTO_TABS } from "../config/adminRtoNav";
 
 /**
  * Shared shell: sidebar + main (Outlet). Used for member routes and /admin.
@@ -50,7 +51,10 @@ export default function AdminLayout({
   };
 
   const allItems = [...MY_AREA_SECTIONS, ...ADMIN_SECTIONS].flatMap((s) => s.items || []);
-  const currentNav = allItems.find((item) => isNavPathActive(location.pathname, item));
+  const rtoTab = ADMIN_RTO_TABS.find((item) => isNavPathActive(location.pathname, item));
+  const currentNav =
+    allItems.find((item) => isNavPathActive(location.pathname, item)) ||
+    (rtoTab && { label: `RTO — ${rtoTab.label}` });
 
   return (
     <Box sx={{ flex: 1, minHeight: 0, display: "flex" }}>

@@ -87,6 +87,7 @@ import ContractsMarketplace from "./pages/ContractsMarketplace";
 import MyContracts from "./pages/MyContracts";
 import AdminBank from "./pages/AdminBank";
 import AdminContracts from "./pages/AdminContracts";
+import AdminRtoLayout from "./pages/admin/AdminRtoLayout";
 import AdminRtoOffences from "./pages/admin/AdminRtoOffences";
 import AdminRtoChallans from "./pages/admin/AdminRtoChallans";
 import AdminRtoSettings from "./pages/admin/AdminRtoSettings";
@@ -806,29 +807,39 @@ function App() {
                         }
                       />
                       <Route
-                        path="rto/offences"
-                        element={
-                          <PrivateRoute allowedRoles={["admin", "eventteam"]}>
-                            <AdminRtoOffences />
-                          </PrivateRoute>
-                        }
-                      />
-                      <Route
-                        path="rto/challans"
+                        path="rto"
                         element={
                           <PrivateRoute allowedRoles={["admin", "eventteam", "financeteam"]}>
-                            <AdminRtoChallans />
+                            <AdminRtoLayout />
                           </PrivateRoute>
                         }
-                      />
-                      <Route
-                        path="rto/settings"
-                        element={
-                          <PrivateRoute allowedRoles={["admin", "eventteam"]}>
-                            <AdminRtoSettings />
-                          </PrivateRoute>
-                        }
-                      />
+                      >
+                        <Route index element={<Navigate to="challans" replace />} />
+                        <Route
+                          path="offences"
+                          element={
+                            <PrivateRoute allowedRoles={["admin", "eventteam"]}>
+                              <AdminRtoOffences />
+                            </PrivateRoute>
+                          }
+                        />
+                        <Route
+                          path="challans"
+                          element={
+                            <PrivateRoute allowedRoles={["admin", "eventteam", "financeteam"]}>
+                              <AdminRtoChallans />
+                            </PrivateRoute>
+                          }
+                        />
+                        <Route
+                          path="settings"
+                          element={
+                            <PrivateRoute allowedRoles={["admin", "eventteam"]}>
+                              <AdminRtoSettings />
+                            </PrivateRoute>
+                          }
+                        />
+                      </Route>
                       <Route
                         path="coupons"
                         element={

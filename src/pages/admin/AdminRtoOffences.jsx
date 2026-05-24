@@ -72,9 +72,6 @@ export default function AdminRtoOffences() {
 
   return (
     <Box>
-      <Typography variant="h5" fontWeight={700} gutterBottom>
-        RTO offences
-      </Typography>
       {msg && <Alert severity="success" sx={{ mb: 2 }}>{msg}</Alert>}
       {err && <Alert severity="error" sx={{ mb: 2 }}>{err}</Alert>}
 

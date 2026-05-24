@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import {
   Grid,
@@ -12,6 +12,8 @@ import {
   alpha,
   Chip,
   Stack,
+  Tab,
+  Tabs,
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -27,6 +29,8 @@ function formatStaffRole(role) {
     eventteam: 'Event team',
     hrteam: 'HR team',
     financeteam: 'Finance team',
+    communityManager: 'Community manager',
+    rto: 'RTO officer',
   };
   return map[role] || role;
 }
@@ -91,12 +95,33 @@ const AdminDashboard = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const role = user?.role;
+  const [activeGroup, setActiveGroup] = useState('all');
 
-  const allowedCards = ADMIN_DASHBOARD_CARDS.filter((c) => userCanSeeNavItem(role, c.roles));
-  const byGroup = ADMIN_DASHBOARD_GROUP_ORDER.reduce((acc, group) => {
-    acc[group] = allowedCards.filter((c) => c.group === group);
-    return acc;
-  }, {});
+  const allowedCards = useMemo(
+    () => ADMIN_DASHBOARD_CARDS.filter((c) => userCanSeeNavItem(role, c.roles)),
+    [role],
+  );
+
+  const visibleGroups = useMemo(
+    () =>
+      ADMIN_DASHBOARD_GROUP_ORDER.filter((group) =>
+        allowedCards.some((c) => c.group === group),
+      ),
+    [allowedCards],
+  );
+
+  const filteredCards = useMemo(() => {
+    if (activeGroup === 'all') return allowedCards;
+    return allowedCards.filter((c) => c.group === activeGroup);
+  }, [activeGroup, allowedCards]);
+
+  const cardsByGroup = useMemo(() => {
+    const groups = activeGroup === 'all' ? visibleGroups : [activeGroup];
+    return groups.reduce((acc, group) => {
+      acc[group] = filteredCards.filter((c) => c.group === group);
+      return acc;
+    }, {});
+  }, [activeGroup, filteredCards, visibleGroups]);
 
   return (
     <Box>
@@ -107,7 +132,7 @@ const AdminDashboard = () => {
           justifyContent: 'space-between',
           alignItems: 'flex-start',
           gap: 2,
-          mb: 4,
+          mb: 3,
         }}
       >
         <Box>
@@ -120,18 +145,12 @@ const AdminDashboard = () => {
             Admin dashboard
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 640 }}>
-            Shortcuts match your role. Use the sidebar for the full menu (personal tools under{' '}
-            <strong>My area</strong>, staff tools by section).
+            Shortcuts for your role. Filter by area below, or use the sidebar for the full menu.
           </Typography>
         </Box>
         {user && (
           <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-            <Chip
-              label={user.username}
-              size="medium"
-              variant="outlined"
-              sx={{ fontWeight: 500 }}
-            />
+            <Chip label={user.username} size="medium" variant="outlined" sx={{ fontWeight: 500 }} />
             {role && (
               <Chip
                 label={formatStaffRole(role)}
@@ -145,23 +164,41 @@ const AdminDashboard = () => {
         )}
       </Box>
 
-      {ADMIN_DASHBOARD_GROUP_ORDER.map((group) => {
-        const items = byGroup[group];
+      <Box sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}>
+        <Tabs
+          value={activeGroup}
+          onChange={(_, v) => setActiveGroup(v)}
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+          sx={{ minHeight: 44, '& .MuiTab-root': { textTransform: 'none', fontWeight: 600 } }}
+        >
+          <Tab value="all" label={`All (${allowedCards.length})`} />
+          {visibleGroups.map((group) => {
+            const count = allowedCards.filter((c) => c.group === group).length;
+            return <Tab key={group} value={group} label={`${group} (${count})`} />;
+          })}
+        </Tabs>
+      </Box>
+
+      {Object.entries(cardsByGroup).map(([group, items]) => {
         if (!items?.length) return null;
         return (
           <Box key={group} sx={{ mb: 4 }}>
-            <Typography
-              variant="overline"
-              sx={{
-                color: 'text.secondary',
-                fontWeight: 600,
-                letterSpacing: 1,
-                display: 'block',
-                mb: 1.5,
-              }}
-            >
-              {group}
-            </Typography>
+            {activeGroup === 'all' && (
+              <Typography
+                variant="overline"
+                sx={{
+                  color: 'text.secondary',
+                  fontWeight: 600,
+                  letterSpacing: 1,
+                  display: 'block',
+                  mb: 1.5,
+                }}
+              >
+                {group}
+              </Typography>
+            )}
             <Grid container spacing={2}>
               {items.map((item) => (
                 <Grid item xs={12} sm={6} md={4} key={item.to}>
@@ -172,6 +209,10 @@ const AdminDashboard = () => {
           </Box>
         );
       })}
+
+      {!filteredCards.length && (
+        <Typography color="text.secondary">No tools available for your role in this area.</Typography>
+      )}
     </Box>
   );
 };

@@ -55,10 +55,7 @@ export default function AdminRtoChallans() {
 
   return (
     <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-        <Typography variant="h5" fontWeight={700}>
-          RTO challans
-        </Typography>
+      <Stack direction="row" justifyContent="flex-end" sx={{ mb: 2 }}>
         <Button variant="outlined" onClick={handleExport}>
           Export CSV
         </Button>

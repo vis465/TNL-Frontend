@@ -42,6 +42,9 @@ import BarChartOutlined from '@mui/icons-material/BarChartOutlined';
 import SensorsOutlined from '@mui/icons-material/SensorsOutlined';
 import HistoryOutlined from '@mui/icons-material/HistoryOutlined';
 import BuildOutlined from '@mui/icons-material/BuildOutlined';
+import GavelOutlined from '@mui/icons-material/GavelOutlined';
+import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined';
+import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
 
 /** Staff roles that can open /admin (matches App.js admin layout gate). */
 export const STAFF_ROLES = ['admin', 'eventteam', 'hrteam', 'financeteam', 'communityManager'];
@@ -263,6 +266,33 @@ export const ADMIN_SECTIONS = [
     ],
   },
   {
+    id: 'rto',
+    label: 'RTO & fines',
+    items: [
+      {
+        to: '/admin/rto/challans',
+        label: 'RTO challans',
+        Icon: ReceiptLongOutlined,
+        roles: ['admin', 'eventteam', 'financeteam'],
+        matchExact: true,
+      },
+      {
+        to: '/admin/rto/offences',
+        label: 'RTO offences',
+        Icon: GavelOutlined,
+        roles: ['admin', 'eventteam'],
+        matchExact: true,
+      },
+      {
+        to: '/admin/rto/settings',
+        label: 'RTO settings',
+        Icon: SettingsOutlined,
+        roles: ['admin', 'eventteam'],
+        matchExact: true,
+      },
+    ],
+  },
+  {
     id: 'finance',
     label: 'Finance',
     items: [
@@ -275,9 +305,6 @@ export const ADMIN_SECTIONS = [
       },
       { to: '/admin/loans', label: 'Loan management', Icon: RequestQuoteOutlined, roles: ['admin', 'financeteam'] },
       { to: '/admin/emis', label: 'EMI tracking', Icon: PaymentsOutlined, roles: ['admin', 'financeteam'] },
-      { to: '/admin/rto/offences', label: 'RTO offences', Icon: GavelOutlined, roles: ['admin', 'eventteam'] },
-      { to: '/admin/rto/challans', label: 'RTO challans', Icon: GavelOutlined, roles: ['admin', 'eventteam', 'financeteam'] },
-      { to: '/admin/rto/settings', label: 'RTO settings', Icon: GavelOutlined, roles: ['admin', 'eventteam'] },
     ],
   },
 ];
@@ -288,6 +315,7 @@ export const ADMIN_DASHBOARD_GROUP_ORDER = [
   'People & HR',
   'Challenges',
   'Divisions',
+  'RTO & fines',
   'Finance',
 ];
 
@@ -471,6 +499,33 @@ export const ADMIN_DASHBOARD_CARDS = [
     icon: BuildOutlined,
     color: 'warning',
     roles: ['admin', 'communityManager'],
+  },
+  {
+    group: 'RTO & fines',
+    title: 'RTO challans',
+    description: 'All issued fines, appeals, CSV export, and admin waive/cancel.',
+    to: '/admin/rto/challans',
+    icon: ReceiptLongOutlined,
+    color: 'warning',
+    roles: ['admin', 'eventteam', 'financeteam'],
+  },
+  {
+    group: 'RTO & fines',
+    title: 'RTO offences',
+    description: 'Create and maintain offence codes and default fine amounts.',
+    to: '/admin/rto/offences',
+    icon: GavelOutlined,
+    color: 'error',
+    roles: ['admin', 'eventteam'],
+  },
+  {
+    group: 'RTO & fines',
+    title: 'RTO settings',
+    description: 'Cooldowns, daily caps, expiry, and outstanding banner thresholds.',
+    to: '/admin/rto/settings',
+    icon: SettingsOutlined,
+    color: 'secondary',
+    roles: ['admin', 'eventteam'],
   },
   {
     group: 'Finance',

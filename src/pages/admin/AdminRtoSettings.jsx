@@ -35,9 +35,6 @@ export default function AdminRtoSettings() {
 
   return (
     <Box>
-      <Typography variant="h5" fontWeight={700} gutterBottom>
-        RTO settings
-      </Typography>
       {msg && <Alert severity="success" sx={{ mb: 2 }}>{msg}</Alert>}
       {err && <Alert severity="error" sx={{ mb: 2 }}>{err}</Alert>}
       <Stack spacing={2} maxWidth={480}>
