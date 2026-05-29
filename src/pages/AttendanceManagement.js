@@ -80,7 +80,8 @@ const AttendanceManagement = () => {
     description: '',
     eventDate: '',
     endDate: '',
-    isAttendanceOpen: true
+    isAttendanceOpen: true,
+    considerForStreak: true
   });
   const [eventFormLoading, setEventFormLoading] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -153,7 +154,8 @@ const AttendanceManagement = () => {
         description: '',
         eventDate: '',
         endDate: '',
-        isAttendanceOpen: true
+        isAttendanceOpen: true,
+        considerForStreak: true
       });
       await fetchData();
     } catch (error) {
@@ -911,6 +913,15 @@ const AttendanceManagement = () => {
                 />
               }
               label="Attendance Open for Marking"
+            />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={eventForm.considerForStreak}
+                  onChange={(e) => setEventForm({ ...eventForm, considerForStreak: e.target.checked })}
+                />
+              }
+              label="Consider event for streak reset on rejection"
             />
           </Stack>
         </DialogContent>
