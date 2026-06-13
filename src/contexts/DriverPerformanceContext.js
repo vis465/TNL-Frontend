@@ -12,7 +12,7 @@ function unwrapData(res) {
   return res?.data ?? null;
 }
 
-export function DriverPerformanceProvider({ children, divisionId }) {
+export function DriverPerformanceProvider({ children, divisionId, publicSlug }) {
   const [state, setState] = useState({
     drivers: [],
     leaderboards: {},
@@ -28,14 +28,20 @@ export function DriverPerformanceProvider({ children, divisionId }) {
   const wsRef = useRef(null);
 
   const fetchSnapshot = useCallback(async () => {
-    if (!divisionId) {
+    const endpoint = publicSlug
+      ? `/divisions/public/${encodeURIComponent(publicSlug)}/performance`
+      : divisionId
+        ? `/divisions/${divisionId}/performance`
+        : null;
+
+    if (!endpoint) {
       setState((s) => ({ ...s, loading: false }));
       return;
     }
 
     try {
       const perfRes = await axiosInstance
-        .get(`/divisions/${divisionId}/performance`)
+        .get(endpoint)
         .catch(() => ({ data: null }));
 
       const snapshot = unwrapData(perfRes) || {};
@@ -55,7 +61,7 @@ export function DriverPerformanceProvider({ children, divisionId }) {
     } catch (_) {
       setState((s) => ({ ...s, loading: false }));
     }
-  }, [divisionId]);
+  }, [divisionId, publicSlug]);
 
   useEffect(() => {
     fetchSnapshot();

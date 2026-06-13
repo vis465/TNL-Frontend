@@ -72,6 +72,8 @@ import MagicPageShell from '../components/magicui/MagicPageShell';
 import DivisionWalletTransactionsPanel from '../components/division/DivisionWalletTransactionsPanel';
 import DivisionRtoFinesPanel from '../components/division/DivisionRtoFinesPanel';
 import MemberNudgeDialog from '../components/division/MemberNudgeDialog';
+import { DriverPerformanceProvider } from '../contexts/DriverPerformanceContext';
+import DriverPerformanceDashboard from '../components/DriverPerformance/Dashboard';
 import { computeDivisionLeaderInsights } from '../utils/divisionLeaderInsights';
 import { canShowDivisionInvest } from '../utils/divisionInvestUi';
 import { formatGoalValue } from '../utils/divisionWeeklyGoals';
@@ -453,7 +455,7 @@ const EmptyState = ({ icon: Icon, title, description, actions }) => (
 
 // ─── constants ────────────────────────────────────────────────────────────────
 const DIVISION_FUEL_CAPACITY_L = 20_000;
-const TAB_KEYS = ['overview', 'people', 'fleet', 'leaderboard'];
+const TAB_KEYS = ['overview', 'people', 'fleet', 'leaderboard', 'performance'];
 const TAB_INDEX_BY_KEY = TAB_KEYS.reduce((acc, key, index) => { acc[key] = index; return acc; }, {});
 const LEADER_TOOL_KEYS = ['access', 'requests', 'finance'];
 const LEADER_TOOL_INDEX_BY_KEY = LEADER_TOOL_KEYS.reduce((acc, key, index) => { acc[key] = index; return acc; }, {});
@@ -1596,6 +1598,7 @@ export default function MyDivision() {
                           iconPosition="start"
                         />
                         <Tab label={`Leaderboard · ${lb.length}`} icon={<LeaderboardOutlined sx={{ fontSize: 16 }} />} iconPosition="start" />
+                        <Tab label="Performance" icon={<SpeedOutlined sx={{ fontSize: 16 }} />} iconPosition="start" />
                       </Tabs>
                     </Box>
 
@@ -2235,6 +2238,13 @@ export default function MyDivision() {
                         </Box>
                       )}
 
+                      {/* ── PERFORMANCE ── */}
+                      {activeTab === 4 && div?._id && (
+                        <DriverPerformanceProvider divisionId={div._id}>
+                          <DriverPerformanceDashboard divisionId={div._id} />
+                        </DriverPerformanceProvider>
+                      )}
+
                     </Box>
                   </Box>
 
@@ -2327,6 +2337,7 @@ export default function MyDivision() {
                             { label: 'People', tab: 1, icon: GroupOutlined },
                             { label: 'Fleet', tab: 2, icon: DirectionsBusOutlined },
                             { label: 'Leaderboard', tab: 3, icon: LeaderboardOutlined },
+                            { label: 'Performance', tab: 4, icon: SpeedOutlined },
                           ].map(({ label, tab, icon: Icon }) => (
                             <Button
                               key={tab}
