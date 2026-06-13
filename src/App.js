@@ -127,6 +127,7 @@ import AdminVtcMonthlyStats from "./pages/AdminVtcMonthlyStats";
 import AdminAuditLogs from "./pages/AdminAuditLogs";
 import AdminOperations from "./pages/admin/AdminOperations";
 import FleetOdometerBackfill from "./pages/admin/FleetOdometerBackfill";
+import PowerupManagement from "./pages/PowerupManagement";
 
 export const ThemeContext = createContext({
   isDarkMode: false,
@@ -715,6 +716,14 @@ function App() {
                         element={
                           <PrivateRoute allowedRoles={["admin", "hrteam"]}>
                             <HRDashboard />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="powerups"
+                        element={
+                          <PrivateRoute allowedRoles={["admin", "hrteam"]}>
+                            <PowerupManagement />
                           </PrivateRoute>
                         }
                       />

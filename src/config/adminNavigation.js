@@ -45,6 +45,7 @@ import BuildOutlined from '@mui/icons-material/BuildOutlined';
 import GavelOutlined from '@mui/icons-material/GavelOutlined';
 import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined';
 import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
+import AutoAwesomeOutlined from '@mui/icons-material/AutoAwesomeOutlined';
 
 /** Staff roles that can open /admin (matches App.js admin layout gate). */
 export const STAFF_ROLES = ['admin', 'eventteam', 'hrteam', 'financeteam', 'communityManager'];
@@ -207,6 +208,12 @@ export const ADMIN_SECTIONS = [
         Icon: BarChartOutlined,
         roles: ['admin', 'hrteam'],
       },
+      {
+        to: '/admin/powerups',
+        label: 'Powerup management',
+        Icon: AutoAwesomeOutlined,
+        roles: ['admin', 'hrteam'],
+      },
       // { to: '/admin/riders', label: 'Riders', Icon: Group, roles: ['admin', 'eventteam', 'hrteam'] },
       { to: '/admin/achievements', label: 'Achievements', Icon: MilitaryTech, roles: ['admin', 'hrteam'] },
     ],
@@ -252,16 +259,16 @@ export const ADMIN_SECTIONS = [
         roles: ['admin'],
       },
       {
-        to: '/admin/coupons',
-        label: 'Marketplace coupons',
-        Icon: LocalOfferOutlined,
-        roles: ['admin'],
-      },
-      {
         to: '/admin/operations',
         label: 'Maintenance tools',
         Icon: BuildOutlined,
         roles: ['admin', 'communityManager'],
+      },
+      {
+        to: '/admin/coupons',
+        label: 'Marketplace coupons',
+        Icon: LocalOfferOutlined,
+        roles: ['admin'],
       },
     ],
   },
@@ -273,21 +280,21 @@ export const ADMIN_SECTIONS = [
         to: '/admin/rto/challans',
         label: 'RTO challans',
         Icon: ReceiptLongOutlined,
-        roles: ['admin', 'eventteam', 'financeteam'],
+        roles: ['admin', 'eventteam', 'financeteam', 'rto'],
         matchExact: true,
       },
       {
         to: '/admin/rto/offences',
         label: 'RTO offences',
         Icon: GavelOutlined,
-        roles: ['admin', 'eventteam'],
+        roles: ['admin', 'eventteam', 'rto'],
         matchExact: true,
       },
       {
         to: '/admin/rto/settings',
         label: 'RTO settings',
         Icon: SettingsOutlined,
-        roles: ['admin', 'eventteam'],
+        roles: ['admin', 'eventteam', 'rto'],
         matchExact: true,
       },
     ],
@@ -350,7 +357,7 @@ export const ADMIN_DASHBOARD_CARDS = [
   {
     group: 'Events & operations',
     title: 'Analytics',
-    description: 'KPI dashboard with delivery trends, engagement, and fleet insights.',
+    description: 'Event, attendance, and engagement analytics.',
     to: '/admin/analytics',
     icon: AnalyticsOutlined,
     color: 'info',
@@ -421,6 +428,15 @@ export const ADMIN_DASHBOARD_CARDS = [
   },
   {
     group: 'People & HR',
+    title: 'Powerup management',
+    description: 'Configure streak rewards, random weights, and availability.',
+    to: '/admin/powerups',
+    icon: AutoAwesomeOutlined,
+    color: 'secondary',
+    roles: ['admin', 'hrteam'],
+  },
+  {
+    group: 'People & HR',
     title: 'Riders',
     description: 'Rider profiles, IDs, and wallet links.',
     to: '/admin/riders',
@@ -484,15 +500,6 @@ export const ADMIN_DASHBOARD_CARDS = [
   },
   {
     group: 'Divisions',
-    title: 'Marketplace coupons',
-    description: 'Create and manage discount codes for truck marketplace purchases.',
-    to: '/admin/coupons',
-    icon: LocalOfferOutlined,
-    color: 'success',
-    roles: ['admin'],
-  },
-  {
-    group: 'Divisions',
     title: 'Maintenance tools',
     description: 'Fleet odometer backfill and other safe data repairs (preview before apply).',
     to: '/admin/operations',
@@ -501,13 +508,22 @@ export const ADMIN_DASHBOARD_CARDS = [
     roles: ['admin', 'communityManager'],
   },
   {
+    group: 'Divisions',
+    title: 'Marketplace coupons',
+    description: 'Create and manage discount codes for truck marketplace purchases.',
+    to: '/admin/coupons',
+    icon: LocalOfferOutlined,
+    color: 'success',
+    roles: ['admin'],
+  },
+  {
     group: 'RTO & fines',
     title: 'RTO challans',
     description: 'All issued fines, appeals, CSV export, and admin waive/cancel.',
     to: '/admin/rto/challans',
     icon: ReceiptLongOutlined,
     color: 'warning',
-    roles: ['admin', 'eventteam', 'financeteam'],
+    roles: ['admin', 'eventteam', 'financeteam', 'rto'],
   },
   {
     group: 'RTO & fines',
@@ -516,7 +532,7 @@ export const ADMIN_DASHBOARD_CARDS = [
     to: '/admin/rto/offences',
     icon: GavelOutlined,
     color: 'error',
-    roles: ['admin', 'eventteam'],
+    roles: ['admin', 'eventteam', 'rto'],
   },
   {
     group: 'RTO & fines',
@@ -525,7 +541,7 @@ export const ADMIN_DASHBOARD_CARDS = [
     to: '/admin/rto/settings',
     icon: SettingsOutlined,
     color: 'secondary',
-    roles: ['admin', 'eventteam'],
+    roles: ['admin', 'eventteam', 'rto'],
   },
   {
     group: 'Finance',

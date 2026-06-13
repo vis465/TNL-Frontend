@@ -33,6 +33,7 @@ import {
   Zoom,
 } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
+import API_CONFIG from '../config/api';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import TwitterIcon from '@mui/icons-material/Twitter';
 import EmailIcon from '@mui/icons-material/Email';
@@ -191,7 +192,7 @@ const StatsCard = styled(Paper)(({ theme }) => ({
   },
 }));
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = API_CONFIG.baseURL;
 const VTC_ID = '70030'; // Tamil Nadu Logistics VTC ID
 
 const Team = () => {

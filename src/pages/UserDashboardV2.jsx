@@ -757,7 +757,6 @@ export default function UserDashboard() {
                           {attendance?.totalEventsAttended || 0}
                         </Typography>
                       </Box>
-                      <Typography sx={{ ...sxLabel, mb: 1.25 }}>Active Attendance Windows</Typography>
                       {attendanceSubmitMsg && (
                         <Box sx={{
                           mb: 1.5, p: '8px 14px',
@@ -808,7 +807,7 @@ export default function UserDashboard() {
                         )}
                       </Stack>
 
-                      
+                      <Typography sx={{ ...sxLabel, mb: 1.25 }}>Active Attendance Windows</Typography>
                       <Stack spacing={1} sx={{ maxHeight: 320, overflowY: 'auto', pr: 0.5 }}>
                         {activeAttendanceEvents.map((ev) => (
                           <Stack key={ev._id} direction="row" alignItems="center" justifyContent="space-between"

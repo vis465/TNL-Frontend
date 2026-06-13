@@ -31,6 +31,7 @@ import {
 import { styled, alpha } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import API_CONFIG from '../config/api';
 import EventIcon from '@mui/icons-material/Event';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -164,7 +165,7 @@ const Events = () => {
   const [filterBy, setFilterBy] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
   const navigate = useNavigate();
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+  const API_BASE_URL = API_CONFIG.baseURL;
 
   useEffect(() => {
     const fetchEvents = async () => {
