@@ -44,6 +44,8 @@ import MagicPageShell from '../components/magicui/MagicPageShell';
 import AnimatedTabPanel from '../components/magicui/AnimatedTabPanel';
 import DivisionWalletTransactionsPanel from '../components/division/DivisionWalletTransactionsPanel';
 import MemberNudgeDialog from '../components/division/MemberNudgeDialog';
+import { DriverPerformanceProvider } from '../contexts/DriverPerformanceContext';
+import DriverPerformanceDashboard from '../components/DriverPerformance/Dashboard';
 
 const DIVISION_FUEL_CAPACITY_L = 20_000;
 
@@ -340,6 +342,18 @@ export default function AdminDivisionDetail() {
     }
   };
 
+  const addMember = async () => {
+    if (!inviteRider?._id) return;
+    try {
+      await axiosInstance.post(`/divisions/${id}/members`, { riderId: inviteRider._id });
+      setInviteRider(null);
+      setInviteQuery('');
+      load();
+    } catch (e) {
+      setError(e?.response?.data?.message || 'Add member failed');
+    }
+  };
+
   const saveTax = async () => {
     try {
       await axiosInstance.patch(`/divisions/${id}/tax`, { taxPercent: Number(taxPct) });
@@ -551,6 +565,7 @@ export default function AdminDivisionDetail() {
         />
         <Tab label={`Trucks${trucks.length ? ` (${trucks.length})` : ''}`} />
         <Tab label={`Jobs${divisionJobsTotal ? ` (${divisionJobsTotal})` : ''}`} />
+        <Tab label="Performance" />
       </Tabs>
 
       <AnimatedTabPanel panelKey={`admin-division-tab-${tab}`}>
@@ -1060,7 +1075,8 @@ export default function AdminDivisionDetail() {
                   renderInput={(params) => <TextField {...params} label="Invite rider (search)" />}
                   sx={{ flex: 1, minWidth: 260 }}
                 />
-                <Button variant="contained" onClick={sendInvite} disabled={!inviteRider?._id}>Send invite</Button>
+                <Button variant="contained" onClick={addMember} disabled={!inviteRider?._id}>Add member</Button>
+                <Button variant="outlined" onClick={sendInvite} disabled={!inviteRider?._id}>Send invite</Button>
               </Stack>
             )}
             <Table size="small">
@@ -1523,6 +1539,12 @@ export default function AdminDivisionDetail() {
             </Stack>
           </CardContent>
         </Card>
+      )}
+
+      {tab === 8 && division && (
+        <DriverPerformanceProvider divisionId={id}>
+          <DriverPerformanceDashboard divisionId={id} />
+        </DriverPerformanceProvider>
       )}
       </AnimatedTabPanel>
 

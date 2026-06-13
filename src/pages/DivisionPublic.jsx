@@ -19,12 +19,14 @@ import {
   Paper,
   Snackbar,
   Stack,
+  Tab,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableRow,
   TableSortLabel,
+  Tabs,
   TextField,
   Typography,
 } from '@mui/material';
@@ -34,12 +36,15 @@ import LocalAtmOutlined from '@mui/icons-material/LocalAtmOutlined';
 import EmojiEvents from '@mui/icons-material/EmojiEvents';
 import PersonAddOutlined from '@mui/icons-material/PersonAddOutlined';
 import VerifiedOutlined from '@mui/icons-material/VerifiedOutlined';
+import SpeedOutlined from '@mui/icons-material/SpeedOutlined';
 import { motion } from 'framer-motion';
 import { Landmark, Receipt, Sparkles, TrendingDown, Users, WalletCards } from 'lucide-react';
 import axiosInstance from '../utils/axios';
 import { getItemWithExpiry } from '../localStorageWithExpiry';
 import DivisionGlobalBanner from '../components/DivisionGlobalBanner';
 import MagicPageShell from '../components/magicui/MagicPageShell';
+import { DriverPerformanceProvider } from '../contexts/DriverPerformanceContext';
+import DriverPerformanceDashboard from '../components/DriverPerformance/Dashboard';
 import { alpha, useTheme } from '@mui/material/styles';
 
 export default function DivisionPublic() {
@@ -58,6 +63,7 @@ export default function DivisionPublic() {
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
   const [memberSort, setMemberSort] = useState('revenue');
   const [memberDir, setMemberDir] = useState('desc');
+  const [activeTab, setActiveTab] = useState(0);
 
   const leaderboard = data?.leaderboard;
   const sortedLeaderboard = useMemo(() => {
@@ -118,6 +124,7 @@ export default function DivisionPublic() {
 
   useEffect(() => {
     if (slug) load();
+    setActiveTab(0);
   }, [slug]);
 
   useEffect(() => {
@@ -438,6 +445,19 @@ export default function DivisionPublic() {
               </Paper>
             </motion.div>
 
+            <Tabs
+              value={activeTab}
+              onChange={(_, v) => setActiveTab(v)}
+              sx={{ mt: 3, borderBottom: 1, borderColor: 'divider' }}
+              variant="scrollable"
+              scrollButtons="auto"
+            >
+              <Tab label="Overview" />
+              <Tab label="Performance" icon={<SpeedOutlined sx={{ fontSize: 18 }} />} iconPosition="start" />
+            </Tabs>
+
+            {activeTab === 0 && (
+              <>
             {/* Lucide-assisted stat spotlight (compact, scannable) */}
             <Grid container spacing={2} sx={{ mt: 3 }}>
               {[
@@ -687,8 +707,6 @@ export default function DivisionPublic() {
                 </Card>
               </Grid>
             </Grid>
-          </Container>
-        </Box>
   {recentJobs.length > 0 && (
               <Card sx={{ mt: 4, borderRadius: 2.5, overflow: 'hidden' }}>
                 <CardContent sx={{ p: 0 }}>
@@ -760,6 +778,19 @@ export default function DivisionPublic() {
                 </CardContent>
               </Card>
             )}
+              </>
+            )}
+
+            {activeTab === 1 && slug && (
+              <Box sx={{ mt: 3 }}>
+                <DriverPerformanceProvider publicSlug={slug}>
+                  <DriverPerformanceDashboard divisionId={division._id} />
+                </DriverPerformanceProvider>
+              </Box>
+            )}
+          </Container>
+        </Box>
+
         <Dialog open={applyOpen} onClose={() => !applyBusy && setApplyOpen(false)} maxWidth="sm" fullWidth>
           <DialogTitle>Apply to join {division.name}</DialogTitle>
           <DialogContent>
