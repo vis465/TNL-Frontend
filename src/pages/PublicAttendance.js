@@ -1,181 +1,185 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import {
+  Alert,
   Box,
-  Container,
-  Typography,
+  Button,
   Card,
   CardContent,
+  Chip,
+  CircularProgress,
+  Container,
+  Grid,
+  InputAdornment,
+  Paper,
+  Stack,
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
   TableRow,
-  Paper,
-  Chip,
-  Alert,
-  CircularProgress,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   TextField,
-  InputAdornment,
-  Grid,
-  Stack,
-  ToggleButton,
-  ToggleButtonGroup
+  Typography,
 } from '@mui/material';
 import {
   Event as EventIcon,
-  People as PeopleIcon,
-  TrendingUp as TrendingUpIcon,
-  ExpandMore as ExpandMoreIcon,
-  CalendarToday as CalendarTodayIcon,
-  Search as SearchIcon,
-  Group as GroupIcon,
-  Person as PersonIcon,
   EmojiEvents as EmojiEventsIcon,
-  Leaderboard as LeaderboardIcon,
-  EmojiEvents as TrophyIcon,
-  Star as StarIcon,
-  MilitaryTech as MedalIcon
+  People as PeopleIcon,
+  Search as SearchIcon,
+  ArrowForward as ArrowForwardIcon,
 } from '@mui/icons-material';
 import axiosInstance from '../utils/axios';
+import { getEventStatusMeta } from '../utils/attendanceUi';
 
 const PublicAttendance = () => {
   const [events, setEvents] = useState([]);
+  const [activeWindows, setActiveWindows] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
-  const [leaderboardPeriod, setLeaderboardPeriod] = useState('all-time');
-  const [leaderboardMonth, setLeaderboardMonth] = useState(() => {
-    const now = new Date();
-    return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
-  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    fetchAttendanceData();
-  }, [leaderboardPeriod, leaderboardMonth]);
+  const isLoggedIn = Boolean(localStorage.getItem('token'));
 
   useEffect(() => {
-    fetchLeaderboard();
-  }, [leaderboardPeriod, leaderboardMonth]);
+    loadPageData();
+  }, []);
 
-  const monthParams = () =>
-    leaderboardPeriod === 'monthly' && leaderboardMonth ? { month: leaderboardMonth } : {};
+  const loadPageData = async () => {
+    setLoading(true);
+    setError('');
 
-  const fetchAttendanceData = async () => {
     try {
-      setLoading(true);
-      const response = await axiosInstance.get('/attendance-events/public/attendance', {
-        params: monthParams(),
-      });
-      const data = response.data;
-      const list = Array.isArray(data) ? data : data?.events || [];
-      setEvents(list);
-    } catch (err) {
-      setError('Failed to load attendance data');
-      console.error('Error fetching attendance data:', err);
+      const [attendanceRes, leaderboardRes, activeWindowsRes] = await Promise.all([
+        axiosInstance.get('/attendance-events/public/attendance'),
+        axiosInstance.get('/attendance-events/public/leaderboard?limit=20'),
+        axiosInstance.get('/attendance-events/active'),
+      ]);
+
+      setEvents(Array.isArray(attendanceRes.data?.events) ? attendanceRes.data.events : []);
+      setLeaderboard(Array.isArray(leaderboardRes.data?.leaderboard) ? leaderboardRes.data.leaderboard : []);
+      setActiveWindows(Array.isArray(activeWindowsRes.data) ? activeWindowsRes.data : []);
+    } catch (loadError) {
+      console.error('Error loading attendance page:', loadError);
+      setError('Failed to load attendance records. Please refresh and try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchLeaderboard = async () => {
-    try {
-      const response = await axiosInstance.get('/attendance-events/public/leaderboard', {
-        params: { limit: 10, ...monthParams() },
-      });
-      const data = response.data;
-      setLeaderboard(Array.isArray(data) ? data : data?.leaderboard || []);
-    } catch (err) {
-      console.error('Error fetching leaderboard:', err);
-    }
-  };
-
-  const formatMonthLabel = (value) => {
-    if (!value) return '';
-    const [year, monthPart] = String(value).split('-');
-    const date = new Date(`${year}-${monthPart}-01`);
-    if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
-  };
-
-  const filteredEvents = events.filter(event =>
-    event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    event.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredEvents = useMemo(
+    () =>
+      events.filter((event) => {
+        const title = (event.title || '').toLowerCase();
+        const description = (event.description || '').toLowerCase();
+        const query = searchTerm.toLowerCase();
+        return title.includes(query) || description.includes(query);
+      }),
+    [events, searchTerm]
   );
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+  const formatDate = (dateString) =>
+    new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
-      month: 'long',
+      month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
-  };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'active':
-      case 'open':
-        return 'success';
-      case 'completed':
-      case 'closed':
-        return 'primary';
-      case 'cancelled': return 'error';
-      default: return 'default';
-    }
-  };
-
-  const getRankIcon = (index) => {
-    switch (index) {
-      case 0: return <TrophyIcon sx={{ color: '#FFD700' }} />; // Gold
-      case 1: return <MedalIcon sx={{ color: '#C0C0C0' }} />; // Silver
-      case 2: return <MedalIcon sx={{ color: '#CD7F32' }} />; // Bronze
-      default: return <StarIcon sx={{ color: 'primary.main' }} />;
-    }
-  };
-
-  const getRankColor = (index) => {
-    switch (index) {
-      case 0: return '#FFD700'; // Gold
-      case 1: return '#C0C0C0'; // Silver
-      case 2: return '#CD7F32'; // Bronze
-      default: return 'primary.main';
-    }
-  };
-
-  // Calculate statistics
-  const totalEvents = events.length;
-  const totalAttendees = events.reduce((sum, event) => sum + (event.attendees?.length || 0), 0);
-  const activeEvents = events.filter(event => event.status === 'active').length;
-  const completedEvents = events.filter(event => event.status === 'completed').length;
+  const totalCheckIns = events.reduce((sum, event) => sum + (event.attendees?.length || 0), 0);
+  const openWindows = activeWindows.length;
+  const eventsOnBoard = events.length;
 
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-          <CircularProgress size={60} />
-          <Typography sx={{ ml: 2 }}>Loading attendance data...</Typography>
+      <Container maxWidth="xl" sx={{ py: 6 }}>
+        <Box sx={{ minHeight: 420, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+          <CircularProgress size={42} />
+          <Typography variant="h6">Loading attendance leaderboard…</Typography>
         </Box>
       </Container>
     );
   }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      {/* Header */}
-      <Box sx={{ textAlign: 'center', mb: 4 }}>
-        <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-          Event Attendance Records
+    <Container maxWidth="xl" sx={{ py: 5 }}>
+      <Box
+        sx={{
+          p: { xs: 2.25, md: 3 },
+          borderRadius: 3,
+          background:
+            'linear-gradient(130deg, rgba(191,161,74,0.24) 0%, rgba(34,34,34,0.5) 45%, rgba(191,161,74,0.09) 100%)',
+          border: '1px solid',
+          borderColor: 'divider',
+          mb: 2.5,
+        }}
+      >
+        <Typography variant="overline">Community</Typography>
+        <Typography variant="h4" sx={{ mb: 0.75, fontWeight: 700 }}>
+          Attendance Leaderboard
         </Typography>
-        <Typography variant="h6" color="text.secondary" sx={{ mb: 3 }}>
-          Track participation across all TNL events
+        <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 720, lineHeight: 1.7 }}>
+          See who shows up most at VTC events. This page is public — rankings and event history only.
+          {isLoggedIn ? ' To mark attendance, track your streak, or claim rewards, use your personal hub.' : ' Log in to check in and build a streak.'}
         </Typography>
+
+        <Grid container spacing={1.5} sx={{ mt: 1.75 }}>
+          {[
+            { label: 'Top riders listed', value: leaderboard.length },
+            { label: 'Approved check-ins shown', value: totalCheckIns },
+            { label: 'Open check-in windows', value: openWindows },
+            { label: 'Events on the board', value: eventsOnBoard },
+          ].map(({ label, value }) => (
+            <Grid item xs={12} sm={6} md={3} key={label}>
+              <Card sx={{ height: '100%' }}>
+                <CardContent sx={{ p: 2 }}>
+                  <Stack spacing={0.5}>
+                    <Typography variant="caption" color="text.secondary">{label}</Typography>
+                    <Typography variant="h5" sx={{ fontWeight: 700 }}>{value}</Typography>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
       </Box>
+
+      {isLoggedIn && (
+        <Alert
+          severity="info"
+          sx={{ mb: 3 }}
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              component={RouterLink}
+              to="/attendance/me"
+              endIcon={<ArrowForwardIcon />}
+            >
+              Open my hub
+            </Button>
+          }
+        >
+          Your streak, milestones, and powerups live on <strong>Attendance & rewards</strong> — not on this public leaderboard.
+        </Alert>
+      )}
+
+      {!isLoggedIn && (
+        <Paper sx={{ p: 2.5, mb: 3, border: '1px dashed', borderColor: 'divider' }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }} justifyContent="space-between">
+            <Box>
+              <Typography fontWeight={700}>Want to build a streak?</Typography>
+              <Typography variant="body2" color="text.secondary">
+                Log in to mark event attendance, earn milestone rewards, and manage powerups.
+              </Typography>
+            </Box>
+            <Button variant="contained" component={RouterLink} to="/login">
+              Log in
+            </Button>
+          </Stack>
+        </Paper>
+      )}
 
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
@@ -183,284 +187,172 @@ const PublicAttendance = () => {
         </Alert>
       )}
 
-      {/* Statistics Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 2, textAlign: 'center', bgcolor: 'primary.main', color: 'white' }}>
-            <EventIcon sx={{ fontSize: 40, mb: 1 }} />
-            <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
-              {totalEvents}
-            </Typography>
-            <Typography variant="body2">Total Events</Typography>
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid item xs={12} lg={5}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+                <EmojiEventsIcon color="warning" />
+                <Typography variant="h6" fontWeight={700}>Top attendees</Typography>
+              </Stack>
+              {!leaderboard.length ? (
+                <Typography color="text.secondary">No approved attendance yet.</Typography>
+              ) : (
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>#</TableCell>
+                      <TableCell>Rider</TableCell>
+                      <TableCell align="right">Events</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {leaderboard.slice(0, 10).map((member, index) => (
+                      <TableRow key={member._id || member.username || index}>
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>{member.username || member.name || '—'}</TableCell>
+                        <TableCell align="right">
+                          <Chip size="small" label={member.totalEventsAttended || 0} color={index < 3 ? 'warning' : 'default'} />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 2, textAlign: 'center', bgcolor: 'success.main', color: 'white' }}>
-            <PeopleIcon sx={{ fontSize: 40, mb: 1 }} />
-            <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
-              {totalAttendees}
-            </Typography>
-            <Typography variant="body2">Total Attendances</Typography>
+
+        <Grid item xs={12} lg={7}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                <EventIcon color="primary" />
+                <Typography variant="h6" fontWeight={700}>Open check-in windows</Typography>
+              </Stack>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Events accepting attendance right now. Submit yours from your personal hub.
+              </Typography>
+              {!activeWindows.length ? (
+                <Typography color="text.secondary">No open windows at the moment.</Typography>
+              ) : (
+                <Stack spacing={1.25}>
+                  {activeWindows.slice(0, 6).map((event) => (
+                    <Paper key={event._id} variant="outlined" sx={{ p: 1.5 }}>
+                      <Typography fontWeight={700}>{event.title}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {formatDate(event.eventDate)}
+                      </Typography>
+                    </Paper>
+                  ))}
+                </Stack>
+              )}
+              {isLoggedIn && activeWindows.length > 0 && (
+                <Button sx={{ mt: 2 }} component={RouterLink} to="/attendance/me" variant="outlined" size="small">
+                  Mark my attendance
+                </Button>
+              )}
+            </CardContent>
           </Card>
         </Grid>
-        
-        
       </Grid>
 
-      {/* Leaderboard Section */}
-      <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <LeaderboardIcon sx={{ mr: 1, color: 'primary.main', fontSize: 32 }} />
-            <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-              Attendance Leaderboard
-            </Typography>
-          </Box>
-          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-            <ToggleButtonGroup
-              value={leaderboardPeriod}
-              exclusive
-              size="small"
-              onChange={(_, value) => value && setLeaderboardPeriod(value)}
-            >
-              <ToggleButton value="all-time">All time</ToggleButton>
-              <ToggleButton value="monthly">Monthly</ToggleButton>
-            </ToggleButtonGroup>
-            {leaderboardPeriod === 'monthly' && (
-              <TextField
-                type="month"
-                label="Month (UTC)"
-                value={leaderboardMonth}
-                onChange={(e) => setLeaderboardMonth(e.target.value)}
-                size="small"
-                InputLabelProps={{ shrink: true }}
-                sx={{ minWidth: 160 }}
-              />
-            )}
+      <Card sx={{ p: 1.5 }}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" spacing={2} sx={{ mb: 2 }}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <PeopleIcon color="primary" />
+            <Box>
+              <Typography variant="h6">Event attendance history</Typography>
+              <Typography variant="caption" color="text.secondary">
+                Approved check-ins only — community view
+              </Typography>
+            </Box>
           </Stack>
-        </Box>
-        {leaderboardPeriod === 'monthly' && (
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Rankings for {formatMonthLabel(leaderboardMonth)} by approval/mark time (UTC).
-          </Typography>
-        )}
-        
-        {leaderboard.length > 0 ? (
-          <Grid container spacing={2}>
-            {leaderboard.map((member, index) => (
-              <Grid item xs={12} sm={6} md={4} key={member._id}>
-                <Card 
-                  sx={{ 
-                    p: 2, 
-                    textAlign: 'center',
-                    border: index < 3 ? `2px solid ${getRankColor(index)}` : '1px solid',
-                    borderColor: index < 3 ? getRankColor(index) : 'divider',
-                    bgcolor: index < 3 ? `${getRankColor(index)}10` : 'background.paper',
-                    position: 'relative',
-                    overflow: 'visible'
+          <TextField
+            size="small"
+            placeholder="Search events"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            sx={{ minWidth: { xs: '100%', sm: 280 } }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Stack>
+
+        <Stack spacing={1.5}>
+          {!filteredEvents.length ? (
+            <Paper sx={{ p: 3, textAlign: 'center' }}>
+              <Typography variant="body1">
+                {searchTerm ? 'No matching events found.' : 'No events to display yet.'}
+              </Typography>
+            </Paper>
+          ) : (
+            filteredEvents.map((event) => {
+              const eventMeta = getEventStatusMeta(event.status);
+              return (
+                <Paper
+                  key={event._id}
+                  sx={{
+                    p: 2,
+                    borderRadius: 2,
+                    border: '1px solid',
+                    borderColor: 'divider',
                   }}
                 >
-                  {/* Rank Badge */}
-                  <Box sx={{ 
-                    position: 'absolute', 
-                    top: -12, 
-                    left: '50%', 
-                    transform: 'translateX(-50%)',
-                    bgcolor: 'background.paper',
-                    borderRadius: '50%',
-                    p: 0.5,
-                    border: `2px solid ${getRankColor(index)}`
-                  }}>
-                    {getRankIcon(index)}
-                  </Box>
-                  
-                  {/* Rank Number */}
-                  <Typography 
-                    variant="h6" 
-                    sx={{ 
-                      fontWeight: 'bold', 
-                      color: getRankColor(index),
-                      mt: 1,
-                      mb: 1
-                    }}
-                  >
-                    #{index + 1}
-                  </Typography>
-                  
-                  {/* Username */}
-                  <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
-                    {member.username}
-                  </Typography>
-                  
-                  {/* TruckersMP ID */}
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    ID: {member.truckersmpUserId}
-                  </Typography>
-                  
-                  {/* Events Attended */}
-                  <Chip 
-                    icon={<TrendingUpIcon />}
-                    label={`${member.totalEventsAttended} Events`}
-                    color="primary"
-                    size="large"
-                    sx={{ 
-                      fontWeight: 'bold',
-                      fontSize: '1rem',
-                      py: 2,
-                      px: 1
-                    }}
-                  />
-                  
-                  {/* Last Updated */}
-                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                    Last active: {formatDate(member.lastUpdated)}
-                  </Typography>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        ) : (
-          <Paper sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50' }}>
-            <LeaderboardIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
-            <Typography variant="h6" color="text.secondary" gutterBottom>
-              No Leaderboard Data
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              No members have attended events yet
-            </Typography>
-          </Paper>
-        )}
-      </Box>
+                  <Stack spacing={1}>
+                    <Stack
+                      direction={{ xs: 'column', md: 'row' }}
+                      justifyContent="space-between"
+                      alignItems={{ xs: 'flex-start', md: 'center' }}
+                      spacing={1}
+                    >
+                      <Typography variant="h6" sx={{ fontWeight: 700 }}>{event.title}</Typography>
+                      <Stack direction="row" spacing={1}>
+                        <Chip label={eventMeta.label} size="small" color={eventMeta.color} />
+                        <Chip
+                          icon={<PeopleIcon />}
+                          label={`${event.attendees?.length || 0} approved`}
+                          size="small"
+                          color="primary"
+                          variant="outlined"
+                        />
+                      </Stack>
+                    </Stack>
 
-      {/* Search Bar */}
-      <Box sx={{ mb: 3 }}>
-        <TextField
-          fullWidth
-          placeholder="Search events by title or description..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
-          sx={{ maxWidth: 600, mx: 'auto', display: 'block' }}
-        />
-      </Box>
+                    <Typography variant="body2" color="text.secondary">
+                      {formatDate(event.eventDate)}
+                    </Typography>
 
-      {/* Events List */}
-      {filteredEvents.length === 0 ? (
-        <Paper sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50',color:'black' }}>
-          <EventIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
-          <Typography variant="h6" gutterBottom color='black'>
-            {searchTerm ? 'No events found matching your search' : 'No events available'}
-          </Typography>
-          <Typography variant="body2" color='black'>
-            {searchTerm ? 'Try adjusting your search terms' : 'Check back later for upcoming events'}
-          </Typography>
-        </Paper>
-      ) : (
-        <Box>
-          {filteredEvents.map((event) => (
-            <Accordion key={event._id} sx={{ mb: 2, boxShadow: 2 }}>
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                sx={{ 
-                  bgcolor: 'primary.light',
-                  color: 'white',
-                  '&:hover': { bgcolor: 'primary.main' }
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                  <EventIcon sx={{ mr: 2 }} />
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 'bold',color:'black' }}>
-                      {event.title}
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.9,color:'black' }}>
-                      {formatDate(event.eventDate)} • {event.attendees?.length || 0} attendees
-                    </Typography>
-                    
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Chip 
-                      label={event.status} 
-                      color={getStatusColor(event.status)}
-                      size="small"
-                      sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.2)' }}
-                    />
-                    <Chip 
-                      icon={<PeopleIcon />}
-                      label={`${event.attendees?.length || 0} Members`}
-                      size="small"
-                      sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.2)' }}
-                    />
-                  </Box>
-                </Box>
-              </AccordionSummary>
-              <AccordionDetails sx={{ p: 0 }}>
-                {event.attendees && event.attendees.length > 0 ? (
-                  <TableContainer>
-                    <Table>
-                      <TableHead sx={{ bgcolor: 'grey.100' }}>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 'bold' }}>Username</TableCell>
-                          <TableCell sx={{ fontWeight: 'bold' }}>TruckersMP ID</TableCell>
-                          <TableCell sx={{ fontWeight: 'bold', textAlign: 'center' }}>Total Events</TableCell>
-                          <TableCell sx={{ fontWeight: 'bold' }}>Last Updated</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {event.attendees
-                          .sort((a, b) => b.totalEventsAttended - a.totalEventsAttended)
-                          .map((member) => (
-                          <TableRow key={member._id} hover>
-                            <TableCell sx={{ fontWeight: 'medium' }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <PersonIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                                {member.username}
-                              </Box>
-                            </TableCell>
-                            <TableCell sx={{ fontFamily: 'monospace' }}>{member.truckersmpUserId}</TableCell>
-                            <TableCell sx={{ textAlign: 'center' }}>
-                              <Chip 
-                                icon={<TrendingUpIcon />}
-                                label={member.totalEventsAttended || 0}
-                                color="primary"
-                                size="small"
-                                sx={{ fontWeight: 'bold' }}
-                              />
-                            </TableCell>
-                            <TableCell sx={{ color: 'text.secondary' }}>
-                              {formatDate(member.lastUpdated)}
-                            </TableCell>
-                          </TableRow>
+                    {!!event.description && (
+                      <Typography variant="body2" color="text.secondary">
+                        {event.description}
+                      </Typography>
+                    )}
+
+                    {!!event.attendees?.length && (
+                      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                        {event.attendees.slice(0, 6).map((attendee) => (
+                          <Chip
+                            key={attendee._id}
+                            label={`${attendee.username} · ${attendee.totalEventsAttended || 0} total`}
+                            variant="outlined"
+                            size="small"
+                          />
                         ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                ) : (
-                  <Box sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50' }}>
-                    <PeopleIcon sx={{ fontSize: 48, color: 'grey.400', mb: 1 }} />
-                    <Typography variant="body1" color="text.secondary">
-                      No attendees for this event
-                    </Typography>
-                  </Box>
-                )}
-              </AccordionDetails>
-            </Accordion>
-          ))}
-        </Box>
-      )}
-
-      {/* Footer */}
-      <Box sx={{ textAlign: 'center', mt: 6, py: 3, borderTop: '1px solid', borderColor: 'divider' }}>
-        <Typography variant="body2" color="text.secondary">
-          TNL Event Attendance System • Last updated: {new Date().toLocaleString()}
-        </Typography>
-      </Box>
+                      </Stack>
+                    )}
+                  </Stack>
+                </Paper>
+              );
+            })
+          )}
+        </Stack>
+      </Card>
     </Container>
   );
 };

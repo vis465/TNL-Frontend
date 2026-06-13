@@ -45,7 +45,9 @@ import BuildOutlined from '@mui/icons-material/BuildOutlined';
 import GavelOutlined from '@mui/icons-material/GavelOutlined';
 import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined';
 import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
+import AutoAwesomeOutlined from '@mui/icons-material/AutoAwesomeOutlined';
 import SpeedOutlined from '@mui/icons-material/SpeedOutlined';
+
 
 /** Staff roles that can open /admin (matches App.js admin layout gate). */
 export const STAFF_ROLES = ['admin', 'eventteam', 'hrteam', 'financeteam', 'communityManager'];
@@ -68,7 +70,8 @@ export const MY_AREA_SECTIONS = [
     items: [
       // { to: '/goals', label: 'Personal goals', Icon: FlagOutlined, roles: null },
       { to: '/calendar', label: 'Event calendar', Icon: CalendarMonthOutlined, roles: null },
-      { to: '/attendance', label: 'Attendance Leaderboard', Icon: EventAvailableOutlined, roles: null },
+      { to: '/attendance', label: 'Attendance leaderboard', Icon: EventAvailableOutlined, roles: null },
+      { to: '/attendance/me', label: 'Attendance & rewards', Icon: AutoAwesomeOutlined, roles: null },
     ],
   },
    {
@@ -208,6 +211,12 @@ export const ADMIN_SECTIONS = [
         Icon: BarChartOutlined,
         roles: ['admin', 'hrteam'],
       },
+      {
+        to: '/admin/powerups',
+        label: 'Streak reward settings',
+        Icon: AutoAwesomeOutlined,
+        roles: ['admin', 'hrteam'],
+      },
       // { to: '/admin/riders', label: 'Riders', Icon: Group, roles: ['admin', 'eventteam', 'hrteam'] },
       { to: '/admin/achievements', label: 'Achievements', Icon: MilitaryTech, roles: ['admin', 'hrteam'] },
       {
@@ -259,16 +268,16 @@ export const ADMIN_SECTIONS = [
         roles: ['admin'],
       },
       {
-        to: '/admin/coupons',
-        label: 'Marketplace coupons',
-        Icon: LocalOfferOutlined,
-        roles: ['admin'],
-      },
-      {
         to: '/admin/operations',
         label: 'Maintenance tools',
         Icon: BuildOutlined,
         roles: ['admin', 'communityManager'],
+      },
+      {
+        to: '/admin/coupons',
+        label: 'Marketplace coupons',
+        Icon: LocalOfferOutlined,
+        roles: ['admin'],
       },
     ],
   },
@@ -280,21 +289,21 @@ export const ADMIN_SECTIONS = [
         to: '/admin/rto/challans',
         label: 'RTO challans',
         Icon: ReceiptLongOutlined,
-        roles: ['admin', 'eventteam', 'financeteam'],
+        roles: ['admin', 'eventteam', 'financeteam', 'rto'],
         matchExact: true,
       },
       {
         to: '/admin/rto/offences',
         label: 'RTO offences',
         Icon: GavelOutlined,
-        roles: ['admin', 'eventteam'],
+        roles: ['admin', 'eventteam', 'rto'],
         matchExact: true,
       },
       {
         to: '/admin/rto/settings',
         label: 'RTO settings',
         Icon: SettingsOutlined,
-        roles: ['admin', 'eventteam'],
+        roles: ['admin', 'eventteam', 'rto'],
         matchExact: true,
       },
     ],
@@ -357,7 +366,7 @@ export const ADMIN_DASHBOARD_CARDS = [
   {
     group: 'Events & operations',
     title: 'Analytics',
-    description: 'KPI dashboard with delivery trends, engagement, and fleet insights.',
+    description: 'Event, attendance, and engagement analytics.',
     to: '/admin/analytics',
     icon: AnalyticsOutlined,
     color: 'info',
@@ -411,7 +420,7 @@ export const ADMIN_DASHBOARD_CARDS = [
   {
     group: 'People & HR',
     title: 'Attendance management',
-    description: 'HR attendance and reports.',
+    description: 'HR attendance, streak events, and reports. Configure streak rewards in Powerup management.',
     to: '/admin/attendance',
     icon: TimelineOutlined,
     color: 'success',
@@ -424,6 +433,15 @@ export const ADMIN_DASHBOARD_CARDS = [
     to: '/admin/vtc-monthly-stats',
     icon: BarChartOutlined,
     color: 'info',
+    roles: ['admin', 'hrteam'],
+  },
+  {
+    group: 'People & HR',
+    title: 'Streak reward settings',
+    description: 'Configure streak milestone rewards, random weights, expiry, and manual grants.',
+    to: '/admin/powerups',
+    icon: AutoAwesomeOutlined,
+    color: 'secondary',
     roles: ['admin', 'hrteam'],
   },
   {
@@ -500,15 +518,6 @@ export const ADMIN_DASHBOARD_CARDS = [
   },
   {
     group: 'Divisions',
-    title: 'Marketplace coupons',
-    description: 'Create and manage discount codes for truck marketplace purchases.',
-    to: '/admin/coupons',
-    icon: LocalOfferOutlined,
-    color: 'success',
-    roles: ['admin'],
-  },
-  {
-    group: 'Divisions',
     title: 'Maintenance tools',
     description: 'Fleet odometer backfill and other safe data repairs (preview before apply).',
     to: '/admin/operations',
@@ -517,13 +526,22 @@ export const ADMIN_DASHBOARD_CARDS = [
     roles: ['admin', 'communityManager'],
   },
   {
+    group: 'Divisions',
+    title: 'Marketplace coupons',
+    description: 'Create and manage discount codes for truck marketplace purchases.',
+    to: '/admin/coupons',
+    icon: LocalOfferOutlined,
+    color: 'success',
+    roles: ['admin'],
+  },
+  {
     group: 'RTO & fines',
     title: 'RTO challans',
     description: 'All issued fines, appeals, CSV export, and admin waive/cancel.',
     to: '/admin/rto/challans',
     icon: ReceiptLongOutlined,
     color: 'warning',
-    roles: ['admin', 'eventteam', 'financeteam'],
+    roles: ['admin', 'eventteam', 'financeteam', 'rto'],
   },
   {
     group: 'RTO & fines',
@@ -532,7 +550,7 @@ export const ADMIN_DASHBOARD_CARDS = [
     to: '/admin/rto/offences',
     icon: GavelOutlined,
     color: 'error',
-    roles: ['admin', 'eventteam'],
+    roles: ['admin', 'eventteam', 'rto'],
   },
   {
     group: 'RTO & fines',
@@ -541,7 +559,7 @@ export const ADMIN_DASHBOARD_CARDS = [
     to: '/admin/rto/settings',
     icon: SettingsOutlined,
     color: 'secondary',
-    roles: ['admin', 'eventteam'],
+    roles: ['admin', 'eventteam', 'rto'],
   },
   {
     group: 'Finance',

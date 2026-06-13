@@ -18,6 +18,7 @@ import {
 import { format } from 'date-fns';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import API_CONFIG from '../config/api';
 
 const MyBookings = () => {
   const [bookings, setBookings] = useState([]);
@@ -35,7 +36,7 @@ const MyBookings = () => {
       const token = localStorage.getItem('token');
       console.log('Auth token:', token ? 'Present' : 'Missing');
       
-      const response = await axios.get('http://localhost:5000/api/bookings/my-bookings', {
+      const response = await axios.get(`${API_CONFIG.baseURL}/bookings/my-bookings`, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -57,7 +58,7 @@ const MyBookings = () => {
   const handleCancelBooking = async (bookingId) => {
     try {
       await axios.patch(
-        `http://localhost:5000/api/bookings/${bookingId}/cancel`,
+        `${API_CONFIG.baseURL}/bookings/${bookingId}/cancel`,
         {},
         {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }

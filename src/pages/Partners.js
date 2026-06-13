@@ -24,6 +24,7 @@ import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import LanguageIcon from '@mui/icons-material/Language';
 // import DiscordIcon from '@mui/icons-material/Discord';
 import axios from 'axios';
+import API_CONFIG from '../config/api';
 
 const PartnerCard = styled(Card)(({ theme }) => ({
   height: '100%',
@@ -57,7 +58,7 @@ const Partners = () => {
   const [error, setError] = useState(null);
   const [partners, setPartners] = useState([19885,64218,76045,79072,75200]);
   const [selectedPartner, setSelectedPartner] = useState(null);
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+  const API_BASE_URL = API_CONFIG.baseURL;
 
   useEffect(() => {
     const fetchPartners = async () => {

@@ -65,6 +65,8 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import axiosInstance from '../utils/axios';
 import ridersService from '../services/ridersService';
+import { Link as RouterLink } from 'react-router-dom';
+import AutoAwesomeOutlined from '@mui/icons-material/AutoAwesomeOutlined';
 
 const HRDashboard = () => {
   const { user, isAuthenticated } = useAuth();
@@ -81,6 +83,10 @@ const HRDashboard = () => {
   // Create event dialog state
   const [createEventOpen, setCreateEventOpen] = useState(false);
   const [eventId, setEventId] = useState('');
+  const [attendanceCreateConfig, setAttendanceCreateConfig] = useState({
+    considerForStreak: true,
+    isAttendanceOpen: true
+  });
   
   // Add members dialog state
   const [addMembersOpen, setAddMembersOpen] = useState(false);
@@ -88,8 +94,20 @@ const HRDashboard = () => {
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [attendanceSearchTerm, setAttendanceSearchTerm] = useState('');
-  const [attendanceEventDateFilter, setAttendanceEventDateFilter] = useState('');
-  const [attendanceEventTimeFilter, setAttendanceEventTimeFilter] = useState('future');
+  const [attendanceView, setAttendanceView] = useState(() => {
+    try {
+      return window.localStorage.getItem('hrDashboard.attendanceView') || 'upcoming';
+    } catch {
+      return 'upcoming';
+    }
+  });
+  const [attendanceEventDateFilter, setAttendanceEventDateFilter] = useState(() => {
+    try {
+      return window.localStorage.getItem('hrDashboard.attendanceEventDateFilter') || '';
+    } catch {
+      return '';
+    }
+  });
   const [attendanceEventPage, setAttendanceEventPage] = useState(1);
   const [expandedAttendanceMonths, setExpandedAttendanceMonths] = useState({});
   
@@ -132,7 +150,8 @@ const HRDashboard = () => {
     eventDate: '',
     endDate: '',
     status: 'open',
-    isAttendanceOpen: true
+    isAttendanceOpen: true,
+    considerForStreak: true
   });
   const [riderToRemove, setRiderToRemove] = useState(null);
 
@@ -200,7 +219,8 @@ const HRDashboard = () => {
           title: eventId.trim(),
           description: 'HR Event',
           eventDate: new Date().toISOString(),
-          isAttendanceOpen: true
+          isAttendanceOpen: attendanceCreateConfig.isAttendanceOpen,
+          considerForStreak: attendanceCreateConfig.considerForStreak
         });
         
         setSuccess('Attendance event created successfully');
@@ -343,11 +363,21 @@ const HRDashboard = () => {
   const confirmDeleteEvent = async () => {
     try {
       setLoading(true);
-      await axiosInstance.delete(`/hr-events/${eventToDelete._id}`);
-      setSuccess('Event deleted successfully');
-      setDeleteConfirmOpen(false);
-      setEventToDelete(null);
-      fetchEvents();
+      // Determine whether this is an attendance event or an HR event
+      const isAttendanceEvent = Array.isArray(eventToDelete?.attendanceEntries) || eventToDelete?.considerForStreak !== undefined || tabValue === 3;
+      if (isAttendanceEvent) {
+        await axiosInstance.delete(`/attendance-events/${eventToDelete._id}`);
+        setSuccess('Attendance event deleted successfully');
+        setDeleteConfirmOpen(false);
+        setEventToDelete(null);
+        fetchAttendanceEvents();
+      } else {
+        await axiosInstance.delete(`/hr-events/${eventToDelete._id}`);
+        setSuccess('Event deleted successfully');
+        setDeleteConfirmOpen(false);
+        setEventToDelete(null);
+        fetchEvents();
+      }
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to delete event');
     } finally {
@@ -412,16 +442,24 @@ const HRDashboard = () => {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
-  const futureAttendanceEvents = attendanceEvents
-    .filter((event) => new Date(event.eventDate) >= todayStart)
-    .sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate));
+  const upcomingAttendanceEvents = attendanceEvents
+    .filter((event) => {
+      const eventDate = new Date(event.eventDate);
+      return eventDate >= todayStart;
+    })
+    .sort((a, b) => new Date(b.createdAt || b.eventDate) - new Date(a.createdAt || a.eventDate));
 
   const pastAttendanceEvents = attendanceEvents
-    .filter((event) => new Date(event.eventDate) < todayStart)
-    .sort((a, b) => new Date(b.eventDate) - new Date(a.eventDate));
+    .filter((event) => {
+      const eventDate = new Date(event.eventDate);
+      return eventDate < todayStart;
+    })
+    .sort((a, b) => new Date(b.createdAt || b.eventDate) - new Date(a.createdAt || a.eventDate));
 
-  const attendanceEventsBaseList =
-    attendanceEventTimeFilter === 'past' ? pastAttendanceEvents : futureAttendanceEvents;
+  // Show all attendance events (newest created first) so past events aren't hidden
+  const attendanceEventsBaseList = [...attendanceEvents].sort(
+    (a, b) => new Date(b.createdAt || b.eventDate) - new Date(a.createdAt || a.eventDate)
+  );
 
   const attendanceEventsFilteredByDate = attendanceEventDateFilter
     ? attendanceEventsBaseList.filter((event) => {
@@ -431,12 +469,20 @@ const HRDashboard = () => {
       })
     : attendanceEventsBaseList;
 
+  const attendanceEventsByView = attendanceView === 'past' ? pastAttendanceEvents : upcomingAttendanceEvents;
+  const attendanceEventsVisible = attendanceEventDateFilter
+    ? attendanceEventsFilteredByDate.filter((event) => {
+        const eventDate = new Date(event.eventDate);
+        return attendanceView === 'past' ? eventDate < todayStart : eventDate >= todayStart;
+      })
+    : attendanceEventsByView;
+
   const totalAttendancePages = Math.max(
     1,
-    Math.ceil(attendanceEventsFilteredByDate.length / ATTENDANCE_EVENTS_PER_PAGE)
+    Math.ceil(attendanceEventsVisible.length / ATTENDANCE_EVENTS_PER_PAGE)
   );
   const safeAttendancePage = Math.min(attendanceEventPage, totalAttendancePages);
-  const paginatedAttendanceEvents = attendanceEventsFilteredByDate.slice(
+  const paginatedAttendanceEvents = attendanceEventsVisible.slice(
     (safeAttendancePage - 1) * ATTENDANCE_EVENTS_PER_PAGE,
     safeAttendancePage * ATTENDANCE_EVENTS_PER_PAGE
   );
@@ -460,7 +506,23 @@ const HRDashboard = () => {
 
   useEffect(() => {
     setAttendanceEventPage(1);
-  }, [attendanceEventDateFilter, attendanceEventTimeFilter, attendanceEvents.length]);
+  }, [attendanceEventDateFilter, attendanceView, attendanceEvents.length]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('hrDashboard.attendanceView', attendanceView);
+    } catch {
+      // ignore storage failures
+    }
+  }, [attendanceView]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('hrDashboard.attendanceEventDateFilter', attendanceEventDateFilter);
+    } catch {
+      // ignore storage failures
+    }
+  }, [attendanceEventDateFilter]);
 
   const handleViewEventDetails = async (event) => {
     try {
@@ -547,7 +609,8 @@ const HRDashboard = () => {
       eventDate: event.eventDate ? new Date(event.eventDate).toISOString().slice(0, 16) : '',
       endDate: event.endDate ? new Date(event.endDate).toISOString().slice(0, 16) : '',
       status: event.status || 'open',
-      isAttendanceOpen: Boolean(event.isAttendanceOpen)
+      isAttendanceOpen: Boolean(event.isAttendanceOpen),
+      considerForStreak: Boolean(event.considerForStreak)
     });
     setEditAttendanceOpen(true);
   };
@@ -562,7 +625,8 @@ const HRDashboard = () => {
         eventDate: editAttendanceData.eventDate ? new Date(editAttendanceData.eventDate).toISOString() : undefined,
         endDate: editAttendanceData.endDate ? new Date(editAttendanceData.endDate).toISOString() : null,
         status: editAttendanceData.status,
-        isAttendanceOpen: editAttendanceData.isAttendanceOpen
+        isAttendanceOpen: editAttendanceData.isAttendanceOpen,
+        considerForStreak: editAttendanceData.considerForStreak
       });
       setSuccess('Attendance event updated successfully');
       setEditAttendanceOpen(false);
@@ -701,6 +765,25 @@ const HRDashboard = () => {
     }
   };
 
+  const handleToggleStreakConsideration = async (eventId, considerForStreak) => {
+    try {
+      setLoading(true);
+      setError('');
+
+      await axiosInstance.patch(`/attendance-events/${eventId}/toggle-streak`, {
+        considerForStreak
+      });
+
+      setSuccess(`Streak consideration ${considerForStreak ? 'enabled' : 'disabled'}`);
+      fetchAttendanceEvents();
+    } catch (error) {
+      console.error('Error toggling streak consideration:', error);
+      setError('Failed to toggle streak consideration');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'active': return 'success';
@@ -780,8 +863,17 @@ const HRDashboard = () => {
           startIcon={<SyncIcon />}
           onClick={handleSyncMembers}
           disabled={loading}
+          sx={{ mr: 2 }}
         >
           Sync Members
+        </Button>
+        <Button
+          variant="outlined"
+          component={RouterLink}
+          to="/admin/powerups"
+          startIcon={<AutoAwesomeOutlined />}
+        >
+          Streak reward settings
         </Button>
       </Box>
 
@@ -790,22 +882,27 @@ const HRDashboard = () => {
 
       {tabValue === 3 && (
         <Box>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Attendance Events Management ({attendanceEvents.length})
-            </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3, gap: 2, flexWrap: 'wrap' }}>
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                Attendance Events Management ({attendanceEvents.length})
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Upcoming / Past views with a date filter. Past events stay visible when you come back later.
+              </Typography>
+            </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
               <Button
-                variant={attendanceEventTimeFilter === 'future' ? 'contained' : 'outlined'}
-                size="small"
-                onClick={() => setAttendanceEventTimeFilter('future')}
+                variant={attendanceView === 'upcoming' ? 'contained' : 'outlined'}
+                onClick={() => setAttendanceView('upcoming')}
+                sx={{ minWidth: 128 }}
               >
-                Upcoming ({futureAttendanceEvents.length})
+                Upcoming ({upcomingAttendanceEvents.length})
               </Button>
               <Button
-                variant={attendanceEventTimeFilter === 'past' ? 'contained' : 'outlined'}
-                size="small"
-                onClick={() => setAttendanceEventTimeFilter('past')}
+                variant={attendanceView === 'past' ? 'contained' : 'outlined'}
+                onClick={() => setAttendanceView('past')}
+                sx={{ minWidth: 108 }}
               >
                 Past ({pastAttendanceEvents.length})
               </Button>
@@ -828,26 +925,27 @@ const HRDashboard = () => {
               </Button>
             </Box>
           </Box>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+            <Chip label={`Showing ${attendanceView === 'past' ? 'Past' : 'Upcoming'}`} color="primary" size="small" />
+            {attendanceEventDateFilter ? (
+              <Chip label={`Date: ${attendanceEventDateFilter}`} variant="outlined" size="small" />
+            ) : null}
+            <Chip label={`${attendanceEventsVisible.length} visible`} color="default" size="small" />
+          </Box>
           
           {loading ? (
             <Box display="flex" justifyContent="center" p={4}>
               <CircularProgress />
             </Box>
-          ) : attendanceEvents.length === 0 ? (
+          ) : attendanceEventsVisible.length === 0 ? (
             <Paper sx={{ p: 4, textAlign: 'center' }}>
               <EventIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
               <Typography variant="h6" color="text.secondary" gutterBottom>
-                No Attendance Events Found
+                No {attendanceView === 'past' ? 'Past' : 'Upcoming'} Attendance Events Found
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Create your first attendance event to start tracking rider attendance
-              </Typography>
-            </Paper>
-          ) : attendanceEventsFilteredByDate.length === 0 ? (
-            <Paper sx={{ p: 4, textAlign: 'center' }}>
-              <Typography variant="body1" color="text.secondary">
-                No {attendanceEventTimeFilter === 'past' ? 'past' : 'upcoming'} attendance events
-                {attendanceEventDateFilter ? ' for the selected date' : ''}.
               </Typography>
             </Paper>
           ) : (
@@ -897,6 +995,7 @@ const HRDashboard = () => {
                               <TableCell>Event Date</TableCell>
                               <TableCell>Status</TableCell>
                               <TableCell>Attendance Open</TableCell>
+                              <TableCell>Streak Reset</TableCell>
                               <TableCell>Attendance Entries</TableCell>
                               <TableCell>Actions</TableCell>
                             </TableRow>
@@ -919,6 +1018,15 @@ const HRDashboard = () => {
                                     label={event.isAttendanceOpen ? 'Open' : 'Closed'}
                                     color={event.isAttendanceOpen ? 'success' : 'default'}
                                     size="small"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Switch
+                                    checked={Boolean(event.considerForStreak)}
+                                    onChange={(e) =>
+                                      handleToggleStreakConsideration(event._id, e.target.checked)
+                                    }
+                                    inputProps={{ 'aria-label': 'toggle streak consideration' }}
                                   />
                                 </TableCell>
                                 <TableCell>
@@ -962,6 +1070,7 @@ const HRDashboard = () => {
                                         <EventIcon />
                                       </IconButton>
                                     </Tooltip>
+                                    {/* Delete button removed per admin request */}
                                   </Box>
                                 </TableCell>
                               </TableRow>
@@ -1007,6 +1116,38 @@ const HRDashboard = () => {
             placeholder={tabValue === 3 ? 'Enter event title' : 'Enter the TruckersMP event ID'}
             sx={{ mt: 2 }}
           />
+          {tabValue === 3 && (
+            <Stack spacing={1} sx={{ mt: 2 }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={attendanceCreateConfig.isAttendanceOpen}
+                    onChange={(e) =>
+                      setAttendanceCreateConfig((prev) => ({
+                        ...prev,
+                        isAttendanceOpen: e.target.checked
+                      }))
+                    }
+                  />
+                }
+                label="Attendance open for rider submissions"
+              />
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={attendanceCreateConfig.considerForStreak}
+                    onChange={(e) =>
+                      setAttendanceCreateConfig((prev) => ({
+                        ...prev,
+                        considerForStreak: e.target.checked
+                      }))
+                    }
+                  />
+                }
+                label="Consider event for streak reset on rejection"
+              />
+            </Stack>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setCreateEventOpen(false)}>Cancel</Button>
@@ -1285,6 +1426,14 @@ const HRDashboard = () => {
                     <Chip 
                       label={selectedEventDetails.isAttendanceOpen ? 'Yes' : 'No'} 
                       color={selectedEventDetails.isAttendanceOpen ? 'success' : 'error'}
+                      size="small"
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">Consider for streak reset:</Typography>
+                    <Chip
+                      label={selectedEventDetails.considerForStreak ? 'Yes' : 'No'}
+                      color={selectedEventDetails.considerForStreak ? 'success' : 'default'}
                       size="small"
                     />
                   </Grid>
@@ -1576,6 +1725,15 @@ const HRDashboard = () => {
                 />
               }
               label="Attendance open for rider submissions"
+            />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={editAttendanceData.considerForStreak}
+                  onChange={(e) => setEditAttendanceData((prev) => ({ ...prev, considerForStreak: e.target.checked }))}
+                />
+              }
+              label="Consider event for streak reset on rejection"
             />
           </Stack>
         </DialogContent>

@@ -27,6 +27,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import MenuIcon from '@mui/icons-material/Menu';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import EmojiEventsOutlinedIcon from '@mui/icons-material/EmojiEventsOutlined';
+import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
 import SportsEsportsOutlinedIcon from '@mui/icons-material/SportsEsportsOutlined';
 import { myContracts } from '../services/contractsService';
 import { getMyWallet } from '../services/walletService';
@@ -744,7 +745,23 @@ export default function UserDashboard() {
                         }}>
                           Events & Attendance
                         </Typography>
-                        <StatusBadge label="TruckersMP" color={T.success} />
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Button
+                            size="small"
+                            component={RouterLink}
+                            to="/attendance/me?tab=streak"
+                            startIcon={<AutoAwesomeOutlinedIcon sx={{ fontSize: 16 }} />}
+                            sx={{
+                              fontFamily: font, fontSize: '0.75rem', fontWeight: 600,
+                              color: T.accent, borderColor: alpha(T.accent, 0.35),
+                              textTransform: 'none',
+                            }}
+                            variant="outlined"
+                          >
+                            Streak & rewards
+                          </Button>
+                          <StatusBadge label="TruckersMP" color={T.success} />
+                        </Stack>
                       </Stack>
 
                       <Box sx={{
@@ -757,7 +774,6 @@ export default function UserDashboard() {
                           {attendance?.totalEventsAttended || 0}
                         </Typography>
                       </Box>
-                      <Typography sx={{ ...sxLabel, mb: 1.25 }}>Active Attendance Windows</Typography>
                       {attendanceSubmitMsg && (
                         <Box sx={{
                           mb: 1.5, p: '8px 14px',
@@ -808,7 +824,7 @@ export default function UserDashboard() {
                         )}
                       </Stack>
 
-                      
+                      <Typography sx={{ ...sxLabel, mb: 1.25 }}>Active Attendance Windows</Typography>
                       <Stack spacing={1} sx={{ maxHeight: 320, overflowY: 'auto', pr: 0.5 }}>
                         {activeAttendanceEvents.map((ev) => (
                           <Stack key={ev._id} direction="row" alignItems="center" justifyContent="space-between"
@@ -874,6 +890,7 @@ export default function UserDashboard() {
                         {[
                           { label: 'Contract Hub', icon: <Assignment sx={{ fontSize: 14 }} />, to: '/contracts/me' },
                           { label: 'Wallet', icon: <AccountBalanceWallet sx={{ fontSize: 14 }} />, to: '/wallet' },
+                          { label: 'Streak & rewards', icon: <AutoAwesomeOutlinedIcon sx={{ fontSize: 14 }} />, to: '/attendance/me' },
                           { label: 'Leaderboard', icon: <Timeline sx={{ fontSize: 14 }} />, to: '/leaderboard' },
                           { label: 'Calendar', icon: <CalendarMonthOutlinedIcon sx={{ fontSize: 14 }} />, to: '/calendar' },
                         ].map(({ label, icon, to }) => (
