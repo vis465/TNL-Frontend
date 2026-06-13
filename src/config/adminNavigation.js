@@ -68,7 +68,8 @@ export const MY_AREA_SECTIONS = [
     items: [
       // { to: '/goals', label: 'Personal goals', Icon: FlagOutlined, roles: null },
       { to: '/calendar', label: 'Event calendar', Icon: CalendarMonthOutlined, roles: null },
-      { to: '/attendance', label: 'Attendance Leaderboard', Icon: EventAvailableOutlined, roles: null },
+      { to: '/attendance', label: 'Attendance leaderboard', Icon: EventAvailableOutlined, roles: null },
+      { to: '/attendance/me', label: 'Attendance & rewards', Icon: AutoAwesomeOutlined, roles: null },
     ],
   },
    {
@@ -210,7 +211,7 @@ export const ADMIN_SECTIONS = [
       },
       {
         to: '/admin/powerups',
-        label: 'Powerup management',
+        label: 'Streak reward settings',
         Icon: AutoAwesomeOutlined,
         roles: ['admin', 'hrteam'],
       },
@@ -411,7 +412,7 @@ export const ADMIN_DASHBOARD_CARDS = [
   {
     group: 'People & HR',
     title: 'Attendance management',
-    description: 'HR attendance and reports.',
+    description: 'HR attendance, streak events, and reports. Configure streak rewards in Powerup management.',
     to: '/admin/attendance',
     icon: TimelineOutlined,
     color: 'success',
@@ -428,8 +429,8 @@ export const ADMIN_DASHBOARD_CARDS = [
   },
   {
     group: 'People & HR',
-    title: 'Powerup management',
-    description: 'Configure streak rewards, random weights, and availability.',
+    title: 'Streak reward settings',
+    description: 'Configure streak milestone rewards, random weights, expiry, and manual grants.',
     to: '/admin/powerups',
     icon: AutoAwesomeOutlined,
     color: 'secondary',

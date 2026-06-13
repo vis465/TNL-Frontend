@@ -65,6 +65,8 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import axiosInstance from '../utils/axios';
 import ridersService from '../services/ridersService';
+import { Link as RouterLink } from 'react-router-dom';
+import AutoAwesomeOutlined from '@mui/icons-material/AutoAwesomeOutlined';
 
 const HRDashboard = () => {
   const { user, isAuthenticated } = useAuth();
@@ -861,8 +863,17 @@ const HRDashboard = () => {
           startIcon={<SyncIcon />}
           onClick={handleSyncMembers}
           disabled={loading}
+          sx={{ mr: 2 }}
         >
           Sync Members
+        </Button>
+        <Button
+          variant="outlined"
+          component={RouterLink}
+          to="/admin/powerups"
+          startIcon={<AutoAwesomeOutlined />}
+        >
+          Streak reward settings
         </Button>
       </Box>
 

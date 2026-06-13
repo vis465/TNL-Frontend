@@ -39,7 +39,7 @@ function formatExpiryText(dateValue) {
   return `Expires in ${days} days`;
 }
 
-export default function StreakCard({ streakData, milestones = [], onClaimClick, onClaimReward }) {
+export default function StreakCard({ streakData, milestones = [], onViewPowerups, onClaimReward }) {
   const current = Number(streakData?.currentStreak || 0);
   const highest = Number(streakData?.highestStreak || 0);
   const next = Number(streakData?.nextMilestoneAt || 3);
@@ -155,7 +155,7 @@ export default function StreakCard({ streakData, milestones = [], onClaimClick, 
           <Stack spacing={0.75}>
             <Typography variant="h4" fontWeight={700} color="warning.main">{current} days</Typography>
             <Typography variant="body2" color="text.secondary">
-              Next milestone in {steps} more attendance{steps === 1 ? '' : 's'}
+              Next milestone at day {next} · {steps} more approved attendance{steps === 1 ? '' : 's'} to go
             </Typography>
           </Stack>
 
@@ -303,9 +303,11 @@ export default function StreakCard({ streakData, milestones = [], onClaimClick, 
             <Typography variant="caption" color="text.secondary">
               <strong>{unclaimed}</strong> unclaimed milestone{unclaimed === 1 ? '' : 's'}
             </Typography>
-            <Button size="small" variant="text" sx={{ fontSize: '0.8rem' }} onClick={onClaimClick}>
-              View All Rewards →
-            </Button>
+            {onViewPowerups && (
+              <Button size="small" variant="text" sx={{ fontSize: '0.8rem' }} onClick={onViewPowerups}>
+                Open powerups →
+              </Button>
+            )}
           </Box>
         </Stack>
       </Box>
@@ -325,7 +327,7 @@ export default function StreakCard({ streakData, milestones = [], onClaimClick, 
               When you claim a milestone reward it is applied immediately. Most rewards are one-time: some take effect instantly (for example, wallet tokens or streak restore), while others become active for a limited period (for example, protection or 2x streak).
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-              Review claimed rewards and their current state on the Powerups page (Menu → Powerups). Active items show remaining time; used or expired items are retained for your records.
+              Review claimed rewards and their current state on the Powerups tab in Attendance & rewards. Active items show remaining time; used or expired items are retained for your records.
             </Typography>
           </Box>
 

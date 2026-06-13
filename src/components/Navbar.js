@@ -47,6 +47,7 @@ import {
   GarageOutlined,
   Groups,
   StarOutline,
+  AutoAwesome,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { styled } from '@mui/material/styles';
@@ -135,6 +136,7 @@ const Navbar = () => {
         { label: 'Servers', path: '/servers', icon: <FireTruckOutlined /> },
         { label: 'Dashboard', path: '/dashboard', icon: <Dashboard /> },
         { label: 'Event calendar', path: '/calendar', icon: <CalendarMonth /> },
+        { label: 'Streak & rewards', path: '/attendance/me', icon: <AutoAwesome /> },
         ...(hasStaffRole ? [{ label: 'Admin', path: '/admin', icon: <AdminPanelSettings /> }] : []),
       ];
 

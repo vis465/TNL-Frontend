@@ -562,7 +562,7 @@ function App() {
                           />
                         </Route>
                         <Route
-                          path="/attendance"
+                          path="/attendance/me"
                           element={<RiderAttendance />}
                         />
                         <Route
