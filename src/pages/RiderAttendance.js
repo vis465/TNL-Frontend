@@ -357,6 +357,7 @@ export default function RiderAttendance() {
           <Typography variant="h4" fontWeight={800}>Attendance & rewards</Typography>
           <Typography color="text.secondary" sx={{ maxWidth: 640 }}>
             Your personal hub — check in to events, track streak progress, claim milestones, and manage powerups.
+            Unlocked streak rewards are claimed on the <strong>Streak & milestones</strong> tab below.
           </Typography>
         </Box>
         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>

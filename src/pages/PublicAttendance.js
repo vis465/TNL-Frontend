@@ -38,12 +38,13 @@ const PublicAttendance = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [attendanceMonth, setAttendanceMonth] = useState('');
 
   const isLoggedIn = Boolean(localStorage.getItem('token'));
 
   useEffect(() => {
     loadPageData();
-  }, []);
+  }, [attendanceMonth]);
 
   const loadPageData = async () => {
     setLoading(true);
@@ -51,8 +52,8 @@ const PublicAttendance = () => {
 
     try {
       const [attendanceRes, leaderboardRes, activeWindowsRes] = await Promise.all([
-        axiosInstance.get('/attendance-events/public/attendance'),
-        axiosInstance.get('/attendance-events/public/leaderboard?limit=20'),
+        axiosInstance.get('/attendance-events/public/attendance', { params: { month: attendanceMonth || undefined } }),
+        axiosInstance.get('/attendance-events/public/leaderboard', { params: { limit: 20, month: attendanceMonth || undefined } }),
         axiosInstance.get('/attendance-events/active'),
       ]);
 
@@ -268,20 +269,31 @@ const PublicAttendance = () => {
               </Typography>
             </Box>
           </Stack>
-          <TextField
-            size="small"
-            placeholder="Search events"
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            sx={{ minWidth: { xs: '100%', sm: 280 } }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" />
-                </InputAdornment>
-              ),
-            }}
-          />
+          <Stack direction="row" spacing={1} alignItems="center">
+            <TextField
+              size="small"
+              type="month"
+              label="Month"
+              InputLabelProps={{ shrink: true }}
+              value={attendanceMonth}
+              onChange={(e) => setAttendanceMonth(e.target.value)}
+              sx={{ minWidth: 160 }}
+            />
+            <TextField
+              size="small"
+              placeholder="Search events"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              sx={{ minWidth: { xs: '100%', sm: 280 } }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Stack>
         </Stack>
 
         <Stack spacing={1.5}>
