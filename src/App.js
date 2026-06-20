@@ -116,6 +116,7 @@ import AdminDivisions from "./pages/AdminDivisions";
 import AdminDivisionDetail from "./pages/AdminDivisionDetail";
 import AdminCargoRates from "./pages/AdminCargoRates";
 import AdminFuelMarket from "./pages/AdminFuelMarket";
+import AdminDriverProgression from "./pages/AdminDriverProgression";
 import MyDivision from "./pages/MyDivision";
 import FuelMarketplace from "./pages/FuelMarketplace";
 import DivisionInvites from "./pages/DivisionInvites";
@@ -812,6 +813,14 @@ function App() {
                         element={
                           <PrivateRoute allowedRoles={["admin"]}>
                             <AdminFuelMarket />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="driver-progression"
+                        element={
+                          <PrivateRoute allowedRoles={["admin", "hrteam"]}>
+                            <AdminDriverProgression />
                           </PrivateRoute>
                         }
                       />

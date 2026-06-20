@@ -46,6 +46,8 @@ import GavelOutlined from '@mui/icons-material/GavelOutlined';
 import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined';
 import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
 import AutoAwesomeOutlined from '@mui/icons-material/AutoAwesomeOutlined';
+import SpeedOutlined from '@mui/icons-material/SpeedOutlined';
+
 
 /** Staff roles that can open /admin (matches App.js admin layout gate). */
 export const STAFF_ROLES = ['admin', 'eventteam', 'hrteam', 'financeteam', 'communityManager'];
@@ -217,6 +219,12 @@ export const ADMIN_SECTIONS = [
       },
       // { to: '/admin/riders', label: 'Riders', Icon: Group, roles: ['admin', 'eventteam', 'hrteam'] },
       { to: '/admin/achievements', label: 'Achievements', Icon: MilitaryTech, roles: ['admin', 'hrteam'] },
+      {
+        to: '/admin/driver-progression',
+        label: 'Driver progression',
+        Icon: SpeedOutlined,
+        roles: ['admin', 'hrteam'],
+      },
     ],
   },
   {
@@ -452,6 +460,15 @@ export const ADMIN_DASHBOARD_CARDS = [
     to: '/admin/achievements',
     icon: MilitaryTech,
     color: 'warning',
+    roles: ['admin', 'hrteam'],
+  },
+  {
+    group: 'People & HR',
+    title: 'Driver progression',
+    description: 'Set up driver scores, XP, distance ranks, and certificates — no technical knowledge needed.',
+    to: '/admin/driver-progression',
+    icon: SpeedOutlined,
+    color: 'primary',
     roles: ['admin', 'hrteam'],
   },
   {
