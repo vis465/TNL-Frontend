@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Autocomplete from '@mui/material/Autocomplete';
 import Stack from '@mui/material/Stack';
 import {
@@ -67,9 +67,11 @@ import axiosInstance from '../utils/axios';
 import ridersService from '../services/ridersService';
 import { Link as RouterLink } from 'react-router-dom';
 import AutoAwesomeOutlined from '@mui/icons-material/AutoAwesomeOutlined';
+import { AdminPageHeader, useAdminFeedback } from '../components/admin/primitives';
 
 const HRDashboard = () => {
   const { user, isAuthenticated } = useAuth();
+  const { showSuccess, showError, Feedback } = useAdminFeedback();
   const [tabValue, setTabValue] = useState(3);
   const [events, setEvents] = useState([]);
   const [attendanceEvents, setAttendanceEvents] = useState([]);
@@ -79,7 +81,15 @@ const HRDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  
+
+  useEffect(() => {
+    if (error) showError(error);
+  }, [error, showError]);
+
+  useEffect(() => {
+    if (success) showSuccess(success);
+  }, [success, showSuccess]);
+
   // Create event dialog state
   const [createEventOpen, setCreateEventOpen] = useState(false);
   const [eventId, setEventId] = useState('');
@@ -556,6 +566,26 @@ const HRDashboard = () => {
     setAddRiderOpen(true);
   };
 
+  const closeAddRiderDialog = () => {
+    setAddRiderOpen(false);
+    setRiderSearchTerm('');
+    setRiderSearchOptions([]);
+    setSelectedRiderIds([]);
+  };
+
+  const formatDivisionStatsFeedback = (data, baseMessage) => {
+    if (data && typeof data.divisionStatsApplied === 'boolean') {
+      if (data.divisionStatsApplied) {
+        return { message: data.message || baseMessage, severity: 'success' };
+      }
+      return {
+        message: data.message || `${baseMessage} Division stats were not updated.`,
+        severity: 'warning',
+      };
+    }
+    return { message: baseMessage, severity: 'success' };
+  };
+
   const existingRiderIds = new Set(
     (selectedEventDetails?.attendanceEntries || [])
       .map((entry) => entry?.riderId?._id)
@@ -563,8 +593,14 @@ const HRDashboard = () => {
   );
   const availableRiders = riders.filter((rider) => !existingRiderIds.has(rider._id));
   const selectedRiders = riders.filter((rider) => selectedRiderIds.includes(rider._id));
-  const availableSearchOptions = riderSearchOptions.filter((rider) => !existingRiderIds.has(rider._id));
-  const selectedSearchOptions = selectedRiders.filter((rider) => !existingRiderIds.has(rider._id));
+  const availableSearchOptions = useMemo(
+    () => riderSearchOptions.filter((rider) => !existingRiderIds.has(rider._id)),
+    [riderSearchOptions, selectedEventDetails?.attendanceEntries]
+  );
+  const selectedSearchOptions = useMemo(
+    () => selectedRiders.filter((rider) => !existingRiderIds.has(rider._id)),
+    [selectedRiders, selectedEventDetails?.attendanceEntries]
+  );
 
   useEffect(() => {
     if (!addRiderOpen) return;
@@ -661,21 +697,32 @@ const HRDashboard = () => {
         )
       );
 
-      const addedCount = results.filter((r) => r.status === 'fulfilled').length;
+      const fulfilled = results.filter((r) => r.status === 'fulfilled');
+      const addedCount = fulfilled.length;
       const failedCount = results.length - addedCount;
 
       const response = await axiosInstance.get(`/attendance-events/${selectedEventDetails._id}`);
       setSelectedEventDetails(response.data);
       fetchAttendanceEvents();
       fetchAttendanceStats();
-      if (failedCount > 0) {
-        setSuccess(`${addedCount} rider(s) added, ${failedCount} failed`);
-      } else {
-        setSuccess(`${addedCount} rider(s) added to attendance list`);
+
+      const divisionSkipped = fulfilled.filter(
+        (r) => r.value?.data?.divisionStatsApplied === false
+      ).length;
+
+      let feedbackMessage = failedCount > 0
+        ? `${addedCount} rider(s) added, ${failedCount} failed`
+        : `${addedCount} rider(s) added to attendance list`;
+
+      if (divisionSkipped > 0) {
+        feedbackMessage += `. ${divisionSkipped} could not update division stats.`;
+      } else if (fulfilled.length === 1 && fulfilled[0].value?.data) {
+        feedbackMessage = formatDivisionStatsFeedback(fulfilled[0].value.data, feedbackMessage).message;
       }
+
+      setSuccess(feedbackMessage);
       setConfirmAddRiderOpen(false);
-      setAddRiderOpen(false);
-      setSelectedRiderIds([]);
+      closeAddRiderDialog();
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to add riders');
     } finally {
@@ -711,10 +758,14 @@ const HRDashboard = () => {
   const handleApproveAttendance = async (eventId, entryId) => {
     try {
       setLoading(true);
-      await axiosInstance.put(`/attendance-events/${eventId}/attendance/${entryId}`, {
+      const approveRes = await axiosInstance.put(`/attendance-events/${eventId}/attendance/${entryId}`, {
         status: 'approved'
       });
-      setSuccess('Attendance approved successfully');
+      const { message } = formatDivisionStatsFeedback(
+        approveRes.data,
+        'Attendance approved successfully'
+      );
+      setSuccess(message);
       // Refresh event details
       const response = await axiosInstance.get(`/attendance-events/${eventId}`);
       setSelectedEventDetails(response.data);
@@ -828,36 +879,21 @@ const HRDashboard = () => {
 
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          HR Dashboard
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Manage events and track member attendance
-        </Typography>
-      </Box>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
-          {error}
-        </Alert>
-      )}
-
-      {success && (
-        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>
-          {success}
-        </Alert>
-      )}
+      <AdminPageHeader
+        description="Manage events and track member attendance."
+        actions={(
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setCreateEventOpen(true)}
+          >
+            Create Event
+          </Button>
+        )}
+        sx={{ mb: 2 }}
+      />
 
       <Box sx={{ mb: 3 }}>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setCreateEventOpen(true)}
-          sx={{ mr: 2 }}
-        >
-          Create Event
-        </Button>
         <Button
           variant="outlined"
           startIcon={<SyncIcon />}
@@ -1552,7 +1588,7 @@ const HRDashboard = () => {
       </Dialog>
 
       {/* Add Rider Dialog */}
-      <Dialog open={addRiderOpen} onClose={() => setAddRiderOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog open={addRiderOpen} onClose={closeAddRiderDialog} maxWidth="sm" fullWidth>
         <DialogTitle>Add Rider to Attendance</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -1584,9 +1620,13 @@ const HRDashboard = () => {
             multiple
             options={availableSearchOptions}
             value={selectedSearchOptions}
+            inputValue={riderSearchTerm}
+            blurOnSelect={false}
             loading={riderSearchLoading}
             onInputChange={(_, value, reason) => {
-              if (reason === 'input') setRiderSearchTerm(value);
+              if (reason === 'input' || reason === 'clear') {
+                setRiderSearchTerm(value);
+              }
             }}
             onChange={(_, selected) => setSelectedRiderIds(selected.map((r) => r._id))}
             getOptionLabel={(option) =>
@@ -1625,7 +1665,7 @@ const HRDashboard = () => {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setAddRiderOpen(false)}>Cancel</Button>
+          <Button onClick={closeAddRiderDialog}>Cancel</Button>
           <Button
             variant="contained"
             disabled={selectedRiderIds.length === 0 || loading}
@@ -1779,6 +1819,7 @@ const HRDashboard = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      <Feedback />
     </Container>
   );
 };

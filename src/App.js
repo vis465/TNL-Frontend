@@ -31,7 +31,6 @@ import RiderJobs from "./pages/RiderJobs";
 import JobDetails from "./pages/jobdetails";
 import AdminUsers from "./pages/AdminUsers";
 import EventManagement from "./pages/EventManagement";
-import AttendanceManagement from "./pages/AttendanceManagement";
 import MyBookings from "./pages/MyBookings";
 import Servers from "./pages/Servers";
 import PrivateRoute from "./components/PrivateRoute";

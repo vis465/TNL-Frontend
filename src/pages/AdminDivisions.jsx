@@ -17,7 +17,6 @@ import {
   DialogTitle,
   Grid,
   IconButton,
-  InputAdornment,
   LinearProgress,
   Stack,
   TextField,
@@ -27,7 +26,6 @@ import {
 import GroupsOutlined from '@mui/icons-material/GroupsOutlined';
 import AccountBalanceWalletOutlined from '@mui/icons-material/AccountBalanceWalletOutlined';
 import LocalAtmOutlined from '@mui/icons-material/LocalAtmOutlined';
-import SearchOutlined from '@mui/icons-material/SearchOutlined';
 import EditOutlined from '@mui/icons-material/EditOutlined';
 import OpenInNewOutlined from '@mui/icons-material/OpenInNewOutlined';
 import DeleteOutlineOutlined from '@mui/icons-material/DeleteOutlineOutlined';
@@ -35,6 +33,7 @@ import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import axiosInstance from '../utils/axios';
 import MagicPageShell from '../components/magicui/MagicPageShell';
 import RevealSection from '../components/magicui/RevealSection';
+import { AdminEmptyState, AdminFilterBar, AdminPageHeader, useAdminFeedback } from '../components/admin/primitives';
 
 const emptyForm = {
   name: '',
@@ -49,9 +48,9 @@ const emptyForm = {
 
 export default function AdminDivisions() {
   const navigate = useNavigate();
+  const { showSuccess, showError, Feedback } = useAdminFeedback();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [q, setQ] = useState('');
 
   const [createOpen, setCreateOpen] = useState(false);
@@ -72,12 +71,11 @@ export default function AdminDivisions() {
 
   const load = async () => {
     setLoading(true);
-    setError('');
     try {
       const { data } = await axiosInstance.get('/divisions');
       setItems(data.divisions || []);
     } catch (e) {
-      setError(e?.response?.data?.message || 'Failed to load divisions');
+      showError(e?.response?.data?.message || 'Failed to load divisions');
     } finally {
       setLoading(false);
     }
@@ -120,11 +118,10 @@ export default function AdminDivisions() {
   };
 
   const create = async () => {
-    setError('');
     setSubmitting(true);
     try {
       if (!createForm.leader?._id) {
-        setError('Please select a leader.');
+        showError('Please select a leader.');
         setSubmitting(false);
         return;
       }
@@ -140,10 +137,11 @@ export default function AdminDivisions() {
       });
       setCreateOpen(false);
       setCreateForm(emptyForm);
+      showSuccess('Division created.');
       load();
       if (data?.division?._id) navigate(`/admin/divisions/${data.division._id}`);
     } catch (e) {
-      setError(e?.response?.data?.message || 'Create failed');
+      showError(e?.response?.data?.message || 'Create failed');
     } finally {
       setSubmitting(false);
     }
@@ -173,16 +171,16 @@ export default function AdminDivisions() {
       await axiosInstance.delete(`/divisions/${deleteTarget._id}`);
       setDeleteTarget(null);
       setDeleteConfirm('');
+      showSuccess('Division deleted.');
       load();
     } catch (e) {
-      setError(e?.response?.data?.message || 'Delete failed');
+      showError(e?.response?.data?.message || 'Delete failed');
     } finally {
       setDeleting(false);
     }
   };
 
   const saveEdit = async () => {
-    setError('');
     setSubmitting(true);
     try {
       await axiosInstance.patch(`/divisions/${editForm._id}`, {
@@ -193,9 +191,10 @@ export default function AdminDivisions() {
         maxMembers: editForm.maxMembers === '' ? null : Number(editForm.maxMembers),
       });
       setEditOpen(false);
+      showSuccess('Division updated.');
       load();
     } catch (e) {
-      setError(e?.response?.data?.message || 'Update failed');
+      showError(e?.response?.data?.message || 'Update failed');
     } finally {
       setSubmitting(false);
     }
@@ -204,37 +203,32 @@ export default function AdminDivisions() {
   return (
     <MagicPageShell>
     <Container maxWidth="lg" sx={{ py: 3 }}>
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} sx={{ mb: 3 }}>
-        <Box>
-          <Typography variant="h5" fontWeight={800}>Divisions</Typography>
-          <Typography variant="body2" color="text.secondary">
-            Oversee divisions, assign leaders, and track wallets across the community.
-          </Typography>
-        </Box>
-        <Stack direction="row" spacing={1}>
-          <TextField
-            size="small"
-            placeholder="Search divisions"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            InputProps={{ startAdornment: <InputAdornment position="start"><SearchOutlined fontSize="small" /></InputAdornment> }}
-          />
-          <Button variant="contained" onClick={openCreate}>New division</Button>
-        </Stack>
-      </Stack>
+      <AdminPageHeader
+        description="Oversee divisions, assign leaders, and track wallets across the community."
+        actions={<Button variant="contained" onClick={openCreate}>New division</Button>}
+        sx={{ mb: 1 }}
+      />
+
+      <AdminFilterBar
+        search={{
+          value: q,
+          onChange: setQ,
+          placeholder: 'Search divisions',
+        }}
+        sx={{ mb: 2 }}
+      />
 
       {loading && <LinearProgress sx={{ mb: 2 }} />}
-      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
       {!loading && !filtered.length && (
         <Card variant="outlined">
-          <CardContent sx={{ textAlign: 'center', py: 6 }}>
-            <GroupsOutlined sx={{ fontSize: 48, opacity: 0.6, mb: 1 }} />
-            <Typography variant="h6">No divisions yet</Typography>
-            <Typography color="text.secondary" sx={{ mb: 2 }}>
-              Create your first division to start onboarding riders.
-            </Typography>
-            <Button variant="contained" onClick={openCreate}>New division</Button>
+          <CardContent>
+            <AdminEmptyState
+              icon={GroupsOutlined}
+              title="No divisions yet"
+              description="Create your first division to start onboarding riders."
+              action={<Button variant="contained" onClick={openCreate}>New division</Button>}
+            />
           </CardContent>
         </Card>
       )}
@@ -584,6 +578,7 @@ export default function AdminDivisions() {
           </Button>
         </DialogActions>
       </Dialog>
+      <Feedback />
     </Container>
     </MagicPageShell>
   );

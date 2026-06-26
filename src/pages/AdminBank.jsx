@@ -93,8 +93,10 @@ import {
   bankDebitDivision,
   getDivisionWalletTransactions,
 } from '../services/bankService';
+import { AdminPageHeader, useAdminFeedback } from '../components/admin/primitives';
 
 export default function AdminBank() {
+  const { showSuccess, showError, Feedback } = useAdminFeedback();
   const [balance, setBalance] = useState(0);
   const [tx, setTx] = useState([]);
   const [allTransactions, setAllTransactions] = useState([]); // Store all transactions for metrics
@@ -107,6 +109,14 @@ export default function AdminBank() {
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (err) showError(err);
+  }, [err, showError]);
+
+  useEffect(() => {
+    if (msg) showSuccess(msg);
+  }, [msg, showSuccess]);
 
   // Deduction state
   const [deductAmount, setDeductAmount] = useState('');
@@ -408,29 +418,10 @@ export default function AdminBank() {
   return (
     <Box sx={{ minHeight: '100vh' }}>
       <Container maxWidth="xl" sx={{ py: 3 }}>
-        {/* Modern Header */}
-        <Box sx={{ mb: 4 }}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
-            <Stack direction="row" alignItems="center" spacing={3}>
-              <Box sx={{
-                p: 2,
-                borderRadius: 3,
-                background: 'linear-gradient(135deg, #4facfe 0%,rgb(219, 207, 30) 100%)',
-                boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)'
-              }}>
-                <AccountBalance sx={{ fontSize: 32, color: 'white' }} />
-              </Box>
-              <Box>
-                <Typography variant="h3" sx={{ fontWeight: 900, color: 'white', mb: 0.5 }}>
-                  TNL Bank Control
-                </Typography>
-                <Typography variant="h6" sx={{ color: '#718096', fontWeight: 400 }}>
-                  Financial Management & Analytics Dashboard
-                </Typography>
-              </Box>
-            </Stack>
-
-            <Stack direction="row" spacing={2}>
+        <AdminPageHeader
+          description="Financial management, rider payouts, and division wallet operations."
+          actions={(
+            <>
               <Button
                 variant="outlined"
                 startIcon={<Download />}
@@ -449,46 +440,15 @@ export default function AdminBank() {
                   background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                   '&:hover': {
                     background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
-                  }
+                  },
                 }}
               >
                 Refresh
               </Button>
-            </Stack>
-          </Stack>
-
-          {/* Alerts */}
-          <Fade in={!!err || !!msg}>
-            <Box>
-              {err && (
-                <Alert
-                  severity="error"
-                  sx={{ mb: 2, borderRadius: 2, boxShadow: '0 4px 12px rgba(244, 67, 54, 0.15)' }}
-                  action={
-                    <IconButton size="small" onClick={() => setErr('')}>
-                      <Cancel />
-                    </IconButton>
-                  }
-                >
-                  {err}
-                </Alert>
-              )}
-              {msg && (
-                <Alert
-                  severity="success"
-                  sx={{ mb: 2, borderRadius: 2, boxShadow: '0 4px 12px rgba(76, 175, 80, 0.15)' }}
-                  action={
-                    <IconButton size="small" onClick={() => setMsg('')}>
-                      <CheckCircle />
-                    </IconButton>
-                  }
-                >
-                  {msg}
-                </Alert>
-              )}
-            </Box>
-          </Fade>
-        </Box>
+            </>
+          )}
+          sx={{ mb: 3 }}
+        />
 
         {/* Key Metrics Cards */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -1357,6 +1317,7 @@ export default function AdminBank() {
             <Button onClick={() => setTransactionDialogOpen(false)}>Close</Button>
           </DialogActions>
         </Dialog>
+        <Feedback />
       </Container>
     </Box>
   );

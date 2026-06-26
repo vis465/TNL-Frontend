@@ -1,47 +1,39 @@
 import React, { useEffect, useState } from 'react';
 import { 
-  Box, Card, CardContent, Typography, Stack, TextField, MenuItem, Grid, 
+  Box, Card, CardContent, Typography, Stack, Grid, 
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, 
   Chip, LinearProgress, Avatar, Fade, IconButton, useTheme,
-  alpha, Divider, Backdrop, CircularProgress, Skeleton
+  alpha, Backdrop, CircularProgress, Alert, Button
 } from '@mui/material';
 import axiosInstance from '../utils/axios';
 import { 
-  EmojiEvents, TrendingUp, LocalShipping, CurrencyRupeeOutlined, 
-  Speed, LocationOn, MyLocation, Refresh, CalendarMonth,
-  Star, WorkspacePremium, Timeline, Place, LocalFireDepartment,
-  Build, Scale, DirectionsCar
+  EmojiEvents, LocalShipping, CurrencyRupeeOutlined, 
+  Speed, Refresh,
+  Star, WorkspacePremium, Timeline, Scale
 } from '@mui/icons-material';
 
 
 
-const mockAttendance = [
-  { _id: '1', username: 'Alex Rodriguez', totalEventsAttended: 24 },
-  { _id: '2', username: 'Sarah Chen', totalEventsAttended: 22 },
-  { _id: '3', username: 'Michael Johnson', totalEventsAttended: 19 },
-  { _id: '4', username: 'Emma Wilson', totalEventsAttended: 17 },
-  { _id: '5', username: 'David Park', totalEventsAttended: 15 }
-];
-
 export default function Leaderboard() {
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [attendance, setAttendance] = useState([]);
   const theme = useTheme();
 
   const fetchData = async () => {
     setLoading(true);
+    setError('');
     try {
       const [jobsRes, attRes] = await Promise.all([
-        axiosInstance.get('/leaderboard', { params: { from: from || undefined, to: to || undefined } }),
-        axiosInstance.get('/hr-events/public/leaderboard?limit=10')
+        axiosInstance.get('/leaderboard'),
+        axiosInstance.get('/attendance-events/public/leaderboard?limit=10')
       ]);
       setData(jobsRes.data);
       setAttendance(Array.isArray(attRes.data) ? attRes.data : []);
-    } catch (error) {
-      console.error('Error fetching data:', error);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError(err?.response?.data?.message || 'Failed to load leaderboard. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -385,7 +377,7 @@ export default function Leaderboard() {
         <Stack alignItems="center" spacing={3}>
           <CircularProgress size={60} thickness={4} />
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Dashboard not available right now, please come back later
+            Loading leaderboard...
           </Typography>
         </Stack>
       </Backdrop>
@@ -421,76 +413,40 @@ export default function Leaderboard() {
               </Typography>
             </Box>
             
-            <Card 
+            <IconButton 
+              onClick={fetchData}
+              disabled={loading}
               sx={{ 
-                background: 'rgba(255, 255, 255, 0.1)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                borderRadius: 4,
+                color: 'white',
+                backgroundColor: 'rgba(255,255,255,0.1)',
+                '&:hover': { 
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  transform: 'scale(1.1)',
+                },
+                transition: 'all 0.2s ease-in-out'
               }}
+              aria-label="Refresh leaderboard"
             >
-              <CardContent sx={{ p: 3 }}>
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <CalendarMonth sx={{ color: 'rgba(255,255,255,0.8)', fontSize: 20 }} />
-                  <TextField 
-                    type="date" 
-                    label="From" 
-                    size="small" 
-                    InputLabelProps={{ shrink: true }} 
-                    value={from} 
-                    onChange={(e) => setFrom(e.target.value)}
-                    sx={{ 
-                      minWidth: 140,
-                      '& .MuiOutlinedInput-root': {
-                        backgroundColor: 'rgba(255,255,255,0.1)',
-                        '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
-                        '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.5)' },
-                        '&.Mui-focused fieldset': { borderColor: 'rgba(255,255,255,0.8)' },
-                      },
-                      '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
-                      '& .MuiInputBase-input': { color: 'white' },
-                    }}
-                  />
-                  <TextField 
-                    type="date" 
-                    label="To" 
-                    size="small" 
-                    InputLabelProps={{ shrink: true }} 
-                    value={to} 
-                    onChange={(e) => setTo(e.target.value)}
-                    sx={{ 
-                      minWidth: 140,
-                      '& .MuiOutlinedInput-root': {
-                        backgroundColor: 'rgba(255,255,255,0.1)',
-                        '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
-                        '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.5)' },
-                        '&.Mui-focused fieldset': { borderColor: 'rgba(255,255,255,0.8)' },
-                      },
-                      '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
-                      '& .MuiInputBase-input': { color: 'white' },
-                    }}
-                  />
-                  <IconButton 
-                    onClick={fetchData}
-                    sx={{ 
-                      color: 'white',
-                      backgroundColor: 'rgba(255,255,255,0.1)',
-                      '&:hover': { 
-                        backgroundColor: 'rgba(255,255,255,0.2)',
-                        transform: 'scale(1.1)',
-                      },
-                      transition: 'all 0.2s ease-in-out'
-                    }}
-                  >
-                    <Refresh />
-                  </IconButton>
-                </Stack>
-              </CardContent>
-            </Card>
+              <Refresh />
+            </IconButton>
           </Stack>
         </Fade>
 
-        {!loading && (
+        {error && (
+          <Alert
+            severity="error"
+            sx={{ mb: 3 }}
+            action={
+              <Button color="inherit" size="small" onClick={fetchData} disabled={loading}>
+                Retry
+              </Button>
+            }
+          >
+            {error}
+          </Alert>
+        )}
+
+        {!loading && !error && (
           <Grid container spacing={4}>
             {/* Overview Stats */}
             <Grid item xs={12}>
@@ -715,17 +671,17 @@ export default function Leaderboard() {
                               {d.totalJobs}
                             </TableCell>
                             <TableCell align="right" sx={{ fontWeight: 600, fontSize: '1rem' }}>
-                              {d.totalDistance?.toLocaleString?.() || d.totalDistance} mi
+                              {d.totalDistance?.toLocaleString?.() || d.totalDistance} km
                             </TableCell>
                             <TableCell align="right" sx={{ 
                               fontWeight: 700, 
                               color: '#4CAF50',
                               fontSize: '1.1rem'
                             }}>
-                              ${d.totalRevenue?.toLocaleString?.() || d.totalRevenue}
+                              ₹{d.totalRevenue?.toLocaleString?.() || d.totalRevenue}
                             </TableCell>
                             <TableCell align="right" sx={{ fontWeight: 600, fontSize: '1rem' }}>
-                              ${Math.round(d.avgRevenuePerJob || 0)}
+                              ₹{Math.round(d.avgRevenuePerJob || 0)}
                             </TableCell>
                           </TableRow>
                         ))}
