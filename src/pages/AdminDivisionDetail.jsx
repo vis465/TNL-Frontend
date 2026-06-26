@@ -46,6 +46,7 @@ import DivisionWalletTransactionsPanel from '../components/division/DivisionWall
 import MemberNudgeDialog from '../components/division/MemberNudgeDialog';
 import { DriverPerformanceProvider } from '../contexts/DriverPerformanceContext';
 import DriverPerformanceDashboard from '../components/DriverPerformance/Dashboard';
+import { AdminEmptyState, useAdminFeedback } from '../components/admin/primitives';
 
 const DIVISION_FUEL_CAPACITY_L = 20_000;
 
@@ -62,6 +63,7 @@ const DEFAULT_DW_NOTIFY = {
 export default function AdminDivisionDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { showSuccess, showError, Feedback } = useAdminFeedback();
   const [tab, setTab] = useState(0);
   const [division, setDivision] = useState(null);
   const [members, setMembers] = useState([]);
@@ -72,7 +74,6 @@ export default function AdminDivisionDetail() {
   const [inactivityDays, setInactivityDays] = useState(14);
   const [onlyInactive, setOnlyInactive] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [taxPct, setTaxPct] = useState('');
   const [walletForm, setWalletForm] = useState({ rider: null, amount: '', reason: '' });
   const [splitForm, setSplitForm] = useState({ amount: '', recipients: [] });
@@ -121,7 +122,6 @@ export default function AdminDivisionDetail() {
 
   const load = async () => {
     setLoading(true);
-    setError('');
     try {
       const { data } = await axiosInstance.get(`/divisions/${id}`);
       setDivision(data.division);
@@ -148,7 +148,7 @@ export default function AdminDivisionDetail() {
         byRider: Array.isArray(invest?.data?.byRider) ? invest.data.byRider : [],
       });
     } catch (e) {
-      setError(e?.response?.data?.message || 'Failed to load');
+      showError(e?.response?.data?.message || 'Failed to load');
     } finally {
       setLoading(false);
     }
@@ -161,7 +161,7 @@ export default function AdminDivisionDetail() {
       const { data } = await axiosInstance.get(`/divisions/${id}/trucks`);
       setTrucks(Array.isArray(data?.trucks) ? data.trucks : []);
     } catch (e) {
-      setError(e?.response?.data?.message || 'Failed to load trucks');
+      showError(e?.response?.data?.message || 'Failed to load trucks');
     } finally {
       setTrucksLoading(false);
     }
@@ -186,7 +186,7 @@ export default function AdminDivisionDetail() {
       setDivisionJobs(Array.isArray(data?.items) ? data.items : []);
       setDivisionJobsTotal(Number(data?.total) || 0);
     } catch (e) {
-      setError(e?.response?.data?.message || 'Failed to load division jobs');
+      showError(e?.response?.data?.message || 'Failed to load division jobs');
     } finally {
       setDivisionJobsLoading(false);
     }
@@ -309,14 +309,13 @@ export default function AdminDivisionDetail() {
       setEditOpen(false);
       load();
     } catch (e) {
-      setError(e?.response?.data?.message || 'Save failed');
+      showError(e?.response?.data?.message || 'Save failed');
     }
   };
 
   const saveDiscordWebhook = async () => {
     if (!canStaff) return;
     setSavingDiscord(true);
-    setError('');
     try {
       await axiosInstance.patch(`/divisions/${id}`, {
         discordWebhookUrl: dwWebhookUrl.trim(),
@@ -324,7 +323,7 @@ export default function AdminDivisionDetail() {
       });
       await load();
     } catch (e) {
-      setError(e?.response?.data?.message || 'Discord webhook settings failed to save');
+      showError(e?.response?.data?.message || 'Discord webhook settings failed to save');
     } finally {
       setSavingDiscord(false);
     }
@@ -338,7 +337,7 @@ export default function AdminDivisionDetail() {
       setInviteQuery('');
       load();
     } catch (e) {
-      setError(e?.response?.data?.message || 'Invite failed');
+      showError(e?.response?.data?.message || 'Invite failed');
     }
   };
 
@@ -350,7 +349,7 @@ export default function AdminDivisionDetail() {
       setInviteQuery('');
       load();
     } catch (e) {
-      setError(e?.response?.data?.message || 'Add member failed');
+      showError(e?.response?.data?.message || 'Add member failed');
     }
   };
 
@@ -359,7 +358,7 @@ export default function AdminDivisionDetail() {
       await axiosInstance.patch(`/divisions/${id}/tax`, { taxPercent: Number(taxPct) });
       load();
     } catch (e) {
-      setError(e?.response?.data?.message || 'Tax update failed');
+      showError(e?.response?.data?.message || 'Tax update failed');
     }
   };
 
@@ -374,7 +373,7 @@ export default function AdminDivisionDetail() {
       setWalletForm({ rider: null, amount: '', reason: '' });
       load();
     } catch (e) {
-      setError(e?.response?.data?.message || 'Distribute failed');
+      showError(e?.response?.data?.message || 'Distribute failed');
     }
   };
 
@@ -390,7 +389,7 @@ export default function AdminDivisionDetail() {
       setSplitForm({ amount: '', recipients: [] });
       load();
     } catch (e) {
-      setError(e?.response?.data?.message || 'Split failed');
+      showError(e?.response?.data?.message || 'Split failed');
     }
   };
 
@@ -400,7 +399,7 @@ export default function AdminDivisionDetail() {
       await axiosInstance.post(`/divisions/${id}/members/${riderId}/kick`);
       load();
     } catch (e) {
-      setError(e?.response?.data?.message || 'Kick failed');
+      showError(e?.response?.data?.message || 'Kick failed');
     }
   };
 
@@ -410,7 +409,7 @@ export default function AdminDivisionDetail() {
       await axiosInstance.post(`/divisions/${id}/members/${riderId}/remove`);
       load();
     } catch (e) {
-      setError(e?.response?.data?.message || 'Remove failed');
+      showError(e?.response?.data?.message || 'Remove failed');
     }
   };
 
@@ -422,7 +421,7 @@ export default function AdminDivisionDetail() {
       setTransferLeader(null);
       load();
     } catch (e) {
-      setError(e?.response?.data?.message || 'Transfer failed');
+      showError(e?.response?.data?.message || 'Transfer failed');
     }
   };
 
@@ -439,7 +438,7 @@ export default function AdminDivisionDetail() {
       setDeleteOpen(false);
       navigate('/admin/divisions');
     } catch (e) {
-      setError(e?.response?.data?.message || 'Delete failed');
+      showError(e?.response?.data?.message || 'Delete failed');
     } finally {
       setDeleting(false);
     }
@@ -471,7 +470,6 @@ export default function AdminDivisionDetail() {
       </Button>
 
       {loading && <LinearProgress sx={{ mb: 2 }} />}
-      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
       {division && (
         <Card sx={{ mb: 3, overflow: 'hidden' }} variant="outlined">
@@ -889,10 +887,11 @@ export default function AdminDivisionDetail() {
                       ))}
                       {!visible.length && (
                         <TableRow>
-                          <TableCell colSpan={canManageMembers ? 7 : 6} align="center">
-                            <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
-                              {onlyInactive ? 'No inactive members.' : 'No members yet.'}
-                            </Typography>
+                          <TableCell colSpan={canManageMembers ? 7 : 6} sx={{ border: 0 }}>
+                            <AdminEmptyState
+                              title={onlyInactive ? 'No inactive members' : 'No members yet'}
+                              description={onlyInactive ? 'All members have been active recently.' : 'Invite riders to join this division.'}
+                            />
                           </TableCell>
                         </TableRow>
                       )}
@@ -1105,7 +1104,7 @@ export default function AdminDivisionDetail() {
                                 await axiosInstance.delete(`/divisions/${id}/invites/${i._id}`);
                                 load();
                               } catch (e) {
-                                setError(e?.response?.data?.message || 'Cancel failed');
+                                showError(e?.response?.data?.message || 'Cancel failed');
                               }
                             }}
                           >
@@ -1519,10 +1518,11 @@ export default function AdminDivisionDetail() {
                 })}
                 {!divisionJobs.length && !divisionJobsLoading && (
                   <TableRow>
-                    <TableCell colSpan={8} align="center">
-                      <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
-                        No jobs found for this division.
-                      </Typography>
+                    <TableCell colSpan={8} sx={{ border: 0 }}>
+                      <AdminEmptyState
+                        title="No jobs found"
+                        description="No jobs found for this division."
+                      />
                     </TableCell>
                   </TableRow>
                 )}
@@ -1658,6 +1658,7 @@ export default function AdminDivisionDetail() {
         inactivityDays={inactivityDays}
         inactiveMembers={members.filter((m) => m.inactive && !m.isLeader)}
       />
+      <Feedback />
     </Container>
     </MagicPageShell>
   );

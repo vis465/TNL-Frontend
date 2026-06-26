@@ -134,10 +134,10 @@ export default function DivisionLeaderboard() {
     const nextDir = sort === key ? (dir === 'asc' ? 'desc' : 'asc') : 'desc';
     setSort(key);
     setDir(nextDir);
-    load(key, nextDir, period, month, dailyDate);
   };
 
   const divBySlug = new Map(divisions.map((d) => [String(d._id), d]));
+  const statsByDivisionId = new Map(rows.map((r) => [String(r.divisionId), r]));
   const top = rows.slice(0, 3);
   const formatMonthLabel = (value) => {
     if (!value) return '';
@@ -576,7 +576,7 @@ export default function DivisionLeaderboard() {
         <BentoGrid minItemWidth={260} gap={2}>
           {divisions.map((d) => (
             <BentoItem key={d._id}>
-              <DivisionBrowseCard division={d} stats={null} compact />
+              <DivisionBrowseCard division={d} stats={statsByDivisionId.get(String(d._id))} compact />
             </BentoItem>
           ))}
           {!divisions.length && !loading && (

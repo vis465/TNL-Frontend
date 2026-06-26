@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
   Box,
   Card,
   CardContent,
@@ -8,7 +7,6 @@ import {
   Container,
   LinearProgress,
   MenuItem,
-  Stack,
   Table,
   TableBody,
   TableCell,
@@ -18,21 +16,21 @@ import {
   Typography
 } from '@mui/material';
 import { getAdminLoans } from '../services/loanService';
+import { AdminEmptyState, AdminFilterBar, AdminPageHeader, useAdminFeedback } from '../components/admin/primitives';
 
 const AdminLoans = () => {
+  const { showError, Feedback } = useAdminFeedback();
   const [status, setStatus] = useState('');
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
   const load = async () => {
     try {
       setLoading(true);
-      setError('');
       const data = await getAdminLoans({ status: status || undefined });
       setItems(data.items || []);
     } catch (e) {
-      setError(e?.response?.data?.message || 'Failed to load loans');
+      showError(e?.response?.data?.message || 'Failed to load loans');
     } finally {
       setLoading(false);
     }
@@ -44,8 +42,9 @@ const AdminLoans = () => {
 
   return (
     <Container maxWidth="xl" sx={{ py: 3 }}>
-      <Stack direction="row" justifyContent="space-between" sx={{ mb: 2 }}>
-        <Typography variant="h5">Admin Loan Tracking</Typography>
+      <AdminPageHeader description="Track active, overdue, and closed fleet loans." sx={{ mb: 1 }} />
+
+      <AdminFilterBar>
         <TextField
           select
           size="small"
@@ -59,9 +58,9 @@ const AdminLoans = () => {
           <MenuItem value="overdue">Overdue</MenuItem>
           <MenuItem value="closed">Closed</MenuItem>
         </TextField>
-      </Stack>
+      </AdminFilterBar>
+
       {loading && <LinearProgress sx={{ mb: 2 }} />}
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       <Card>
         <CardContent>
           <Table size="small">
@@ -90,9 +89,11 @@ const AdminLoans = () => {
                   </TableCell>
                 </TableRow>
               ))}
-              {items.length === 0 && (
+              {items.length === 0 && !loading && (
                 <TableRow>
-                  <TableCell colSpan={7}>No loans found.</TableCell>
+                  <TableCell colSpan={7} sx={{ border: 0 }}>
+                    <AdminEmptyState title="No loans found" description="Try a different status filter." />
+                  </TableCell>
                 </TableRow>
               )}
             </TableBody>
@@ -102,6 +103,7 @@ const AdminLoans = () => {
       <Box sx={{ mt: 1 }}>
         <Typography variant="caption" color="text.secondary">Showing {items.length} loans</Typography>
       </Box>
+      <Feedback />
     </Container>
   );
 };

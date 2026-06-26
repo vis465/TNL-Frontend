@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -64,64 +64,34 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [uploadLoading, setUploadLoading] = useState(false);
   const [fetchingTmpEvent, setFetchingTmpEvent] = useState(false);
   const [eventSlots, setEventSlots] = useState({});
   const [loadingSlots, setLoadingSlots] = useState({});
-  
-  // Use ref to preserve eventSlots state across re-renders
-  const eventSlotsRef = useRef({});
-  
-  // Load eventSlots from localStorage on component mount
-  useEffect(() => {
-    try {
-      const savedSlots = localStorage.getItem('eventSlots');
-      if (savedSlots) {
-        const parsedSlots = JSON.parse(savedSlots);
-        console.log('Loading eventSlots from localStorage:', parsedSlots);
-        setEventSlots(parsedSlots);
-        eventSlotsRef.current = parsedSlots;
-      }
-    } catch (error) {
-      console.error('Error loading eventSlots from localStorage:', error);
-    }
-  }, []);
+  const [allocationSelections, setAllocationSelections] = useState({});
 
-  // Save eventSlots to localStorage whenever they change
-  const saveEventSlotsToStorage = (slots) => {
-    try {
-      localStorage.setItem('eventSlots', JSON.stringify(slots));
-      console.log('Saved eventSlots to localStorage:', slots);
-    } catch (error) {
-      console.error('Error saving eventSlots to localStorage:', error);
-    }
+  const getAllocationSelection = (requestId) => allocationSelections[requestId] || {};
+  const updateAllocationSelection = (requestId, updates) => {
+    setAllocationSelections(prev => ({
+      ...prev,
+      [requestId]: {
+        ...prev[requestId],
+        ...updates
+      }
+    }));
   };
-
-  // Refresh eventSlots from localStorage
-  const refreshEventSlotsFromStorage = () => {
-    try {
-      const savedSlots = localStorage.getItem('eventSlots');
-      if (savedSlots) {
-        const parsedSlots = JSON.parse(savedSlots);
-        console.log('Refreshing eventSlots from localStorage:', parsedSlots);
-        setEventSlots(parsedSlots);
-        eventSlotsRef.current = parsedSlots;
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Error refreshing eventSlots from localStorage:', error);
-      return false;
-    }
+  const clearAllocationSelection = (requestId) => {
+    setAllocationSelections(prev => {
+      const newState = { ...prev };
+      delete newState[requestId];
+      return newState;
+    });
   };
 
   // Force refresh all slots for all events from backend
   const forceRefreshAllSlots = async () => {
     try {
-      console.log('Force refreshing all slots from backend...');
       const promises = events.map(event => fetchEventSlots(event.truckersmpId));
       await Promise.all(promises);
-      console.log('All slots refreshed from backend');
       alert('All slots refreshed from backend');
     } catch (error) {
       console.error('Error refreshing all slots:', error);
@@ -158,22 +128,6 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
     color: '#1976d2'
   });
 
-  const [slotsForm, setSlotsForm] = useState({
-    routeName: '',
-    slots: []
-  });
-
-  const [newSlot, setNewSlot] = useState({
-    slotNumber: 1,
-    slotName: '',
-    description: '',
-    minPlayers: 1,
-    maxVtc: 1,
-    imageUrl: '',
-    specialRequirements: []
-  });
-
-  const [newRequirement, setNewRequirement] = useState('');
   const [adminComments, setAdminComments] = useState({});
 
   useEffect(() => {
@@ -192,33 +146,6 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
       console.log('Current eventSlots for this event:', eventSlots[selectedEvent.truckersmpId]);
     }
   }, [selectedEvent, eventSlots]);
-
-  // Protect eventSlots from being reset - restore from ref if needed
-  useEffect(() => {
-    if (Object.keys(eventSlots).length === 0 && Object.keys(eventSlotsRef.current).length > 0) {
-      console.log('eventSlots was reset to empty, restoring from ref:', eventSlotsRef.current);
-      setEventSlots(eventSlotsRef.current);
-    }
-  }, [eventSlots]);
-
-  // Auto-restore slots from localStorage if state is empty
-  useEffect(() => {
-    if (Object.keys(eventSlots).length === 0) {
-      console.log('eventSlots is empty, checking localStorage...');
-      const restored = refreshEventSlotsFromStorage();
-      if (restored) {
-        console.log('Auto-restored slots from localStorage');
-      }
-    }
-  }, [eventSlots]);
-
-  // Sync ref with state changes
-  useEffect(() => {
-    if (Object.keys(eventSlots).length > 0) {
-      eventSlotsRef.current = eventSlots;
-      console.log('Synced ref with eventSlots state:', eventSlots);
-    }
-  }, [eventSlots]);
 
   const fetchEvents = async () => {
     try {
@@ -254,68 +181,29 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
         routeSlotsKeys: response.data.routeSlots ? Object.keys(response.data.routeSlots) : 'none'
       });
       
+      const eventData = response.data.routeSlots && typeof response.data.routeSlots === 'object'
+        ? response.data.routeSlots
+        : {};
+
       if (response.data.routeSlots && typeof response.data.routeSlots === 'object') {
         console.log('Setting route slots:', response.data.routeSlots);
-        
-        // Debug: Check if requests exist in the slots
-        Object.keys(response.data.routeSlots).forEach(routeName => {
-          const routeSlots = response.data.routeSlots[routeName];
-          console.log(`Route ${routeName}: ${routeSlots.length} slots`);
-          routeSlots.forEach((slot, idx) => {
-            console.log(`  Slot ${idx + 1}: ${slot.slotName || slot.slotNumber}`);
-            console.log(`    Requests: ${slot.requests ? slot.requests.length : 0}`);
-            if (slot.requests && slot.requests.length > 0) {
-              slot.requests.forEach((req, reqIdx) => {
-                console.log(`      Request ${reqIdx + 1}: ${req.vtcName} - ${req.status}`);
-              });
-            }
-          });
-        });
-        
-        // Update eventSlots for this specific event without overwriting others
-        setEventSlots(prev => {
-          const newState = {
-            ...prev,
-            [eventId]: {
-              ...response.data.routeSlots,
-              routeRequests: response.data.routeRequests || {}
-            }
-          };
-          console.log('Updated eventSlots state:', newState);
-          console.log('Route requests included:', response.data.routeRequests);
-          // Also update the ref to preserve state across re-renders
-          eventSlotsRef.current = newState;
-          // Save to localStorage
-          saveEventSlotsToStorage(newState);
-          return newState;
-        });
       } else {
-        console.log('No route slots found, setting empty object for this event');
-        setEventSlots(prev => {
-          const newState = {
-            ...prev,
-            [eventId]: {}
-          };
-          // Also update the ref
-          eventSlotsRef.current = newState;
-          // Save to localStorage
-          saveEventSlotsToStorage(newState);
-          return newState;
-        });
+        console.log('No route slots found, initializing empty object for this event');
       }
+
+      setEventSlots(prev => ({
+        ...prev,
+        [eventId]: {
+          ...eventData,
+          routeRequests: response.data.routeRequests || {}
+        }
+      }));
     } catch (error) {
       console.error('Error fetching event slots:', error);
-      setEventSlots(prev => {
-        const newState = {
-          ...prev,
-          [eventId]: {}
-        };
-        // Also update the ref
-        eventSlotsRef.current = newState;
-        // Save to localStorage
-        saveEventSlotsToStorage(newState);
-        return newState;
-      });
+      setEventSlots(prev => ({
+        ...prev,
+        [eventId]: {}
+      }));
     } finally {
       setLoadingSlots(prev => ({ ...prev, [eventId]: false }));
     }
@@ -323,12 +211,11 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
 
   const getEventSlotCount = (eventId) => {
     console.log('Getting slot count for event:', eventId, 'Current eventSlots:', eventSlots);
-    
-    // Use ref as fallback if state is empty
-    const slotsData = eventSlots[eventId] || eventSlotsRef.current[eventId];
-    
+    const slotsData = eventSlots[eventId];
     if (!slotsData) return 0;
-    const count = Object.values(slotsData).flat().length;
+    const count = Object.keys(slotsData)
+      .filter(key => key !== 'routeRequests' && key !== 'unassigned')
+      .reduce((total, key) => total + (slotsData[key]?.length || 0), 0);
     console.log('Slot count for event', eventId, ':', count);
     return count;
   };
@@ -372,36 +259,11 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
     console.log('Editing event:', event);
     setSelectedEvent(event);
     setEditMode(true);
-    setEventForm({
-      truckersmpId: event.truckersmpId,
-      title: event.title,
-      description: event.description,
-      startDate: event.startDate ? new Date(event.startDate).toISOString().split('T')[0] : '',
-      endtime: event.endtime ? new Date(event.endtime).toISOString().split('T')[0] : '',
-      server: event.server,
-      meetingPoint: event.meetingPoint,
-      departurePoint: event.departurePoint,
-      arrivalPoint: event.arrivalPoint,
-      banner: event.banner,
-      map: event.map,
-      voiceLink: event.voiceLink,
-      externalLink: event.externalLink,
-      rule: event.rule,
-      dlcs: Array.isArray(event.dlcs) ? event.dlcs : [],
-      url: event.url,
-      maxVtcPerSlot: event.maxVtcPerSlot || 1,
-      approvalRequired: event.approvalRequired !== false,
-      routes: Array.isArray(event.routes) ? event.routes.map(route => ({
-        ...route,
-        slotImages: route.slotImages || [],
-        slotCount: route.slotCount || 0
-      })) : []
-    });
+    setEventForm(mapEventToForm(event));
     setError('');
     setSuccess('');
     setActiveTab(0);
-    
-    // Fetch slots for this event
+
     console.log('Fetching slots for event:', event.truckersmpId);
     fetchEventSlots(event.truckersmpId);
   };
@@ -411,29 +273,80 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
     setTimeout(() => setSuccess(''), timeout);
   };
 
+  const mapEventToForm = (event) => ({
+    truckersmpId: event.truckersmpId,
+    title: event.title,
+    description: event.description,
+    startDate: event.startDate ? new Date(event.startDate).toISOString().split('T')[0] : '',
+    endtime: event.endtime ? new Date(event.endtime).toISOString().split('T')[0] : '',
+    server: event.server,
+    meetingPoint: event.meetingPoint,
+    departurePoint: event.departurePoint,
+    arrivalPoint: event.arrivalPoint,
+    banner: event.banner,
+    map: event.map,
+    voiceLink: event.voiceLink,
+    externalLink: event.externalLink,
+    rule: event.rule,
+    dlcs: Array.isArray(event.dlcs) ? event.dlcs : [],
+    url: event.url,
+    maxVtcPerSlot: event.maxVtcPerSlot || 1,
+    approvalRequired: event.approvalRequired !== false,
+    routes: Array.isArray(event.routes)
+      ? event.routes.map((route) => ({
+          ...route,
+          slotImages: route.slotImages || [],
+          slotCount: route.slotCount || 0,
+        }))
+      : [],
+  });
+
+  const stripRoutesForPayload = (routes = []) =>
+    routes.map(({ slotImages, slotCount, ...route }) => route);
+
+  const updateEventFormRoute = (routeName, updater) => {
+    setEventForm((prev) => ({
+      ...prev,
+      routes: prev.routes.map((r) =>
+        r.name === routeName
+          ? typeof updater === 'function'
+            ? updater(r)
+            : { ...r, ...updater }
+          : r
+      ),
+    }));
+  };
+
   const handleSaveEvent = async () => {
     try {
       setLoading(true);
       setError('');
       setSuccess('');
-      
-      console.log('Saving event:', eventForm);
-      
+
+      const payload = {
+        ...eventForm,
+        routes: stripRoutesForPayload(eventForm.routes),
+      };
+
       if (selectedEvent) {
-        const response = await axiosInstance.put(`/special-events/${selectedEvent.truckersmpId}`, eventForm);
-        console.log('Event updated successfully:', response.data);
+        const response = await axiosInstance.put(`/special-events/${selectedEvent.truckersmpId}`, payload);
+        const updated = response.data?.event || response.data;
+        if (updated) {
+          setSelectedEvent(updated);
+          setEventForm(mapEventToForm(updated));
+          setEditMode(true);
+        }
+        await fetchEvents();
+        setSuccessWithTimeout('Event saved successfully!');
       } else {
-        const response = await axiosInstance.post('/special-events', eventForm);
-        console.log('Event created successfully:', response.data);
+        await axiosInstance.post('/special-events', payload);
+        setEditMode(false);
+        setSelectedEvent(null);
+        await fetchEvents();
+        setSuccessWithTimeout('Event saved successfully!');
       }
-      
-      setEditMode(false);
-      setSelectedEvent(null);
-      console.log('Event saved, preserving existing slots data...');
-      // Don't call fetchEvents() here as it clears eventSlots
-      // The events list should already be up to date
+
       if (onEventUpdated) onEventUpdated();
-      setSuccessWithTimeout('Event saved successfully!');
     } catch (error) {
       console.error('Error saving event:', error);
       setError(error.response?.data?.message || 'Failed to save event');
@@ -459,10 +372,6 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
       setEventSlots(prev => {
         const newState = { ...prev };
         delete newState[event.truckersmpId];
-        // Also update the ref
-        eventSlotsRef.current = newState;
-        // Save to localStorage
-        saveEventSlotsToStorage(newState);
         return newState;
       });
       
@@ -502,148 +411,6 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
     }));
   };
 
-  const handleAddSlot = () => {
-    if (!newSlot.slotName.trim()) return;
-    
-    setSlotsForm(prev => ({
-      ...prev,
-      slots: [...prev.slots, { ...newSlot }]
-    }));
-    
-    // Reset newSlot form and increment slot number
-    setNewSlot({
-      slotNumber: (newSlot.slotNumber || 0) + 1,
-      slotName: '',
-      description: '',
-      minPlayers: 1,
-      maxVtc: 1,
-      imageUrl: '',
-      specialRequirements: []
-    });
-  };
-
-  const handleRemoveSlot = (slotIndex) => {
-    setSlotsForm(prev => ({
-      ...prev,
-      slots: prev.slots.filter((_, index) => index !== slotIndex)
-    }));
-  };
-
-  const handleAddRequirement = () => {
-    if (!newRequirement.trim()) return;
-    
-    setNewSlot(prev => ({
-      ...prev,
-      specialRequirements: [...prev.specialRequirements, newRequirement.trim()]
-    }));
-    
-    setNewRequirement('');
-  };
-
-  const handleRemoveRequirement = (reqIndex) => {
-    setNewSlot(prev => ({
-      ...prev,
-      specialRequirements: prev.specialRequirements.filter((_, index) => index !== reqIndex)
-    }));
-  };
-
-  const handleUploadSlots = async () => {
-    if (!slotsForm.routeName || slotsForm.slots.length === 0) {
-      setError('Please select a route and add slots before uploading');
-      return;
-    }
-
-    // Validate slots before upload
-    const invalidSlots = slotsForm.slots.filter(slot => !slot.slotName || !slot.slotNumber);
-    if (invalidSlots.length > 0) {
-      setError('All slots must have a name and slot number');
-      return;
-    }
-
-    // Check for duplicate slot numbers
-    const slotNumbers = slotsForm.slots.map(slot => slot.slotNumber);
-    const uniqueSlotNumbers = new Set(slotNumbers);
-    if (slotNumbers.length !== uniqueSlotNumbers.size) {
-      setError('Slot numbers must be unique');
-      return;
-    }
-
-    try {
-      setUploadLoading(true);
-      setError('');
-      setSuccess('');
-      
-      console.log('Uploading slots:', {
-        eventId: selectedEvent.truckersmpId,
-        routeName: slotsForm.routeName,
-        slots: slotsForm.slots
-      });
-      
-      const response = await axiosInstance.post(
-        `/special-events/${selectedEvent.truckersmpId}/routes/${slotsForm.routeName}/slots`,
-        { slots: slotsForm.slots }
-      );
-      
-      console.log('Slots upload response:', response.data);
-      
-      // Clear the form after successful upload
-      setSlotsForm({
-        routeName: '',
-        slots: []
-      });
-      
-      // Reset newSlot form
-      setNewSlot({
-        slotNumber: 1,
-        slotName: '',
-        description: '',
-        minPlayers: 1,
-        maxVtc: 1,
-        imageUrl: '',
-        specialRequirements: []
-      });
-      
-      // Refresh the events list and slots
-      console.log('Refreshing slots after upload...');
-      // Don't call fetchEvents() here as it clears eventSlots
-      // Instead, just refresh the slots for this specific event
-      if (selectedEvent) {
-        console.log('Fetching updated slots for event:', selectedEvent.truckersmpId);
-        await fetchEventSlots(selectedEvent.truckersmpId);
-      }
-      
-      if (onEventUpdated) onEventUpdated();
-      
-      // Show success message
-      setSuccessWithTimeout(`Successfully uploaded ${response.data.count} slots for route ${response.data.routeName}!`);
-      
-      // Also show a more detailed success message
-      setTimeout(() => {
-        setSuccess(`Created ${response.data.count} slots for route ${response.data.routeName}. You can now view them in the existing slots section below.`);
-      }, 100);
-      
-    } catch (error) {
-      console.error('Error uploading slots:', error);
-      let errorMessage = 'Failed to upload slots';
-      
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.response?.status === 404) {
-        errorMessage = 'Event or route not found. Please check the event ID and route name.';
-      } else if (error.response?.status === 400) {
-        errorMessage = 'Invalid data. Please check the slot information.';
-      } else if (error.response?.status === 500) {
-        errorMessage = 'Server error. Please check the console for details.';
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      setError(errorMessage);
-    } finally {
-      setUploadLoading(false);
-    }
-  };
-
   const handleClose = () => {
     setEditMode(false);
     setSelectedEvent(null);
@@ -667,10 +434,6 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
       maxVtcPerSlot: 1,
       approvalRequired: true,
       routes: []
-    });
-    setSlotsForm({
-      routeName: '',
-      slots: []
     });
     setError('');
     setSuccess('');
@@ -720,7 +483,10 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
     }
   };
 
-  const handleApproveRequest = async (requestId, slotId) => {
+  const handleApproveRequest = async (requestId) => {
+    const selection = allocationSelections[requestId] || {};
+    const slotId = selection.slotId;
+
     if (!slotId) {
       setError('Please select a slot to allocate before approving');
       return;
@@ -745,12 +511,13 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
       console.log('Request approved:', response.data);
       setSuccessWithTimeout('Request approved and slot allocated successfully!');
       
-      // Clear the admin comment for this request
+      // Clear the admin comment and allocation selection for this request
       setAdminComments(prev => {
         const newComments = { ...prev };
         delete newComments[requestId];
         return newComments;
       });
+      clearAllocationSelection(requestId);
       
       fetchEventSlots(selectedEvent.truckersmpId); // Refresh slots to update request count
     } catch (error) {
@@ -787,12 +554,13 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
       console.log('Request rejected:', response.data);
       setSuccessWithTimeout('Request rejected successfully!');
       
-      // Clear the admin comment for this request
+      // Clear the admin comment and allocation selection for this request
       setAdminComments(prev => {
         const newComments = { ...prev };
         delete newComments[requestId];
         return newComments;
       });
+      clearAllocationSelection(requestId);
       
       fetchEventSlots(selectedEvent.truckersmpId); // Refresh slots to update request count
     } catch (error) {
@@ -829,7 +597,7 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
       });
 
       const response = await axiosInstance.post(
-        `/special-events/${selectedEvent.truckersmpId}/routes/${route.name}/slots-count`,
+        `/special-events/${selectedEvent.truckersmpId}/routes/${encodeURIComponent(route.name)}/slots-count`,
         { slotCount: route.slotCount }
       );
 
@@ -890,7 +658,7 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
       });
 
       const response = await axiosInstance.post(
-        `/special-events/${selectedEvent.truckersmpId}/routes/${route.name}/slots-count`,
+        `/special-events/${selectedEvent.truckersmpId}/routes/${encodeURIComponent(route.name)}/slots-count`,
         { slotCount: route.slotCount, slotImages: route.slotImages }
       );
 
@@ -1257,13 +1025,13 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
                           )}
                           
                           {/* Display existing slots for this route */}
-                          {selectedEvent && (eventSlots[selectedEvent.truckersmpId] || eventSlotsRef.current[selectedEvent.truckersmpId]) && (eventSlots[selectedEvent.truckersmpId] || eventSlotsRef.current[selectedEvent.truckersmpId])[route.name] && (eventSlots[selectedEvent.truckersmpId] || eventSlotsRef.current[selectedEvent.truckersmpId])[route.name].length > 0 && (
+                          {selectedEvent && eventSlots[selectedEvent.truckersmpId] && eventSlots[selectedEvent.truckersmpId][route.name] && eventSlots[selectedEvent.truckersmpId][route.name].length > 0 && (
                             <Box sx={{ mt: 2 }}>
                               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                                Existing Slots ({(eventSlots[selectedEvent.truckersmpId] || eventSlotsRef.current[selectedEvent.truckersmpId])[route.name].length}):
+                                Existing Slots ({eventSlots[selectedEvent.truckersmpId][route.name].length}):
                               </Typography>
                               <Stack spacing={1}>
-                                {(eventSlots[selectedEvent.truckersmpId] || eventSlotsRef.current[selectedEvent.truckersmpId])[route.name].map((slot, slotIndex) => (
+                                {eventSlots[selectedEvent.truckersmpId][route.name].map((slot, slotIndex) => (
                                   <Chip
                                     key={slotIndex}
                                     label={`${slot.slotName} (${slot.slotNumber})`}
@@ -1308,9 +1076,9 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
                 </Box>
                 
                 {/* Route Slots Management */}
-                {selectedEvent.routes && selectedEvent.routes.length > 0 ? (
+                {eventForm.routes && eventForm.routes.length > 0 ? (
                   <Grid container spacing={3}>
-                    {selectedEvent.routes.map((route) => (
+                    {eventForm.routes.map((route) => (
                       <Grid item xs={12} md={6} key={route.name}>
                         <Paper sx={{ p: 3, border: '2px solid', borderColor: 'primary.main' }}>
                           <Typography variant="h6" gutterBottom color="primary">
@@ -1393,10 +1161,9 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
                                   type="number"
                                   value={route.slotCount || ''}
                                   onChange={(e) => {
-                                    const newRoutes = [...selectedEvent.routes];
-                                    const routeIndex = newRoutes.findIndex(r => r.name === route.name);
-                                    newRoutes[routeIndex] = { ...route, slotCount: parseInt(e.target.value) || 0 };
-                                    setSelectedEvent({ ...selectedEvent, routes: newRoutes });
+                                    updateEventFormRoute(route.name, {
+                                      slotCount: parseInt(e.target.value, 10) || 0,
+                                    });
                                   }}
                                   fullWidth
                                   size="small"
@@ -1437,16 +1204,12 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
                                              label="Image URL"
                                              value={route.slotImages ? route.slotImages[i]?.url || '' : ''}
                                              onChange={(e) => {
-                                               const newRoutes = [...selectedEvent.routes];
-                                               const routeIndex = newRoutes.findIndex(r => r.name === route.name);
-                                               if (!newRoutes[routeIndex].slotImages) {
-                                                 newRoutes[routeIndex].slotImages = [];
-                                               }
-                                               if (!newRoutes[routeIndex].slotImages[i]) {
-                                                 newRoutes[routeIndex].slotImages[i] = {};
-                                               }
-                                               newRoutes[routeIndex].slotImages[i].url = e.target.value;
-                                               setSelectedEvent({ ...selectedEvent, routes: newRoutes });
+                                               updateEventFormRoute(route.name, (current) => {
+                                                 const slotImages = [...(current.slotImages || [])];
+                                                 if (!slotImages[i]) slotImages[i] = {};
+                                                 slotImages[i] = { ...slotImages[i], url: e.target.value };
+                                                 return { slotImages };
+                                               });
                                              }}
                                              fullWidth
                                              size="small"
@@ -1459,16 +1222,15 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
                                              type="number"
                                              value={route.slotImages ? route.slotImages[i]?.maxVtc || 1 : 1}
                                              onChange={(e) => {
-                                               const newRoutes = [...selectedEvent.routes];
-                                               const routeIndex = newRoutes.findIndex(r => r.name === route.name);
-                                               if (!newRoutes[routeIndex].slotImages) {
-                                                 newRoutes[routeIndex].slotImages = [];
-                                               }
-                                               if (!newRoutes[routeIndex].slotImages[i]) {
-                                                 newRoutes[routeIndex].slotImages[i] = {};
-                                               }
-                                               newRoutes[routeIndex].slotImages[i].maxVtc = parseInt(e.target.value) || 1;
-                                               setSelectedEvent({ ...selectedEvent, routes: newRoutes });
+                                               updateEventFormRoute(route.name, (current) => {
+                                                 const slotImages = [...(current.slotImages || [])];
+                                                 if (!slotImages[i]) slotImages[i] = {};
+                                                 slotImages[i] = {
+                                                   ...slotImages[i],
+                                                   maxVtc: parseInt(e.target.value, 10) || 1,
+                                                 };
+                                                 return { slotImages };
+                                               });
                                              }}
                                              fullWidth
                                              size="small"
@@ -1492,25 +1254,6 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
                                >
                                  Create {route.slotCount} Slots
                                </Button>
-                               
-                               {/* Debug info */}
-                               <Box sx={{ mt: 1, p: 1, backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: 1, fontSize: '0.7rem' }}>
-                                 <Typography variant="caption" color="text.secondary">
-                                   Debug: slotCount={route.slotCount}, slotImages={route.slotImages ? route.slotImages.length : 'undefined'}
-                                 </Typography>
-                                 <Button
-                                   size="small"
-                                   variant="outlined"
-                                   onClick={() => {
-                                     console.log('Route data for', route.name, ':', route);
-                                     console.log('slotCount:', route.slotCount);
-                                     console.log('slotImages:', route.slotImages);
-                                   }}
-                                   sx={{ mt: 0.5, fontSize: '0.6rem' }}
-                                 >
-                                   Log Route Data
-                                 </Button>
-                               </Box>
                             </Box>
                           )}
                         </Paper>
@@ -1541,23 +1284,6 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
                      📝 Manage Slot Requests & Allocations
                    </Typography>
                    
-                                      {/* Debug Info */}
-                   <Box sx={{ display: 'flex', gap: 1 }}>
-                     <Button
-                       size="small"
-                       variant="outlined"
-                       onClick={() => {
-                         console.log('Current eventSlots state:', eventSlots);
-                         console.log('Event slots for this event:', eventSlots[selectedEvent.truckersmpId]);
-                         if (eventSlots[selectedEvent.truckersmpId]) {
-                           console.log('Route requests:', eventSlots[selectedEvent.truckersmpId].routeRequests);
-                         }
-                       }}
-                       sx={{ fontSize: '0.7rem' }}
-                     >
-                       Debug State
-                     </Button>
-                   </Box>
                    <Box sx={{ display: 'flex', gap: 1 }}>
                                          <Button
                        variant="outlined"
@@ -1570,26 +1296,6 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
                        size="small"
                      >
                        Back to Events
-                     </Button>
-                     
-                     {/* Debug Button */}
-                     <Button
-                       variant="outlined"
-                       size="small"
-                       onClick={async () => {
-                         try {
-                           const response = await axiosInstance.get(`/special-events/${selectedEvent.truckersmpId}`);
-                           console.log('Admin debug - Current event data:', response.data);
-                           console.log('Admin debug - Route requests:', response.data.routeRequests);
-                           // Refresh the slots data
-                           await fetchEventSlots(selectedEvent.truckersmpId);
-                         } catch (error) {
-                           console.error('Admin debug error:', error);
-                         }
-                       }}
-                       sx={{ fontSize: '0.7rem' }}
-                     >
-                       🔍 Debug API
                      </Button>
                     <Button
                       variant="outlined"
@@ -1734,50 +1440,56 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
                                         />
                                         
                                         {/* Route Allocation Dropdown */}
-                                        <FormControl size="small" sx={{ minWidth: 120 }}>
-                                          <InputLabel>Allocate to Route</InputLabel>
+                                        <FormControl size="small" sx={{ minWidth: 160 }}>
+                                          <InputLabel>Route</InputLabel>
                                           <Select
-                                            value={request.allocatedRouteName || ''}
+                                            value={getAllocationSelection(request._id).routeName || ''}
                                             onChange={(e) => {
-                                              // Update the request with selected route
-                                              const newAllRequests = [...allRequests];
-                                              const reqIndex = newAllRequests.findIndex(r => r._id === request._id);
-                                              if (reqIndex !== -1) {
-                                                newAllRequests[reqIndex] = { ...request, allocatedRouteName: e.target.value };
-                                                // Update the state
-                                                setEventSlots(prev => ({
-                                                  ...prev,
-                                                  [selectedEvent.truckersmpId]: {
-                                                    ...prev[selectedEvent.truckersmpId],
-                                                    routeRequests: {
-                                                      ...prev[selectedEvent.truckersmpId].routeRequests,
-                                                      [e.target.value]: [...(prev[selectedEvent.truckersmpId].routeRequests?.[e.target.value] || []), newAllRequests[reqIndex]]
-                                                    }
-                                                  }
-                                                }));
-                                              }
+                                              updateAllocationSelection(request._id, {
+                                                routeName: e.target.value,
+                                                slotId: ''
+                                              });
                                             }}
-                                            label="Allocate to Route"
+                                            label="Route"
                                           >
-                                            {selectedEvent.routes.map((route) => (
+                                            {(editMode ? eventForm.routes : selectedEvent?.routes || []).map((route) => (
                                               <MenuItem key={route.name} value={route.name}>
                                                 {route.name}
                                               </MenuItem>
                                             ))}
                                           </Select>
                                         </FormControl>
-                                        
-                                        {/* Action Buttons */}
-                                        <Stack direction="row" spacing={0.5}>
+
+                                        <FormControl size="small" sx={{ minWidth: 160 }}>
+                                          <InputLabel>Slot</InputLabel>
+                                          <Select
+                                            value={getAllocationSelection(request._id).slotId || ''}
+                                            onChange={(e) => {
+                                              updateAllocationSelection(request._id, { slotId: e.target.value });
+                                            }}
+                                            label="Slot"
+                                            disabled={!getAllocationSelection(request._id).routeName}
+                                          >
+                                            {(eventSlots[selectedEvent.truckersmpId]?.[getAllocationSelection(request._id).routeName] || [])
+                                              .filter(s => s.status !== 'full' && (s.allocatedVtcs || 0) < s.maxVtc)
+                                              .map((slot) => (
+                                                <MenuItem key={slot._id} value={slot._id}>
+                                                  {slot.slotName || `Slot ${slot.slotNumber}`} ({slot.maxVtc - (slot.allocatedVtcs || 0)} available)
+                                                </MenuItem>
+                                              ))}
+                                          </Select>
+                                        </FormControl>
+
+                                        <Stack direction="row" spacing={0.5} alignItems="center">
                                           <Button
                                             variant="outlined"
                                             color="success"
                                             size="small"
-                                            onClick={() => handleApproveRequest(request._id, request.allocatedSlotId)}
-                                            disabled={!request.allocatedRouteName}
-                                            title={!request.allocatedRouteName ? "Please select a route first" : "Approve request"}
+                                            onClick={() => handleApproveRequest(request._id)}
+                                            disabled={!getAllocationSelection(request._id).slotId}
+                                            title={!getAllocationSelection(request._id).slotId ? "Please select a slot first" : "Approve request"}
                                           >
-                                            Allocate Route
+                                            Approve
                                           </Button>
                                         </Stack>
                                       </Box>
@@ -1982,37 +1694,22 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
                                         />
                                         
                                         {/* Slot Allocation Dropdown */}
-                                        <FormControl size="small" sx={{ minWidth: 120 }}>
-                                          <InputLabel>Allocate to Slot</InputLabel>
+                                        <FormControl size="small" sx={{ minWidth: 160 }}>
+                                          <InputLabel>Slot</InputLabel>
                                           <Select
-                                            value={request.allocatedSlotId || ''}
+                                            value={getAllocationSelection(request._id).slotId || ''}
                                             onChange={(e) => {
-                                              // Update the request with selected slot
-                                              const newRouteRequests = [...routeRequests];
-                                              const reqIndex = newRouteRequests.findIndex(r => r._id === request._id);
-                                              if (reqIndex !== -1) {
-                                                newRouteRequests[reqIndex] = { ...request, allocatedSlotId: e.target.value };
-                                                // Update the state
-                                                setEventSlots(prev => ({
-                                                  ...prev,
-                                                  [selectedEvent.truckersmpId]: {
-                                                    ...prev[selectedEvent.truckersmpId],
-                                                    routeRequests: {
-                                                      ...prev[selectedEvent.truckersmpId].routeRequests,
-                                                      [routeName]: newRouteRequests
-                                                    }
-                                                  }
-                                                }));
-                                              }
+                                              updateAllocationSelection(request._id, { slotId: e.target.value });
                                             }}
-                                            label="Allocate to Slot"
+                                            label="Slot"
                                           >
-                                                                                         {routeSlots.filter(s => s.status !== 'full' && (s.allocatedVtcs || 0) < s.maxVtc).map((slot) => (
-                                               <MenuItem key={slot._id} value={slot._id}>
-                                                 {slot.slotName || `Slot ${slot.slotNumber}`} 
-                                                 ({slot.maxVtc - (slot.allocatedVtcs || 0)} available)
-                                               </MenuItem>
-                                             ))}
+                                            {routeSlots
+                                              .filter(s => s.status !== 'full' && (s.allocatedVtcs || 0) < s.maxVtc)
+                                              .map((slot) => (
+                                                <MenuItem key={slot._id} value={slot._id}>
+                                                  {slot.slotName || `Slot ${slot.slotNumber}`} ({slot.maxVtc - (slot.allocatedVtcs || 0)} available)
+                                                </MenuItem>
+                                              ))}
                                           </Select>
                                         </FormControl>
                                         
@@ -2022,9 +1719,9 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
                                             variant="outlined"
                                             color="success"
                                             size="small"
-                                            onClick={() => handleApproveRequest(request._id, request.allocatedSlotId)}
-                                            disabled={!request.allocatedSlotId}
-                                            title={!request.allocatedSlotId ? "Please select a slot first" : "Approve request"}
+                                            onClick={() => handleApproveRequest(request._id)}
+                                            disabled={!getAllocationSelection(request._id).slotId}
+                                            title={!getAllocationSelection(request._id).slotId ? "Please select a slot first" : "Approve request"}
                                           >
                                             Approve
                                           </Button>
@@ -2253,7 +1950,7 @@ const ManageSpecialEventsDialog = ({ open, onClose, onEventUpdated }) => {
                              variant="outlined"
                              startIcon={<UploadIcon />}
                              onClick={() => {
-                               setSelectedEvent(event);
+                               handleEditEvent(event);
                                setActiveTab(2);
                              }}
                              sx={{ mr: 1 }}

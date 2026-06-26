@@ -1,6 +1,6 @@
 export const ATTENDANCE_ENTRY_STATUS = {
-  pending: { label: 'Awaiting HR review', color: 'warning', description: 'You checked in — waiting for approval.' },
-  approved: { label: 'Approved', color: 'success', description: 'Counted toward your streak and leaderboard.' },
+  pending: { label: 'Awaiting HR review', color: 'warning', description: 'You checked in — waiting for HR approval before it counts toward your division.' },
+  approved: { label: 'Approved', color: 'success', description: 'Counted toward your streak, division leaderboard, and attendance stats.' },
   rejected: { label: 'Not counted', color: 'error', description: 'This check-in was rejected and does not count.' },
 };
 
@@ -10,9 +10,23 @@ export const EVENT_STATUS = {
   cancelled: { label: 'Cancelled', color: 'error' },
 };
 
-export function getMyAttendanceEntry(event) {
+export function getMyAttendanceEntry(event, riderId) {
   if (!event?.attendanceEntries?.length) return null;
-  return event.attendanceEntries[0];
+
+  if (riderId != null) {
+    const id = String(riderId);
+    const match = event.attendanceEntries.find((entry) => {
+      const entryRiderId = entry?.riderId?._id ?? entry?.riderId;
+      return entryRiderId != null && String(entryRiderId) === id;
+    });
+    if (match) return match;
+  }
+
+  if (event.attendanceEntries.length === 1) {
+    return event.attendanceEntries[0];
+  }
+
+  return null;
 }
 
 export function getEntryStatusMeta(status) {
@@ -34,5 +48,5 @@ export function describeMarkingAvailability(event) {
   if (event?.status === 'cancelled') return 'This event was cancelled.';
   if (!event?.isAttendanceOpen) return 'The check-in window is closed.';
   if (event?.status !== 'open') return 'This event is no longer accepting check-ins.';
-  return 'You can submit attendance for this event.';
+  return 'You can submit attendance for this event. It will count toward your division after HR approval.';
 }

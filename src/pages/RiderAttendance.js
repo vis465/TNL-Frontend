@@ -39,6 +39,7 @@ import {
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import axiosInstance from '../utils/axios';
+import { useAuth } from '../contexts/AuthContext';
 import StreakCard from '../components/StreakCard';
 import PowerupInventory from '../components/PowerupInventory';
 import { formatPowerupLabel } from '../components/PowerupDisplay';
@@ -81,7 +82,7 @@ function mergeRiderEvents(historyEvents = [], openEvents = []) {
   );
 }
 
-function EventTable({ events, onMark }) {
+function EventTable({ events, onMark, riderId }) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -92,7 +93,7 @@ function EventTable({ events, onMark }) {
         event.title?.toLowerCase().includes(search.toLowerCase()) ||
         event.description?.toLowerCase().includes(search.toLowerCase());
 
-      const entry = getMyAttendanceEntry(event);
+      const entry = getMyAttendanceEntry(event, riderId);
       const myStatus = entry?.status || 'none';
       const matchesStatus =
         statusFilter === 'all' ||
@@ -103,7 +104,7 @@ function EventTable({ events, onMark }) {
   }, [events, search, statusFilter]);
 
   const canMark = (event) => {
-    const entry = getMyAttendanceEntry(event);
+    const entry = getMyAttendanceEntry(event, riderId);
     return !entry && event.isAttendanceOpen && event.status === 'open';
   };
 
@@ -161,7 +162,7 @@ function EventTable({ events, onMark }) {
           </TableHead>
           <TableBody>
             {filtered.map((event) => {
-              const entry = getMyAttendanceEntry(event);
+              const entry = getMyAttendanceEntry(event, riderId);
               const entryMeta = getEntryStatusMeta(entry?.status);
               const eventMeta = getEventStatusMeta(event.status);
               const markable = canMark(event);
@@ -232,6 +233,8 @@ function EventTable({ events, onMark }) {
 }
 
 export default function RiderAttendance() {
+  const { user } = useAuth();
+  const myRiderId = user?.riderId?._id ?? user?.riderId ?? null;
   const [searchParams, setSearchParams] = useSearchParams();
   const tabFromQuery = useMemo(() => {
     const key = String(searchParams.get('tab') || 'attendance').toLowerCase();
@@ -301,21 +304,21 @@ export default function RiderAttendance() {
   }, []);
 
   const summary = useMemo(() => {
-    const pending = events.filter((e) => getMyAttendanceEntry(e)?.status === 'pending').length;
-    const approved = events.filter((e) => getMyAttendanceEntry(e)?.status === 'approved').length;
-    const openToMark = events.filter((e) => !getMyAttendanceEntry(e) && e.isAttendanceOpen && e.status === 'open').length;
+    const pending = events.filter((e) => getMyAttendanceEntry(e, myRiderId)?.status === 'pending').length;
+    const approved = events.filter((e) => getMyAttendanceEntry(e, myRiderId)?.status === 'approved').length;
+    const openToMark = events.filter((e) => !getMyAttendanceEntry(e, myRiderId) && e.isAttendanceOpen && e.status === 'open').length;
     const powerupCount =
       (inventory.available?.length || 0) +
       (inventory.active?.length || 0);
     return { pending, approved, openToMark, powerupCount, unclaimed: streak?.unclaimedMilestones || 0 };
-  }, [events, inventory, streak]);
+  }, [events, inventory, streak, myRiderId]);
 
   const onMarkAttendance = async () => {
     try {
       await axiosInstance.post(`/attendance-events/${markDialog.event._id}/mark-attendance`, { notes });
       setMarkDialog({ open: false, event: null });
       setNotes('');
-      setInfo('Check-in submitted. HR will review it before it counts toward your streak.');
+      setInfo('Check-in submitted. HR must approve it before it counts toward your streak and division leaderboard.');
       await refreshAll();
     } catch (e) {
       setError(e?.response?.data?.message || 'Failed to submit check-in');
@@ -357,6 +360,7 @@ export default function RiderAttendance() {
           <Typography variant="h4" fontWeight={800}>Attendance & rewards</Typography>
           <Typography color="text.secondary" sx={{ maxWidth: 640 }}>
             Your personal hub — check in to events, track streak progress, claim milestones, and manage powerups.
+            Approved attendance counts toward your division after HR review.
             Unlocked streak rewards are claimed on the <strong>Streak & milestones</strong> tab below.
           </Typography>
         </Box>
@@ -408,7 +412,7 @@ export default function RiderAttendance() {
           <Alert severity="info" icon={<EmojiEvents />}>
             Submit check-ins here. Only <strong>approved</strong> attendance increases your streak. Rejected check-ins do not count.
           </Alert>
-          <EventTable events={events} onMark={(event) => setMarkDialog({ open: true, event })} />
+          <EventTable events={events} riderId={myRiderId} onMark={(event) => setMarkDialog({ open: true, event })} />
         </Stack>
       )}
 

@@ -17,7 +17,6 @@ import {
   Pagination,
   TextField,
   MenuItem,
-  Alert,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -36,8 +35,10 @@ import {
   CalendarToday,
 } from '@mui/icons-material';
 import axiosInstance from '../utils/axios';
+import { AdminEmptyState, AdminPageHeader, useAdminFeedback } from '../components/admin/primitives';
 
 export default function AdminUserApprovals() {
+  const { showSuccess, showError, Feedback } = useAdminFeedback();
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -45,7 +46,6 @@ export default function AdminUserApprovals() {
   const [loading, setLoading] = useState(false);
   const [approving, setApproving] = useState(null);
   const [approvalDialog, setApprovalDialog] = useState({ open: false, user: null, action: null });
-  const [message, setMessage] = useState({ type: '', text: '' });
 
   const fetchPendingApprovals = async () => {
     setLoading(true);
@@ -56,7 +56,7 @@ export default function AdminUserApprovals() {
       setItems(data.items || []);
       setTotal(data.total || 0);
     } catch (error) {
-      setMessage({ type: 'error', text: error.response?.data?.message || 'Failed to fetch pending approvals' });
+      showError(error.response?.data?.message || 'Failed to fetch pending approvals');
     } finally {
       setLoading(false);
     }
@@ -78,17 +78,11 @@ export default function AdminUserApprovals() {
       await axiosInstance.patch(`/users/${user._id}/approval`, {
         approved: action,
       });
-      setMessage({
-        type: 'success',
-        text: `User ${action ? 'approved' : 'rejected'} successfully. Email notification sent.`,
-      });
+      showSuccess(`User ${action ? 'approved' : 'rejected'} successfully. Email notification sent.`);
       setApprovalDialog({ open: false, user: null, action: null });
       fetchPendingApprovals();
     } catch (error) {
-      setMessage({
-        type: 'error',
-        text: error.response?.data?.message || `Failed to ${action ? 'approve' : 'reject'} user`,
-      });
+      showError(error.response?.data?.message || `Failed to ${action ? 'approve' : 'reject'} user`);
     } finally {
       setApproving(null);
     }
@@ -109,29 +103,19 @@ export default function AdminUserApprovals() {
 
   return (
     <Box sx={{ maxWidth: 1400, mx: 'auto', px: 3, py: 4 }}>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
-        <Typography variant="h5" fontWeight={700}>
-          User Approvals
-        </Typography>
-        <Button
-          variant="outlined"
-          startIcon={<Refresh />}
-          onClick={fetchPendingApprovals}
-          disabled={loading}
-        >
-          Refresh
-        </Button>
-      </Stack>
-
-      {message.text && (
-        <Alert
-          severity={message.type}
-          onClose={() => setMessage({ type: '', text: '' })}
-          sx={{ mb: 3 }}
-        >
-          {message.text}
-        </Alert>
-      )}
+      <AdminPageHeader
+        description="Review and approve new user registrations."
+        actions={(
+          <Button
+            variant="outlined"
+            startIcon={<Refresh />}
+            onClick={fetchPendingApprovals}
+            disabled={loading}
+          >
+            Refresh
+          </Button>
+        )}
+      />
 
       <Card variant="outlined">
         <CardContent>
@@ -172,11 +156,7 @@ export default function AdminUserApprovals() {
               <CircularProgress />
             </Box>
           ) : items.length === 0 ? (
-            <Box sx={{ textAlign: 'center', py: 4 }}>
-              <Typography variant="body2" color="text.secondary">
-                No pending approvals
-              </Typography>
-            </Box>
+            <AdminEmptyState title="No pending approvals" description="New registrations will appear here for review." />
           ) : (
             <TableContainer component={Paper} variant="outlined">
               <Table size="small">
@@ -300,6 +280,7 @@ export default function AdminUserApprovals() {
           </Button>
         </DialogActions>
       </Dialog>
+      <Feedback />
     </Box>
   );
 }

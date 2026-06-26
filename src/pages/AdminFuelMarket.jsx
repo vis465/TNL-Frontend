@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Alert,
   Box,
   Button,
   Card,
@@ -12,7 +11,6 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import LocalGasStation from '@mui/icons-material/LocalGasStation';
 import { Link as RouterLink } from 'react-router-dom';
 import {
   ResponsiveContainer,
@@ -25,6 +23,7 @@ import {
   Legend,
 } from 'recharts';
 import axiosInstance from '../utils/axios';
+import { AdminPageHeader, useAdminFeedback } from '../components/admin/primitives';
 
 function defaultFuelMarket() {
   return {
@@ -45,16 +44,14 @@ function defaultFuelMarket() {
 }
 
 export default function AdminFuelMarket() {
+  const { showSuccess, showError, Feedback } = useAdminFeedback();
   const [fuelMarket, setFuelMarket] = useState(defaultFuelMarket);
   const [priceSeries, setPriceSeries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [saved, setSaved] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
-    setError('');
     try {
       const [cfgRes, phRes] = await Promise.all([
         axiosInstance.get('/admin/cargo-rates/revenue-config'),
@@ -80,11 +77,11 @@ export default function AdminFuelMarket() {
         }))
       );
     } catch (e) {
-      setError(e?.response?.data?.message || 'Failed to load fuel settings');
+      showError(e?.response?.data?.message || 'Failed to load fuel settings');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showError]);
 
   useEffect(() => {
     load();
@@ -92,14 +89,12 @@ export default function AdminFuelMarket() {
 
   const save = async () => {
     setSaving(true);
-    setSaved(false);
-    setError('');
     try {
       await axiosInstance.patch('/admin/cargo-rates/revenue-config', { fuelMarket });
-      setSaved(true);
+      showSuccess('Fuel market saved.');
       await load();
     } catch (e) {
-      setError(e?.response?.data?.message || 'Save failed');
+      showError(e?.response?.data?.message || 'Save failed');
     } finally {
       setSaving(false);
     }
@@ -121,31 +116,17 @@ export default function AdminFuelMarket() {
 
   return (
     <Container maxWidth="md" sx={{ py: 3 }}>
-      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 1 }}>
-        <LocalGasStation color="primary" fontSize="large" />
-        <Typography variant="h5" fontWeight={800}>
-          Division fuel pricing
-        </Typography>
-      </Stack>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, maxWidth: 640 }}>
-        Global token prices and coverage for standard and premium fuel. Divisions buy at these rates on the fuel marketplace.
-        Saving records a price-history point when values change.
-      </Typography>
-      <Button component={RouterLink} to="/admin/cargo-rates" variant="text" size="small" sx={{ mb: 2 }}>
-        ← Cargo rates & full revenue config
-      </Button>
+      <AdminPageHeader
+        description="Global token prices and coverage for standard and premium fuel. Divisions buy at these rates on the fuel marketplace. Saving records a price-history point when values change."
+        actions={(
+          <Button component={RouterLink} to="/admin/cargo-rates" variant="text" size="small">
+            ← Cargo rates
+          </Button>
+        )}
+        sx={{ mb: 1 }}
+      />
 
       {loading && <LinearProgress sx={{ mb: 2 }} />}
-      {saved && (
-        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSaved(false)}>
-          Fuel market saved.
-        </Alert>
-      )}
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
-          {error}
-        </Alert>
-      )}
 
       <Card sx={{ mb: 2 }}>
         <CardContent>
@@ -305,6 +286,7 @@ export default function AdminFuelMarket() {
           )}
         </CardContent>
       </Card>
+      <Feedback />
     </Container>
   );
 }
