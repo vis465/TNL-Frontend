@@ -79,6 +79,7 @@ const AdminChallenges = () => {
     cargo: [],
     status: 'active',
     rewards: '',
+    rewardTokens: 0,
     allowAutoPark: false,
     maxTopSpeedKmh: '',
     maxTruckDamagePercent: '',
@@ -248,6 +249,7 @@ const AdminChallenges = () => {
         cargo: cargoArr.map(c => normalizeName(c)),
         status: formData.status || 'active',
         rewards: formData.rewards || '',
+        rewardTokens: formData.rewardTokens || 0,
         mapImageUrl: formData.mapImageUrl || '',
         maxTopSpeedKmh: formData.maxTopSpeedKmh || '',
         maxTruckDamagePercent: formData.maxTruckDamagePercent || '',
@@ -329,6 +331,7 @@ const AdminChallenges = () => {
       status: challenge.status,
       mapImageUrl: challenge.mapImageUrl || '',
       rewards: challenge.rewards || '',
+      rewardTokens: challenge.rewardTokens || 0,
       allowAutoPark: Boolean(challenge.allowAutoPark),
       maxTopSpeedKmh: challenge.maxTopSpeedKmh || '',
       maxTruckDamagePercent: challenge.maxTruckDamagePercent || '',
@@ -362,6 +365,7 @@ const AdminChallenges = () => {
       cargo: [],
       status: 'active',
       rewards: '',
+      rewardTokens: 0,
       allowAutoPark: false,
       maxTopSpeedKmh: '',
       maxTruckDamagePercent: '',
@@ -802,6 +806,15 @@ const AdminChallenges = () => {
               onChange={handleInputChange('rewards')}
               fullWidth
               placeholder="e.g., Special badge, Discord role, etc."
+            />
+            <TextField
+              label="Reward Tokens"
+              type="number"
+              value={formData.rewardTokens}
+              onChange={handleInputChange('rewardTokens')}
+              fullWidth
+              inputProps={{ min: 0 }}
+              helperText="Tokens credited to the rider wallet when the challenge completes"
             />
             
             <TextField
