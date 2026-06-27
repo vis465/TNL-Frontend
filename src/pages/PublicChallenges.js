@@ -1009,7 +1009,7 @@ const PublicChallenges = () => {
                   <Grid container spacing={1.5} sx={{ mb: 2.5 }}>
                     <Grid item xs={12} sm={6}>
                       <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'info.main', color: 'info.contrastText', textAlign: 'center' }}>
-                        <Typography variant="overline" sx={{ display: 'block', fontWeight: 800, opacity: 0.9 }}>Route</Typography>
+                        <Typography sx={{ display: 'block', fontWeight: 800}}>Route</Typography>
                         <Typography variant="h6" sx={{ fontWeight: 800 }}>
                           {`${challenge.startCity || 'Any City'} (${challenge.startCompany || 'Any Company'}) → ${challenge.endCity || 'Any City'} (${challenge.endCompany || 'Any Company'})`}
                         </Typography>
@@ -1017,7 +1017,7 @@ const PublicChallenges = () => {
                     </Grid>
                     <Grid item xs={12} sm={6}>
                       <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'warning.main', color: 'warning.contrastText', textAlign: 'center' }}>
-                        <Typography variant="overline" sx={{ display: 'block', fontWeight: 800, opacity: 0.9 }}>Cargo</Typography>
+                        <Typography  sx={{ display: 'block', fontWeight: 800 }}>Cargo</Typography>
                         <Typography variant="h6" sx={{ fontWeight: 800 }}>
                           {(Array.isArray(challenge.cargo) ? challenge.cargo : [challenge.cargo]).filter(Boolean).join(', ')}
                         </Typography>
@@ -1029,7 +1029,7 @@ const PublicChallenges = () => {
                   <Grid container spacing={1.5} sx={{ mb: 2.5 }}>
                     <Grid item xs={12} sm={6}>
                       <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'primary.main', color: 'primary.contrastText', textAlign: 'center' }}>
-                        <Typography variant="overline" sx={{ display: 'block', fontWeight: 800, opacity: 0.9 }}>Required Jobs</Typography>
+                        <Typography  sx={{ display: 'block', fontWeight: 800}}>Required Jobs</Typography>
                         <Typography variant="h4" sx={{ fontWeight: 900 }}>{Number(challenge.requiredJobs) === 0 ? 'Unlimited' : challenge.requiredJobs}</Typography>
                       </Box>
                     </Grid>
@@ -1050,7 +1050,7 @@ const PublicChallenges = () => {
                     {!!challenge.maxTruckDamagePercent && Number(challenge.maxTruckDamagePercent) > 0 && (
                       <Grid item xs={12} sm={6}>
                         <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'warning.dark', color: 'warning.contrastText', textAlign: 'center' }}>
-                          <Typography variant="overline" sx={{ display: 'block', fontWeight: 800, opacity: 0.9 }}>Max Truck Damage allowed</Typography>
+                          <Typography variant="overline" sx={{ display: 'block', fontWeight: 800, color: 'primary.contrastText'}}>Max Truck Damage allowed</Typography>
                           <Typography variant="h4" sx={{ fontWeight: 900 }}>{Number(challenge.maxTruckDamagePercent)}%</Typography>
                         </Box>
                       </Grid>
