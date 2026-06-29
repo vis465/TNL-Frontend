@@ -33,3 +33,15 @@ export const listCatalog = async (params = {}) => {
   const { data } = await axios.get(`${ADMIN_CARGO_BASE}/cargo-catalog`, { params });
   return data;
 };
+
+/** GET /api/admin/cargo-rates/volume-preview */
+export const getVolumePreview = async () => {
+  const { data } = await axios.get(`${ADMIN_CARGO_BASE}/volume-preview`);
+  return data;
+};
+
+/** POST /api/admin/cargo-rates/refresh */
+export const refreshSupplySnapshot = async () => {
+  const { data } = await axios.post(`${ADMIN_CARGO_BASE}/refresh`);
+  return data;
+};

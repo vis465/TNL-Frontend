@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Accordion,
   AccordionDetails,
@@ -6,13 +7,13 @@ import {
   Box,
   Card,
   CardContent,
+  Chip,
   Grid,
   MenuItem,
   Pagination,
   Stack,
   TextField,
   Typography,
-  Chip,
   Button,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -20,7 +21,26 @@ import axiosInstance from '../utils/axios';
 
 const methodOptions = ['', 'GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 
+const PRESETS = [
+  { id: '', label: 'All' },
+  { id: 'job_tools', label: 'Job tools' },
+  { id: 'bank_ops', label: 'Bank ops' },
+  { id: 'wallet_ops', label: 'Wallet ops' },
+  { id: 'cache_ops', label: 'Cache ops' },
+  { id: 'admin_mutations', label: 'Mutations' },
+  { id: 'errors', label: 'Errors' },
+  { id: 'cargo_rates', label: 'Cargo rates' },
+];
+
+function statusColor(status) {
+  if (status >= 500) return 'error';
+  if (status >= 400) return 'error';
+  if (status >= 200 && status < 300) return 'success';
+  return 'default';
+}
+
 export default function AdminAuditLogs() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -31,6 +51,7 @@ export default function AdminAuditLogs() {
   const [status, setStatus] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
+  const [preset, setPreset] = useState(searchParams.get('preset') || '');
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / limit)), [total, limit]);
 
@@ -46,6 +67,7 @@ export default function AdminAuditLogs() {
           status: status || undefined,
           from: from || undefined,
           to: to || undefined,
+          preset: preset || undefined,
         },
       });
       setItems(data.items || []);
@@ -65,7 +87,20 @@ export default function AdminAuditLogs() {
     setPage(1);
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [method, actor, path, status, from, to]);
+  }, [method, actor, path, status, from, to, preset]);
+
+  useEffect(() => {
+    const p = searchParams.get('preset') || '';
+    if (p !== preset) setPreset(p);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const applyPreset = (id) => {
+    setPreset(id);
+    if (id) setSearchParams({ preset: id });
+    else setSearchParams({});
+    setPage(1);
+  };
 
   const summarizeChange = (row) => {
     const base = `${row.method || 'REQ'} ${row.path || '/'}`;
@@ -78,6 +113,19 @@ export default function AdminAuditLogs() {
       <Typography variant="h5" fontWeight={700} sx={{ mb: 2 }}>
         Audit logs
       </Typography>
+
+      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
+        {PRESETS.map((p) => (
+          <Chip
+            key={p.id || 'all'}
+            label={p.label}
+            clickable
+            color={preset === p.id ? 'primary' : 'default'}
+            variant={preset === p.id ? 'filled' : 'outlined'}
+            onClick={() => applyPreset(p.id)}
+          />
+        ))}
+      </Stack>
 
       <Card variant="outlined" sx={{ mb: 2 }}>
         <CardContent>
@@ -101,6 +149,7 @@ export default function AdminAuditLogs() {
             <Grid item xs={12} md={2}>
               <Button
                 variant="outlined"
+                fullWidth
                 onClick={() => {
                   setMethod('');
                   setActor('');
@@ -108,6 +157,8 @@ export default function AdminAuditLogs() {
                   setStatus('');
                   setFrom('');
                   setTo('');
+                  setPreset('');
+                  setSearchParams({});
                   setPage(1);
                 }}
               >
@@ -151,7 +202,7 @@ export default function AdminAuditLogs() {
                     <Chip
                       size="small"
                       label={String(row.status)}
-                      color={row.status >= 500 ? 'error' : row.status >= 400 ? 'warning' : 'success'}
+                      color={statusColor(row.status)}
                     />
                   </Stack>
                 </AccordionSummary>
@@ -196,4 +247,3 @@ export default function AdminAuditLogs() {
     </Box>
   );
 }
-

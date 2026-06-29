@@ -5,8 +5,20 @@ export async function getBankBalance() {
   return data;
 }
 
-export async function getBankTransactions(page = 1, limit = 20) {
-  const { data } = await axiosInstance.get('/bank/transactions', { params: { page, limit } });
+export async function getBankTransactions(page = 1, limit = 20, filters = {}) {
+  const { data } = await axiosInstance.get('/bank/transactions', {
+    params: { page, limit, ...filters },
+  });
+  return data;
+}
+
+export async function getBankAnalyticsSummary(filters = {}) {
+  const { data } = await axiosInstance.get('/bank/analytics/summary', { params: filters });
+  return data;
+}
+
+export async function searchLedger(params = {}) {
+  const { data } = await axiosInstance.get('/admin/ledger/search', { params });
   return data;
 }
 
@@ -28,9 +40,9 @@ export async function bankDebitDivision(divisionId, payload) {
   return data;
 }
 
-export async function getDivisionWalletTransactions(divisionId, page = 1, limit = 20) {
+export async function getDivisionWalletTransactions(divisionId, page = 1, limit = 20, filters = {}) {
   const { data } = await axiosInstance.get(`/bank/division/${divisionId}/transactions`, {
-    params: { page, limit },
+    params: { page, limit, ...filters },
   });
   return data;
 }

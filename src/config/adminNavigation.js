@@ -519,7 +519,7 @@ export const ADMIN_DASHBOARD_CARDS = [
   {
     group: 'Divisions',
     title: 'Maintenance tools',
-    description: 'Fleet odometer backfill and other safe data repairs (preview before apply).',
+    description: 'System overview, job workflow debugger, queue inspector, and fleet odometer backfill.',
     to: '/admin/operations',
     icon: BuildOutlined,
     color: 'warning',

@@ -47,6 +47,7 @@ export default function AdminJobs() {
   const [status, setStatus] = useState('');
   const [username, setUsername] = useState('');
   const [truckershubId, setTruckershubId] = useState('');
+  const [jobID, setJobID] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [unmapped, setUnmapped] = useState(false);
@@ -77,6 +78,7 @@ export default function AdminJobs() {
           status: status || undefined,
           username: username || undefined,
           truckershubId: truckershubId || undefined,
+          jobID: jobID || undefined,
           unmapped: unmapped || undefined,
           dateFrom: dateFrom || undefined,
           dateTo: dateTo || undefined,
@@ -102,7 +104,7 @@ export default function AdminJobs() {
     setPage(1);
     fetchJobs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, username, truckershubId, dateFrom, dateTo, unmapped]);
+  }, [status, username, truckershubId, jobID, dateFrom, dateTo, unmapped]);
 
   const fetchProgress = async () => {
     try {
@@ -137,6 +139,7 @@ export default function AdminJobs() {
           status: status || undefined,
           username: username || undefined,
           truckershubId: truckershubId || undefined,
+          jobID: jobID || undefined,
           dateFrom: dateFrom || undefined,
           dateTo: dateTo || undefined,
           olderThanMonths: olderThanMonths ? Number(olderThanMonths) : undefined,
@@ -157,6 +160,7 @@ export default function AdminJobs() {
           status: status || undefined,
           username: username || undefined,
           truckershubId: truckershubId || undefined,
+          jobID: jobID || undefined,
           dateFrom: dateFrom || undefined,
           dateTo: dateTo || undefined,
           olderThanMonths: olderThanMonths ? Number(olderThanMonths) : undefined,
@@ -286,6 +290,16 @@ export default function AdminJobs() {
               />
             </Grid>
             <Grid item xs={12} md={2}>
+              <TextField
+                label="Job ID"
+                type="number"
+                fullWidth
+                size="small"
+                value={jobID}
+                onChange={(e) => setJobID(e.target.value)}
+              />
+            </Grid>
+            <Grid item xs={12} md={2}>
               <TextField type="date" label="From" fullWidth size="small" InputLabelProps={{ shrink: true }} value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
             </Grid>
             <Grid item xs={12} md={2}>
@@ -300,6 +314,7 @@ export default function AdminJobs() {
                     setStatus('');
                     setUsername('');
                     setTruckershubId('');
+                    setJobID('');
                     setDateFrom('');
                     setDateTo('');
                     setPage(1);

@@ -127,6 +127,12 @@ import AdminVtcMonthlyStats from "./pages/AdminVtcMonthlyStats";
 import AdminAuditLogs from "./pages/AdminAuditLogs";
 import AdminOperations from "./pages/admin/AdminOperations";
 import FleetOdometerBackfill from "./pages/admin/FleetOdometerBackfill";
+import JobWorkflowDebugger from "./pages/admin/JobWorkflowDebugger";
+import AdminSystemOverview from "./pages/admin/AdminSystemOverview";
+import JobQueueInspector from "./pages/admin/JobQueueInspector";
+import TokenPayoutCalculator from "./pages/admin/TokenPayoutCalculator";
+import RiderWalletInspector from "./pages/admin/RiderWalletInspector";
+import CacheInspector from "./pages/admin/CacheInspector";
 import PowerupManagement from "./pages/PowerupManagement";
 
 export const ThemeContext = createContext({
@@ -902,6 +908,54 @@ function App() {
                         element={
                           <PrivateRoute allowedRoles={["admin", "communityManager"]}>
                             <FleetOdometerBackfill />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="operations/system"
+                        element={
+                          <PrivateRoute allowedRoles={["admin", "communityManager"]}>
+                            <AdminSystemOverview />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="operations/job-workflow"
+                        element={
+                          <PrivateRoute allowedRoles={["admin", "communityManager"]}>
+                            <JobWorkflowDebugger />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="operations/job-queue"
+                        element={
+                          <PrivateRoute allowedRoles={["admin", "communityManager"]}>
+                            <JobQueueInspector />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="operations/token-calculator"
+                        element={
+                          <PrivateRoute allowedRoles={["admin", "communityManager", "financeteam"]}>
+                            <TokenPayoutCalculator />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="operations/rider-inspector"
+                        element={
+                          <PrivateRoute allowedRoles={["admin", "communityManager", "financeteam"]}>
+                            <RiderWalletInspector />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="operations/cache"
+                        element={
+                          <PrivateRoute allowedRoles={["admin", "communityManager"]}>
+                            <CacheInspector />
                           </PrivateRoute>
                         }
                       />

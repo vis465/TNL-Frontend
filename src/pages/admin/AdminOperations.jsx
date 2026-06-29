@@ -10,16 +10,58 @@ import {
 } from '@mui/material';
 import BuildOutlined from '@mui/icons-material/BuildOutlined';
 import SpeedOutlined from '@mui/icons-material/SpeedOutlined';
+import MemoryOutlined from '@mui/icons-material/MemoryOutlined';
+import HubOutlined from '@mui/icons-material/HubOutlined';
+import QueueOutlined from '@mui/icons-material/QueueOutlined';
+import CalculateOutlined from '@mui/icons-material/CalculateOutlined';
+import PersonSearchOutlined from '@mui/icons-material/PersonSearchOutlined';
+import StorageOutlined from '@mui/icons-material/StorageOutlined';
 import ChevronRightOutlined from '@mui/icons-material/ChevronRightOutlined';
 import MagicPageShell from '../../components/magicui/MagicPageShell';
 
 const TOOLS = [
+  {
+    to: '/admin/operations/system',
+    title: 'System overview',
+    description: 'MongoDB, Redis, RabbitMQ status and job counts (credentials redacted).',
+    Icon: MemoryOutlined,
+  },
+  {
+    to: '/admin/operations/job-workflow',
+    title: 'Job workflow debugger',
+    description: 'Simulate synthetic jobs through the full RabbitMQ pipeline and watch step progress.',
+    Icon: HubOutlined,
+  },
+  {
+    to: '/admin/operations/job-queue',
+    title: 'Job queue inspector',
+    description: 'Peek RabbitMQ messages, inspect fallback queue, and drain legacy file queue.',
+    Icon: QueueOutlined,
+  },
   {
     to: '/admin/operations/fleet-odometer',
     title: 'Fleet odometer backfill',
     description:
       'Fix division truck odometer, deliveries, and blocked state from ledger rows, job replay, or purchase-age estimate.',
     Icon: SpeedOutlined,
+  },
+  {
+    to: '/admin/operations/token-calculator',
+    title: 'Token payout calculator',
+    description: 'Read-only token and deduction breakdown for any job ID (DB or TruckersHub).',
+    Icon: CalculateOutlined,
+  },
+  {
+    to: '/admin/operations/rider-inspector',
+    title: 'Rider & wallet inspector',
+    description: 'Search riders by TH ID, steam, or employee ID — view identity, jobs, and wallet history.',
+    Icon: PersonSearchOutlined,
+  },
+  {
+    to: '/admin/operations/cache',
+    title: 'Cache / Redis inspector',
+    description: 'Redis status, Prometheus hit/miss counters, and allowlisted cache invalidation.',
+    Icon: StorageOutlined,
   },
 ];
 

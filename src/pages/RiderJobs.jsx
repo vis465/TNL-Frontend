@@ -38,6 +38,7 @@ export default function RiderJobs() {
 
   const [status, setStatus] = useState('');
   const [username, setUsername] = useState('');
+  const [jobID, setJobID] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
@@ -52,6 +53,7 @@ export default function RiderJobs() {
           limit,
           status: status || undefined,
           username: username || undefined,
+          jobID: jobID || undefined,
           dateFrom: dateFrom || undefined,
           dateTo: dateTo || undefined,
         },
@@ -75,7 +77,7 @@ export default function RiderJobs() {
     setPage(1);
     fetchJobs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, username, dateFrom, dateTo]);
+  }, [status, username, jobID, dateFrom, dateTo]);
 
   const applyFilters = () => {
     setPage(1);
@@ -102,15 +104,25 @@ export default function RiderJobs() {
               <TextField label="Username" fullWidth size="small" value={username} onChange={(e) => setUsername(e.target.value)} />
             </Grid>
             <Grid item xs={12} md={2}>
+              <TextField
+                label="Job ID"
+                type="number"
+                fullWidth
+                size="small"
+                value={jobID}
+                onChange={(e) => setJobID(e.target.value)}
+              />
+            </Grid>
+            <Grid item xs={12} md={2}>
               <TextField type="date" label="From" fullWidth size="small" InputLabelProps={{ shrink: true }} value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
             </Grid>
             <Grid item xs={12} md={2}>
               <TextField type="date" label="To" fullWidth size="small" InputLabelProps={{ shrink: true }} value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
             </Grid>
-            <Grid item xs={12} md={3}>
+            <Grid item xs={12} md={2}>
               <Stack direction="row" spacing={1}>
                 <Button variant="contained" onClick={applyFilters}>Apply</Button>
-                <Button variant="outlined" onClick={() => { setStatus(''); setUsername(''); setDateFrom(''); setDateTo(''); setPage(1); }}>Reset</Button>
+                <Button variant="outlined" onClick={() => { setStatus(''); setUsername(''); setJobID(''); setDateFrom(''); setDateTo(''); setPage(1); }}>Reset</Button>
               </Stack>
             </Grid>
           </Grid>

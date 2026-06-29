@@ -38,7 +38,7 @@ import EditOutlined from '@mui/icons-material/EditOutlined';
 import RefreshOutlined from '@mui/icons-material/RefreshOutlined';
 import { Link as RouterLink } from 'react-router-dom';
 import axiosInstance from '../utils/axios';
-import { getCatalogMeta, listCatalog, syncCatalog } from '../services/cargoService';
+import { getCatalogMeta, listCatalog, syncCatalog, getVolumePreview, refreshSupplySnapshot } from '../services/cargoService';
 import {
   AdminEmptyState,
   AdminFilterBar,
@@ -87,6 +87,11 @@ export default function AdminCargoRates() {
   const [loading, setLoading] = useState(false);
   const [catalogMeta, setCatalogMeta] = useState(null);
   const [syncing, setSyncing] = useState(false);
+  const [volumePreview, setVolumePreview] = useState(null);
+  const [volumePreviewLoading, setVolumePreviewLoading] = useState(false);
+  const [refreshSnapshotOpen, setRefreshSnapshotOpen] = useState(false);
+  const [refreshingSnapshot, setRefreshingSnapshot] = useState(false);
+  const [lastRefreshResult, setLastRefreshResult] = useState(null);
 
   const [rates, setRates] = useState([]);
   const [ratesTotal, setRatesTotal] = useState(0);
@@ -316,6 +321,39 @@ export default function AdminCargoRates() {
     initialLoad();
   };
 
+  const loadVolumePreview = async () => {
+    setVolumePreviewLoading(true);
+    try {
+      setVolumePreview(await getVolumePreview());
+    } catch (e) {
+      showError(e?.response?.data?.message || 'Volume preview failed');
+    } finally {
+      setVolumePreviewLoading(false);
+    }
+  };
+
+  const runSupplySnapshotRefresh = async () => {
+    const before = volumePreview;
+    setRefreshingSnapshot(true);
+    try {
+      const res = await refreshSupplySnapshot();
+      setLastRefreshResult({ before, after: res.snapshot });
+      showSuccess(res.message || 'Supply snapshot refreshed');
+      setRefreshSnapshotOpen(false);
+      await loadVolumePreview();
+      if (res.broadcast) setConfig((p) => ({ ...p, ...res.broadcast }));
+    } catch (e) {
+      showError(e?.response?.data?.message || 'Refresh failed');
+    } finally {
+      setRefreshingSnapshot(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 1) loadVolumePreview();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
   const openCreate = () => {
     setDialogMode('create');
     setSelectedCargo(null);
@@ -436,7 +474,7 @@ export default function AdminCargoRates() {
         description={description}
         actions={(
           <Button variant="outlined" startIcon={<RefreshOutlined />} onClick={refreshAll} disabled={loading}>
-            Refresh data
+            Reload page data
           </Button>
         )}
       />
@@ -785,6 +823,54 @@ export default function AdminCargoRates() {
 
           <Card sx={{ mb: 2 }}>
             <CardContent>
+              <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 1 }}>
+                <Box>
+                  <Typography fontWeight={700}>Supply snapshot</Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 720 }}>
+                    Weekly platform job count used when fleet job count mode is <code>weekly_snapshot</code>.
+                    Refresh updates the stored count and broadcasts a division banner.
+                  </Typography>
+                </Box>
+                <Stack direction="row" spacing={1}>
+                  <Button size="small" variant="outlined" onClick={loadVolumePreview} disabled={volumePreviewLoading}>
+                    Refresh preview
+                  </Button>
+                  <Button size="small" variant="contained" color="warning" onClick={() => setRefreshSnapshotOpen(true)}>
+                    Refresh supply snapshot
+                  </Button>
+                </Stack>
+              </Stack>
+              {volumePreviewLoading && <LinearProgress sx={{ mb: 1 }} />}
+              {volumePreview && (
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={4}>
+                    <Typography variant="caption" color="text.secondary">Live window count</Typography>
+                    <Typography fontWeight={700}>{volumePreview.live?.count} jobs · ×{Number(volumePreview.live?.multiplier).toFixed(4)}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <Typography variant="caption" color="text.secondary">Stored snapshot</Typography>
+                    <Typography fontWeight={700}>
+                      {volumePreview.snapshot?.count} jobs · ×{Number(volumePreview.snapshot?.multiplier).toFixed(4)}
+                      {volumePreview.snapshot?.at ? ` · ${new Date(volumePreview.snapshot.at).toLocaleString()}` : ''}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <Typography variant="caption" color="text.secondary">Effective ({volumePreview.effective?.source})</Typography>
+                    <Typography fontWeight={700}>{volumePreview.effective?.count} jobs · ×{Number(volumePreview.effective?.multiplier).toFixed(4)}</Typography>
+                  </Grid>
+                </Grid>
+              )}
+              {lastRefreshResult?.after && (
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  Last refresh: count {lastRefreshResult.before?.snapshot?.count ?? '—'} → {lastRefreshResult.after.count}
+                  {' '}(multiplier {Number(lastRefreshResult.before?.snapshot?.multiplier ?? 0).toFixed(4)} → {Number(lastRefreshResult.after.multiplier).toFixed(4)})
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card sx={{ mb: 2 }}>
+            <CardContent>
               <Typography fontWeight={700} sx={{ mb: 0.5 }}>Platform volume pricing (fleet-wide)</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, maxWidth: 720 }}>
                 Uses <strong>platform-wide</strong> completed deliveries in a rolling window. Higher fleet activity lowers €/(t·km).
@@ -970,6 +1056,22 @@ export default function AdminCargoRates() {
             disabled={submitting || (!form.cargoId.trim() && !form.cargoName.trim()) || !(Number(form.pricePerKm) >= 0)}
           >
             Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={refreshSnapshotOpen} onClose={() => setRefreshSnapshotOpen(false)}>
+        <DialogTitle>Refresh supply snapshot?</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2">
+            This recomputes the platform delivered-job count for the configured lookback window and stores it for
+            weekly_snapshot pricing mode. A short confirmation is broadcast on division pages.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRefreshSnapshotOpen(false)}>Cancel</Button>
+          <Button variant="contained" color="warning" onClick={runSupplySnapshotRefresh} disabled={refreshingSnapshot}>
+            {refreshingSnapshot ? 'Refreshing…' : 'Refresh snapshot'}
           </Button>
         </DialogActions>
       </Dialog>
