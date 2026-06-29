@@ -79,7 +79,7 @@ const AdminChallenges = () => {
     cargo: [],
     status: 'active',
     rewards: '',
-    rewardTokens: 0,
+    rewardTokens: '',
     allowAutoPark: false,
     maxTopSpeedKmh: '',
     maxTruckDamagePercent: '',
@@ -184,6 +184,8 @@ const AdminChallenges = () => {
         endCompany: formData.endCompany ? normalizeName(formData.endCompany) : '',
         endCompanyId: formData.endCompanyId || '',
         cargo: cargoArr.map(c => normalizeName(c)),
+        rewards: formData.rewardTokens ? `Completion reward: ${Number(formData.rewardTokens)} token${Number(formData.rewardTokens) === 1 ? '' : 's'}` : '',
+        rewardTokens: Number(formData.rewardTokens || 0),
         // Convert local datetime to Unix seconds for backend
         startAtUnix: istToUnixSeconds(formData.startAtLocal),
         endAtUnix: istToUnixSeconds(formData.endAtLocal)
@@ -248,8 +250,8 @@ const AdminChallenges = () => {
         requiredJobs: formData.requiredJobs === '' ? 0 : Number(formData.requiredJobs),
         cargo: cargoArr.map(c => normalizeName(c)),
         status: formData.status || 'active',
-        rewards: formData.rewards || '',
-        rewardTokens: formData.rewardTokens || 0,
+        rewards: formData.rewardTokens ? `Completion reward: ${Number(formData.rewardTokens)} token${Number(formData.rewardTokens) === 1 ? '' : 's'}` : '',
+        rewardTokens: Number(formData.rewardTokens || 0),
         mapImageUrl: formData.mapImageUrl || '',
         maxTopSpeedKmh: formData.maxTopSpeedKmh || '',
         maxTruckDamagePercent: formData.maxTruckDamagePercent || '',
@@ -331,7 +333,7 @@ const AdminChallenges = () => {
       status: challenge.status,
       mapImageUrl: challenge.mapImageUrl || '',
       rewards: challenge.rewards || '',
-      rewardTokens: challenge.rewardTokens || 0,
+      rewardTokens: challenge.rewardTokens || '',
       allowAutoPark: Boolean(challenge.allowAutoPark),
       maxTopSpeedKmh: challenge.maxTopSpeedKmh || '',
       maxTruckDamagePercent: challenge.maxTruckDamagePercent || '',
@@ -365,7 +367,7 @@ const AdminChallenges = () => {
       cargo: [],
       status: 'active',
       rewards: '',
-      rewardTokens: 0,
+      rewardTokens: '',
       allowAutoPark: false,
       maxTopSpeedKmh: '',
       maxTruckDamagePercent: '',
@@ -501,7 +503,7 @@ const AdminChallenges = () => {
                   </Grid>
                   <Grid item xs={6}>
                     <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'primary.main', color: 'primary.contrastText', textAlign: 'center' }}>
-                      <Typography variant="overline" sx={{ display: 'block', fontWeight: 900, opacity: 0.9 }}>Required Jobs</Typography>
+                      <Typography variant="overline" sx={{ display: 'block', fontWeight: 900 ,color:"black"}}>Required Jobs</Typography>
                       <Typography variant="h6" sx={{ fontWeight: 900 }}>{Number(challenge.requiredJobs) === 0 ? 'Unlimited' : challenge.requiredJobs}</Typography>
                     </Box>
                   </Grid>
@@ -801,20 +803,13 @@ const AdminChallenges = () => {
             />
             
             <TextField
-              label="Rewards"
-              value={formData.rewards}
-              onChange={handleInputChange('rewards')}
-              fullWidth
-              placeholder="e.g., Special badge, Discord role, etc."
-            />
-            <TextField
-              label="Reward Tokens"
+              label="Reward Tokens for Job Completion"
               type="number"
               value={formData.rewardTokens}
               onChange={handleInputChange('rewardTokens')}
               fullWidth
-              inputProps={{ min: 0 }}
-              helperText="Tokens credited to the rider wallet when the challenge completes"
+              inputProps={{ min: 0, step: 1 }}
+              helperText="Number of tokens to reward when the challenge is completed"
             />
             
             <TextField
