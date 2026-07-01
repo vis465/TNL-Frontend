@@ -117,6 +117,7 @@ export default function AdminDivisionDetail() {
   const isLeader = Boolean(uid && leaderIdStr && uid === leaderIdStr);
   const canStaff = user.role === 'admin' || user.role === 'communityManager';
   const canEditSettings = canStaff;
+  const canEditDivisionProfile = isLeader || canStaff;
   const canManageWallet = isLeader || user.role === 'admin';
   const canManageMembers = isLeader || canStaff;
 
@@ -299,13 +300,16 @@ export default function AdminDivisionDetail() {
 
   const saveEdit = async () => {
     try {
-      await axiosInstance.patch(`/divisions/${id}`, {
+      const payload = {
         name: editForm.name.trim(),
         description: editForm.description,
         logoUrl: editForm.logoUrl.trim(),
         bannerUrl: editForm.bannerUrl.trim(),
-        maxMembers: editForm.maxMembers === '' ? null : Number(editForm.maxMembers),
-      });
+      };
+      if (canEditSettings) {
+        payload.maxMembers = editForm.maxMembers === '' ? null : Number(editForm.maxMembers);
+      }
+      await axiosInstance.patch(`/divisions/${id}`, payload);
       setEditOpen(false);
       load();
     } catch (e) {
@@ -530,21 +534,21 @@ export default function AdminDivisionDetail() {
                     Transfer leader
                   </Button>
                 )}
+                {canEditDivisionProfile && (
+                  <Button size="small" startIcon={<EditOutlined />} onClick={openEdit} variant="outlined">
+                    Edit
+                  </Button>
+                )}
                 {canEditSettings && (
-                  <>
-                    <Button size="small" startIcon={<EditOutlined />} onClick={openEdit} variant="outlined">
-                      Edit
-                    </Button>
-                    <Button
-                      size="small"
-                      startIcon={<DeleteOutlineOutlined />}
-                      onClick={openDelete}
-                      variant="outlined"
-                      color="error"
-                    >
-                      Delete
-                    </Button>
-                  </>
+                  <Button
+                    size="small"
+                    startIcon={<DeleteOutlineOutlined />}
+                    onClick={openDelete}
+                    variant="outlined"
+                    color="error"
+                  >
+                    Delete
+                  </Button>
                 )}
               </Stack>
             </Stack>
@@ -1573,7 +1577,9 @@ export default function AdminDivisionDetail() {
                 </Avatar>
               </Box>
             )}
-            <TextField label="Max members (blank = unlimited)" type="number" value={editForm.maxMembers} onChange={(e) => setEditForm((p) => ({ ...p, maxMembers: e.target.value }))} fullWidth />
+            {canEditSettings && (
+              <TextField label="Max members (blank = unlimited)" type="number" value={editForm.maxMembers} onChange={(e) => setEditForm((p) => ({ ...p, maxMembers: e.target.value }))} fullWidth />
+            )}
           </Stack>
         </DialogContent>
         <DialogActions>

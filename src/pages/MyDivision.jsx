@@ -592,6 +592,9 @@ export default function MyDivision() {
 
   const [fleetTrucks, setFleetTrucks] = useState([]);
   const [taxDialogOpen, setTaxDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', description: '', logoUrl: '', bannerUrl: '' });
+  const [editSaving, setEditSaving] = useState(false);
   const [joinRequests, setJoinRequests] = useState([]);
   const [sentInvites, setSentInvites] = useState([]);
   const [activeTab, setActiveTab] = useState(0);
@@ -930,6 +933,37 @@ export default function MyDivision() {
     } catch (e) { setError(e?.response?.data?.message || 'Failed to update tax'); }
   };
 
+  const openEditProfile = () => {
+    if (!div) return;
+    setEditForm({
+      name: div.name || '',
+      description: div.description || '',
+      logoUrl: div.logoUrl || '',
+      bannerUrl: div.bannerUrl || '',
+    });
+    setEditDialogOpen(true);
+  };
+
+  const saveEditProfile = async () => {
+    if (!div?._id) return;
+    setEditSaving(true);
+    setError('');
+    try {
+      await axiosInstance.patch(`/divisions/${div._id}`, {
+        name: editForm.name.trim(),
+        description: editForm.description,
+        logoUrl: editForm.logoUrl.trim(),
+        bannerUrl: editForm.bannerUrl.trim(),
+      });
+      setEditDialogOpen(false);
+      load();
+    } catch (e) {
+      setError(e?.response?.data?.message || 'Failed to save division profile');
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
   const saveCoLeaders = async () => {
     try {
       await axiosInstance.patch(`/divisions/${div._id}/co-leaders`, { coLeaderUserIds: coLeaders.map((m) => m.userId || m._id).filter(Boolean) });
@@ -1153,6 +1187,11 @@ export default function MyDivision() {
                           <Button component={RouterLink} to={`/divisions/${div.slug}`} variant="outlined" size="small" sx={btnSx.outlined} endIcon={<OpenInNewOutlined sx={{ fontSize: 16 }} />}>
                             Public page
                           </Button>
+                          {isLeader && (
+                            <Button variant="outlined" size="small" onClick={openEditProfile} sx={btnSx.outlined} startIcon={<EditOutlined sx={{ fontSize: 16 }} />}>
+                              Edit division
+                            </Button>
+                          )}
                           {isLeader && (
                             <>
                               <Button variant="outlined" size="small" onClick={() => setTabAndSyncQuery(2)} sx={btnSx.outlined}>
@@ -2424,6 +2463,53 @@ export default function MyDivision() {
             <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
               <Button onClick={() => setTaxDialogOpen(false)} sx={btnSx.outlined} variant="outlined">Cancel</Button>
               <Button sx={btnSx.primary} onClick={saveTax} disabled={!div?._id}>Save</Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* ── Edit division profile dialog ── */}
+          <Dialog open={editDialogOpen} onClose={() => !editSaving && setEditDialogOpen(false)} maxWidth="sm" fullWidth
+            PaperProps={{ sx: { bgcolor: T.surface, border: `1px solid ${T.border}`, borderRadius: 2, backdropFilter: 'blur(12px)' } }}>
+            <DialogTitle sx={{ fontFamily: T.mono, fontWeight: 800, fontSize: TYPE.base, color: T.text, letterSpacing: '0.08em', textTransform: 'uppercase', pb: 1, borderBottom: `1px solid ${T.border}` }}>
+              Edit division
+            </DialogTitle>
+            <DialogContent sx={{ pt: 2 }}>
+              <Stack spacing={2}>
+                <TextField autoFocus fullWidth label="Name" value={editForm.name}
+                  onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
+                  required sx={inputSx} />
+                <TextField fullWidth label="Description" value={editForm.description} multiline minRows={2}
+                  onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))}
+                  sx={inputSx} />
+                <TextField fullWidth label="Logo URL" value={editForm.logoUrl}
+                  onChange={(e) => setEditForm((p) => ({ ...p, logoUrl: e.target.value }))}
+                  sx={inputSx} />
+                <TextField fullWidth label="Banner URL" value={editForm.bannerUrl}
+                  onChange={(e) => setEditForm((p) => ({ ...p, bannerUrl: e.target.value }))}
+                  helperText="Recommended banner ratio: 1920x500"
+                  sx={inputSx} />
+                {(editForm.logoUrl || editForm.bannerUrl) && (
+                  <Box sx={{ position: 'relative', borderRadius: 2, overflow: 'hidden', border: `1px dashed ${T.border}` }}>
+                    {editForm.bannerUrl ? (
+                      <Box component="img" src={editForm.bannerUrl} alt="Banner preview"
+                        sx={{ width: '100%', aspectRatio: '1920 / 500', objectFit: 'cover', display: 'block' }} />
+                    ) : (
+                      <Box sx={{ width: '100%', aspectRatio: '1920 / 500', bgcolor: T.surfaceAlt }} />
+                    )}
+                    <Avatar
+                      src={editForm.logoUrl || undefined}
+                      sx={{ position: 'absolute', bottom: 8, left: 16, width: 48, height: 48, border: `2px solid ${T.border}` }}
+                    >
+                      {editForm.name?.[0] || 'D'}
+                    </Avatar>
+                  </Box>
+                )}
+              </Stack>
+            </DialogContent>
+            <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
+              <Button onClick={() => setEditDialogOpen(false)} disabled={editSaving} sx={btnSx.outlined} variant="outlined">Cancel</Button>
+              <Button sx={btnSx.primary} onClick={saveEditProfile} disabled={editSaving || !editForm.name.trim()}>
+                {editSaving ? 'Saving…' : 'Save'}
+              </Button>
             </DialogActions>
           </Dialog>
 

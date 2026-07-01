@@ -90,11 +90,32 @@ const JobDetails = ({ theme, toggleTheme, apiData, vtc }) => {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
+  const normalizeJobPayload = (raw) => {
+    if (!raw) return null;
+    return {
+      ...raw,
+      driver: {
+        ...(raw.driver || {}),
+        games: Array.isArray(raw.driver?.games) ? raw.driver.games : [],
+      },
+      events: Array.isArray(raw.events) ? raw.events : [],
+      cargo: raw.cargo || {},
+      fuel: raw.fuel || {},
+      truck: raw.truck || {},
+      trailer: raw.trailer || {},
+      source: raw.source || {},
+      destination: raw.destination || {},
+      market: raw.market || {},
+      game: raw.game || {},
+      realtime: raw.realtime || {},
+    };
+  };
+
   const fetchJobDetails = async () => {
     try {
       const { data } = await axiosInstance.get(`/jobs/external/${encodeURIComponent(id)}`);
       const payload = data?.data || data;
-      setJobData(payload || null);
+      setJobData(normalizeJobPayload(payload));
     } catch (error) {
       console.error('Error fetching job details:', error);
       setJobData(null);
@@ -297,16 +318,16 @@ const JobDetails = ({ theme, toggleTheme, apiData, vtc }) => {
                   <CardContent>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                       <Avatar
-                        src={jobData.driver.avatar}
+                        src={jobData.driver?.avatar}
                         alt="User Avatar"
                         sx={{ width: 64, height: 64, mr: 2 }}
                       />
                       <Box>
                         <Typography variant="h5" color="primary" gutterBottom>
-                          {jobData.driver.username}
+                          {jobData.driver?.username ?? 'Unknown driver'}
                         </Typography>
                         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1 }}>
-                          {jobData.driver.games.map((game, index) => (
+                          {(jobData.driver?.games ?? []).map((game, index) => (
                             <Chip
                               key={index}
                               label={game.toUpperCase()}
@@ -344,7 +365,7 @@ const JobDetails = ({ theme, toggleTheme, apiData, vtc }) => {
                       </Box>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Typography color="text.secondary">Cargo:</Typography>
-                        <Typography fontWeight="bold">{jobData.cargo.name}</Typography>
+                        <Typography fontWeight="bold">{jobData.cargo?.name ?? '—'}</Typography>
                       </Box>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Typography color="text.secondary">Distance:</Typography>
@@ -374,7 +395,7 @@ const JobDetails = ({ theme, toggleTheme, apiData, vtc }) => {
                       </Box>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Typography color="text.secondary">Fuel Burnt:</Typography>
-                        <Typography fontWeight="bold">{jobData.fuel.burned} L</Typography>
+                        <Typography fontWeight="bold">{jobData.fuel?.burned ?? '—'} L</Typography>
                       </Box>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Typography color="text.secondary">Cargo Weight:</Typography>
@@ -387,15 +408,15 @@ const JobDetails = ({ theme, toggleTheme, apiData, vtc }) => {
                       </Box>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Typography color="text.secondary">Top Speed:</Typography>
-                        <Typography fontWeight="bold">{(jobData.topSpeed * 3.6).toFixed(0)} km/h</Typography>
+                        <Typography fontWeight="bold">{((Number(jobData.topSpeed) || 0) * 3.6).toFixed(0)} km/h</Typography>
                       </Box>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Typography color="text.secondary">Avg Speed:</Typography>
-                        <Typography fontWeight="bold">{(jobData.avgSpeed * 3.6).toFixed(0)} km/h</Typography>
+                        <Typography fontWeight="bold">{((Number(jobData.avgSpeed) || 0) * 3.6).toFixed(0)} km/h</Typography>
                       </Box>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Typography color="text.secondary">Job Type:</Typography>
-                        <Typography fontWeight="bold">{jobData.market.name}</Typography>
+                        <Typography fontWeight="bold">{jobData.market?.name ?? '—'}</Typography>
                       </Box>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Typography color="text.secondary">Client Version:</Typography>
@@ -403,7 +424,7 @@ const JobDetails = ({ theme, toggleTheme, apiData, vtc }) => {
                       </Box>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Typography color="text.secondary">Game Version:</Typography>
-                        <Typography fontWeight="bold">{jobData.game.version}</Typography>
+                        <Typography fontWeight="bold">{jobData.game?.version ?? '—'}</Typography>
                       </Box>
                     </Box>
                   </CardContent>
@@ -429,15 +450,15 @@ const JobDetails = ({ theme, toggleTheme, apiData, vtc }) => {
                             </Box>
                             <Box>
                               <Typography color="text.secondary" variant="body2">City:</Typography>
-                              <Typography fontWeight="bold">{jobData.source.city.name}</Typography>
+                              <Typography fontWeight="bold">{jobData.source?.city?.name ?? '—'}</Typography>
                             </Box>
                             <Box>
                               <Typography color="text.secondary" variant="body2">Company:</Typography>
-                              <Typography fontWeight="bold">{jobData.source.company.name}</Typography>
+                              <Typography fontWeight="bold">{jobData.source?.company?.name ?? '—'}</Typography>
                             </Box>
                             <Box>
                               <Typography color="text.secondary" variant="body2">Odometer:</Typography>
-                              <Typography fontWeight="bold">{jobData.truck.initialOdometer.toFixed(0)} km</Typography>
+                              <Typography fontWeight="bold">{Number(jobData.truck?.initialOdometer ?? 0).toFixed(0)} km</Typography>
                             </Box>
                           </Box>
                         </CardContent>
@@ -458,15 +479,15 @@ const JobDetails = ({ theme, toggleTheme, apiData, vtc }) => {
                             </Box>
                             <Box>
                               <Typography color="text.secondary" variant="body2">City:</Typography>
-                              <Typography fontWeight="bold">{jobData.destination.city.name}</Typography>
+                              <Typography fontWeight="bold">{jobData.destination?.city?.name ?? '—'}</Typography>
                             </Box>
                             <Box>
                               <Typography color="text.secondary" variant="body2">Company:</Typography>
-                              <Typography fontWeight="bold">{jobData.destination.company.name}</Typography>
+                              <Typography fontWeight="bold">{jobData.destination?.company?.name ?? '—'}</Typography>
                             </Box>
                             <Box>
                               <Typography color="text.secondary" variant="body2">Odometer:</Typography>
-                              <Typography fontWeight="bold">{jobData.truck.odometer.toFixed(0)} km</Typography>
+                              <Typography fontWeight="bold">{Number(jobData.truck?.odometer ?? 0).toFixed(0)} km</Typography>
                             </Box>
                           </Box>
                         </CardContent>
@@ -486,15 +507,15 @@ const JobDetails = ({ theme, toggleTheme, apiData, vtc }) => {
                           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                             <Box>
                               <Typography color="text.secondary" variant="body2">Truck:</Typography>
-                              <Typography fontWeight="bold">{jobData.truck.model.name}</Typography>
+                              <Typography fontWeight="bold">{jobData.truck?.id?? '—'} - {jobData.truck?.model?.name ?? '—'}</Typography>
                             </Box>
                             <Box>
                               <Typography color="text.secondary" variant="body2">Truck Damage:</Typography>
-                              <Typography fontWeight="bold">{(jobData.truck.current_damage.total * 100).toFixed(0)}%</Typography>
+                              <Typography fontWeight="bold">{((jobData.truck?.current_damage?.total ?? 0) * 100).toFixed(0)}%</Typography>
                             </Box>
                             <Box>
                               <Typography color="text.secondary" variant="body2">Cargo Damage:</Typography>
-                              <Typography fontWeight="bold">{(jobData.cargo.damage * 100).toFixed(0)}%</Typography>
+                              <Typography fontWeight="bold">{((jobData.cargo?.damage ?? 0) * 100).toFixed(0)}%</Typography>
                             </Box>
                           </Box>
                         </Grid>
@@ -502,15 +523,15 @@ const JobDetails = ({ theme, toggleTheme, apiData, vtc }) => {
                           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                             <Box>
                               <Typography color="text.secondary" variant="body2">Trailer Body Type:</Typography>
-                              <Typography fontWeight="bold">{jobData.trailer.bodyType}</Typography>
+                              <Typography fontWeight="bold">{jobData.trailer?.bodyType ?? '—'}</Typography>
                             </Box>
                             <Box>
                               <Typography color="text.secondary" variant="body2">Trailer Chain Type:</Typography>
-                              <Typography fontWeight="bold">{jobData.trailer.chainType}</Typography>
+                              <Typography fontWeight="bold">{jobData.trailer?.chainType ?? '—'}</Typography>
                             </Box>
                             <Box>
                               <Typography color="text.secondary" variant="body2">Trailer Damage:</Typography>
-                              <Typography fontWeight="bold">{(jobData.trailer.damage.total * 100).toFixed(0)}%</Typography>
+                              <Typography fontWeight="bold">{((jobData.trailer?.damage?.total ?? 0) * 100).toFixed(0)}%</Typography>
                             </Box>
                           </Box>
                         </Grid>
@@ -551,12 +572,18 @@ const JobDetails = ({ theme, toggleTheme, apiData, vtc }) => {
                                 py: 0.25,
                                 borderRadius: 0.5
                               }}>
-                                {(jobData.truck.licensePlate.country.id || 'EU').slice(0,2).toUpperCase()}
+                                {(jobData.truck?.licensePlate?.country?.id || 'EU').slice(0, 2).toUpperCase()}
                               </Box>
                               <Typography sx={{ fontWeight: 700 }}>
-                                {jobData.truck.licensePlate.value || '-'}
+                                {jobData.truck?.licensePlate?.value || '-'}
                               </Typography>
                             </Box>
+                          </Box>
+                          <Box>
+                            <Typography color="text.secondary" variant="body2" sx={{ mb: 1 }}>
+                              Multiplayer Type:
+                            </Typography>
+                            <Typography fontWeight="bold">{(jobData.multiplayer?.type?? '—') + ' - ' + (jobData.multiplayer?.server?? '—')}</Typography>
                           </Box>
                         </Grid>
                         <Grid item xs={12} md={6}>
@@ -584,10 +611,10 @@ const JobDetails = ({ theme, toggleTheme, apiData, vtc }) => {
                                 py: 0.25,
                                 borderRadius: 0.5
                               }}>
-                                {(jobData.trailer.licensePlate.country.id || 'EU').slice(0,2).toUpperCase()}
+                                {(jobData.trailer?.licensePlate?.country?.id || 'EU').slice(0, 2).toUpperCase()}
                               </Box>
                               <Typography sx={{ fontWeight: 700 }}>
-                                {jobData.trailer.licensePlate.value || '-'}
+                                {jobData.trailer?.licensePlate?.value || '-'}
                               </Typography>
                             </Box>
                           </Box>
@@ -604,7 +631,7 @@ const JobDetails = ({ theme, toggleTheme, apiData, vtc }) => {
                       </Typography>
                       <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
                         <List>
-                          {jobData.events.map((event, index) => (
+                          {(jobData.events ?? []).map((event, index) => (
                             <ListItem key={index}>
                               <ListItemIcon>
                                 <Box
