@@ -133,6 +133,8 @@ import JobQueueInspector from "./pages/admin/JobQueueInspector";
 import TokenPayoutCalculator from "./pages/admin/TokenPayoutCalculator";
 import RiderWalletInspector from "./pages/admin/RiderWalletInspector";
 import CacheInspector from "./pages/admin/CacheInspector";
+import SpecialEventsListPage from "./pages/admin/SpecialEventsListPage";
+import SpecialEventWorkspace from "./pages/admin/SpecialEventWorkspace";
 import PowerupManagement from "./pages/PowerupManagement";
 
 export const ThemeContext = createContext({
@@ -644,6 +646,22 @@ function App() {
                         element={
                           <PrivateRoute allowedRoles={["admin", "eventteam"]}>
                             <EventManagement />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="special-events"
+                        element={
+                          <PrivateRoute allowedRoles={["admin", "eventteam"]}>
+                            <SpecialEventsListPage />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="special-events/:eventId"
+                        element={
+                          <PrivateRoute allowedRoles={["admin", "eventteam"]}>
+                            <SpecialEventWorkspace />
                           </PrivateRoute>
                         }
                       />

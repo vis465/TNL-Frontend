@@ -44,10 +44,11 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { Link as RouterLink } from 'react-router-dom';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { format } from 'date-fns';
 import axiosInstance from '../utils/axios';
 import ManageSlotsDialog from '../components/ManageSlotsDialog';
-import ManageSpecialEventsDialog from '../components/ManageSpecialEventsDialog';
 import AnalyticsDashboard from './AnalyticsDashboard';
 
 const EventManagement = () => {
@@ -57,7 +58,6 @@ const EventManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [manageSlotsOpen, setManageSlotsOpen] = useState(false);
-  const [manageSpecialEventsOpen, setManageSpecialEventsOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [eventSlots, setEventSlots] = useState([]);
   const [actionLoading, setActionLoading] = useState(null);
@@ -143,9 +143,6 @@ const EventManagement = () => {
     }
   };
 
-  const handleSpecialEventsUpdated = () => {
-    console.log('Special events updated, refreshing data...');
-  };
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
@@ -938,39 +935,25 @@ const EventManagement = () => {
         }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
             <Typography variant="h5">
-              Special Events Management
+              Special Events
             </Typography>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button
-                variant="outlined"
-                startIcon={<RefreshIcon />}
-                onClick={() => {
-                  console.log('Refreshing special events...');
-                  setManageSpecialEventsOpen(false);
-                  setTimeout(() => setManageSpecialEventsOpen(true), 100);
-                }}
-                title="Refresh Special Events"
-              >
-                Refresh
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setManageSpecialEventsOpen(true)}
-              >
-                Manage Special Events
-              </Button>
-            </Box>
+            <Button
+              variant="contained"
+              component={RouterLink}
+              to="/admin/special-events"
+              startIcon={<OpenInNewIcon />}
+            >
+              Open special events workspace
+            </Button>
           </Box>
           
           <Typography variant="body1" color="text.secondary" paragraph>
-            Create and manage special events with route-based slot management. VTCs can request slots instead of booking them directly.
+            Special events use route-based slot management. VTCs submit requests; admins allocate them to routes and slots with available capacity.
           </Typography>
           
-          <Alert severity="info" sx={{ mb: 2 }}>
+          <Alert severity="info">
             <Typography variant="body2">
-              <strong>Special Events:</strong> These events use a different slot management system where VTCs submit requests 
-              for slots instead of booking them directly. Administrators review and approve/reject these requests.
+              The dedicated <strong>Special events</strong> workspace supports TMP import, immediate route saves, per-route slot setup (image URL + max bookings), and a unified request inbox.
             </Typography>
           </Alert>
         </Paper>
@@ -994,13 +977,6 @@ const EventManagement = () => {
         event={selectedEvent}
         slots={eventSlots}
         onSlotsUpdated={fetchData}
-      />
-
-      {/* Manage Special Events Dialog */}
-      <ManageSpecialEventsDialog
-        open={manageSpecialEventsOpen}
-        onClose={() => setManageSpecialEventsOpen(false)}
-        onEventUpdated={fetchData}
       />
 
       {/* Delete Booking Confirmation Dialog */}

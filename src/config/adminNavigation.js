@@ -22,6 +22,7 @@ import CalendarMonthOutlined from '@mui/icons-material/CalendarMonthOutlined';
 
 import AdminPanelSettings from '@mui/icons-material/AdminPanelSettings';
 import Event from '@mui/icons-material/Event';
+import StarsOutlined from '@mui/icons-material/StarsOutlined';
 import AnalyticsOutlined from '@mui/icons-material/AnalyticsOutlined';
 import PublicOutlined from '@mui/icons-material/PublicOutlined';
 import People from '@mui/icons-material/People';
@@ -160,6 +161,12 @@ export const ADMIN_SECTIONS = [
     label: 'Events & operations',
     items: [
       { to: '/admin/events', label: 'Event management', Icon: Event, roles: ['admin', 'eventteam'] },
+      {
+        to: '/admin/special-events',
+        label: 'Special events',
+        Icon: StarsOutlined,
+        roles: ['admin', 'eventteam'],
+      },
       {
         to: '/admin/external-attendance',
         label: 'External attendance',
@@ -336,6 +343,15 @@ export const ADMIN_DASHBOARD_GROUP_ORDER = [
 ];
 
 export const ADMIN_DASHBOARD_CARDS = [
+  {
+    group: 'Events & operations',
+    title: 'Special events',
+    description: 'Route-based slot requests, per-route capacity, and allocation inbox.',
+    to: '/admin/special-events',
+    icon: StarsOutlined,
+    color: 'secondary',
+    roles: ['admin', 'eventteam'],
+  },
   {
     group: 'Events & operations',
     title: 'Event management',

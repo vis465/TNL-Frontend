@@ -110,6 +110,7 @@ const SpecialEvent = () => {
 
   const [requestLoading, setRequestLoading] = useState(false);
   const [requestSuccess, setRequestSuccess] = useState(false);
+  const [myRequest, setMyRequest] = useState(null);
   const [expandedSlots, setExpandedSlots] = useState({});
   const [routeRequests, setRouteRequests] = useState({});
   const [tmpdata, Settmpdata] = useState(null);
@@ -166,6 +167,12 @@ const SpecialEvent = () => {
         // Set route requests for allocation display
         if (specialEventRes.data.routeRequests) {
           setRouteRequests(specialEventRes.data.routeRequests);
+          const storedVtc = sessionStorage.getItem(`special-event-request-vtc-${id}`);
+          if (storedVtc) {
+            const allReqs = Object.values(specialEventRes.data.routeRequests).flat();
+            const match = allReqs.find((r) => r.vtcName === storedVtc);
+            if (match) setMyRequest(match);
+          }
         } else {
           console.log("No route requests found in response");
         }
@@ -231,6 +238,13 @@ const SpecialEvent = () => {
         response: response.data,
       });
       setRequestSuccess(true);
+      if (response.data?.request) {
+        setMyRequest(response.data.request);
+        sessionStorage.setItem(
+          `special-event-request-vtc-${event.truckersmpId}`,
+          requestForm.vtcName
+        );
+      }
 
       // Close dialog and reset form
       setRequestDialogOpen(false);
@@ -253,6 +267,12 @@ const SpecialEvent = () => {
       setRouteSlots(eventResponse.data.routeSlots);
       if (eventResponse.data.routeRequests) {
         setRouteRequests(eventResponse.data.routeRequests);
+        const storedVtc = sessionStorage.getItem(`special-event-request-vtc-${id}`);
+        if (storedVtc) {
+          const allReqs = Object.values(eventResponse.data.routeRequests).flat();
+          const match = allReqs.find((r) => r.vtcName === storedVtc);
+          if (match) setMyRequest(match);
+        }
       }
     } catch (error) {
       console.error("Error submitting request:", error);
@@ -1186,6 +1206,41 @@ const SpecialEvent = () => {
 
             {/* Route Request Button */}
             <Box sx={{ textAlign: "center", mt: 3 }}>
+              {myRequest && (
+                <Alert
+                  severity={
+                    myRequest.status === "approved"
+                      ? "success"
+                      : myRequest.status === "rejected"
+                      ? "error"
+                      : "info"
+                  }
+                  sx={{ mb: 2, textAlign: "left" }}
+                  icon={getRequestStatusIcon(myRequest)}
+                >
+                  {myRequest.status === "pending" && (
+                    <>
+                      <strong>Request pending.</strong> Your request is pending admin allocation to a route and slot.
+                      You will be notified via Discord once a decision is made.
+                    </>
+                  )}
+                  {myRequest.status === "approved" && (
+                    <>
+                      <strong>Approved!</strong> You have been allocated to route{" "}
+                      <strong>{myRequest.routeName}</strong>, slot{" "}
+                      <strong>{myRequest.allocatedSlotName || `#${myRequest.allocatedSlotNumber}`}</strong>.
+                    </>
+                  )}
+                  {myRequest.status === "rejected" && (
+                    <>
+                      <strong>Request declined.</strong>{" "}
+                      {myRequest.rejectionReason
+                        ? `Reason: ${myRequest.rejectionReason}`
+                        : "Contact an event admin for details."}
+                    </>
+                  )}
+                </Alert>
+              )}
               <Button
                 variant="contained"
                 startIcon={<AddIcon />}
@@ -1215,8 +1270,7 @@ const SpecialEvent = () => {
                 color="rgba(255,255,255,0.7)"
                 sx={{ mt: 1, fontStyle: "italic" }}
               >
-                Submit a request for this event. Admins will allocate you to an
-                appropriate route and slot.
+                Submit a request for this event. Your request stays pending until an admin allocates you to a route and slot.
               </Typography>
 
               {/* Route Request Info */}
@@ -1793,10 +1847,8 @@ const SpecialEvent = () => {
                   🎉 REQUEST SUBMITTED SUCCESSFULLY!
                 </Typography>
                 <Typography variant="body1">
-                  Your event request has been submitted successfully! An
-                  administrator will review your request and allocate you to an
-                  appropriate route and slot. You'll be notified via Discord
-                  once a decision is made.
+                  Your event request has been submitted successfully. Your request is pending admin allocation to a route and slot.
+                  You&apos;ll be notified via Discord once a decision is made.
                 </Typography>
               </Alert>
             ) : (
