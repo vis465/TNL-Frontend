@@ -116,6 +116,7 @@ import AdminDivisions from "./pages/AdminDivisions";
 import AdminDivisionDetail from "./pages/AdminDivisionDetail";
 import AdminCargoRates from "./pages/AdminCargoRates";
 import AdminFuelMarket from "./pages/AdminFuelMarket";
+import AdminEconomy from "./pages/admin/AdminEconomy";
 import AdminDriverProgression from "./pages/AdminDriverProgression";
 import MyDivision from "./pages/MyDivision";
 import FuelMarketplace from "./pages/FuelMarketplace";
@@ -127,6 +128,7 @@ import AdminCoupons from "./pages/AdminCoupons";
 import AdminVtcMonthlyStats from "./pages/AdminVtcMonthlyStats";
 import AdminAuditLogs from "./pages/AdminAuditLogs";
 import AdminOperations from "./pages/admin/AdminOperations";
+import AdminHubPage from "./pages/admin/AdminHubPage";
 import FleetOdometerBackfill from "./pages/admin/FleetOdometerBackfill";
 import JobWorkflowDebugger from "./pages/admin/JobWorkflowDebugger";
 import AdminSystemOverview from "./pages/admin/AdminSystemOverview";
@@ -634,6 +636,15 @@ function App() {
                       }
                     >
                       <Route index element={<AdminDashboard />} />
+                      <Route path="hub/:hubId" element={<AdminHubPage />} />
+                      <Route
+                        path="economy"
+                        element={
+                          <PrivateRoute allowedRoles={["admin"]}>
+                            <AdminEconomy />
+                          </PrivateRoute>
+                        }
+                      />
                       <Route
                         path="jobs"
                         element={

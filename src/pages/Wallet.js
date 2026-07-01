@@ -36,9 +36,12 @@ import {
   Add,
   AttachMoney,
   History,
-  Timeline
+  Timeline,
+  Badge,
+  HealthAndSafety
 } from '@mui/icons-material';
 import { getMyWallet, getWalletStats, purchase } from '../services/walletService';
+import axiosInstance from '../utils/axios';
 
 const Wallet = () => {
   const [wallet, setWallet] = useState({ balance: 0, transactions: [] });
@@ -50,10 +53,21 @@ const Wallet = () => {
   const [purchaseAmount, setPurchaseAmount] = useState('');
   const [purchaseTitle, setPurchaseTitle] = useState('');
   const [purchaseLoading, setPurchaseLoading] = useState(false);
+  const [economy, setEconomy] = useState(null);
+  const [riderEconomyBusy, setRiderEconomyBusy] = useState(false);
 
   useEffect(() => {
     loadWalletData();
   }, []);
+
+  const loadRiderEconomy = async () => {
+    try {
+      const { data } = await axiosInstance.get('/wallet/economy');
+      setEconomy(data);
+    } catch (_) {
+      setEconomy(null);
+    }
+  };
 
   const loadWalletData = async () => {
     try {
@@ -61,10 +75,11 @@ const Wallet = () => {
       setError('');
       const [walletData, statsData] = await Promise.all([
         getMyWallet(),
-        getWalletStats()
+        getWalletStats(),
       ]);
       setWallet(walletData);
       setStats(statsData);
+      await loadRiderEconomy();
     } catch (err) {
       setError('Failed to load wallet data');
       console.error('Wallet loading error:', err);
@@ -100,6 +115,32 @@ const Wallet = () => {
       setError(err.message || 'Purchase failed');
     } finally {
       setPurchaseLoading(false);
+    }
+  };
+
+  const purchaseDriverPass = async (passTypeId) => {
+    setRiderEconomyBusy(true);
+    setError('');
+    try {
+      await axiosInstance.post('/wallet/driver-pass/purchase', { passTypeId });
+      await loadWalletData();
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Driver pass purchase failed');
+    } finally {
+      setRiderEconomyBusy(false);
+    }
+  };
+
+  const toggleAccidentCover = async (optIn) => {
+    setRiderEconomyBusy(true);
+    setError('');
+    try {
+      await axiosInstance.post('/wallet/accident-cover', { optIn });
+      await loadWalletData();
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Failed to update accident cover');
+    } finally {
+      setRiderEconomyBusy(false);
     }
   };
 
@@ -184,6 +225,90 @@ const Wallet = () => {
           </Alert>
         )}
       </Box>
+
+      {(economy?.driverPass?.enabled || economy?.license?.enabled) && (() => {
+        const pass = economy.driverPass || economy.license;
+        return (
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+              <Badge color="primary" />
+              <Typography variant="h6">Driver pass</Typography>
+              <Chip
+                size="small"
+                color={pass.valid ? 'success' : 'error'}
+                label={pass.valid ? 'Active' : 'No valid pass'}
+              />
+            </Stack>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              {pass.valid && pass.expiresAt
+                ? `Valid until ${new Date(pass.expiresAt).toLocaleString()}`
+                : 'Without a valid pass, job deliveries are recorded but you earn no tokens and km does not count.'}
+            </Typography>
+            <Grid container spacing={2}>
+              {(pass.passTypes || []).map((pt) => (
+                <Grid item xs={12} sm={6} md={4} key={pt.id}>
+                  <Paper variant="outlined" sx={{ p: 2, height: '100%' }}>
+                    <Typography variant="subtitle1" fontWeight={600}>
+                      {pt.label}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                      {pt.durationDays} day{pt.durationDays !== 1 ? 's' : ''} ·{' '}
+                      {Number(pt.priceTokens || 0).toLocaleString()} tokens
+                    </Typography>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      disabled={riderEconomyBusy}
+                      onClick={() => purchaseDriverPass(pt.id)}
+                    >
+                      Buy pass
+                    </Button>
+                  </Paper>
+                </Grid>
+              ))}
+            </Grid>
+          </CardContent>
+        </Card>
+        );
+      })()}
+
+      {economy?.accidentCover?.enabled && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+              <HealthAndSafety color="secondary" />
+              <Typography variant="h6">Personal accident cover</Typography>
+              <Chip
+                size="small"
+                color={economy.accidentCover.active ? 'success' : 'default'}
+                label={economy.accidentCover.active ? 'Active' : 'Off'}
+              />
+            </Stack>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              {Number(economy.accidentCover.monthlyPremium || 0).toLocaleString()} tokens / month — RTO fine −
+              {economy.accidentCover.rtoFineReductionPercent}%, contract penalty cap{' '}
+              {Number(economy.accidentCover.contractPenaltyCapTokens || 0).toLocaleString()} tokens
+            </Typography>
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant="contained"
+                disabled={riderEconomyBusy || economy.accidentCover.active}
+                onClick={() => toggleAccidentCover(true)}
+              >
+                Opt in
+              </Button>
+              <Button
+                variant="outlined"
+                disabled={riderEconomyBusy || !economy.accidentCover.optedIn}
+                onClick={() => toggleAccidentCover(false)}
+              >
+                Opt out
+              </Button>
+            </Stack>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Balance Card */}
       <Card sx={{ mb: 4, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>

@@ -625,6 +625,8 @@ export default function MyDivision() {
   const [goalsDialogOpen, setGoalsDialogOpen] = useState(false);
   const [goalsForm, setGoalsForm] = useState({ jobs: '', distanceKm: '', revenue: '' });
   const [goalsSaving, setGoalsSaving] = useState(false);
+  const [economyStatus, setEconomyStatus] = useState(null);
+  const [tollBusy, setTollBusy] = useState(false);
 
   const sortedLb = useMemo(() => {
     const rows = [...lb];
@@ -679,6 +681,7 @@ export default function MyDivision() {
           summaryRes,
           weeklyGoalsRes,
           truckSuggestionRes,
+          economyRes,
         ] = await Promise.all([
           axiosInstance.get(`/divisions/${resolvedDivision._id}/leaderboard`, { params: { limit: 30 } }),
           axiosInstance.get(`/divisions/${resolvedDivision._id}/members`).catch(() => ({ data: { members: [] } })),
@@ -688,6 +691,7 @@ export default function MyDivision() {
           axiosInstance.get(`/divisions/${resolvedDivision._id}/investments/summary`).catch(() => ({ data: { byRider: [] } })),
           axiosInstance.get(`/divisions/${resolvedDivision._id}/goals/weekly`).catch(() => ({ data: null })),
           axiosInstance.get(`/divisions/${resolvedDivision._id}/insights/truck-suggestion`).catch(() => ({ data: null })),
+          axiosInstance.get(`/divisions/${resolvedDivision._id}/economy`).catch(() => ({ data: null })),
         ]);
         setLb(l.riders || []);
         setMembers(m.members || []);
@@ -700,6 +704,7 @@ export default function MyDivision() {
         setInvestmentSummary(Array.isArray(summaryRes?.data?.byRider) ? summaryRes.data.byRider : []);
         setWeeklyGoals(weeklyGoalsRes?.data || null);
         setTruckSuggestion(truckSuggestionRes?.data || null);
+        setEconomyStatus(economyRes?.data || null);
         setSelectedDivisionLoanId((prev) =>
           prev && (divisionLoansRes || []).some((x) => String(x._id) === String(prev))
             ? prev
@@ -987,6 +992,32 @@ export default function MyDivision() {
       await axiosInstance.post(`/divisions/${div._id}/investments`, { amount, note: investNote });
       setInvestAmount(''); setInvestNote(''); await load();
     } catch (e) { setError(e?.response?.data?.message || 'Failed to create investment'); }
+  };
+
+  const setDivisionTollMode = async (mode) => {
+    if (!div?._id) return;
+    setTollBusy(true);
+    try {
+      await axiosInstance.patch(`/divisions/${div._id}/toll-mode`, { mode });
+      await load();
+    } catch (e) {
+      setError(e?.response?.data?.message || 'Failed to update toll mode');
+    } finally {
+      setTollBusy(false);
+    }
+  };
+
+  const purchaseTollVignette = async () => {
+    if (!div?._id) return;
+    setTollBusy(true);
+    try {
+      await axiosInstance.post(`/divisions/${div._id}/toll/vignette`);
+      await load();
+    } catch (e) {
+      setError(e?.response?.data?.message || 'Failed to purchase toll vignette');
+    } finally {
+      setTollBusy(false);
+    }
   };
 
   const openGoalsDialog = () => {
@@ -1414,6 +1445,40 @@ export default function MyDivision() {
                           </Button>
                         )}
                       </Stack>
+                    </Box>
+                  )}
+
+                  {isLeader && economyStatus?.economy?.toll?.enabled && (
+                    <Box className="anim-fade-up stagger-3" sx={sx.card}>
+                      <Box sx={{ p: 2.5 }}>
+                        <SectionHeader label="Tolls & vignette" icon={LocalGasStationOutlined} />
+                        <Typography sx={{ ...sx.body, mb: 1.5 }}>
+                          Mode: <strong>{economyStatus?.division?.tollMode === 'vignette' ? 'Vignette' : 'Pay per job'}</strong>
+                          {economyStatus?.division?.vignetteActive && economyStatus?.division?.tollVignetteExpiresAt && (
+                            <> — vignette until {new Date(economyStatus.division.tollVignetteExpiresAt).toLocaleDateString()}</>
+                          )}
+                        </Typography>
+                        {Number(economyStatus?.division?.levyArrears) > 0 && (
+                          <Typography sx={{ fontFamily: T.mono, fontSize: TYPE.sm, color: T.warn, mb: 1 }}>
+                            Operating levy arrears: {Number(economyStatus.division.levyArrears).toLocaleString()} tokens
+                            {economyStatus?.division?.levyBlocked ? ' — purchases blocked' : ''}
+                          </Typography>
+                        )}
+                        <Stack direction="row" spacing={1} flexWrap="wrap">
+                          <Button size="small" variant="outlined" sx={btnSx.outlined} disabled={tollBusy}
+                            onClick={() => setDivisionTollMode('pay_per_job')}>
+                            Pay per job
+                          </Button>
+                          <Button size="small" variant="outlined" sx={btnSx.outlined} disabled={tollBusy}
+                            onClick={() => setDivisionTollMode('vignette')}>
+                            Vignette mode
+                          </Button>
+                          <Button size="small" variant="contained" sx={btnSx.primary} disabled={tollBusy}
+                            onClick={purchaseTollVignette}>
+                            Buy vignette ({Number(economyStatus.economy.toll.vignettePriceTokens || 0).toLocaleString()} tokens)
+                          </Button>
+                        </Stack>
+                      </Box>
                     </Box>
                   )}
 

@@ -99,19 +99,7 @@ export default function AdminConvoyReminders() {
       title="Convoy reminders"
       subtitle="External convoy attendance and our hosted events — same data as the event calendar"
     >
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, gap: 2 }}>
-        <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 720 }}>
-          Send Discord reminder embeds to <code>DISCORD_WEBHOOK_FOR_REMAINDERS</code>. External convoy entries
-          come from{' '}
-          <Link component={RouterLink} to="/admin/external-attendance">
-            External attendance
-          </Link>
-          ; our events are synced hosted TMP events shown on the calendar.
-        </Typography>
-        <IconButton onClick={loadEvents} disabled={loading} title="Refresh">
-          <RefreshIcon />
-        </IconButton>
-      </Box>
+      
 
       <Tabs value={range} onChange={(_, v) => setRange(v)} sx={{ mb: 2 }}>
         {RANGES.map((item) => (

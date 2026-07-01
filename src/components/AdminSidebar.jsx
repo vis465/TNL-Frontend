@@ -1,5 +1,5 @@
-import React from "react";
-import { Link as RouterLink, useLocation } from "react-router-dom";
+import React, { useMemo } from 'react';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -13,26 +13,33 @@ import {
   IconButton,
   Tooltip,
   Chip,
-  TextField,
-  InputAdornment,
+  Button,
   useMediaQuery,
   useTheme,
-} from "@mui/material";
-import { alpha } from "@mui/material/styles";
-import SearchIcon from "@mui/icons-material/Search";
-import Close from "@mui/icons-material/Close";
-import ChevronLeft from "@mui/icons-material/ChevronLeft";
-import ChevronRight from "@mui/icons-material/ChevronRight";
-import StarBorder from "@mui/icons-material/StarBorder";
-import Star from "@mui/icons-material/Star";
+} from '@mui/material';
+import { alpha } from '@mui/material/styles';
+import SearchIcon from '@mui/icons-material/Search';
+import Close from '@mui/icons-material/Close';
+import ChevronLeft from '@mui/icons-material/ChevronLeft';
+import ChevronRight from '@mui/icons-material/ChevronRight';
+import StarBorder from '@mui/icons-material/StarBorder';
+import Star from '@mui/icons-material/Star';
+import HubOutlined from '@mui/icons-material/HubOutlined';
 import {
   MY_AREA_SECTIONS,
-  ADMIN_SECTIONS,
   STAFF_ROLES,
+  buildAdminSections,
   userCanSeeNavItem,
   isNavPathActive,
-} from "../config/adminNavigation";
-import axiosInstance from "../utils/axios";
+  scoreNavSearch,
+} from '../config/adminNavigation';
+import {
+  getAdminFavorites,
+  toggleAdminFavorite,
+  getCollapsedSections,
+  toggleSectionCollapsed,
+} from '../utils/adminNavStorage';
+import axiosInstance from '../utils/axios';
 import {
   SidebarProvider,
   Sidebar,
@@ -42,7 +49,7 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarMenu,
-} from "./ui/sidebar";
+} from './ui/sidebar';
 
 function NavListItem({ item, user, onClose, collapsed, badgeCount = 0, favorite = false, onToggleFavorite }) {
   const location = useLocation();
@@ -58,31 +65,31 @@ function NavListItem({ item, user, onClose, collapsed, badgeCount = 0, favorite 
         onClick={onClose}
         selected={active}
         sx={{
-          justifyContent: collapsed ? "center" : "flex-start",
+          justifyContent: collapsed ? 'center' : 'flex-start',
           px: collapsed ? 1 : 2,
           py: 0.75,
           mx: 0.5,
           borderRadius: 1.25,
-          transition: "all 180ms ease",
-          border: "1px solid transparent",
-          "&:hover": {
-            bgcolor: "action.hover",
-            borderColor: "divider",
-            transform: "translateX(1px)",
+          transition: 'all 180ms ease',
+          border: '1px solid transparent',
+          '&:hover': {
+            bgcolor: 'action.hover',
+            borderColor: 'divider',
+            transform: 'translateX(1px)',
           },
-          "&.Mui-selected": {
-            bgcolor: (t) => alpha(t.palette.primary.main, t.palette.mode === "dark" ? 0.18 : 0.12),
+          '&.Mui-selected': {
+            bgcolor: (t) => alpha(t.palette.primary.main, t.palette.mode === 'dark' ? 0.18 : 0.12),
             borderColor: (t) => alpha(t.palette.primary.main, 0.45),
             boxShadow: (t) => `inset 3px 0 0 ${t.palette.primary.main}`,
-            "&:hover": { bgcolor: (t) => alpha(t.palette.primary.main, t.palette.mode === "dark" ? 0.22 : 0.16) },
+            '&:hover': { bgcolor: (t) => alpha(t.palette.primary.main, t.palette.mode === 'dark' ? 0.22 : 0.16) },
           },
         }}
       >
         <ListItemIcon
           sx={{
             minWidth: collapsed ? 0 : 40,
-            justifyContent: "center",
-            color: active ? "primary.main" : "inherit",
+            justifyContent: 'center',
+            color: active ? 'primary.main' : 'inherit',
           }}
         >
           <Icon />
@@ -92,18 +99,18 @@ function NavListItem({ item, user, onClose, collapsed, badgeCount = 0, favorite 
           <Chip
             size="small"
             label={badgeCount}
-            sx={{ mr: 0.5, minWidth: 24, height: 20, fontWeight: 700, borderRadius: 1, bgcolor: "primary.main", color: "primary.contrastText" }}
+            sx={{ mr: 0.5, minWidth: 24, height: 20, fontWeight: 700, borderRadius: 1, bgcolor: 'primary.main', color: 'primary.contrastText' }}
           />
         )}
-        {!collapsed && (
+        {!collapsed && onToggleFavorite && (
           <IconButton
             size="small"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              onToggleFavorite?.(item.to);
+              onToggleFavorite(item.to);
             }}
-            sx={{ ml: 0.25, opacity: favorite ? 1 : 0.65, "&:hover": { opacity: 1, bgcolor: "action.hover" } }}
+            sx={{ ml: 0.25, opacity: favorite ? 1 : 0.65, '&:hover': { opacity: 1, bgcolor: 'action.hover' } }}
           >
             {favorite ? <Star fontSize="small" color="warning" /> : <StarBorder fontSize="small" />}
           </IconButton>
@@ -128,25 +135,42 @@ function SectionHeader({ label, collapsed }) {
   }
   return (
     <Box sx={{ px: 2, py: 1 }}>
-      <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ letterSpacing: "0.06em" }}>
+      <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ letterSpacing: '0.06em' }}>
         {label}
       </Typography>
     </Box>
   );
 }
 
-function NavSection({ section, user, onClose, collapsed, query = "", favorites = [], onToggleFavorite, badges = {} }) {
+function NavSection({
+  section,
+  user,
+  onClose,
+  collapsed,
+  query = '',
+  favorites = [],
+  onToggleFavorite,
+  badges = {},
+  sectionCollapsed = false,
+  onToggleSection,
+}) {
   const q = query.trim().toLowerCase();
   const filteredItems = section.items.filter((item) => {
     if (!userCanSeeNavItem(user?.role, item.roles)) return false;
     if (!q) return true;
-    return item.label.toLowerCase().includes(q);
+    return (
+      item.label.toLowerCase().includes(q) ||
+      (item.keywords || []).some((k) => k.toLowerCase().includes(q)) ||
+      scoreNavSearch(item, q) > 0
+    );
   });
   const visible = filteredItems.length > 0;
-  const [open, setOpen] = React.useState(true);
+  const [open, setOpen] = React.useState(!sectionCollapsed);
   React.useEffect(() => {
-    if (!collapsed) setOpen(true);
-  }, [collapsed, query]);
+    if (q) setOpen(true);
+    else setOpen(!sectionCollapsed);
+  }, [collapsed, query, sectionCollapsed, q]);
+
   if (!visible) return null;
 
   if (collapsed) {
@@ -170,33 +194,57 @@ function NavSection({ section, user, onClose, collapsed, query = "", favorites =
 
   return (
     <>
-      <ListItem disablePadding sx={{ px: 1 }}>
+      <ListItem disablePadding sx={{ px: 1, display: 'flex', alignItems: 'center' }}>
         <ListItemButton
-          onClick={() => setOpen((p) => !p)}
+          component={section.hubRoute ? RouterLink : 'div'}
+          to={section.hubRoute || undefined}
+          onClick={
+            section.hubRoute
+              ? onClose
+              : () => {
+                  onToggleSection?.(section.id);
+                  setOpen((p) => !p);
+                }
+          }
           sx={{
+            flex: 1,
             borderRadius: 1,
             mb: 0.25,
             py: 0.75,
-            "&:hover": { bgcolor: "action.hover" },
+            '&:hover': { bgcolor: 'action.hover' },
           }}
         >
+          {section.hubRoute && (
+            <ListItemIcon sx={{ minWidth: 32 }}>
+              <HubOutlined fontSize="small" color="action" />
+            </ListItemIcon>
+          )}
           <ListItemText
             primary={section.label}
             primaryTypographyProps={{
-              variant: "body2",
+              variant: 'body2',
               fontWeight: 700,
-              color: "text.secondary",
-              sx: { letterSpacing: "0.04em", textTransform: "uppercase" },
-            }}
-          />
-          <ChevronRight
-            fontSize="small"
-            style={{
-              transform: open ? "rotate(90deg)" : "rotate(0deg)",
-              transition: "transform 180ms ease",
+              color: 'text.secondary',
+              sx: { letterSpacing: '0.04em', textTransform: 'uppercase' },
             }}
           />
         </ListItemButton>
+        <IconButton
+          size="small"
+          onClick={() => {
+            onToggleSection?.(section.id);
+            setOpen((p) => !p);
+          }}
+          sx={{ mr: 0.5 }}
+        >
+          <ChevronRight
+            fontSize="small"
+            style={{
+              transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
+              transition: 'transform 180ms ease',
+            }}
+          />
+        </IconButton>
       </ListItem>
       <Collapse in={open} timeout={220} unmountOnExit>
         <List dense sx={{ pt: 0 }}>
@@ -219,16 +267,16 @@ function NavSection({ section, user, onClose, collapsed, query = "", favorites =
 }
 
 function formatRoleLabel(role) {
-  if (!role) return "";
+  if (!role) return '';
   const map = {
-    rider: "Rider",
-    admin: "Admin",
-    eventteam: "Event team",
-    hrteam: "HR team",
-    financeteam: "Finance team",
-    communityManager: "Community manager",
+    rider: 'Rider',
+    admin: 'Admin',
+    eventteam: 'Event team',
+    hrteam: 'HR team',
+    financeteam: 'Finance team',
+    communityManager: 'Community manager',
   };
-  return map[role] || role.replace(/team$/, " team").replace(/\b\w/g, (c) => c.toUpperCase());
+  return map[role] || role.replace(/team$/, ' team').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 const AdminSidebar = ({
@@ -237,48 +285,31 @@ const AdminSidebar = ({
   user,
   collapsed = false,
   onToggleCollapse,
-  /** Sidebar header (e.g. "Account" for members, "Staff console" for /admin) */
-  brandTitle = "Account",
+  brandTitle = 'Account',
+  onOpenSearch,
 }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const hasAdminAccess = user && STAFF_ROLES.includes(user.role);
-  const [query, setQuery] = React.useState("");
-  const [favorites, setFavorites] = React.useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("admin-sidebar-favorites") || "[]");
-    } catch {
-      return [];
-    }
-  });
+  const [favorites, setFavorites] = React.useState(() => getAdminFavorites());
+  const [sectionsCollapsed, setSectionsCollapsed] = React.useState(() => getCollapsedSections());
   const [badges, setBadges] = React.useState({});
-  const searchRef = React.useRef(null);
 
-  React.useEffect(() => {
-    localStorage.setItem("admin-sidebar-favorites", JSON.stringify(favorites));
-  }, [favorites]);
-
-  React.useEffect(() => {
-    const onKey = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        searchRef.current?.focus();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  const adminSections = useMemo(
+    () => (hasAdminAccess ? buildAdminSections(user?.role) : []),
+    [hasAdminAccess, user?.role],
+  );
 
   React.useEffect(() => {
     (async () => {
       try {
         const [inv, att] = await Promise.all([
-          axiosInstance.get("/me/division/invites").catch(() => ({ data: { invites: [] } })),
-          axiosInstance.get("/attendance-events/active/me").catch(() => ({ data: [] })),
+          axiosInstance.get('/me/division/invites').catch(() => ({ data: { invites: [] } })),
+          axiosInstance.get('/attendance-events/active/me').catch(() => ({ data: [] })),
         ]);
         setBadges({
-          "/division/invites": (inv.data?.invites || []).length,
-          "/attendance": Array.isArray(att.data) ? att.data.length : 0,
+          '/division/invites': (inv.data?.invites || []).length,
+          '/attendance': Array.isArray(att.data) ? att.data.length : 0,
         });
       } catch {
         setBadges({});
@@ -286,15 +317,18 @@ const AdminSidebar = ({
     })();
   }, []);
 
-  const toggleFavorite = (to) => {
-    setFavorites((prev) => (prev.includes(to) ? prev.filter((x) => x !== to) : [...prev, to]));
+  const handleToggleFavorite = (to) => {
+    setFavorites(toggleAdminFavorite(to));
   };
 
-  const allSections = [...MY_AREA_SECTIONS, ...(hasAdminAccess ? ADMIN_SECTIONS : [])];
+  const handleToggleSection = (sectionId) => {
+    setSectionsCollapsed(toggleSectionCollapsed(sectionId));
+  };
+
+  const allSections = [...MY_AREA_SECTIONS, ...adminSections];
   const favoriteItems = allSections
     .flatMap((s) => s.items || [])
-    .filter((item) => favorites.includes(item.to) && userCanSeeNavItem(user?.role, item.roles))
-    .filter((item) => (query.trim() ? item.label.toLowerCase().includes(query.trim().toLowerCase()) : true));
+    .filter((item) => favorites.includes(item.to) && userCanSeeNavItem(user?.role, item.roles));
 
   return (
     <SidebarProvider
@@ -311,8 +345,8 @@ const AdminSidebar = ({
         widthCollapsed={72}
         mobileWidth={320}
         sx={{
-          bgcolor: "background.paper",
-          borderRightColor: "divider",
+          bgcolor: 'background.paper',
+          borderRightColor: 'divider',
         }}
       >
         <SidebarHeader>
@@ -320,10 +354,10 @@ const AdminSidebar = ({
             sx={{
               p: 2,
               background: (t) =>
-                `linear-gradient(180deg, ${alpha(t.palette.primary.main, t.palette.mode === "dark" ? 0.1 : 0.08)} 0%, transparent 100%)`,
+                `linear-gradient(180deg, ${alpha(t.palette.primary.main, t.palette.mode === 'dark' ? 0.1 : 0.08)} 0%, transparent 100%)`,
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               {!collapsed && (
                 <Typography variant="h6" fontWeight={700}>
                   {brandTitle}
@@ -336,22 +370,16 @@ const AdminSidebar = ({
               )}
             </Box>
             {!collapsed && (
-              <TextField
-                inputRef={searchRef}
-                size="small"
+              <Button
                 fullWidth
-                placeholder="Search menu (Ctrl/Cmd+K)"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                sx={{ mt: 1.25 }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon fontSize="small" />
-                    </InputAdornment>
-                  ),
-                }}
-              />
+                variant="outlined"
+                size="small"
+                startIcon={<SearchIcon />}
+                onClick={onOpenSearch}
+                sx={{ mt: 1.25, justifyContent: 'flex-start', borderStyle: 'dashed' }}
+              >
+                Search (Ctrl+K)
+              </Button>
             )}
           </Box>
         </SidebarHeader>
@@ -363,18 +391,20 @@ const AdminSidebar = ({
             handleMobileDrawerClose={handleMobileDrawerClose}
             hasAdminAccess={hasAdminAccess}
             brandTitle={brandTitle}
-            query={query}
             favorites={favorites}
             favoriteItems={favoriteItems}
-            onToggleFavorite={toggleFavorite}
+            onToggleFavorite={handleToggleFavorite}
             badges={badges}
+            adminSections={adminSections}
+            sectionsCollapsed={sectionsCollapsed}
+            onToggleSection={handleToggleSection}
           />
         </SidebarContent>
         <SidebarFooter>
           {!isMobile && onToggleCollapse && (
             <Box sx={{ p: 1 }}>
-              <Tooltip title={collapsed ? "Expand sidebar" : "Collapse sidebar"} placement="right" arrow>
-                <IconButton onClick={onToggleCollapse} size="small" sx={{ width: "100%", borderRadius: 1 }}>
+              <Tooltip title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} placement="right" arrow>
+                <IconButton onClick={onToggleCollapse} size="small" sx={{ width: '100%', borderRadius: 1 }}>
                   {collapsed ? <ChevronRight /> : <ChevronLeft />}
                 </IconButton>
               </Tooltip>
@@ -392,22 +422,24 @@ function SidebarContentInner({
   handleMobileDrawerClose,
   hasAdminAccess,
   brandTitle,
-  query,
   favorites,
   favoriteItems,
   onToggleFavorite,
   badges,
+  adminSections,
+  sectionsCollapsed,
+  onToggleSection,
 }) {
   return (
-    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", overflow: "auto" }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
       <Box
         sx={{
           p: isCollapsed ? 1.5 : 2,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: isCollapsed ? "center" : "space-between",
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: isCollapsed ? 'center' : 'space-between',
           gap: 1,
-          flexWrap: "wrap",
+          flexWrap: 'wrap',
         }}
       >
         {!isCollapsed && (
@@ -420,7 +452,7 @@ function SidebarContentInner({
                 size="small"
                 label={formatRoleLabel(user.role)}
                 variant="outlined"
-                sx={{ mt: 0.75, fontWeight: 600, textTransform: "none" }}
+                sx={{ mt: 0.75, fontWeight: 600, textTransform: 'none' }}
               />
             )}
           </Box>
@@ -459,10 +491,11 @@ function SidebarContentInner({
               user={user}
               onClose={handleMobileDrawerClose}
               collapsed={isCollapsed}
-              query={query}
               favorites={favorites}
               onToggleFavorite={onToggleFavorite}
               badges={badges}
+              sectionCollapsed={sectionsCollapsed[section.id]}
+              onToggleSection={onToggleSection}
             />
           ))}
         </SidebarMenu>
@@ -473,17 +506,18 @@ function SidebarContentInner({
           <SidebarGroup>
             {!isCollapsed ? <SidebarGroupLabel>ADMIN</SidebarGroupLabel> : <SectionHeader label="ADMIN" collapsed={isCollapsed} />}
             <SidebarMenu>
-              {ADMIN_SECTIONS.map((section) => (
+              {adminSections.map((section) => (
                 <NavSection
                   key={section.id}
                   section={section}
                   user={user}
                   onClose={handleMobileDrawerClose}
                   collapsed={isCollapsed}
-                  query={query}
                   favorites={favorites}
                   onToggleFavorite={onToggleFavorite}
                   badges={badges}
+                  sectionCollapsed={sectionsCollapsed[section.id]}
+                  onToggleSection={onToggleSection}
                 />
               ))}
             </SidebarMenu>

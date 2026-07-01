@@ -132,6 +132,10 @@ export default function FleetManagement() {
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [repairMinutes, setRepairMinutes] = useState(120);
   const [resolvedDivisionName, setResolvedDivisionName] = useState('');
+  const [insuranceTiers, setInsuranceTiers] = useState([]);
+  const [insuranceTarget, setInsuranceTarget] = useState(null);
+  const [insuranceTierId, setInsuranceTierId] = useState('');
+  const [insuranceBusy, setInsuranceBusy] = useState(false);
 
   const user = useMemo(() => getItemWithExpiry('user') || {}, []);
   const secondaryRoles = Array.isArray(user?.secondaryRoles) ? user.secondaryRoles : [];
@@ -163,11 +167,15 @@ export default function FleetManagement() {
       }
       // If the owned endpoint resolves division but returns no trucks for this
       // session, fallback to canonical division trucks endpoint.
-      if (resolvedDivisionId && list.length === 0) {
+      if (resolvedDivisionId) {
         try {
-          const fallback = await getDivisionTrucks(resolvedDivisionId);
-          const fallbackTrucks = Array.isArray(fallback?.trucks) ? fallback.trucks : [];
-          setTrucks(fallbackTrucks);
+          const [fallback, econRes] = await Promise.all([
+            getDivisionTrucks(resolvedDivisionId),
+            axiosInstance.get(`/divisions/${resolvedDivisionId}/economy`).catch(() => null),
+          ]);
+          const fallbackTrucks = Array.isArray(fallback?.trucks) ? fallback.trucks : list;
+          setTrucks(fallbackTrucks.length ? fallbackTrucks : list);
+          setInsuranceTiers(econRes?.data?.economy?.fleetInsurance?.tiers || []);
         } catch (_) {
           setTrucks(list);
         }
@@ -192,6 +200,40 @@ export default function FleetManagement() {
       setLoading(false);
     }
   }, []);
+
+  const assignTruckInsurance = async () => {
+    if (!divisionId || !insuranceTarget?._id || !insuranceTierId) return;
+    setInsuranceBusy(true);
+    setError('');
+    try {
+      await axiosInstance.post(`/divisions/${divisionId}/trucks/${insuranceTarget._id}/insurance`, {
+        tierId: insuranceTierId,
+        autoRenew: true,
+      });
+      setInsuranceTarget(null);
+      setInsuranceTierId('');
+      setFeedback('Insurance updated.');
+      await loadTrucks();
+    } catch (e) {
+      setError(e?.response?.data?.message || 'Failed to assign insurance');
+    } finally {
+      setInsuranceBusy(false);
+    }
+  };
+
+  const bulkRenewInsurance = async () => {
+    if (!divisionId) return;
+    setInsuranceBusy(true);
+    try {
+      await axiosInstance.post(`/divisions/${divisionId}/trucks/insurance/bulk-renew`);
+      setFeedback('Bulk insurance renewal attempted.');
+      await loadTrucks();
+    } catch (e) {
+      setError(e?.response?.data?.message || 'Bulk renew failed');
+    } finally {
+      setInsuranceBusy(false);
+    }
+  };
 
   useEffect(() => {
     loadTrucks();
@@ -373,6 +415,16 @@ export default function FleetManagement() {
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2.25 }}>
           <Stack direction="row" spacing={1} alignItems="center">
             <GarageOutlinedIcon sx={{ color: T.accent }} />
+            {isLeaderOfThis && (
+              <Button
+                variant="outlined"
+                size="small"
+                disabled={insuranceBusy || !insuranceTiers.length}
+                onClick={bulkRenewInsurance}
+              >
+                Renew all insurance
+              </Button>
+            )}
             {isLeaderOfThis && (
               <Chip
                 size="small"
@@ -726,6 +778,18 @@ export default function FleetManagement() {
                                 label={`Maintenance ${maintenanceCost.toLocaleString()} tokens`}
                               />
                             )}
+                            {t.insurance && (
+                              <Chip
+                                size="small"
+                                color={t.insurance.insured ? 'success' : 'error'}
+                                variant="outlined"
+                                label={
+                                  t.insurance.insured
+                                    ? `Insured: ${t.insurance.tierLabel || t.insurance.tierId}`
+                                    : 'Uninsured'
+                                }
+                              />
+                            )}
                             <Tooltip
                               title={`Wear ${Number(t.wearKm || 0).toLocaleString()} / ${Number(
                                 t.wearThresholdKm || 0
@@ -798,6 +862,19 @@ export default function FleetManagement() {
                                   }}
                                 >
                                   Sell truck
+                                </Button>
+                              )}
+                              {insuranceTiers.length > 0 && (
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setInsuranceTarget(t);
+                                    setInsuranceTierId(t.insurance?.tierId || insuranceTiers[0]?.id || '');
+                                  }}
+                                >
+                                  Insurance
                                 </Button>
                               )}
                             </Stack>
@@ -1021,6 +1098,35 @@ export default function FleetManagement() {
           </Button>
           <Button variant="contained" color="error" onClick={handleConfirmSell} disabled={sellBusy}>
             {sellBusy ? 'Selling…' : 'Confirm sale'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={Boolean(insuranceTarget)} onClose={() => !insuranceBusy && setInsuranceTarget(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Fleet insurance — {insuranceTarget?.displayName || insuranceTarget?.modelName}</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            Uninsured trucks are not serviceable for division jobs. Premium is debited from the division wallet.
+          </DialogContentText>
+          <TextField
+            select
+            fullWidth
+            label="Insurance tier"
+            value={insuranceTierId}
+            onChange={(e) => setInsuranceTierId(e.target.value)}
+            SelectProps={{ native: true }}
+          >
+            {insuranceTiers.map((tier) => (
+              <option key={tier.id} value={tier.id}>
+                {tier.label} — {Number(tier.monthlyPremiumTokens || 0).toLocaleString()} tokens / period
+              </option>
+            ))}
+          </TextField>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setInsuranceTarget(null)} disabled={insuranceBusy}>Cancel</Button>
+          <Button variant="contained" onClick={assignTruckInsurance} disabled={insuranceBusy || !insuranceTierId}>
+            {insuranceBusy ? 'Saving…' : 'Assign & pay'}
           </Button>
         </DialogActions>
       </Dialog>

@@ -16,6 +16,11 @@ export const DIVISION_WALLET_KIND_OPTIONS = [
   { value: 'division_loan_disbursal', label: 'Loan disbursal' },
   { value: 'division_emi_deduction', label: 'Loan EMI deduction' },
   { value: 'rto_fine', label: 'RTO fine settlement' },
+  { value: 'toll_vignette', label: 'Toll vignette' },
+  { value: 'toll_fee', label: 'Toll fee (per job)' },
+  { value: 'fleet_insurance', label: 'Fleet insurance' },
+  { value: 'operating_levy', label: 'Operating levy' },
+  { value: 'investment_withdrawal', label: 'Investment withdrawal' },
 ];
 
 const KIND_LABELS = Object.fromEntries(

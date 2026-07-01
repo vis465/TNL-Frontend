@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import React, { useMemo } from 'react';
+import { Link as RouterLink, useOutletContext } from 'react-router-dom';
 import {
   Grid,
   Card,
@@ -12,28 +12,27 @@ import {
   alpha,
   Chip,
   Stack,
-  Tab,
-  Tabs,
+  Button,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Paper,
 } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
+import HistoryOutlined from '@mui/icons-material/HistoryOutlined';
+import ChevronRight from '@mui/icons-material/ChevronRight';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  ADMIN_DASHBOARD_CARDS,
-  ADMIN_DASHBOARD_GROUP_ORDER,
+  formatStaffRole,
+  getHubRoute,
+  getNavItemByPath,
+  getRoleQuickActions,
+  getVisibleHubs,
+  ROLE_PRIMARY_HUB,
   userCanSeeNavItem,
 } from '../config/adminNavigation';
-
-function formatStaffRole(role) {
-  if (!role) return '';
-  const map = {
-    admin: 'Admin',
-    eventteam: 'Event team',
-    hrteam: 'HR team',
-    financeteam: 'Finance team',
-    communityManager: 'Community manager',
-    rto: 'RTO officer',
-  };
-  return map[role] || role;
-}
+import { getAdminRecents } from '../utils/adminNavStorage';
 
 function AdminCard({ item, color, theme }) {
   const Icon = item.icon;
@@ -90,38 +89,89 @@ function AdminCard({ item, color, theme }) {
   );
 }
 
+function HubLinkCard({ hub, theme, primary = false }) {
+  const Icon = hub.Icon;
+  const color = hub.color || 'primary';
+  const isDark = theme.palette.mode === 'dark';
+  const colorMain = theme.palette[color]?.main || theme.palette.primary.main;
+  const bg = alpha(colorMain, isDark ? 0.15 : 0.08);
+
+  return (
+    <Card
+      elevation={0}
+      sx={{
+        height: '100%',
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: 'divider',
+        transition: 'all 0.2s ease',
+        '&:hover': { borderColor: colorMain, boxShadow: `0 6px 20px ${alpha(colorMain, 0.18)}` },
+      }}
+    >
+      <CardActionArea component={RouterLink} to={getHubRoute(hub.id)} sx={{ height: '100%' }}>
+        <CardContent sx={{ p: 2 }}>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <Box
+              sx={{
+                width: 44,
+                height: 44,
+                borderRadius: 1.5,
+                bgcolor: bg,
+                color: colorMain,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Icon />
+            </Box>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="subtitle1" fontWeight={700} noWrap>
+                {hub.label}
+                {primary && (
+                  <Chip
+                    label="Your area"
+                    size="small"
+                    color="primary"
+                    sx={{ ml: 1, verticalAlign: 'middle', height: 20 }}
+                  />
+                )}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" noWrap>
+                {hub.description}
+              </Typography>
+            </Box>
+            <ChevronRight color="action" />
+          </Stack>
+        </CardContent>
+      </CardActionArea>
+    </Card>
+  );
+}
+
 const AdminDashboard = () => {
+  const { onOpenSearch } = useOutletContext() || {};
   const { user } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const role = user?.role;
-  const [activeGroup, setActiveGroup] = useState('all');
 
-  const allowedCards = useMemo(
-    () => ADMIN_DASHBOARD_CARDS.filter((c) => userCanSeeNavItem(role, c.roles)),
-    [role],
-  );
+  const visibleHubs = useMemo(() => getVisibleHubs(role), [role]);
+  const quickActions = useMemo(() => getRoleQuickActions(role, 5), [role]);
+  const recents = useMemo(() => {
+    return getAdminRecents()
+      .map((path) => getNavItemByPath(path))
+      .filter((item) => item && userCanSeeNavItem(role, item.roles))
+      .slice(0, 6);
+  }, [role]);
 
-  const visibleGroups = useMemo(
-    () =>
-      ADMIN_DASHBOARD_GROUP_ORDER.filter((group) =>
-        allowedCards.some((c) => c.group === group),
-      ),
-    [allowedCards],
-  );
-
-  const filteredCards = useMemo(() => {
-    if (activeGroup === 'all') return allowedCards;
-    return allowedCards.filter((c) => c.group === activeGroup);
-  }, [activeGroup, allowedCards]);
-
-  const cardsByGroup = useMemo(() => {
-    const groups = activeGroup === 'all' ? visibleGroups : [activeGroup];
-    return groups.reduce((acc, group) => {
-      acc[group] = filteredCards.filter((c) => c.group === group);
-      return acc;
-    }, {});
-  }, [activeGroup, filteredCards, visibleGroups]);
+  const sortedHubs = useMemo(() => {
+    const primaryHubId = ROLE_PRIMARY_HUB[role];
+    if (!primaryHubId) return visibleHubs;
+    const primary = visibleHubs.find((h) => h.id === primaryHubId);
+    const rest = visibleHubs.filter((h) => h.id !== primaryHubId);
+    return primary ? [primary, ...rest] : visibleHubs;
+  }, [visibleHubs, role]);
 
   return (
     <Box>
@@ -136,16 +186,15 @@ const AdminDashboard = () => {
         }}
       >
         <Box>
-          <Typography
-            variant={isMobile ? 'h5' : 'h4'}
-            component="h1"
-            fontWeight={700}
-            gutterBottom
-          >
-            Admin dashboard
+          <Typography variant={isMobile ? 'h5' : 'h4'} component="h1" fontWeight={700} gutterBottom>
+            Staff home
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 640 }}>
-            Shortcuts for your role. Filter by area below, or use the sidebar for the full menu.
+            Jump into your hub, use quick actions, or press{' '}
+            <Box component="kbd" sx={{ px: 0.75, py: 0.25, borderRadius: 0.5, bgcolor: 'action.hover', fontSize: '0.85em' }}>
+              Ctrl+K
+            </Box>{' '}
+            to search any admin page.
           </Typography>
         </Box>
         {user && (
@@ -164,54 +213,72 @@ const AdminDashboard = () => {
         )}
       </Box>
 
-      <Box sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs
-          value={activeGroup}
-          onChange={(_, v) => setActiveGroup(v)}
-          variant="scrollable"
-          scrollButtons="auto"
-          allowScrollButtonsMobile
-          sx={{ minHeight: 44, '& .MuiTab-root': { textTransform: 'none', fontWeight: 600 } }}
-        >
-          <Tab value="all" label={`All (${allowedCards.length})`} />
-          {visibleGroups.map((group) => {
-            const count = allowedCards.filter((c) => c.group === group).length;
-            return <Tab key={group} value={group} label={`${group} (${count})`} />;
-          })}
-        </Tabs>
+      <Button
+        variant="outlined"
+        startIcon={<SearchIcon />}
+        onClick={() => onOpenSearch?.()}
+        fullWidth={isMobile}
+        sx={{ mb: 3, justifyContent: 'flex-start', py: 1.25, borderStyle: 'dashed' }}
+      >
+        Search admin pages… (Ctrl+K)
+      </Button>
+
+      {quickActions.length > 0 && (
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="overline" sx={{ color: 'text.secondary', fontWeight: 600, letterSpacing: 1, mb: 1.5, display: 'block' }}>
+            Quick actions
+          </Typography>
+          <Grid container spacing={2}>
+            {quickActions.map((item) => (
+              <Grid item xs={12} sm={6} md={4} key={item.to}>
+                <AdminCard item={item} color={item.color} theme={theme} />
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
+      )}
+
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="overline" sx={{ color: 'text.secondary', fontWeight: 600, letterSpacing: 1, mb: 1.5, display: 'block' }}>
+          Hubs
+        </Typography>
+        <Grid container spacing={2}>
+          {sortedHubs.map((hub) => (
+            <Grid item xs={12} sm={6} md={4} key={hub.id}>
+              <HubLinkCard
+                hub={hub}
+                theme={theme}
+                primary={hub.id === ROLE_PRIMARY_HUB[role]}
+              />
+            </Grid>
+          ))}
+        </Grid>
       </Box>
 
-      {Object.entries(cardsByGroup).map(([group, items]) => {
-        if (!items?.length) return null;
-        return (
-          <Box key={group} sx={{ mb: 4 }}>
-            {activeGroup === 'all' && (
-              <Typography
-                variant="overline"
-                sx={{
-                  color: 'text.secondary',
-                  fontWeight: 600,
-                  letterSpacing: 1,
-                  display: 'block',
-                  mb: 1.5,
-                }}
-              >
-                {group}
-              </Typography>
-            )}
-            <Grid container spacing={2}>
-              {items.map((item) => (
-                <Grid item xs={12} sm={6} md={4} key={item.to}>
-                  <AdminCard item={item} color={item.color} theme={theme} />
-                </Grid>
-              ))}
-            </Grid>
-          </Box>
-        );
-      })}
-
-      {!filteredCards.length && (
-        <Typography color="text.secondary">No tools available for your role in this area.</Typography>
+      {recents.length > 0 && (
+        <Box>
+          <Typography variant="overline" sx={{ color: 'text.secondary', fontWeight: 600, letterSpacing: 1, mb: 1, display: 'block' }}>
+            Recent
+          </Typography>
+          <Paper variant="outlined" sx={{ borderRadius: 2 }}>
+            <List dense disablePadding>
+              {recents.map((item) => {
+                const Icon = item.Icon;
+                return (
+                  <ListItemButton key={item.to} component={RouterLink} to={item.to}>
+                    <ListItemIcon sx={{ minWidth: 36 }}>
+                      <HistoryOutlined fontSize="small" color="action" />
+                    </ListItemIcon>
+                    <ListItemIcon sx={{ minWidth: 36 }}>
+                      <Icon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText primary={item.label || item.title} secondary={item.description} />
+                  </ListItemButton>
+                );
+              })}
+            </List>
+          </Paper>
+        </Box>
       )}
     </Box>
   );
