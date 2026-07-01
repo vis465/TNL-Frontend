@@ -108,6 +108,7 @@ import AdminLoans from "./pages/AdminLoans";
 import AdminEmis from "./pages/AdminEmis";
 import EventCalendarPage from "./pages/EventCalendarPage";
 import AdminExternalAttendance from "./pages/AdminExternalAttendance";
+import AdminConvoyReminders from "./pages/admin/AdminConvoyReminders";
 import FleetManagement from "./pages/FleetManagement";
 import TruckMarketplace from "./pages/TruckMarketplace";
 import AdminTrucks from "./pages/AdminTrucks";
@@ -670,6 +671,14 @@ function App() {
                         element={
                           <PrivateRoute allowedRoles={["admin", "eventteam"]}>
                             <AdminExternalAttendance />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="convoy-reminders"
+                        element={
+                          <PrivateRoute allowedRoles={["admin", "eventteam"]}>
+                            <AdminConvoyReminders />
                           </PrivateRoute>
                         }
                       />

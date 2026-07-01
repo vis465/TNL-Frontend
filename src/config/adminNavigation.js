@@ -19,6 +19,7 @@ import LeaderboardOutlined from '@mui/icons-material/LeaderboardOutlined';
 import FlagOutlined from '@mui/icons-material/FlagOutlined';
 import EventAvailableOutlined from '@mui/icons-material/EventAvailableOutlined';
 import CalendarMonthOutlined from '@mui/icons-material/CalendarMonthOutlined';
+import CampaignOutlined from '@mui/icons-material/CampaignOutlined';
 
 import AdminPanelSettings from '@mui/icons-material/AdminPanelSettings';
 import Event from '@mui/icons-material/Event';
@@ -171,6 +172,12 @@ export const ADMIN_SECTIONS = [
         to: '/admin/external-attendance',
         label: 'External attendance',
         Icon: PublicOutlined,
+        roles: ['admin', 'eventteam'],
+      },
+      {
+        to: '/admin/convoy-reminders',
+        label: 'Convoy reminders',
+        Icon: CampaignOutlined,
         roles: ['admin', 'eventteam'],
       },
       {
@@ -368,6 +375,15 @@ export const ADMIN_DASHBOARD_CARDS = [
     to: '/admin/external-attendance',
     icon: PublicOutlined,
     color: 'info',
+    roles: ['admin', 'eventteam'],
+  },
+  {
+    group: 'Events & operations',
+    title: 'Convoy reminders',
+    description: 'Discord reminders for external convoys and our hosted calendar events.',
+    to: '/admin/convoy-reminders',
+    icon: CampaignOutlined,
+    color: 'warning',
     roles: ['admin', 'eventteam'],
   },
   {
